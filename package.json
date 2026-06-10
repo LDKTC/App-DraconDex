@@ -1,0 +1,47 @@
+{
+  "name": "novel-manager",
+  "version": "1.2.0",
+  "description": "Novel data management app",
+  "main": "main.js",
+  "scripts": {
+    "start": "node ./start.js",
+    "build:portable": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9"
+  },
+  "build": {
+    "appId": "com.novelmanager.app",
+    "productName": "Novel Manager",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "style.css",
+      "database.js",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}
