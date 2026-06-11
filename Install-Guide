@@ -1,0 +1,56 @@
+This is Easy Guideline For Everyone To install the Program for Free.
+
+Step 1: After you download program of this file in your device
+
+    -Open this folder by use your IDE Program eg. VSCode ,AntiGravity ,and another
+    -After you open your IDE. Check that you has *all the important file we need*
+        -filename 
+        database.js 
+        ,index.html 
+        ,main.js 
+        ,package.json 
+        ,package-lock.json 
+        ,preload.js 
+        ,renderer.js 
+        ,start.js 
+        ,Style.css
+
+Step 2: After you got all the file. run this in your terminal.
+        
+        npm install
+        
+    -this should download need packages for this project. 
+
+Step 3: Check that everything is ready to build
+
+    -Run this command to Test the program.
+
+        npm start
+
+    -Then you will found App that OpenUp
+    -Check if there was no any bugs
+
+Step 4: Build Program for Real use
+
+    -Run this command to starting build a program
+
+        npm run build:portable
+
+    -this should start building portable app
+    -App size is Around 500Mb for all module
+
+Step 5: Check your App
+
+    -App that had builded should be in folder
+
+        dist/
+
+    -you will found a App Name 
+        
+        Novel Manager 1.x.0.exe
+
+    -Open the app to check that App was builded Correctly
+
+Step last: And done
+
+    -You can move the folder Dist/ into The folder you want and changed into name you want.
