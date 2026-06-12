@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
@@ -21,18 +21,27 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1280, height: 800,
     minWidth: 960, minHeight: 600,
-    backgroundColor: '#0f0f13',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    backgroundColor: '#050506',
+    frame: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'I' && input.control && input.shift) {
+      win.webContents.toggleDevTools();
+    }
+  });
   win.loadFile('index.html');
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
+  createWindow();
+});
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
@@ -182,3 +191,20 @@ h('timeline:removeEventTag', (eid,tid) => db.removeEventTag(eid,tid));
 
 // Search
 h('search:all', (q) => db.searchAll(q));
+
+// Window controls for the custom title/tab bar.
+h('window:minimize', () => {
+  const win = BrowserWindow.getFocusedWindow();
+  if (win) win.minimize();
+});
+h('window:toggleMaximize', () => {
+  const win = BrowserWindow.getFocusedWindow();
+  if (!win) return false;
+  if (win.isMaximized()) win.unmaximize();
+  else win.maximize();
+  return win.isMaximized();
+});
+h('window:close', () => {
+  const win = BrowserWindow.getFocusedWindow();
+  if (win) win.close();
+});

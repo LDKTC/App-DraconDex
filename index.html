@@ -6,6 +6,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="window-frame">
+<header id="title-tab-bar">
+  <div class="tab-brand" title="Novel Manager">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+  </div>
+  <div id="project-tabs" aria-label="Open projects"></div>
+  <button id="new-project-tab" class="title-tab-add" title="Open project">+</button>
+  <div class="title-drag"></div>
+  <div id="settings-menu-wrap">
+    <button class="title-settings-btn" id="settings-menu-btn" title="Settings" aria-haspopup="true" aria-expanded="false">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6 1.65 1.65 0 0 0 10 3.09V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.67 0 1.22.54 1.22 1.21v.58c0 .67-.55 1.21-1.22 1.21a1.65 1.65 0 0 0 0 3z"/>
+      </svg>
+    </button>
+    <div id="settings-menu" class="hidden"></div>
+  </div>
+  <div id="window-controls">
+    <button class="window-btn" id="win-min" title="Minimize">-</button>
+    <button class="window-btn" id="win-max" title="Maximize">[]</button>
+    <button class="window-btn close" id="win-close" title="Close">x</button>
+  </div>
+</header>
 <div id="app">
   <nav id="nav-sidebar">
     <div class="nav-logo" title="Novel Manager">
@@ -76,10 +102,13 @@
   <aside id="left-panel">
     <div id="search-bar">
       <input id="search-input" placeholder="ค้นหา..." autocomplete="off">
+      <button id="left-panel-collapse" class="left-panel-toggle" title="Collapse panel">‹</button>
     </div>
     <div id="left-panel-inner"></div>
   </aside>
+  <button id="left-panel-peek" class="left-panel-peek" title="Open panel">+</button>
   <main id="main-area"><div id="main-inner"></div></main>
+</div>
 </div>
 <div id="modal-overlay" class="hidden">
   <div id="modal">

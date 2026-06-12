@@ -116,4 +116,9 @@ contextBridge.exposeInMainWorld('api', {
   search: {
     all:     (q)           => inv('search:all', q),
   },
+  window: {
+    minimize:       () => inv('window:minimize'),
+    toggleMaximize: () => inv('window:toggleMaximize'),
+    close:          () => inv('window:close'),
+  },
 });
