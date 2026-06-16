@@ -220,7 +220,10 @@ function saveUiSettings(){
 function applyUiSettings(){
   document.body.dataset.theme = S.settings.theme;
   document.documentElement.lang = S.settings.language;
-  document.documentElement.style.setProperty('--ui-scale', String(S.settings.size / 100));
+  const scale = S.settings.size / 100;
+  document.documentElement.style.setProperty('--ui-scale', String(scale));
+  // Apply transform-based scaling instead of non-standard zoom property
+  document.documentElement.style.setProperty('--ui-transform-scale', String(scale));
 }
 
 function setUiSetting(key, value){

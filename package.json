@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "node ./start.js",
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
     "build:portable": "electron-builder --win portable"
   },
   "dependencies": {

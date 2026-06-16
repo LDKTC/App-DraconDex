@@ -13,9 +13,6 @@ if (!fs.existsSync(tempDataPath)) fs.mkdirSync(tempDataPath, { recursive: true }
 const electronUserDataPath = path.join(tempDataPath, 'electron-user-data');
 app.setPath('userData', electronUserDataPath);
 app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('in-process-gpu');
-app.commandLine.appendSwitch('disable-gpu-sandbox');
 
 function createWindow() {
   const win = new BrowserWindow({

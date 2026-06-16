@@ -66,13 +66,17 @@ body{
 	font-family:'Segoe UI Emoji','Segoe UI Symbol','Segoe UI',system-ui,-apple-system,sans-serif;
 	background:var(--bg); color:var(--t1);
 	height:100vh; overflow:hidden;
-	width:calc(100vw / var(--ui-scale));
-	height:calc(100vh / var(--ui-scale));
-	zoom:var(--ui-scale);
 	user-select:none; -webkit-user-select:none;
 	font-size:14px;
 }
 
+/* UI scale via transform instead of non-standard zoom */
+.ui-scale-wrap {
+	transform-origin: top left;
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+}
 #window-frame{height:100%;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
 #title-tab-bar{
 	height:38px;background:#050506;border-bottom:1px solid #20202a;
