@@ -33,7 +33,12 @@ function resolveElectronBinary() {
 const electronPath = resolveElectronBinary();
 const args = process.argv.slice(2);
 // GPU flags MUST come before the app path to prevent GPU process spawning
-const gpuFlags = ['--disable-gpu', '--disable-software-rasterizer', '--no-sandbox'];
+const gpuFlags = [
+  '--no-sandbox',
+  '--disable-gpu',
+  '--disable-software-rasterizer',
+  '--disable-gpu-process-for-testing',
+];
 if (!args.length) args.push('.');
 // Insert GPU flags at the beginning (before the main path)
 args.unshift(...gpuFlags);
