@@ -12,6 +12,7 @@ const tempDataPath = isPackaged
 if (!fs.existsSync(tempDataPath)) fs.mkdirSync(tempDataPath, { recursive: true });
 const electronUserDataPath = path.join(tempDataPath, 'electron-user-data');
 app.setPath('userData', electronUserDataPath);
+app.commandLine.appendSwitch('no-sandbox');
 
 
 function createWindow() {
