@@ -1,0 +1,20 @@
+command inuse
+
+    To test the app.
+    - npm start 
+    
+    to build the app.
+    - npm run build:portable
+
+    To install package modules.
+    - npm install
+
+    to rebuild module like sqlite.
+    - npm rebuild 
+
+    to test from electron check.
+    - npx electron .
+    - npx electron filename
+
+    to run app build from terminal.
+    - "app name.exe"
