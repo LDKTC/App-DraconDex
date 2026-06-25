@@ -12,6 +12,7 @@ const I = {
   colors: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22C17.52 22 22 17.52 22 12S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm0-18a8 8 0 0 1 8 8 8 8 0 0 1-8 8 8 8 0 0 1-8-8 8 8 0 0 1 8-8z"/><circle cx="7.5" cy="10.5" r="1.5" fill="currentColor"/><circle cx="11.5" cy="7.5" r="1.5" fill="currentColor"/><circle cx="16.5" cy="9.5" r="1.5" fill="currentColor"/><circle cx="15.5" cy="14.5" r="1.5" fill="currentColor"/></svg>`,
   edit: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
   delete: `<svg class="icon icon-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`,
+  move: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`,
   folder: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
   plus: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
   close: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
@@ -141,6 +142,7 @@ const S = {
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
 let konvaStage = null;
+const mapState = { viewByMap:{}, pointsByArea:{} };
 
 async function init() {
   applyUiSettings();
@@ -1589,6 +1591,7 @@ async function renderForceGraph(graphData, opts={}){
   if(!c) return;
   c.innerHTML = `<div id="react-graph"></div><div class="rel-resize-handle" title="Drag to resize graph"></div>`;
   await ensureD3();
+  if(!document.getElementById('react-graph')) return;
   await renderForceGraphWithD3(graphData, opts);
 }
 
@@ -1608,6 +1611,7 @@ function ensureD3(){
 
 async function renderForceGraphWithD3(graphData, opts={}){
   const el = document.getElementById('react-graph');
+  if(!el) return;
   el.innerHTML = '';
   const width = el.clientWidth || 800;
   const height = el.clientHeight || 420;
@@ -1718,6 +1722,7 @@ async function renderRelationView(){
   q('#left-panel-inner').innerHTML = lh;
 
   const viewMode = S.relTab||0;
+  let renderWhiteboard = null;
   let h = `<div class="ch">
     <h2>Node Whiteboard</h2>
     <div class="rel-view-btns">
@@ -1754,7 +1759,7 @@ async function renderRelationView(){
       </div>
       <div id="rel-list" class="rel-list"></div>
     </div>`;
-    if(selCatId) setTimeout(async()=>{ await renderCategoryWhiteboard(selCatId); },10);
+    if(selCatId) renderWhiteboard = () => renderCategoryWhiteboard(selCatId);
   } else if(viewMode===1) {
     const objs = await api.relation.getProjectObjects(S.project.id);
     const objOpts = objs.map(o=>`<option value="${o.id}">${x(o.category_name)} / ${x(o.name)}</option>`).join('');
@@ -1781,7 +1786,7 @@ async function renderRelationView(){
       </div>
       <div id="rel-list" class="rel-list"></div>
     </div>`;
-    if(selObjId) setTimeout(async()=>{ await renderObjectWhiteboard(selObjId); q('#obj-select').value=selObjId; },10);
+    if(selObjId) renderWhiteboard = async () => { await renderObjectWhiteboard(selObjId); const sel = q('#obj-select'); if(sel) sel.value=selObjId; };
   } else {
     h += `<div class="rel-toolbar">
       <div style="font-size:12.5px;color:var(--t2)">แสดง Object ทั้งหมดในโปรเจกต์: <b>${x(S.project.name||'')}</b></div>
@@ -1803,10 +1808,30 @@ async function renderRelationView(){
       </div>
       <div id="rel-list" class="rel-list"></div>
     </div>`;
-    setTimeout(async()=>{ await renderProjectWhiteboard(S.project.id); },10);
+    renderWhiteboard = () => renderProjectWhiteboard(S.project.id);
   }
   q('#main-inner').innerHTML = h;
   applyRelListHeight();
+  if(renderWhiteboard) setTimeout(()=>renderWhiteboard(),10);
+}
+
+async function switchRelViewMode(mode){
+  const nextMode = Number.parseInt(mode, 10);
+  if(![0, 1, 2].includes(nextMode)) return;
+  S.relTab = nextMode;
+  await renderRelationView();
+}
+
+async function updateRelCategoryView(catId){
+  const nextCatId = Number.parseInt(catId, 10);
+  S.relCatId = Number.isNaN(nextCatId) ? null : nextCatId;
+  await renderRelationView();
+}
+
+async function updateRelObjectView(objId){
+  const nextObjId = Number.parseInt(objId, 10);
+  S.relObjId = Number.isNaN(nextObjId) ? null : nextObjId;
+  await renderRelationView();
 }
 
 async function renderCategoryWhiteboard(catId){
@@ -2134,6 +2159,70 @@ function ensureKonva(){
   });
 }
 
+function renderAreaList(areas){
+  if(!areas.length){
+    return `<div class="empty" style="padding:18px 10px"><p>ยังไม่มี Area</p></div>`;
+  }
+  return areas.map(area => {
+    const color = area.color_code || '#06b6d4';
+    const active = S.mapAreaId === area.id;
+    const points = mapState.pointsByArea[area.id]?.length || 0;
+    return `<div class="rel-card ${active?'active':''}" onclick="selectMapArea(${area.id})">
+      <span class="dot" style="background:${color}"></span>
+      <div class="rel-card-content">
+        <div>${x(area.area_name || 'ไม่มีชื่อ')}</div>
+        <span class="rel-cat">${points} points</span>
+      </div>
+      <div class="rel-card-actions">
+        <button class="btn btn-s btn-i" onclick="event.stopPropagation();openMapAreaModal(${area.id})">${I.edit}</button>
+        <button class="btn btn-s btn-i" onclick="event.stopPropagation();delMapArea(${area.id})" style="color:var(--danger)">${I.delete}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+const MAP_GEOMETRY_EPS = 0.000001;
+
+function sameMapPoint(a,b){
+  return Math.abs(a.x - b.x) < MAP_GEOMETRY_EPS && Math.abs(a.y - b.y) < MAP_GEOMETRY_EPS;
+}
+
+function mapCross(o,a,b){
+  return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+}
+
+function getMapAreaBoundaryPoints(points){
+  const unique = [];
+  for(const p of points){
+    if(!unique.some(u => sameMapPoint(u,p))) unique.push(p);
+  }
+  if(unique.length <= 2) return unique;
+
+  const sorted = [...unique].sort((a,b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+  const lower = [];
+  for(const p of sorted){
+    while(lower.length >= 2 && mapCross(lower[lower.length-2], lower[lower.length-1], p) <= MAP_GEOMETRY_EPS){
+      lower.pop();
+    }
+    lower.push(p);
+  }
+  const upper = [];
+  for(let i=sorted.length-1;i>=0;i--){
+    const p = sorted[i];
+    while(upper.length >= 2 && mapCross(upper[upper.length-2], upper[upper.length-1], p) <= MAP_GEOMETRY_EPS){
+      upper.pop();
+    }
+    upper.push(p);
+  }
+  upper.pop();
+  lower.pop();
+  return lower.concat(upper);
+}
+
+function mapAreaLinePoints(points){
+  return getMapAreaBoundaryPoints(points).map(p => [p.x, p.y]).flat();
+}
+
 async function renderMapView(){
   if(!S.project){
     q('#left-panel-inner').innerHTML=`<div class="empty" style="padding:40px 10px"><div class="ei">${I.map}</div><p style="text-align:center">กรุณาเลือกโปรเจกต์ก่อน</p></div>`;
@@ -2156,11 +2245,14 @@ async function renderMapView(){
   }
   const areas = await api.map.getAreas(S.map.id);
   if(S.mapAreaId && !areas.find(a=>a.id===S.mapAreaId)) S.mapAreaId = null;
+  await Promise.all(areas.map(async a => {
+    mapState.pointsByArea[a.id] = await api.map.getPoints(a.id);
+  }));
   let h = `<div class="ch"><h2>${x(S.map.map_name||'Map')}</h2><button class="btn btn-s btn-i" onclick="openMapModal(${S.map.id})">${I.edit}</button></div>
   <div class="rel-toolbar">
-    <button class="btn ${S.mapTool==='create'?'btn-p':'btn-s'}" onclick="setMapTool('create')">Create</button>
-    <button class="btn ${S.mapTool==='delete'?'btn-p':'btn-s'}" onclick="setMapTool('delete')">Delete</button>
-    <button class="btn ${S.mapTool==='move'?'btn-p':'btn-s'}" onclick="setMapTool('move')">Move</button>
+    <button class="btn btn-i ${S.mapTool==='create'?'btn-p':'btn-s'}" onclick="setMapTool('create')" title="Create point" aria-label="Create point">${I.plus}</button>
+    <button class="btn btn-i ${S.mapTool==='delete'?'btn-p':'btn-s'}" onclick="setMapTool('delete')" title="Delete point" aria-label="Delete point">${I.delete}</button>
+    <button class="btn btn-i ${S.mapTool==='move'?'btn-p':'btn-s'}" onclick="setMapTool('move')" title="Move point" aria-label="Move point">${I.move}</button>
     <span style="font-size:12px;color:var(--t3)">ต้องเลือก Area ก่อนใช้ Tool</span>
   </div>
   <div id="map-board" class="map-whiteboard">
@@ -2215,15 +2307,16 @@ async function renderMapBoard(){
 
   for(const area of areas){
     const pts = mapState.pointsByArea[area.id] || [];
+    const boundaryPts = getMapAreaBoundaryPoints(pts);
     const color = area.color_code || '#06b6d4';
     const isActiveArea = S.mapAreaId === area.id;
 
     let poly = null;
-    if(pts.length >= 2){
+    if(boundaryPts.length >= 2){
       poly = new Konva.Line({
-        points: pts.map(p => [p.x, p.y]).flat(),
-        fill: pts.length >= 3 ? color : 'transparent',
-        opacity: pts.length >= 3 ? 0.18 : 0,
+        points: mapAreaLinePoints(pts),
+        fill: boundaryPts.length >= 3 ? color : 'transparent',
+        opacity: boundaryPts.length >= 3 ? 0.18 : 0,
         stroke: color,
         strokeWidth: 2 / v.scale,
         closed: true,
@@ -2231,6 +2324,15 @@ async function renderMapBoard(){
       poly.on('click tap', (e) => {
         if(e.evt.button === 0){
           e.cancelBubble = true;
+          if(S.mapTool === 'create' && S.mapAreaId === area.id){
+            const pointer = konvaStage.getPointerPosition();
+            const wx = (pointer.x - konvaStage.x()) / konvaStage.scaleX();
+            const wy = (pointer.y - konvaStage.y()) / konvaStage.scaleX();
+            pts.push({ x: wx, y: wy });
+            mapState.pointsByArea[area.id] = pts;
+            api.map.setPoints(area.id, pts).then(renderMapBoard);
+            return;
+          }
           selectMapArea(area.id);
         }
       });
@@ -2254,7 +2356,10 @@ async function renderMapBoard(){
         p.x = newPos.x;
         p.y = newPos.y;
         if(poly) {
-          poly.points(pts.map(pt => [pt.x, pt.y]).flat());
+          const nextBoundaryPts = getMapAreaBoundaryPoints(pts);
+          poly.points(mapAreaLinePoints(pts));
+          poly.fill(nextBoundaryPts.length >= 3 ? color : 'transparent');
+          poly.opacity(nextBoundaryPts.length >= 3 ? 0.18 : 0);
         }
         layer.batchDraw();
       });
@@ -2874,6 +2979,7 @@ async function selectSearchHashtag(tid){
 Object.assign(window, {
   setUiSetting, setUiSizeFromSlider, toggleSettingsMenu, startRelListResize,
   openTemplateModal, addTemplate, delTemplate,
+  switchRelViewMode, updateRelCategoryView, updateRelObjectView,
   openRelModal, createRelOBOB, createRelOBTL, createRelTLTL,
   updateSelectColorLabel,
   openEventModal, createTimelineEvent, saveEvent,
