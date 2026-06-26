@@ -3,6 +3,7 @@
 const I = {
   book: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
   projects: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+  return: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>`,
   timeline: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
   relation: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
   map: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/></svg>`,
@@ -320,6 +321,7 @@ function translateStaticChrome(){
   q('#btn-import-db')?.setAttribute('title', t('importDb'));
   q('#btn-export-db')?.setAttribute('title', t('exportDb'));
   applyLeftPanelState();
+  updateProjectNavButton();
   translateCommonUiText();
 }
 
@@ -379,15 +381,29 @@ function bindWindowChrome(){
   q('#settings-menu')?.addEventListener('click', e => e.stopPropagation());
   document.addEventListener('click', () => toggleSettingsMenu(false));
   q('#new-project-tab')?.addEventListener('click', () => {
-    S.project = null; S.category = null; S.object = null; S.timeline = null; S.map = null; S.mapAreaId = null;
-    S.activeProjectTabId = null;
-    S.view = 'projects';
-    document.querySelectorAll('.nav-btn[data-panel]').forEach(b=>b.classList.remove('active'));
-    q('.nav-btn[data-panel="projects"]')?.classList.add('active');
-    renderProjectTabs();
-    renderSidebar();
-    renderWelcome();
+    returnToProjectList();
   });
+}
+
+function updateProjectNavButton(){
+  const btn = q('.nav-btn[data-panel="projects"]');
+  if(!btn) return;
+  const inProject = !!S.project;
+  btn.innerHTML = inProject ? I.return : I.projects;
+  btn.setAttribute('title', inProject ? 'Back to project list' : t('projects'));
+  btn.classList.toggle('is-return', inProject);
+}
+
+function returnToProjectList(){
+  S.project = null; S.category = null; S.object = null; S.timeline = null; S.map = null; S.mapAreaId = null;
+  S.activeProjectTabId = null;
+  S.view = 'projects';
+  document.querySelectorAll('.nav-btn[data-panel]').forEach(b=>b.classList.remove('active'));
+  q('.nav-btn[data-panel="projects"]')?.classList.add('active');
+  renderProjectTabs();
+  updateProjectNavButton();
+  renderSidebar();
+  renderWelcome();
 }
 
 function tabFromProject(project){
@@ -446,13 +462,7 @@ async function closeProjectTab(id){
     return;
   }
   S.activeProjectTabId = null;
-  S.project = null; S.category = null; S.object = null; S.timeline = null; S.map = null; S.mapAreaId = null;
-  S.view = 'projects';
-  document.querySelectorAll('.nav-btn[data-panel]').forEach(b=>b.classList.remove('active'));
-  q('.nav-btn[data-panel="projects"]')?.classList.add('active');
-  renderProjectTabs();
-  renderSidebar();
-  renderWelcome();
+  returnToProjectList();
 }
 
 // ═══ COLOR PICKER ══════════════════════════════════════
@@ -590,9 +600,14 @@ async function addColorFromPicker(){
 function bindNav() {
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn=>{
     btn.addEventListener('click',()=>{
+      if(btn.dataset.panel === 'projects' && S.project){
+        returnToProjectList();
+        return;
+      }
       document.querySelectorAll('.nav-btn[data-panel]').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       S.view = btn.dataset.panel;
+      updateProjectNavButton();
       switchView(S.view);
     });
   });
@@ -634,7 +649,8 @@ function switchView(v) {
     konvaStage = null;
   }
   q('#main-inner')?.classList.toggle('relation-main', v === 'relation');
-  if      (v==='projects') { renderSidebar(); if(S.project) renderProject(); else renderWelcome(); }
+  updateProjectNavButton();
+  if      (v==='projects') { if(S.project) renderProject(); else { renderSidebar(); renderWelcome(); } }
   else if (v==='timeline') renderTimelineView();
   else if (v==='relation') renderRelationView();
   else if (v==='map')      renderMapView();
@@ -652,7 +668,9 @@ async function reloadSidebar() {
     .map(t => tabFromProject(byId.get(t.id)));
   if(S.activeProjectTabId && !byId.has(S.activeProjectTabId)) S.activeProjectTabId = null;
   renderProjectTabs();
-  renderSidebar();
+  updateProjectNavButton();
+  if(S.project && S.view === 'projects') await renderProjectSidebar();
+  else renderSidebar();
 }
 
 function renderSidebar() {
@@ -674,6 +692,60 @@ function renderSidebar() {
   }
   const unfiled = S.projects.filter(p=>!p.folder_id);
   if(unfiled.length) h += `<div class="div"></div>${unfiled.map(projItem).join('')}`;
+  q('#left-panel-inner').innerHTML = h;
+}
+
+async function renderProjectSidebar(){
+  if(!S.project){
+    renderSidebar();
+    return;
+  }
+  const p = S.project;
+  const col = p.color_code || '#6366f1';
+  const cats = await api.category.getAll(p.id);
+  const descs = await api.project.getDesc(p.id);
+  const memo = p.project_memo || p.memo || '';
+  let h = `<div class="project-side-head">
+    <div class="project-side-title">
+      <span class="dot" style="background:${col}"></span>
+      <span class="name">${x(p.name)}</span>
+      <button class="btn btn-g btn-i" onclick="openProjectModal(${p.id})" title="Edit project">${I.edit}</button>
+    </div>
+    ${p.codename ? `<div class="project-side-code">${x(p.codename)}</div>` : ''}
+  </div>`;
+
+  h += `<div class="ph compact"><h4>Category</h4>
+    <button class="btn btn-g btn-i" onclick="openCategoryModal()" title="New category">${I.plus}</button>
+  </div>`;
+  if(cats.length){
+    h += cats.map(c => {
+      const cc = c.color_code || '#6366f1';
+      const act = S.category?.id === c.id;
+      return `<div class="li ${act?'active':''}" onclick="selectCategory(${c.id})">
+        <div class="dot" style="background:${cc}"></div><span class="name">${x(c.category_name)}</span>
+        <div class="acts">
+          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openCategoryModal(${c.id})">${I.edit}</button>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    h += `<div class="empty project-side-empty"><p>No categories</p></div>`;
+  }
+
+  h += `<div class="ph compact project-detail-ph"><h4>Project Details</h4>
+    <button class="btn btn-g btn-i" onclick="openDescModal()" title="Add detail">${I.plus}</button>
+  </div>
+  <div class="project-detail-list">`;
+  if(memo){
+    h += `<div class="project-detail-item" onclick="openProjectModal(${p.id})"><span class="dk">Memo</span><span class="dv">${x(memo)}</span></div>`;
+  }
+  h += descs.length
+    ? descs.map(d => `<div class="project-detail-item" onclick="openDescModal(${d.id})">
+        <span class="dk">${x(d.attribute_name || 'Detail')}</span>
+        <span class="dv">${x(d.attribute_text || '')}</span>
+      </div>`).join('')
+    : (!memo ? `<div class="empty project-side-empty"><p>No details</p></div>` : '');
+  h += `</div>`;
   q('#left-panel-inner').innerHTML = h;
 }
 
@@ -754,7 +826,8 @@ async function activateProject(project) {
   document.querySelectorAll('.nav-btn[data-panel]').forEach(b=>b.classList.remove('active'));
   q('.nav-btn[data-panel="projects"]').classList.add('active');
   renderProjectTabs();
-  renderSidebar(); await renderProject();
+  updateProjectNavButton();
+  await renderProject();
 }
 
 async function renderProject(){
@@ -762,6 +835,7 @@ async function renderProject(){
   const p=S.project, col=p.color_code||'#6366f1';
   const cats  = await api.category.getAll(p.id);
   const descs = await api.project.getDesc(p.id);
+  if(S.view === 'projects') await renderProjectSidebar();
 
   let h = `<div class="ch">
     <div class="cdot" style="background:${col}"></div><h2>${x(p.name)}</h2>
