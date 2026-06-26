@@ -1,5 +1,5 @@
 node_modules/
-dist/
+DraconDexPortable/
 build/
 tmp-user-data/
 *.log

@@ -21,7 +21,7 @@
     "productName": "DraconDex",
     "asar": true,
     "directories": {
-      "output": "DragonDexPortable"
+      "output": "DraconDexPortable"
     },
     "files": [
       "index.html",
