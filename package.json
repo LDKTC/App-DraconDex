@@ -1,5 +1,5 @@
 {
-  "name": "novel-manager",
+  "name": "DraconDex",
   "version": "1.2.2",
   "description": "Novel data management app",
   "main": "main.js",
@@ -17,11 +17,11 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.novelmanager.app",
-    "productName": "Novel Manager",
+    "appId": "com.dracondex.app",
+    "productName": "DraconDex",
     "asar": true,
     "directories": {
-      "output": "dist"
+      "output": "DragonDexPortable"
     },
     "files": [
       "index.html",
