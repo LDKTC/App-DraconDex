@@ -105,6 +105,7 @@ contextBridge.exposeInMainWorld('api', {
     create:  (n,c)        => inv('hashtag:create', n,c),
     update:  (id,n,c)     => inv('hashtag:update', id,n,c),
     delete:  (id)         => inv('hashtag:delete', id),
+    getObjectsByTag: (tagId, projectId) => inv('hashtag:getObjectsByTag', tagId, projectId),
   },
   color: {
     getAll:  ()            => inv('color:getAll'),
