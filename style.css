@@ -88,6 +88,7 @@ body{
 	color:var(--t2);flex-shrink:0;
 }
 .tab-brand .icon{width:18px;height:18px}
+.tab-brand .brand-img{height:18px;width:18px}
 #project-tabs{
 	display:flex;align-items:flex-end;gap:2px;min-width:0;max-width:60vw;
 	height:100%;overflow-x:auto;overflow-y:hidden;padding-top:5px;
@@ -191,6 +192,17 @@ body{
 	flex-shrink:0;
 }
 .nav-logo{font-size:22px;padding:6px 0 12px}
+.nav-logo-btn{
+	width:40px;height:40px;border:none;
+	background:transparent;border-radius:var(--r);
+	cursor:pointer;color:var(--t2);
+	display:flex;align-items:center;justify-content:center;
+	padding:6px 0 12px;margin-bottom:2px;
+	transition:all var(--ease);-webkit-app-region:no-drag;
+}
+.nav-logo-btn:hover{background:var(--hover);color:var(--t1)}
+.nav-logo-btn.is-return{color:var(--accent)}
+.brand-img{height:24px;width:24px;object-fit:contain;display:block}
 .nav-btn{
 	width:40px;height:40px;border:none;
 	background:transparent; border-radius:var(--r);
@@ -461,7 +473,7 @@ body{
 .objrow .acts{display:none;gap:4px}
 .objrow:hover .acts{display:flex}.dark-table tbody tr.objrow{display:table-row}.odot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .objrow-story{margin:8px 0 16px;padding:0 14px}
-.tl-story{width:100%;min-height:84px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);color:var(--t1);padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;outline:none;}
+.tl-story{width:100%;min-height:40px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);color:var(--t1);padding:10px 12px;font-size:13px;font-family:inherit;resize:none;overflow:hidden;outline:none;}
 .tl-story:focus{border-color:var(--accent)}
 .oname{flex:1;font-size:13.5px;font-weight:500}
 
@@ -915,5 +927,16 @@ body{
   width: 14px;
   height: 14px;
 }
+
+/* Date inputs inline row */
+.date-row-inline{display:flex;align-items:center;gap:4px;flex-wrap:nowrap}
+.date-inp{width:52px;padding:6px 6px;text-align:center;background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);color:var(--t1);font-size:13px;font-family:inherit;outline:none;-moz-appearance:textfield}
+.date-inp:focus{border-color:var(--accent)}
+.date-inp::-webkit-inner-spin-button,.date-inp::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.date-inp-y{width:70px}
+.date-sep{color:var(--t3);font-size:14px;font-weight:600;padding:0 1px;user-select:none}
+
+/* Nav logo icon sizes */
+.nav-logo-btn .icon{width:20px;height:20px}
 
 
