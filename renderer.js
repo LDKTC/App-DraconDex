@@ -451,6 +451,15 @@ function returnToProjectList(){
 }
 
 
+async function goToActiveProject(){
+  if(!S.project) return;
+  S.view = 'projects';
+  document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+  q('.nav-btn[data-panel="projects"]')?.classList.add('active');
+  updateTopNavButton();
+  await renderProject();
+}
+
 function tabFromProject(project){
   return {
     id: project.id,
@@ -2662,7 +2671,7 @@ async function renderProjectHashtagView(){
     q('#main-inner').innerHTML=`<div class="empty" style="margin-top:80px"><div class="ei">${I.hashtag}</div><h3>Project Tags</h3><p>กรุณาเลือกโปรเจกต์ก่อน</p></div>`;
     return;
   }
-  const tags = await api.project.getTags(S.project.id);
+  const tags = await api.project.getAllUsedTags(S.project.id);
   let lh = `<div class="ph"><h4>Project Tags</h4></div>`;
   if(tags.length){
     lh += tags.map(t => {
@@ -2678,30 +2687,52 @@ async function renderProjectHashtagView(){
   q('#left-panel-inner').innerHTML = lh;
 
   if(!S.projectHashtagId || !tags.find(t=>t.id===S.projectHashtagId)){
-    q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px"><div class="ei">${I.hashtag}</div><h3>Project Tags</h3><p>เลือก Tag เพื่อดูรายการ Object ที่ใช้ Tag นี้</p></div>`;
+    q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px"><div class="ei">${I.hashtag}</div><h3>Project Tags</h3><p>เลือก Tag เพื่อดูรายการ Object และ Event ที่ใช้ Tag นี้</p></div>`;
     return;
   }
   const tag = tags.find(t=>t.id===S.projectHashtagId);
-  const objects = await api.hashtag.getObjectsByTag(S.projectHashtagId, S.project.id);
+  const [objects, events] = await Promise.all([
+    api.hashtag.getObjectsByTag(S.projectHashtagId, S.project.id),
+    api.hashtag.getEventsByTag(S.projectHashtagId, S.project.id)
+  ]);
   const col = tag?.color_code || '#6366f1';
+  const total = objects.length + events.length;
   let h = `<div class="ch"><span class="hn" style="color:${col};font-size:1.4em;font-weight:700">#${x(tag?.tag_name||'')}</span>
-    <span style="font-size:12px;color:var(--t3);margin-left:8px">${objects.length} รายการ</span>
+    <span style="font-size:12px;color:var(--t3);margin-left:8px">${total} รายการ</span>
   </div>`;
-  if(!objects.length){
-    h += `<div class="empty"><div class="ei">${I.hashtag}</div><h3>ยังไม่มี Object ใช้ Tag นี้</h3></div>`;
+  if(!total){
+    h += `<div class="empty"><div class="ei">${I.hashtag}</div><h3>ยังไม่มี Object หรือ Event ใช้ Tag นี้</h3></div>`;
   } else {
-    h += `<div class="objlist">`;
-    for(const o of objects){
-      const oc = o.color_code || '#6366f1';
-      h += `<div class="objrow" onclick="selectSearchObject(${o.project_id},${o.category_id},${o.id})">
-        <div class="odot" style="background:${oc}"></div>
-        <div style="flex:1;min-width:0">
-          <div class="oname">${x(o.name)}</div>
-          <div style="font-size:12px;color:var(--t3);margin-top:2px">${x(o.category_name)}</div>
-        </div>
-      </div>`;
+    if(objects.length){
+      h += `<div style="padding:4px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Objects (${objects.length})</div>`;
+      h += `<div class="objlist">`;
+      for(const o of objects){
+        const oc = o.color_code || '#6366f1';
+        h += `<div class="objrow" onclick="selectSearchObject(${o.project_id},${o.category_id},${o.id})">
+          <div class="odot" style="background:${oc}"></div>
+          <div style="flex:1;min-width:0">
+            <div class="oname">${x(o.name)}</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:2px">${x(o.category_name)}</div>
+          </div>
+        </div>`;
+      }
+      h += `</div>`;
     }
-    h += `</div>`;
+    if(events.length){
+      h += `<div style="padding:4px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Events (${events.length})</div>`;
+      h += `<div class="objlist">`;
+      for(const e of events){
+        const ec = e.color_code || '#6366f1';
+        h += `<div class="objrow">
+          <div class="odot" style="background:${ec}"></div>
+          <div style="flex:1;min-width:0">
+            <div class="oname">${x(e.event_name||'Untitled Event')}</div>
+            <div style="font-size:12px;color:var(--t3);margin-top:2px">${x(e.line_name||'')}</div>
+          </div>
+        </div>`;
+      }
+      h += `</div>`;
+    }
   }
   q('#main-inner').innerHTML = h;
 }

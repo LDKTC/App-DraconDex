@@ -656,6 +656,35 @@ const getObjectsByHashtag = (tagId, projectId) => getDB().prepare(`
   ORDER BY oc.category_name, o.name
 `).all(tagId, projectId);
 
+const getAllProjectUsedTags = (projectId) => getDB().prepare(`
+  SELECT DISTINCT h.id, h.tag_name, h.tag_color, h.update_at, uc.color_code
+  FROM hashtag h
+  LEFT JOIN use_color uc ON h.tag_color = uc.id
+  WHERE h.id IN (
+    SELECT hashtag_id FROM project_hashtag WHERE project_id = ?
+    UNION
+    SELECT oh.hashtag_id FROM object_hashtag oh
+    JOIN object o ON oh.object_id = o.id
+    WHERE o.project_id = ?
+    UNION
+    SELECT eh.hashtag_id FROM event_hashtag eh
+    JOIN timeline_event te ON eh.event_id = te.id
+    JOIN timeline tl ON te.timeline_id = tl.id
+    WHERE tl.project_id = ?
+  )
+  ORDER BY h.tag_name
+`).all(projectId, projectId, projectId);
+
+const getEventsByHashtag = (tagId, projectId) => getDB().prepare(`
+  SELECT te.id, te.event_name, tl.line_name, uc.color_code
+  FROM timeline_event te
+  JOIN event_hashtag eh ON eh.event_id = te.id
+  JOIN timeline tl ON te.timeline_id = tl.id
+  LEFT JOIN use_color uc ON te.color = uc.id
+  WHERE eh.hashtag_id = ? AND tl.project_id = ?
+  ORDER BY tl.line_name, te.event_name
+`).all(tagId, projectId);
+
 // ── Search ───────────────────────────────────────────
 const searchAll = (query) => {
   const d = getDB();
@@ -1151,6 +1180,8 @@ module.exports = {
   getObjectTags, setObjectTags, addObjectTag, removeObjectTag,
   getEventTags, setEventTags, addEventTag, removeEventTag,
   getObjectsByHashtag,
+  getAllProjectUsedTags,
+  getEventsByHashtag,
   searchAll,
 };
 

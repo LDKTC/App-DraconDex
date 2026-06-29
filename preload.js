@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('api', {
     setTags: (pid,tags)   => inv('project:setTags', pid,tags),
     addTag: (pid,tid)     => inv('project:addTag', pid,tid),
     removeTag: (pid,tid)  => inv('project:removeTag', pid,tid),
+    getAllUsedTags: (pid)  => inv('project:getAllUsedTags', pid),
   },
   category: {
     getAll:  (pid)         => inv('category:getAll', pid),
@@ -106,6 +107,7 @@ contextBridge.exposeInMainWorld('api', {
     update:  (id,n,c)     => inv('hashtag:update', id,n,c),
     delete:  (id)         => inv('hashtag:delete', id),
     getObjectsByTag: (tagId, projectId) => inv('hashtag:getObjectsByTag', tagId, projectId),
+    getEventsByTag: (tagId, projectId)  => inv('hashtag:getEventsByTag', tagId, projectId),
   },
   color: {
     getAll:  ()            => inv('color:getAll'),
