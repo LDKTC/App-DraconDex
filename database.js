@@ -1,17 +1,66 @@
-const Database = require('better-sqlite3');
+const { Database: _RawDatabase } = require('node-sqlite3-wasm');
+const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
+
+// node-sqlite3-wasm API differences from better-sqlite3:
+//   - stmt.all/get/run take a single array arg, not spread params
+//   - db.transaction() does not exist
+// This shim patches the db instance to match better-sqlite3's API.
+function adaptDb(rawDb) {
+  const origPrepare = rawDb.prepare.bind(rawDb);
+  rawDb.prepare = (sql) => {
+    const stmt = origPrepare(sql);
+    return {
+      all: (...args) => stmt.all(args),
+      get: (...args) => {
+        const r = stmt.get(args);
+        return r === null ? undefined : r;
+      },
+      run: (...args) => stmt.run(args),
+    };
+  };
+  rawDb.transaction = (fn) => (...args) => {
+    rawDb.exec('BEGIN');
+    try {
+      const result = fn(...args);
+      rawDb.exec('COMMIT');
+      return result;
+    } catch (e) {
+      try { rawDb.exec('ROLLBACK'); } catch (_) {}
+      throw e;
+    }
+  };
+  return rawDb;
+}
 
 let db;
 
 function getDB() {
   if (!db) {
-    const dbPath = path.join(path.dirname(app.getPath('userData')), 'novel-manager.db');
-    db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
-    // Avoid SQLITE_BUSY errors by setting a sensible busy timeout
-    try { db.pragma('busy_timeout = 5000'); } catch (e) { /* ignore if unsupported */ }
+    const dbDir = path.dirname(app.getPath('userData'));
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+    const dbPath = path.join(dbDir, 'novel-manager.db');
+    // node-sqlite3-wasm's VFS cannot handle WAL files. If the DB file has WAL-mode
+    // header bytes (18-19 == 2) and no .db-wal file exists, patch the bytes to 1
+    // (DELETE/ROLLBACK mode) before opening so SQLite never triggers WAL initialization.
+    if (fs.existsSync(dbPath) && !fs.existsSync(dbPath + '-wal')) {
+      try {
+        const hdr = Buffer.alloc(2);
+        const hfd = fs.openSync(dbPath, 'r+');
+        fs.readSync(hfd, hdr, 0, 2, 18);
+        if (hdr[0] === 2 || hdr[1] === 2) {
+          hdr[0] = 1; hdr[1] = 1;
+          fs.writeSync(hfd, hdr, 0, 2, 18);
+          fs.fsyncSync(hfd);
+        }
+        fs.closeSync(hfd);
+      } catch (_) {}
+    }
+    db = adaptDb(new _RawDatabase(dbPath));
+    db.exec("PRAGMA journal_mode = DELETE");
+    db.exec("PRAGMA foreign_keys = ON");
+    try { db.exec("PRAGMA busy_timeout = 5000"); } catch (e) { /* ignore if unsupported */ }
     initDB();
   }
   return db;
@@ -723,9 +772,7 @@ const searchAll = (query) => {
 
 const getDatabasePath = () => path.join(path.dirname(app.getPath('userData')), 'novel-manager.db');
 const exportDatabaseTo = async (targetPath) => {
-  const d = getDB();
-  d.pragma('wal_checkpoint(FULL)');
-  await d.backup(targetPath);
+  fs.copyFileSync(getDatabasePath(), targetPath);
 };
 
 const hasTable = (conn, tableName) => !!conn.prepare(
@@ -739,7 +786,7 @@ const hasColumn = (conn, tableName, columnName) => {
 
 function importDatabaseMerge(sourcePath) {
   const target = getDB();
-  const source = new Database(sourcePath, { readonly: true, fileMustExist: true });
+  const source = adaptDb(new _RawDatabase(sourcePath, { readOnly: true }));
 
   const summary = {
     colors: 0, folders: 0, projects: 0, categories: 0, templates: 0,
@@ -748,7 +795,7 @@ function importDatabaseMerge(sourcePath) {
   };
 
   const tx = target.transaction(() => {
-    target.pragma('foreign_keys = OFF');
+    target.exec("PRAGMA foreign_keys = OFF");
 
     if (hasTable(source, 'use_color')) {
       const rows = source.prepare(`SELECT color_code FROM use_color WHERE color_code IS NOT NULL`).all();
@@ -1143,7 +1190,7 @@ function importDatabaseMerge(sourcePath) {
       }
     }
 
-    target.pragma('foreign_keys = ON');
+    target.exec("PRAGMA foreign_keys = ON");
   });
 
   try {
