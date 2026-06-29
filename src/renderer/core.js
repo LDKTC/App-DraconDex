@@ -60,6 +60,7 @@ const L = {
     newFolder:'New folder', newProject:'New project', createProject:'Create project',
     welcomeTitle:'Novel Manager', welcomeText:'Select a project from the list, or create a new one.',
     colorPanel:'Colors', saved:'Saved', deleted:'Deleted', created:'Created', applied:'Applied',
+    edit:'Edit', delete:'Delete', add:'Add', remove:'Remove', save:'Save', name:'Name', memo:'Memo', color:'Color', title:'Title', content:'Content',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'Choose a module to get started.',
     navigator:'Navigator', world:'World', worldNew:'New World', worldChars:'Characters', worldCats:'Categories',
     worldMaps:'Maps', worldMapTimelines:'Map Timelines', worldOverview:'Overview', worldLinkedNovels:'Linked Novels',
@@ -94,6 +95,7 @@ const L = {
     newFolder:'新規フォルダー', newProject:'新規プロジェクト', createProject:'プロジェクト作成',
     welcomeTitle:'Novel Manager', welcomeText:'左の一覧からプロジェクトを選ぶか、新しく作成してください。',
     colorPanel:'色', saved:'保存しました', deleted:'削除しました', created:'作成しました', applied:'適用しました',
+    edit:'編集', delete:'削除', add:'追加', remove:'削除', save:'保存', name:'名前', memo:'メモ', color:'色', title:'タイトル', content:'内容',
     nexus:'Nexus', director:'ディレクター', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'モジュールを選択してください。',
     navigator:'ナビゲーター', world:'ワールド', worldNew:'新規ワールド', worldChars:'キャラクター', worldCats:'カテゴリー',
     worldMaps:'マップ', worldMapTimelines:'マップタイムライン', worldOverview:'概要', worldLinkedNovels:'リンク済み小説',
@@ -128,6 +130,7 @@ const L = {
     newFolder:'새 폴더', newProject:'새 프로젝트', createProject:'프로젝트 만들기',
     welcomeTitle:'Novel Manager', welcomeText:'왼쪽 목록에서 프로젝트를 선택하거나 새 프로젝트를 만드세요.',
     colorPanel:'색상', saved:'저장됨', deleted:'삭제됨', created:'생성됨', applied:'적용됨',
+    edit:'수정', delete:'삭제', add:'추가', remove:'제거', save:'저장', name:'이름', memo:'메모', color:'색상', title:'제목', content:'내용',
     nexus:'Nexus', director:'디렉터', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'모듈을 선택하세요.',
     navigator:'네비게이터', world:'세계', worldNew:'새 세계', worldChars:'캐릭터', worldCats:'카테고리',
     worldMaps:'맵', worldMapTimelines:'맵 타임라인', worldOverview:'개요', worldLinkedNovels:'연결된 소설',
@@ -162,6 +165,7 @@ const L = {
     newFolder:'สร้างโฟลเดอร์ใหม่', newProject:'สร้างโปรเจกต์ใหม่', createProject:'สร้างโปรเจกต์ใหม่',
     welcomeTitle:'Novel Manager', welcomeText:'เลือกโปรเจกต์จากรายการทางซ้าย หรือสร้างโปรเจกต์ใหม่',
     colorPanel:'สี', saved:'บันทึกแล้ว', deleted:'ลบแล้ว', created:'สร้างแล้ว', applied:'ปรับใช้แล้ว',
+    edit:'แก้ไข', delete:'ลบ', add:'เพิ่ม', remove:'นำออก', save:'บันทึก', name:'ชื่อ', memo:'บันทึกย่อ', color:'สี', title:'หัวข้อ', content:'เนื้อหา',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'เลือกโมดูลที่ต้องการใช้งาน',
     navigator:'Navigator', world:'โลก', worldNew:'สร้างโลกใหม่', worldChars:'ตัวละคร', worldCats:'หมวดหมู่',
     worldMaps:'แผนที่', worldMapTimelines:'ไทม์ไลน์แผนที่', worldOverview:'ภาพรวม', worldLinkedNovels:'นิยายที่เชื่อมต่อ',
@@ -196,6 +200,7 @@ const L = {
     newFolder:'新建文件夹', newProject:'新建项目', createProject:'创建项目',
     welcomeTitle:'Novel Manager', welcomeText:'从左侧列表选择项目，或创建一个新项目。',
     colorPanel:'颜色', saved:'已保存', deleted:'已删除', created:'已创建', applied:'已应用',
+    edit:'编辑', delete:'删除', add:'添加', remove:'移除', save:'保存', name:'名称', memo:'备注', color:'颜色', title:'标题', content:'内容',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'选择一个模块以开始。',
     navigator:'Navigator', world:'世界', worldNew:'新建世界', worldChars:'角色', worldCats:'类别',
     worldMaps:'地图', worldMapTimelines:'地图时间线', worldOverview:'概览', worldLinkedNovels:'关联小说',
@@ -324,6 +329,7 @@ async function init() {
   bindLeftPanelToggle();
   applyLeftPanelState();
   observeUiLanguage();
+  buildModuleSubNav();
   renderSettingsMenu();
   translateStaticChrome();
   renderProjectTabs();
@@ -335,6 +341,8 @@ async function init() {
 // ═══ HELPERS ═══════════════════════════════════════════
 const q = (s) => document.querySelector(s);
 const x = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// `esc` is an alias for `x` used by the Writer/Sage modules.
+const esc = x;
 const fmtDate = (d,m,y,hh,mm) => {
   if(d==null) return '?';
   const ts = (hh||mm) ? ` ${String(hh||0).padStart(2,'0')}:${String(mm||0).padStart(2,'0')}` : '';
@@ -559,6 +567,56 @@ function bindWindowChrome(){
   });
 }
 
+// Submodule symbols shown on the nav rail when a module's project/entity is active,
+// mirroring Director's project-only icons (Timeline / Relation / Map / Tags).
+const MODULE_SUBNAV = {
+  navigator: { setter:'setWorldTab', items:[
+    ['overview','list','worldOverview'], ['characters','person','worldChars'],
+    ['categories','layer','worldCats'], ['maps','map','worldMaps'],
+    ['maptimelines','timeline','worldMapTimelines'], ['tags','hashtag','worldTags'] ] },
+  hero: { setter:'setGameTab', items:[
+    ['overview','list','gameOverview'], ['characters','person','gameChars'],
+    ['items','item','gameItems'], ['story','story','gameStory'],
+    ['functions','func','gameFunctions'], ['tags','hashtag','gameTags'] ] },
+  writer: { setter:'setLibraryTab', items:[
+    ['overview','list','libraryOverview'], ['series','series','librarySeries'],
+    ['tags','hashtag','libraryTags'] ] },
+  sage: { setter:'setSageTab', items:[
+    ['dataSize','layer','sageDataSize'], ['objectAmount','table','sageObjectAmount'],
+    ['linkerList','list','sageLinkerList'], ['linkerGraph','relation','sageLinkerGraph'] ] },
+};
+
+function buildModuleSubNav(){
+  const rail = q('#nav-sidebar');
+  if(!rail) return;
+  const spacer = rail.querySelector('div[style*="flex:1"]');
+  let html = '';
+  for(const [mod, cfg] of Object.entries(MODULE_SUBNAV)){
+    for(const [tab, icon, key] of cfg.items){
+      html += `<button class="nav-btn ${mod}-sub" data-subtab="${tab}" data-i18n="${key}" style="display:none" onclick="${cfg.setter}('${tab}')">${I[icon]}</button>`;
+    }
+  }
+  if(spacer) spacer.insertAdjacentHTML('beforebegin', html);
+  else rail.insertAdjacentHTML('beforeend', html);
+}
+
+function updateModuleSubNav(){
+  const show = {
+    navigator: S.activeModule === 'navigator' && !!S.world,
+    hero:      S.activeModule === 'hero'      && !!S.game,
+    writer:    S.activeModule === 'writer'    && !!S.library,
+    sage:      S.activeModule === 'sage',
+  };
+  const cur = { navigator:S.worldTab, hero:S.gameTab, writer:S.libraryTab, sage:S.sageTab };
+  for(const mod of Object.keys(MODULE_SUBNAV)){
+    document.querySelectorAll(`.nav-btn.${mod}-sub`).forEach(btn => {
+      btn.style.display = show[mod] ? '' : 'none';
+      btn.classList.toggle('active', !!show[mod] && btn.dataset.subtab === cur[mod]);
+      if(btn.dataset.i18n) btn.setAttribute('title', t(btn.dataset.i18n));
+    });
+  }
+}
+
 function updateTopNavButton(){
   const logoBtn = q('#nav-logo-btn');
   const inModule = !!S.activeModule;
@@ -591,6 +649,7 @@ function updateTopNavButton(){
   document.querySelectorAll('.nav-btn.sage-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'sage') ? '' : 'none';
   });
+  updateModuleSubNav();
 }
 
 function returnToProjectList(){

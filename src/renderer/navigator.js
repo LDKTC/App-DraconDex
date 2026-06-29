@@ -31,6 +31,7 @@ async function renderNavigatorView() {
       <p>${t('nexusWelcomeText')}</p>
     </div>`;
   }
+  updateTopNavButton();
 }
 
 async function selectWorld(id) {
@@ -44,9 +45,6 @@ async function renderWorldDetail(id) {
   const w = S.world || await api.world.get(id);
   if (!w) return;
   const col = w.color_code || '#6366f1';
-  const tabBar = NAV_TABS.map(tab =>
-    `<button class="tab-btn${S.worldTab===tab?' active':''}" onclick="setWorldTab('${tab}')">${worldTabLabel(tab)}</button>`
-  ).join('');
 
   let body = '';
   if (S.worldTab === 'overview') body = await renderWorldOverview(w);
@@ -57,12 +55,12 @@ async function renderWorldDetail(id) {
   else if (S.worldTab === 'tags') body = await renderWorldTagsTab(w.id);
 
   q('#main-inner').innerHTML = `
-    <div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:8px">
-      <h2 style="margin:0;font-size:1.1em">${x(w.name)}</h2>
+    <div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:12px">
+      <h2 style="margin:0;font-size:1.1em">${x(w.name)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${x(worldTabLabel(S.worldTab))}</span></h2>
       ${w.memo ? `<div style="color:var(--t3);font-size:.85em;margin-top:2px">${x(w.memo)}</div>` : ''}
     </div>
-    <div class="tab-bar" style="margin-bottom:12px">${tabBar}</div>
     <div id="world-tab-body">${body}</div>`;
+  updateTopNavButton();
 }
 
 function worldTabLabel(tab) {
