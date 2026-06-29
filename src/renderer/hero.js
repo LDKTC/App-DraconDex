@@ -31,6 +31,7 @@ async function renderHeroView() {
 async function selectGame(id) {
   S.game = await api.game.get(id);
   S.gameTab = S.gameTab || 'overview';
+  if (S.game) upsertEntityTab(S.game, 'game', 'hero');
   await renderHeroView();
 }
 
@@ -82,11 +83,8 @@ async function renderGameOverview(g) {
             <button class="btn btn-g btn-i" onclick="setGameNovelLink(${g.id},null)">${I.delete}</button>
           </div>`
         : `<div style="display:flex;gap:6px;align-items:center">
-            <select id="game-novel-pick" style="padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--t1)">
-              <option value="">— select novel —</option>
-              ${projs.map(p => `<option value="${p.id}">${x(p.name)}</option>`).join('')}
-            </select>
-            <button class="btn btn-g" onclick="linkGameNovel(${g.id})">+ Link</button>
+            ${buildNovelPickerHtml('game-novel', null, new Set())}
+            <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="linkGameNovel(${g.id})">${I.plus} Link</button>
           </div>`
       }
     </section>`;
@@ -109,7 +107,7 @@ async function renderGameOverview(g) {
     <section>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <h4 style="margin:0">Descriptions</h4>
-        <button class="btn btn-g" onclick="openGameDescModal(${g.id})">+ Add</button>
+        <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openGameDescModal(${g.id})">${I.plus} Add</button>
       </div>
       ${descHtml}
     </section>`;
@@ -118,7 +116,7 @@ async function renderGameOverview(g) {
 async function renderGameChars(gameId) {
   const chars = await api.game.getCharacters(gameId);
   let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-g" onclick="openGameCharModal(${gameId})">${t('gameCharNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openGameCharModal(${gameId})">${I.plus} ${t('gameCharNew')}</button>
   </div>`;
   if (!chars.length) return h + `<div class="empty"><div class="ei">${I.person}</div></div>`;
 
@@ -197,7 +195,7 @@ async function saveStatLevelup(charId, templateId, level, value) {
 async function renderGameItems(gameId) {
   const cats = await api.game.getItemCategories(gameId);
   let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-g" onclick="openGameItemCatModal(${gameId})">${t('gameItemCatNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openGameItemCatModal(${gameId})">${I.plus} ${t('gameItemCatNew')}</button>
   </div>`;
   if (!cats.length) return h + `<div class="empty"><div class="ei">${I.item}</div></div>`;
 
@@ -229,7 +227,7 @@ async function renderGameItems(gameId) {
 async function renderGameStory(gameId) {
   const stories = await api.game.getStories(gameId);
   let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-g" onclick="openGameStoryModal(${gameId})">${t('gameStoryNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openGameStoryModal(${gameId})">${I.plus} ${t('gameStoryNew')}</button>
   </div>`;
   if (!stories.length) return h + `<div class="empty"><div class="ei">${I.story}</div></div>`;
 
@@ -277,7 +275,7 @@ function renderDialogueGraph(storyId, dialogues, edges) {
 async function renderGameFunctions(gameId) {
   const cats = await api.game.getFuncCategories(gameId);
   let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-g" onclick="openGameFuncCatModal(${gameId})">${t('gameFuncCatNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openGameFuncCatModal(${gameId})">${I.plus} ${t('gameFuncCatNew')}</button>
   </div>`;
   if (!cats.length) return h + `<div class="empty"><div class="ei">${I.func}</div></div>`;
 
@@ -331,9 +329,9 @@ function openGameModal(id) {
     <div class="form-row"><label>Memo</label><textarea id="gm-memo" rows="3" style="width:100%;resize:vertical">${x(g?.memo||'')}</textarea></div>
     <div class="form-row"><label>Color</label><div id="gm-color-pick"></div></div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:8px" onclick="deleteGame(${id})">Delete Game</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGame(${id||'null'})">${isEdit?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGame(${id||'null'})">${isEdit?'Save':'Create'}</button>
     </div>`);
   colorPicker('gm-color-pick', g?.color_ref||null, 'gm-selected-color');
 }
@@ -358,9 +356,9 @@ function openGameDescModal(gameId, id) {
   openModal(isEdit ? 'Edit Description' : 'Add Description', `
     <div class="form-row"><label>Title</label><input id="gdm-title" value="" placeholder="Section title"></div>
     <div class="form-row"><label>Content</label><textarea id="gdm-content" rows="6" style="width:100%;resize:vertical"></textarea></div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameDesc(${gameId},${id||'null'})">${isEdit?'Save':'Add'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameDesc(${gameId},${id||'null'})">${isEdit?'Save':'Add'}</button>
     </div>`);
   if (isEdit) api.game.getDesc(gameId).then(descs => {
     const d = descs.find(d => d.id === id);
@@ -382,7 +380,7 @@ async function deleteGameDesc(id) {
 }
 
 async function linkGameNovel(gameId) {
-  const pid = Number(q('#game-novel-pick')?.value);
+  const pid = Number(q('#np-wrap-game-novel')?.dataset.selectedId);
   if (!pid) return;
   await api.game.setNovelLink(gameId, pid); await setGameTab('overview');
 }
@@ -412,9 +410,9 @@ async function openGameCharModal(gameId, id) {
       <select id="gcm-obj"><option value="">—</option></select>
     </div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteGameChar(${gameId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameChar(${gameId},${id||'null'})">${isEdit?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameChar(${gameId},${id||'null'})">${isEdit?'Save':'Create'}</button>
     </div>`);
   if (c?.project_ref) {
     await loadGameCharCatOpts(gameId);
@@ -464,9 +462,9 @@ function openGameStatModal(charId) {
     <div class="form-row"><label>Type</label>
       <select id="gsm-type"><option value="number">Number</option><option value="text">Text</option><option value="percent">Percent</option></select>
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameStat(${charId})">Add</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameStat(${charId})">Add</button>
     </div>`);
 }
 
@@ -488,9 +486,9 @@ function openGameItemCatModal(gameId, id) {
     <div class="form-row"><label>Name *</label><input id="gicm-name" value=""></div>
     <div class="form-row"><label>Memo</label><textarea id="gicm-memo" rows="2" style="width:100%;resize:vertical"></textarea></div>
     ${id ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteGameItemCat(${gameId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameItemCat(${gameId},${id||'null'})">${id?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameItemCat(${gameId},${id||'null'})">${id?'Save':'Create'}</button>
     </div>`);
   if (id) api.game.getItemCategories(gameId).then(cats => {
     const c = cats.find(c => c.id === id);
@@ -520,7 +518,7 @@ function openGameItemTemplateModal(catId) {
       <select id="gitmpl-type"><option value="text">Text</option><option value="number">Number</option><option value="boolean">Yes/No</option></select>
       <button class="btn btn-g" onclick="addGameItemTemplate(${catId})">Add</button>
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Done</button>
     </div>`);
   api.game.getItemTemplates(catId).then(tmpls => {
@@ -551,9 +549,9 @@ function openGameItemModal(catId, id) {
     <div class="form-row"><label>Name *</label><input id="gim-name" value=""></div>
     <div class="form-row"><label>Symbol / Icon</label><input id="gim-sym" value="" placeholder="e.g. ⚔️"></div>
     ${id ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteGameItemById(${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameItem(${catId},${id||'null'})">${id?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameItem(${catId},${id||'null'})">${id?'Save':'Create'}</button>
     </div>`);
   if (id) api.game.getItems(catId).then(items => {
     const it = items.find(i => i.id === id);
@@ -585,9 +583,9 @@ function openGameStoryModal(gameId, id) {
     <div class="form-row"><label>Name *</label><input id="gsm2-name" value=""></div>
     <div class="form-row"><label>Memo</label><textarea id="gsm2-memo" rows="2" style="width:100%;resize:vertical"></textarea></div>
     ${id ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteGameStory(${gameId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameStory(${gameId},${id||'null'})">${id?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameStory(${gameId},${id||'null'})">${id?'Save':'Create'}</button>
     </div>`);
   if (id) api.game.getStories(gameId).then(stories => {
     const s = stories.find(s => s.id === id);
@@ -614,9 +612,9 @@ function openGameDialogueModal(storyId, id) {
     <div class="form-row"><label>Name *</label><input id="gdlg-name" value=""></div>
     <div class="form-row"><label>Memo</label><textarea id="gdlg-memo" rows="2" style="width:100%;resize:vertical"></textarea></div>
     ${id ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteDialogue(${storyId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameDialogue(${storyId},${id||'null'})">${id?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameDialogue(${storyId},${id||'null'})">${id?'Save':'Create'}</button>
     </div>`);
   if (id) api.game.getDialogues(storyId).then(dlgs => {
     const d = dlgs.find(d => d.id === id);
@@ -645,9 +643,9 @@ async function openAddDialogueEdgeModal(storyId) {
     <div class="form-row"><label>From</label><select id="edge-from">${opts}</select></div>
     <div class="form-row"><label>To</label><select id="edge-to">${opts}</select></div>
     <div class="form-row"><label>Condition</label><input id="edge-cond" placeholder="e.g. choice==1"></div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveDialogueEdge(${storyId})">Add</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveDialogueEdge(${storyId})">Add</button>
     </div>`);
 }
 
@@ -674,7 +672,7 @@ async function openDialogueLinesModal(dialId) {
       <input id="dlg-new-line" placeholder="Line text..." style="flex:1">
       <button class="btn btn-g" onclick="addDialogueLine(${dialId})">Add</button>
     </div>
-    <div style="margin-top:12px"><button class="btn btn-g" onclick="closeModal()">Done</button></div>`);
+    <div class="mfoot"><button class="btn btn-g" onclick="closeModal()">Done</button></div>`);
 }
 
 async function addDialogueLine(dialId) {
@@ -695,9 +693,9 @@ function openGameFuncCatModal(gameId, id) {
     <div class="form-row"><label>Name *</label><input id="gfcm-name" value=""></div>
     <div class="form-row"><label>Type</label><input id="gfcm-type" value="general" placeholder="general, trigger, action..."></div>
     ${id ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteGameFuncCat(${gameId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameFuncCat(${gameId},${id||'null'})">${id?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameFuncCat(${gameId},${id||'null'})">${id?'Save':'Create'}</button>
     </div>`);
   if (id) api.game.getFuncCategories(gameId).then(cats => {
     const c = cats.find(c => c.id === id);
@@ -726,9 +724,9 @@ function openGameFuncModal(catId, id) {
     <div class="form-row"><label>Conditions (JSON)</label><textarea id="gfm-cond" rows="3" style="width:100%;resize:vertical;font-family:monospace" placeholder='[{"field":"hp","op":"<","value":50}]'></textarea></div>
     <div class="form-row"><label>Effects (JSON)</label><textarea id="gfm-eff" rows="3" style="width:100%;resize:vertical;font-family:monospace" placeholder='[{"action":"addItem","value":1}]'></textarea></div>
     ${id ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteGameFunc(0,${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveGameFunc(${catId},${id||'null'})">${id?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveGameFunc(${catId},${id||'null'})">${id?'Save':'Create'}</button>
     </div>`);
   if (id) api.game.getFunctions(catId).then(funcs => {
     const f = funcs.find(f => f.id === id);

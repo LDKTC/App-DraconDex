@@ -958,15 +958,15 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 
 /* Writer module */
 .series-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:12px 0}
-.series-card{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .15s}
-.series-card:hover{border-color:var(--accent)}
+.series-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all var(--ease)}
+.series-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .series-card-icon .icon{width:32px;height:32px;color:var(--t2)}
 .series-card-name{font-weight:600;font-size:14px;text-align:center;color:var(--t1)}
 .series-card-memo{font-size:12px;color:var(--t3);text-align:center}
 
 .doc-list{display:flex;flex-direction:column;gap:4px;padding:4px 0}
-.doc-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--rs);background:var(--raised);border:1px solid var(--border)}
-.doc-item:hover{border-color:var(--accent)}
+.doc-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--border);transition:all var(--ease)}
+.doc-item:hover{border-color:var(--accent);background:var(--raised)}
 .doc-icon .icon,.doc-icon{width:16px;height:16px;color:var(--t3)}
 .doc-name{flex:1;cursor:pointer;color:var(--accent);font-size:13px}
 .doc-name:hover{text-decoration:underline}
@@ -990,13 +990,16 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .empty-hint{color:var(--t3);font-size:13px;padding:8px 0;font-style:italic}
 
 /* Sage module */
-.sage-card{display:flex;align-items:center;gap:12px;background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:16px}
+.sage-card{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;transition:all var(--ease)}
+.sage-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .sage-card-icon .icon{width:28px;height:28px;color:var(--t2)}
+.sage-card-body{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
 .sage-card-name{font-size:13px;font-weight:600;color:var(--t1)}
 .sage-card-count{font-size:22px;font-weight:700;color:var(--accent);line-height:1}
 .sage-card-count span{font-size:12px;font-weight:400;color:var(--t3);margin-left:2px}
 
-.sage-stat-card{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:12px;display:flex;flex-direction:column;gap:4px}
+.sage-stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:4px;transition:all var(--ease)}
+.sage-stat-card:hover{border-color:var(--accent)}
 .sage-stat-num{font-size:28px;font-weight:700;line-height:1}
 .sage-stat-label{font-size:11px;color:var(--t3)}
 
@@ -1006,4 +1009,193 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .sage-table tr:hover td{background:var(--raised)}
 .sage-type-badge{font-size:10px;padding:2px 6px;border-radius:10px;color:#fff;font-weight:600;opacity:.85}
 
+/* ════════════════════════════════════════════════════════════════
+   MODULE THEME HARMONIZATION
+   Navigator / Hero / Writer / Sage emit their own markup vocabulary
+   that previously had no styling (or used the undefined --bg2/--bg3
+   variables). These rules dress that markup in the Director module's
+   design language so every module reads as one coherent theme.
+   ════════════════════════════════════════════════════════════════ */
+
+/* Legacy surface aliases referenced by Hero/Navigator inline styles.
+   Resolve lazily against the active theme's tokens. */
+:root{ --bg2:var(--raised); --bg3:var(--hover); }
+
+/* ── Sidebar list item (Sage/Writer left panel) → mirrors .li ── */
+.panel-item{
+	display:flex;align-items:center;gap:8px;
+	padding:7px 10px;border-radius:var(--r);margin-bottom:2px;
+	cursor:pointer;color:var(--t2);font-size:13.5px;
+	transition:all var(--ease);position:relative;
+}
+.panel-item:hover{background:var(--hover);color:var(--t1)}
+.panel-item.active{background:var(--hover);color:var(--t1)}
+.panel-item.active::before{
+	content:'';position:absolute;left:0;top:6px;bottom:6px;
+	width:3px;background:var(--accent);border-radius:0 2px 2px 0;
+}
+
+/* ── Panel header "new" action (Writer) → small accent button ── */
+.ph-add{
+	background:transparent;border:none;color:var(--accent);
+	font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;
+	padding:3px 8px;border-radius:var(--rs);
+	text-transform:uppercase;letter-spacing:.04em;transition:all var(--ease);
+}
+.ph-add:hover{background:var(--hover)}
+
+/* ── Detail / content headers → mirror .ch divider treatment ── */
+.detail-head{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:16px}
+.detail-head h2{font-weight:700}
+.detail-header{
+	display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+	border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px;
+}
+.detail-actions{display:flex;gap:4px;flex-shrink:0;margin-left:auto}
+
+/* ── Grouped sections (Writer) ── */
+.section{margin-bottom:18px}
+.section-head{
+	display:flex;align-items:center;justify-content:space-between;gap:8px;
+	margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);
+}
+.section-head h5{
+	font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+	color:var(--t2);margin:0;
+}
+/* Inline-styled section titles in Hero/Navigator tabs */
+#game-tab-body h4,#world-tab-body h4{font-size:12.5px;font-weight:700;color:var(--t1)}
+
+/* ── Tabs (Writer series) → mirror .ctab pills ── */
+.detail-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab-btn{
+	padding:5px 13px;border-radius:20px;border:1px solid var(--border);
+	background:transparent;color:var(--t2);cursor:pointer;
+	font-size:12.5px;font-weight:500;font-family:inherit;transition:all var(--ease);
+}
+.tab-btn:hover{background:var(--raised);color:var(--t1)}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Description cards (Writer) → mirror .pcard surface ── */
+.desc-card{
+	background:var(--surface);border:1px solid var(--border);
+	border-radius:var(--r);padding:12px 14px;margin-bottom:10px;
+}
+.desc-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.desc-content{font-size:13px;color:var(--t2);white-space:pre-wrap;line-height:1.5}
+.desc-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
+
+/* ── Link chips (Writer/Navigator/Hero) → mirror .mini-rel-item ── */
+.link-chip{
+	display:inline-flex;align-items:center;gap:8px;
+	padding:7px 12px;margin:0 6px 6px 0;
+	background:var(--raised);border:1px solid var(--border);
+	border-radius:var(--r);font-size:13px;color:var(--t1);
+}
+.link-chip small{color:var(--t3);font-size:11px}
+.link-chip .icon{width:14px;height:14px;color:var(--t2)}
+
+/* ── Tag picker (Writer) → mirror .htag-item / pill chips ── */
+.tag-picker{display:flex;flex-wrap:wrap;gap:8px}
+.tag-chip{
+	display:inline-flex;align-items:center;gap:5px;
+	padding:5px 12px;border-radius:20px;border:1px solid var(--border);
+	background:transparent;color:var(--t2);cursor:pointer;
+	font-size:12.5px;font-weight:600;font-family:inherit;transition:all var(--ease);
+}
+.tag-chip:hover{background:var(--raised);color:var(--t1)}
+.tag-chip.active,.tag-chip.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Small / extra-small buttons (Writer) → match .btn tokens ── */
+.btn-sm{
+	display:inline-flex;align-items:center;gap:5px;
+	padding:5px 12px;border:1px solid var(--border);border-radius:var(--r);
+	background:var(--raised);color:var(--t1);cursor:pointer;
+	font-size:12px;font-weight:600;font-family:inherit;transition:all var(--ease);
+}
+.btn-sm:hover{background:var(--hover)}
+.btn-xs{
+	display:inline-flex;align-items:center;gap:4px;
+	padding:3px 9px;border:1px solid var(--border);border-radius:var(--rs);
+	background:transparent;color:var(--t2);cursor:pointer;
+	font-size:11px;font-weight:600;font-family:inherit;transition:all var(--ease);
+}
+.btn-xs:hover{background:var(--hover);color:var(--t1)}
+.btn-sm.danger,.btn-xs.danger{color:var(--danger);border-color:transparent}
+.btn-sm.danger:hover,.btn-xs.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+
+/* ── Danger button alias used by Hero/Navigator modals → .btn-d ── */
+.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn-danger:hover{background:var(--danger);color:#fff}
+
+/* ── Modal form rows (Hero/Navigator) & bare modal labels (Writer)
+      → mirror .fg form-group treatment ── */
+.form-row{margin-bottom:14px}
+.form-row label,#modal-body>label{
+	display:block;font-size:11px;color:var(--t3);margin-bottom:5px;
+	font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+}
+.form-row input,.form-row textarea,.form-row select,
+#modal-body>label input,#modal-body>label textarea,#modal-body>label select{
+	width:100%;background:var(--bg);border:1px solid var(--border);
+	border-radius:var(--r);color:var(--t1);padding:8px 11px;
+	font-size:13.5px;font-family:inherit;outline:none;
+	transition:border-color var(--ease);
+}
+.form-row input:focus,.form-row textarea:focus,.form-row select:focus,
+#modal-body>label input:focus,#modal-body>label textarea:focus,#modal-body>label select:focus{
+	border-color:var(--accent);
+}
+.form-row textarea,#modal-body>label textarea{resize:vertical;min-height:72px}
+.form-row select option,#modal-body>label select option{background:var(--raised)}
+
+/* ── Modal action footer (Writer) → mirror .mfoot ── */
+.modal-actions{
+	display:flex;gap:8px;justify-content:flex-end;
+	margin-top:18px;padding-top:14px;border-top:1px solid var(--border);
+}
+.modal-actions button{
+	display:inline-flex;align-items:center;gap:6px;
+	padding:7px 15px;border:none;border-radius:var(--r);
+	background:var(--accent);color:#fff;cursor:pointer;
+	font-size:13.5px;font-weight:500;font-family:inherit;transition:all var(--ease);
+}
+.modal-actions button:hover{background:var(--accentH)}
+
+/* ── Pick lists in modals (Writer) → selectable rows ── */
+.pick-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
+.pick-item{
+	padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);
+	background:var(--raised);color:var(--t1);cursor:pointer;
+	font-size:13px;transition:all var(--ease);
+}
+.pick-item:hover{border-color:var(--accent);background:var(--hover)}
+
+/* ── Novel picker (folder-tree dropdown) ── */
+.novel-picker{position:relative;display:inline-flex}
+.np-btn{
+	display:flex;align-items:center;gap:6px;padding:4px 10px;
+	background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
+	color:var(--t1);cursor:pointer;font-size:13px;min-width:140px;
+	transition:border-color var(--ease);
+}
+.np-btn:hover{border-color:var(--accent)}
+.np-dropdown{
+	position:absolute;top:calc(100% + 4px);left:0;min-width:220px;
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+	box-shadow:0 6px 20px rgba(0,0,0,.3);z-index:200;
+	max-height:260px;overflow-y:auto;
+}
+.np-folder-head{
+	display:flex;align-items:center;gap:6px;padding:6px 10px;
+	font-size:13px;color:var(--t2);cursor:pointer;
+}
+.np-folder-head:hover{background:var(--hover)}
+.np-item{
+	display:block;padding:6px 12px 6px 30px;
+	font-size:13px;color:var(--t1);cursor:pointer;
+	white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.np-item.np-unfiled{padding-left:12px}
+.np-item:hover{background:var(--hover)}
 

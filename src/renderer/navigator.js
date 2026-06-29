@@ -38,6 +38,7 @@ async function selectWorld(id) {
   S.world = await api.world.get(id);
   S.worldTab = S.worldTab || 'overview';
   S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
+  if (S.world) upsertEntityTab(S.world, 'world', 'navigator');
   await renderNavigatorView();
 }
 
@@ -103,18 +104,13 @@ async function renderWorldOverview(w) {
       </div>`).join('')
     : `<div style="color:var(--t3);font-size:.85em;padding:8px 0">No novels linked.</div>`;
 
-  const novelPickerOpts = available.map(p =>
-    `<option value="${p.id}">${x(p.name)}</option>`).join('');
-
   return `
     <section style="margin-bottom:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <h4 style="margin:0">${t('worldLinkedNovels')}</h4>
         ${available.length ? `<div style="display:flex;gap:6px;align-items:center">
-          <select id="world-novel-pick" style="padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--t1)">
-            <option value="">— select novel —</option>${novelPickerOpts}
-          </select>
-          <button class="btn btn-g" onclick="linkWorldNovel(${w.id})">+ Link</button>
+          ${buildNovelPickerHtml('world-novel', null, linkedIds)}
+          <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="linkWorldNovel(${w.id})">${I.plus} Link</button>
         </div>` : ''}
       </div>
       ${linksHtml}
@@ -122,7 +118,7 @@ async function renderWorldOverview(w) {
     <section>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <h4 style="margin:0">Descriptions</h4>
-        <button class="btn btn-g" onclick="openWorldDescModal(${w.id})">+ Add</button>
+        <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldDescModal(${w.id})">${I.plus} Add</button>
       </div>
       ${descHtml}
     </section>`;
@@ -131,10 +127,10 @@ async function renderWorldOverview(w) {
 async function renderWorldChars(worldId) {
   const chars = await api.world.getCharacters(worldId);
   if (!chars.length) return `<div class="empty"><div class="ei">${I.person}</div>
-    <button class="btn btn-g" onclick="openWorldCharModal(${worldId})">${t('worldCharNew')}</button></div>`;
+    <button class="btn btn-p" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button></div>`;
 
   return `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-g" onclick="openWorldCharModal(${worldId})">${t('worldCharNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button>
   </div>` + chars.map(c => {
     const linkInfo = c.object_name
       ? `<span style="font-size:.8em;color:var(--t3)">${x(c.project_name)} / ${x(c.category_name)} / ${x(c.object_name)}</span>`
@@ -154,10 +150,10 @@ async function renderWorldChars(worldId) {
 async function renderWorldCats(worldId) {
   const cats = await api.world.getCategories(worldId);
   if (!cats.length) return `<div class="empty"><div class="ei">${I.layer}</div>
-    <button class="btn btn-g" onclick="openWorldCatModal(${worldId})">${t('worldCatNew')}</button></div>`;
+    <button class="btn btn-p" onclick="openWorldCatModal(${worldId})">${I.plus} ${t('worldCatNew')}</button></div>`;
 
   let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-g" onclick="openWorldCatModal(${worldId})">${t('worldCatNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldCatModal(${worldId})">${I.plus} ${t('worldCatNew')}</button>
   </div>`;
   for (const cat of cats) {
     const linkInfo = cat.category_name
@@ -189,10 +185,10 @@ async function renderWorldCats(worldId) {
 async function renderWorldMaps(worldId) {
   const maps = await api.world.getMaps(worldId);
   if (!maps.length) return `<div class="empty"><div class="ei">${I.map}</div>
-    <button class="btn btn-g" onclick="openWorldMapModal(${worldId})">${t('worldMapNew')}</button></div>`;
+    <button class="btn btn-p" onclick="openWorldMapModal(${worldId})">${I.plus} ${t('worldMapNew')}</button></div>`;
 
   return `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-g" onclick="openWorldMapModal(${worldId})">${t('worldMapNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldMapModal(${worldId})">${I.plus} ${t('worldMapNew')}</button>
   </div>` + maps.map(m => {
     const linkInfo = m.project_name
       ? `<span style="font-size:.8em;color:var(--t3)">${x(m.project_name)}${m.src_map_name ? ' / ' + x(m.src_map_name) : ''}${m.area_name ? ' / ' + x(m.area_name) : ''}</span>`
@@ -213,10 +209,10 @@ async function renderWorldMapTimelines(worldId) {
   const timelines = await api.world.getMapTimelines(worldId);
   const worldMaps = await api.world.getMaps(worldId);
   if (!timelines.length) return `<div class="empty"><div class="ei">${I.timeline}</div>
-    <button class="btn btn-g" onclick="openWorldMaptlModal(${worldId})">${t('worldMaptlNew')}</button></div>`;
+    <button class="btn btn-p" onclick="openWorldMaptlModal(${worldId})">${I.plus} ${t('worldMaptlNew')}</button></div>`;
 
   let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-g" onclick="openWorldMaptlModal(${worldId})">${t('worldMaptlNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldMaptlModal(${worldId})">${I.plus} ${t('worldMaptlNew')}</button>
   </div>`;
   for (const tl of timelines) {
     const events = await api.world.getMaptlEvents(tl.id);
@@ -271,9 +267,9 @@ function openWorldModal(id) {
     <div class="form-row"><label>Memo</label><textarea id="wm-memo" rows="3" style="width:100%;resize:vertical">${x(w?.memo||'')}</textarea></div>
     <div class="form-row"><label>Color</label><div id="wm-color-pick"></div></div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:8px" onclick="deleteWorld(${id})">Delete World</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveWorld(${id||'null'})">${isEdit ? 'Save' : 'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorld(${id||'null'})">${isEdit ? 'Save' : 'Create'}</button>
     </div>`);
   if (w?.color_ref) colorPicker('wm-color-pick', w.color_ref, 'wm-selected-color');
   else colorPicker('wm-color-pick', null, 'wm-selected-color');
@@ -308,9 +304,9 @@ function openWorldDescModal(worldId, id) {
   openModal(isEdit ? 'Edit Description' : 'Add Description', `
     <div class="form-row"><label>Title</label><input id="wdm-title" value="" placeholder="Section title"></div>
     <div class="form-row"><label>Content</label><textarea id="wdm-content" rows="6" style="width:100%;resize:vertical"></textarea></div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveWorldDesc(${worldId},${id||'null'})">${isEdit?'Save':'Add'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorldDesc(${worldId},${id||'null'})">${isEdit?'Save':'Add'}</button>
     </div>`);
   if (isEdit) {
     api.world.getDesc(worldId).then(descs => {
@@ -336,8 +332,7 @@ async function deleteWorldDesc(id) {
 }
 
 async function linkWorldNovel(worldId) {
-  const sel = q('#world-novel-pick');
-  const pid = Number(sel?.value);
+  const pid = Number(q('#np-wrap-world-novel')?.dataset.selectedId);
   if (!pid) return;
   await api.world.addNovelLink(worldId, pid);
   await setWorldTab('overview');
@@ -370,9 +365,9 @@ async function openWorldCharModal(worldId, id) {
       <select id="wcm-obj"><option value="">—</option></select>
     </div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteWorldChar(${worldId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveWorldChar(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorldChar(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
     </div>`);
 
   if (c?.project_ref) {
@@ -449,9 +444,9 @@ async function openWorldCatModal(worldId, id) {
       <select id="wcatm-cat"><option value="">—</option></select>
     </div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteWorldCat(${worldId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveWorldCat(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorldCat(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
     </div>`);
 
   if (cat?.project_ref) {
@@ -496,9 +491,9 @@ function openWorldCatObjModal(catId, id) {
     <div class="form-row"><label>Name *</label><input id="wobjm-name" value=""></div>
     <div class="form-row"><label>Symbol / Icon</label><input id="wobjm-sym" value="" placeholder="e.g. 🏔️"></div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteWorldCatObjById(${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveWorldCatObj(${catId},${id||'null'})">${isEdit?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorldCatObj(${catId},${id||'null'})">${isEdit?'Save':'Create'}</button>
     </div>`);
   if (isEdit) {
     api.world.getCatObjects(catId).then(objs => {
@@ -553,9 +548,9 @@ async function openWorldMapModal(worldId, id) {
       <select id="wmapm-area"><option value="">—</option></select>
     </div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteWorldMap(${worldId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveWorldMap(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorldMap(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
     </div>`);
 
   if (m?.project_ref) {
@@ -619,9 +614,9 @@ async function openWorldMaptlModal(worldId, id) {
       <select id="wmtm-map"><option value="">— none —</option>${mapOpts}</select>
     </div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteWorldMaptl(${worldId},${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveWorldMaptl(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorldMaptl(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
     </div>`);
 }
 
@@ -648,9 +643,9 @@ function openWorldMaptlEventModal(tlId, id) {
     <div class="form-row"><label>Name *</label><input id="wmtem-name" value=""></div>
     <div class="form-row"><label>Order</label><input id="wmtem-ord" type="number" value="0" min="0"></div>
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteWorldMaptlEventById(${id})">Delete</button>` : ''}
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn btn-p" onclick="saveWorldMaptlEvent(${tlId},${id||'null'})">${isEdit?'Save':'Create'}</button>
+    <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorldMaptlEvent(${tlId},${id||'null'})">${isEdit?'Save':'Create'}</button>
     </div>`);
   if (isEdit) {
     api.world.getMaptlEvents(tlId).then(evs => {

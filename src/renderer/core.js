@@ -301,6 +301,9 @@ const S = {
   catView:'list',
   projectTabs:[],
   activeProjectTabId:null,
+  entityTabs:[],
+  activeEntityTabKey:null,
+  npOpenFolders:new Set(),
   projectHashtagId:null,
   settings:loadUiSettings(),
   relListHeight:null,
@@ -335,6 +338,9 @@ async function init() {
   renderProjectTabs();
   renderNexusHome();
   bindNav();
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
+  });
   bindSearch();
 }
 
@@ -635,7 +641,7 @@ function updateTopNavButton(){
     btn.style.display = (S.activeModule === 'director') ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.project-only').forEach(btn => {
-    btn.style.display = (S.activeModule === 'director' && !!S.project) ? '' : 'none';
+    btn.style.display = (S.activeModule === 'director') ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.navigator-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'navigator') ? '' : 'none';
@@ -695,14 +701,150 @@ function upsertProjectTab(project){
 function renderProjectTabs(){
   const el = q('#project-tabs');
   if(!el) return;
-  el.innerHTML = S.projectTabs.map(tab => `
-    <button class="project-tab ${S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
-      <span class="tab-dot" style="background:${tab.color}"></span>
-      <span class="tab-name">${x(tab.name)}</span>
-      <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
-    </button>
-  `).join('');
+  let html = '';
+  if (S.activeModule === 'director') {
+    html = S.projectTabs.map(tab => `
+      <button class="project-tab ${S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
+        <span class="tab-dot" style="background:${tab.color}"></span>
+        <span class="tab-name">${x(tab.name)}</span>
+        <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
+      </button>
+    `).join('');
+  } else {
+    const typeMap = { navigator:'world', hero:'game', writer:'library' };
+    const type = typeMap[S.activeModule];
+    const tabs = type ? S.entityTabs.filter(t => t.type === type) : [];
+    html = tabs.map(tab => `
+      <button class="project-tab ${S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab('${tab.key}')" title="${x(tab.name)}">
+        <span class="tab-dot" style="background:${tab.color}"></span>
+        <span class="tab-name">${x(tab.name)}</span>
+        <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
+      </button>
+    `).join('');
+  }
+  el.innerHTML = html;
   document.title = S.project ? `${S.project.name} - DraconDex` : 'DraconDex';
+}
+
+function upsertEntityTab(entity, type, module) {
+  const key = `${type}-${entity.id}`;
+  const moduleColors = { world:'#22c55e', game:'#f59e0b', library:'#8b5cf6' };
+  const tab = { key, id:entity.id, type, module, name:entity.name, color: entity.color_code || moduleColors[type] || '#6366f1' };
+  const idx = S.entityTabs.findIndex(t => t.key === key);
+  if (idx >= 0) S.entityTabs[idx] = tab;
+  else S.entityTabs.push(tab);
+  S.activeEntityTabKey = key;
+  renderProjectTabs();
+}
+
+async function switchEntityTab(key) {
+  const tab = S.entityTabs.find(t => t.key === key);
+  if (!tab) return;
+  S.activeEntityTabKey = key;
+  if (tab.type === 'world') {
+    S.world = await api.world.get(tab.id);
+    S.worldTab = S.worldTab || 'overview';
+    S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
+    await renderNavigatorView();
+  } else if (tab.type === 'game') {
+    S.game = await api.game.get(tab.id);
+    S.gameTab = S.gameTab || 'overview';
+    await renderHeroView();
+  } else if (tab.type === 'library') {
+    S.library = tab.id;
+    S.libraryTab = 'overview'; S.librarySeries = null; S.libraryDoc = null;
+    await renderWriterView();
+  } else {
+    renderProjectTabs();
+  }
+}
+
+async function closeEntityTab(key) {
+  const idx = S.entityTabs.findIndex(t => t.key === key);
+  if (idx < 0) return;
+  const closing = S.entityTabs[idx];
+  const wasActive = S.activeEntityTabKey === key;
+  S.entityTabs.splice(idx, 1);
+  if (!wasActive) { renderProjectTabs(); return; }
+  const sameMod = S.entityTabs.filter(t => t.module === closing.module);
+  if (sameMod.length > 0) {
+    await switchEntityTab(sameMod[Math.min(idx, sameMod.length - 1)].key);
+    return;
+  }
+  S.activeEntityTabKey = null;
+  if (closing.type === 'world') { S.world = null; if (S.activeModule==='navigator') await renderNavigatorView(); }
+  else if (closing.type === 'game') { S.game = null; if (S.activeModule==='hero') await renderHeroView(); }
+  else if (closing.type === 'library') { S.library = null; if (S.activeModule==='writer') await renderWriterView(); }
+  renderProjectTabs();
+}
+
+// ═══ NOVEL PICKER ════════════════════════════════════════
+function buildNovelPickerHtml(pickId, currentName, excludeIds) {
+  const label = currentName || '— select novel —';
+  const exStr = excludeIds ? [...excludeIds].join(',') : '';
+  return `<div class="novel-picker" id="np-wrap-${pickId}" data-selected-id="" data-exclude-ids="${exStr}">
+    <button class="np-btn" onclick="event.stopPropagation();toggleNovelPicker('${pickId}')" type="button">
+      <span id="np-label-${pickId}" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(label)}</span>
+      <svg style="width:10px;height:10px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="np-dropdown" id="np-drop-${pickId}" style="display:none">
+      ${buildNpTree(pickId, excludeIds)}
+    </div>
+  </div>`;
+}
+
+function buildNpTree(pickId, excludeIds) {
+  const ex = excludeIds || new Set();
+  let html = '';
+  for (const f of (S.folders || [])) {
+    const open = S.npOpenFolders.has(f.id);
+    const fps = (S.projects || []).filter(p => p.folder_id === f.id && !ex.has(p.id));
+    const col = f.color_code || '#6366f1';
+    html += `<div class="np-folder">
+      <div class="np-folder-head" onclick="event.stopPropagation();toggleNpFolder('${pickId}',${f.id})">
+        <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${open?90:0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="color:${col};line-height:1;display:flex;align-items:center">${I.folder}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(f.name)}</span>
+        <span style="color:var(--t3);font-size:11px">${fps.length}</span>
+      </div>
+      ${open ? fps.map(p => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('') : ''}
+    </div>`;
+  }
+  const unfiled = (S.projects || []).filter(p => !p.folder_id && !ex.has(p.id));
+  if (unfiled.length) {
+    if ((S.folders||[]).length) html += `<div style="border-top:1px solid var(--border);margin:4px 0"></div>`;
+    html += unfiled.map(p => `<div class="np-item np-unfiled" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('');
+  }
+  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No novels available</div>`;
+  return html;
+}
+
+function toggleNovelPicker(pickId) {
+  const drop = q(`#np-drop-${pickId}`);
+  if (!drop) return;
+  const isOpen = drop.style.display !== 'none';
+  document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
+  if (!isOpen) drop.style.display = '';
+}
+
+function toggleNpFolder(pickId, folderId) {
+  if (S.npOpenFolders.has(folderId)) S.npOpenFolders.delete(folderId);
+  else S.npOpenFolders.add(folderId);
+  const drop = q(`#np-drop-${pickId}`);
+  if (!drop) return;
+  const wrap = q(`#np-wrap-${pickId}`);
+  const exStr = wrap?.dataset.excludeIds || '';
+  const ex = new Set(exStr.split(',').filter(Boolean).map(Number));
+  drop.innerHTML = buildNpTree(pickId, ex);
+}
+
+function selectNovelFromPicker(pickId, projId, name) {
+  const lbl = q(`#np-label-${pickId}`);
+  if (lbl) lbl.textContent = name;
+  const drop = q(`#np-drop-${pickId}`);
+  if (drop) drop.style.display = 'none';
+  const wrap = q(`#np-wrap-${pickId}`);
+  if (wrap) wrap.dataset.selectedId = projId;
 }
 
 async function switchProjectTab(id){

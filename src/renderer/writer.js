@@ -20,8 +20,11 @@ async function renderWriterView() {
   updateTopNavButton();
 }
 
-function selectLibrary(id) {
+async function selectLibrary(id) {
   S.library = id; S.libraryTab = 'overview'; S.librarySeries = null; S.libraryDoc = null;
+  const libs = await api.library.getProjects();
+  const lib = libs.find(l => l.id === id);
+  if (lib) upsertEntityTab(lib, 'library', 'writer');
   renderWriterView();
 }
 
@@ -63,7 +66,7 @@ async function renderLibraryTab(id) {
     ]);
     body.innerHTML = `
       <div class="section">
-        <div class="section-head"><h5>${t('libraryOverview')}</h5><button class="btn-sm" onclick="openLibraryDescModal(${id})">${t('add')}</button></div>
+        <div class="section-head"><h5>${t('libraryOverview')}</h5><button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openLibraryDescModal(${id})">${t('add')}</button></div>
         ${descs.map(d => `
           <div class="desc-card">
             ${d.title ? `<div class="desc-title">${esc(d.title)}</div>` : ''}
@@ -75,7 +78,7 @@ async function renderLibraryTab(id) {
           </div>`).join('')}
       </div>
       <div class="section">
-        <div class="section-head"><h5>${t('libraryLinkedWorlds')}</h5><button class="btn-sm" onclick="linkLibraryWorld(${id})">${t('addWorld')}</button></div>
+        <div class="section-head"><h5>${t('libraryLinkedWorlds')}</h5><button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="linkLibraryWorld(${id})">${t('addWorld')}</button></div>
         ${worlds.map(w => `
           <div class="link-chip" style="${w.color_code?`border-left:3px solid ${w.color_code}`:''}">
             ${I.globe}<span>${esc(w.world_name)}</span>
@@ -98,7 +101,7 @@ async function renderLibrarySeriesTab(libId) {
   }
   body.innerHTML = `
     <div class="section">
-      <div class="section-head"><h5>${t('librarySeries')}</h5><button class="btn-sm" onclick="openSeriesModal(${libId})">${t('seriesNew')}</button></div>
+      <div class="section-head"><h5>${t('librarySeries')}</h5><button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openSeriesModal(${libId})">${t('seriesNew')}</button></div>
       <div class="series-grid">
         ${series.map(s => `
           <div class="series-card" onclick="selectLibrarySeries(${s.id})">
@@ -121,13 +124,13 @@ async function renderSeriesDetail(seriesId) {
   const seriesTabLabels = { docs:t('seriesDocs'), overview:t('seriesOverview'), chars:t('seriesChars'), objects:t('seriesObjects'), tags:t('seriesTags') };
   body.innerHTML = `
     <div class="detail-header" style="margin-bottom:8px">
-      <button class="btn-sm" onclick="clearLibrarySeries()">← ${t('librarySeries')}</button>
+      <button class="btn btn-s" style="padding:5px 11px;font-size:12px" onclick="clearLibrarySeries()">← ${t('librarySeries')}</button>
       <div class="detail-tabs" style="margin-left:8px">
         ${seriesTabs.map(tab => `<button class="tab-btn${S.librarySeriesTab===tab?' active':''}" onclick="setSeriesTab('${tab}')">${seriesTabLabels[tab]}</button>`).join('')}
       </div>
       <div class="detail-actions">
-        <button class="btn-sm" onclick="openSeriesModal(${S.library},${seriesId})">${t('edit')}</button>
-        <button class="btn-sm danger" onclick="deleteSeries(${seriesId})">${t('delete')}</button>
+        <button class="btn btn-g btn-i" onclick="openSeriesModal(${S.library},${seriesId})">${t('edit')}</button>
+        <button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteSeries(${seriesId})">${t('delete')}</button>
       </div>
     </div>
     <div id="series-tab-body" class="tab-body"></div>`;
@@ -154,7 +157,7 @@ async function renderSeriesTab(seriesId) {
   if (S.librarySeriesTab === 'docs') {
     const docs = await api.library.getDocs(seriesId);
     stb.innerHTML = `
-      <div class="section-head"><h5>${t('seriesDocs')}</h5><button class="btn-sm" onclick="openDocModal(${seriesId})">${t('docNew')}</button></div>
+      <div class="section-head"><h5>${t('seriesDocs')}</h5><button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openDocModal(${seriesId})">${t('docNew')}</button></div>
       <div class="doc-list">
         ${docs.map(d => `
           <div class="doc-item">
@@ -172,7 +175,7 @@ async function renderSeriesTab(seriesId) {
     ]);
     stb.innerHTML = `
       <div class="section">
-        <div class="section-head"><h5>${t('seriesOverview')}</h5><button class="btn-sm" onclick="openSeriesDescModal(${seriesId})">${t('add')}</button></div>
+        <div class="section-head"><h5>${t('seriesOverview')}</h5><button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openSeriesDescModal(${seriesId})">${t('add')}</button></div>
         ${descs.map(d => `
           <div class="desc-card">
             ${d.title ? `<div class="desc-title">${esc(d.title)}</div>` : ''}
@@ -184,7 +187,7 @@ async function renderSeriesTab(seriesId) {
           </div>`).join('')}
       </div>
       <div class="section">
-        <div class="section-head"><h5>${t('addNovel')}</h5><button class="btn-sm" onclick="linkSeriesNovel(${seriesId})">${t('addNovel')}</button></div>
+        <div class="section-head"><h5>${t('addNovel')}</h5><button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="linkSeriesNovel(${seriesId})">${t('addNovel')}</button></div>
         ${novels.map(n => `
           <div class="link-chip" style="${n.color_code?`border-left:3px solid ${n.color_code}`:''}">
             <span>${esc(n.project_name)}</span>
@@ -213,7 +216,7 @@ async function renderSeriesCharsTab(seriesId) {
   const chars = await api.library.getSeriesChars(seriesId);
   stb.innerHTML = `
     <div class="section">
-      <div class="section-head"><h5>${t('seriesChars')}</h5><button class="btn-sm" onclick="openAddSeriesEntityModal(${seriesId},'char')">${t('addChar')}</button></div>
+      <div class="section-head"><h5>${t('seriesChars')}</h5><button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openAddSeriesEntityModal(${seriesId},'char')">${t('addChar')}</button></div>
       ${chars.map(c => `
         <div class="link-chip">
           ${I.person}<span>${esc(c.object_name)} <small>(${esc(c.project_name)} · ${esc(c.category_name)})</small></span>
@@ -228,7 +231,7 @@ async function renderSeriesObjectsTab(seriesId) {
   const objs = await api.library.getSeriesObjects(seriesId);
   stb.innerHTML = `
     <div class="section">
-      <div class="section-head"><h5>${t('seriesObjects')}</h5><button class="btn-sm" onclick="openAddSeriesEntityModal(${seriesId},'object')">${t('addObject')}</button></div>
+      <div class="section-head"><h5>${t('seriesObjects')}</h5><button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openAddSeriesEntityModal(${seriesId},'object')">${t('addObject')}</button></div>
       ${objs.map(o => `
         <div class="link-chip">
           ${I.layer}<span>${esc(o.object_name)} <small>(${esc(o.project_name)} · ${esc(o.category_name)})</small></span>
@@ -487,8 +490,9 @@ async function openLibraryModal(id) {
         ${colors.map(c => `<option value="${c.id}" ${lib?.color_ref===c.id?'selected':''} style="background:${c.color_code}">${esc(c.color_code)}</option>`).join('')}
       </select>
     </label>
-    <div class="modal-actions">
-      <button onclick="saveLibrary(${id||'null'})">${t('save')}</button>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveLibrary(${id||'null'})">${t('save')}</button>
     </div>`);
 }
 
@@ -519,7 +523,10 @@ async function openLibraryDescModal(libId, id) {
   openModal(id ? t('edit') : t('add'), `
     <label>${t('title')}<input id="m-ldesc-title" value="${esc(desc?.title||'')}"></label>
     <label>${t('content')}<textarea id="m-ldesc-content" rows="6">${esc(desc?.content||'')}</textarea></label>
-    <div class="modal-actions"><button onclick="saveLibraryDesc(${libId},${id||'null'})">${t('save')}</button></div>`);
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveLibraryDesc(${libId},${id||'null'})">${t('save')}</button>
+    </div>`);
 }
 
 async function saveLibraryDesc(libId, id) {
@@ -569,7 +576,10 @@ async function openSeriesModal(libId, id) {
   openModal(id ? t('edit') : t('seriesNew'), `
     <label>${t('name')}<input id="m-series-name" value="${esc(series?.name||'')}"></label>
     <label>${t('memo')}<textarea id="m-series-memo">${esc(series?.memo||'')}</textarea></label>
-    <div class="modal-actions"><button onclick="saveSeries(${libId},${id||'null'})">${t('save')}</button></div>`);
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveSeries(${libId},${id||'null'})">${t('save')}</button>
+    </div>`);
 }
 
 async function saveSeries(libId, id) {
@@ -599,7 +609,10 @@ async function openSeriesDescModal(seriesId, id) {
   openModal(id ? t('edit') : t('add'), `
     <label>${t('title')}<input id="m-sdesc-title" value="${esc(desc?.title||'')}"></label>
     <label>${t('content')}<textarea id="m-sdesc-content" rows="6">${esc(desc?.content||'')}</textarea></label>
-    <div class="modal-actions"><button onclick="saveSeriesDesc(${seriesId},${id||'null'})">${t('save')}</button></div>`);
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveSeriesDesc(${seriesId},${id||'null'})">${t('save')}</button>
+    </div>`);
 }
 
 async function saveSeriesDesc(seriesId, id) {
@@ -698,7 +711,10 @@ async function toggleSeriesTag(seriesId, hashtagId) {
 async function openDocModal(seriesId) {
   openModal(t('docNew'), `
     <label>${t('name')}<input id="m-doc-name"></label>
-    <div class="modal-actions"><button onclick="saveNewDoc(${seriesId})">${t('save')}</button></div>`);
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveNewDoc(${seriesId})">${t('save')}</button>
+    </div>`);
 }
 
 async function saveNewDoc(seriesId) {
