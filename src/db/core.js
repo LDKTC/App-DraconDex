@@ -388,6 +388,169 @@ function initDB() {
       hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
       UNIQUE(world_id,hashtag_id)
     );
+
+    -- Hero (v2.3) --
+    CREATE TABLE IF NOT EXISTS game_project (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      memo TEXT,
+      color_ref INTEGER REFERENCES use_color(id),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_description (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      title TEXT,
+      content TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_novel_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      project_ref INTEGER REFERENCES project(id) ON DELETE SET NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(game_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_character (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      memo TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_char_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      char_ref INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
+      project_ref INTEGER REFERENCES project(id) ON DELETE SET NULL,
+      category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL,
+      object_ref INTEGER REFERENCES object(id) ON DELETE SET NULL,
+      UNIQUE(char_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_stat_template (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      char_ref INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
+      stat_name TEXT NOT NULL,
+      stat_type TEXT DEFAULT 'number',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_stat_levelup (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      char_ref INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
+      template_ref INTEGER NOT NULL REFERENCES game_stat_template(id) ON DELETE CASCADE,
+      level INTEGER NOT NULL DEFAULT 1,
+      value TEXT,
+      UNIQUE(char_ref,template_ref,level)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_char_hashtag (
+      char_id INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(char_id,hashtag_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_item_category (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      memo TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_item_template (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_cat_ref INTEGER NOT NULL REFERENCES game_item_category(id) ON DELETE CASCADE,
+      attr_name TEXT NOT NULL,
+      attr_type TEXT DEFAULT 'text',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_item (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_cat_ref INTEGER NOT NULL REFERENCES game_item_category(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      symbol TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_item_attr (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_ref INTEGER NOT NULL REFERENCES game_item(id) ON DELETE CASCADE,
+      template_ref INTEGER NOT NULL REFERENCES game_item_template(id) ON DELETE CASCADE,
+      value TEXT,
+      UNIQUE(item_ref,template_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_item_hashtag (
+      item_id INTEGER NOT NULL REFERENCES game_item(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(item_id,hashtag_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_story (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      memo TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_dialogue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      story_ref INTEGER NOT NULL REFERENCES game_story(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      memo TEXT,
+      pos_x REAL DEFAULT 0,
+      pos_y REAL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_dial_next (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      from_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
+      to_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
+      condition TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(from_ref,to_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_dial_line (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dial_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
+      speaker_ref INTEGER REFERENCES game_character(id) ON DELETE SET NULL,
+      text TEXT,
+      order_index INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_func_category (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      function_type TEXT DEFAULT 'general',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_function (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      func_cat_ref INTEGER NOT NULL REFERENCES game_func_category(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      function_template TEXT,
+      conditions_json TEXT,
+      effects_json TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS game_project_hashtag (
+      game_id INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(game_id,hashtag_id)
+    );
   `);
 
   if (!hasColumn(db, 'relation_type', 'color')) {

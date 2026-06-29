@@ -28,7 +28,12 @@ const I = {
   globe: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
   person: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
   layer: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
-  navigator: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
+  navigator: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+  sword: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/></svg>`,
+  hero: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/></svg>`,
+  item: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`,
+  story: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  func: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
@@ -55,7 +60,14 @@ const L = {
     worldTags:'Tags', worldCharNew:'New Character', worldCatNew:'New Category', worldMapNew:'New Map',
     worldMaptlNew:'New Timeline', worldEventNew:'New Event', worldObjNew:'New Object',
     worldCharLink:'Link to Novel Object', worldCatLink:'Link to Novel Category', worldMapLink:'Link to Novel Map',
-    noLink:'Not linked'
+    noLink:'Not linked',
+    hero:'Hero', game:'Game', gameNew:'New Game', gameChars:'Characters', gameItems:'Items',
+    gameStory:'Story', gameFunctions:'Functions', gameTags:'Tags', gameOverview:'Overview',
+    gameCharNew:'New Character', gameItemCatNew:'New Item Category', gameItemNew:'New Item',
+    gameStoryNew:'New Story', gameFuncCatNew:'New Function Category', gameFuncNew:'New Function',
+    gameStats:'Stats', gameLevelup:'Level-up', gameNovelLink:'Linked Novel',
+    gameDialogue:'Dialogue', gameDialogueNew:'New Node', gameLine:'Line', gameLineNew:'New Line',
+    gameCondition:'Condition', gameEffects:'Effects'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ',
@@ -73,7 +85,14 @@ const L = {
     worldTags:'タグ', worldCharNew:'新規キャラクター', worldCatNew:'新規カテゴリー', worldMapNew:'新規マップ',
     worldMaptlNew:'新規タイムライン', worldEventNew:'新規イベント', worldObjNew:'新規オブジェクト',
     worldCharLink:'小説オブジェクトにリンク', worldCatLink:'小説カテゴリーにリンク', worldMapLink:'小説マップにリンク',
-    noLink:'リンクなし'
+    noLink:'リンクなし',
+    hero:'ヒーロー', game:'ゲーム', gameNew:'新規ゲーム', gameChars:'キャラクター', gameItems:'アイテム',
+    gameStory:'ストーリー', gameFunctions:'機能', gameTags:'タグ', gameOverview:'概要',
+    gameCharNew:'新規キャラクター', gameItemCatNew:'新規アイテムカテゴリー', gameItemNew:'新規アイテム',
+    gameStoryNew:'新規ストーリー', gameFuncCatNew:'新規機能カテゴリー', gameFuncNew:'新規機能',
+    gameStats:'ステータス', gameLevelup:'レベルアップ', gameNovelLink:'リンク済み小説',
+    gameDialogue:'ダイアログ', gameDialogueNew:'新規ノード', gameLine:'セリフ', gameLineNew:'新規セリフ',
+    gameCondition:'条件', gameEffects:'効果'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기',
@@ -91,7 +110,14 @@ const L = {
     worldTags:'태그', worldCharNew:'새 캐릭터', worldCatNew:'새 카테고리', worldMapNew:'새 맵',
     worldMaptlNew:'새 타임라인', worldEventNew:'새 이벤트', worldObjNew:'새 오브젝트',
     worldCharLink:'소설 오브젝트에 연결', worldCatLink:'소설 카테고리에 연결', worldMapLink:'소설 맵에 연결',
-    noLink:'연결 없음'
+    noLink:'연결 없음',
+    hero:'히어로', game:'게임', gameNew:'새 게임', gameChars:'캐릭터', gameItems:'아이템',
+    gameStory:'스토리', gameFunctions:'기능', gameTags:'태그', gameOverview:'개요',
+    gameCharNew:'새 캐릭터', gameItemCatNew:'새 아이템 카테고리', gameItemNew:'새 아이템',
+    gameStoryNew:'새 스토리', gameFuncCatNew:'새 기능 카테고리', gameFuncNew:'새 기능',
+    gameStats:'스탯', gameLevelup:'레벨업', gameNovelLink:'연결된 소설',
+    gameDialogue:'다이얼로그', gameDialogueNew:'새 노드', gameLine:'대사', gameLineNew:'새 대사',
+    gameCondition:'조건', gameEffects:'효과'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI',
@@ -109,7 +135,14 @@ const L = {
     worldTags:'แท็ก', worldCharNew:'เพิ่มตัวละคร', worldCatNew:'เพิ่มหมวดหมู่', worldMapNew:'เพิ่มแผนที่',
     worldMaptlNew:'เพิ่มไทม์ไลน์', worldEventNew:'เพิ่มเหตุการณ์', worldObjNew:'เพิ่มรายการ',
     worldCharLink:'เชื่อมกับตัวละครในนิยาย', worldCatLink:'เชื่อมกับหมวดหมู่ในนิยาย', worldMapLink:'เชื่อมกับแผนที่ในนิยาย',
-    noLink:'ยังไม่เชื่อมต่อ'
+    noLink:'ยังไม่เชื่อมต่อ',
+    hero:'Hero', game:'เกม', gameNew:'สร้างเกมใหม่', gameChars:'ตัวละคร', gameItems:'ไอเทม',
+    gameStory:'เนื้อเรื่อง', gameFunctions:'ฟังก์ชัน', gameTags:'แท็ก', gameOverview:'ภาพรวม',
+    gameCharNew:'เพิ่มตัวละคร', gameItemCatNew:'เพิ่มหมวดหมู่ไอเทม', gameItemNew:'เพิ่มไอเทม',
+    gameStoryNew:'เพิ่มเนื้อเรื่อง', gameFuncCatNew:'เพิ่มหมวดหมู่ฟังก์ชัน', gameFuncNew:'เพิ่มฟังก์ชัน',
+    gameStats:'สถิติ', gameLevelup:'เลเวลอัพ', gameNovelLink:'นิยายที่เชื่อมต่อ',
+    gameDialogue:'บทสนทนา', gameDialogueNew:'โหนดใหม่', gameLine:'บทพูด', gameLineNew:'เพิ่มบทพูด',
+    gameCondition:'เงื่อนไข', gameEffects:'ผลลัพธ์'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小',
@@ -127,7 +160,14 @@ const L = {
     worldTags:'标签', worldCharNew:'新建角色', worldCatNew:'新建类别', worldMapNew:'新建地图',
     worldMaptlNew:'新建时间线', worldEventNew:'新建事件', worldObjNew:'新建对象',
     worldCharLink:'链接到小说对象', worldCatLink:'链接到小说类别', worldMapLink:'链接到小说地图',
-    noLink:'未链接'
+    noLink:'未链接',
+    hero:'英雄', game:'游戏', gameNew:'新建游戏', gameChars:'角色', gameItems:'物品',
+    gameStory:'剧情', gameFunctions:'功能', gameTags:'标签', gameOverview:'概览',
+    gameCharNew:'新建角色', gameItemCatNew:'新建物品类别', gameItemNew:'新建物品',
+    gameStoryNew:'新建剧情', gameFuncCatNew:'新建功能类别', gameFuncNew:'新建功能',
+    gameStats:'属性', gameLevelup:'升级', gameNovelLink:'关联小说',
+    gameDialogue:'对话', gameDialogueNew:'新建节点', gameLine:'台词', gameLineNew:'新建台词',
+    gameCondition:'条件', gameEffects:'效果'
   }
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文' };
@@ -211,6 +251,8 @@ const S = {
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
   // Navigator module state
   world:null, worldTab:'overview', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null,
+  // Hero module state
+  game:null, gameTab:'overview',
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -484,6 +526,9 @@ function updateTopNavButton(){
   });
   document.querySelectorAll('.nav-btn.navigator-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'navigator') ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-btn.hero-only').forEach(btn => {
+    btn.style.display = (S.activeModule === 'hero') ? '' : 'none';
   });
 }
 
@@ -774,6 +819,7 @@ async function switchView(v) {
   else if (v==='project-hashtag') { await loadModule('src/renderer/hashtag.js'); renderProjectHashtagView(); }
   else if (v==='colors')          { await loadModule('src/renderer/hashtag.js'); q('#left-panel-inner').innerHTML=`<div class="ph"><h4>${t('colorPanel')}</h4></div>`; renderColorSettings(); }
   else if (v==='navigator')       { await loadModule('src/renderer/navigator.js'); renderNavigatorView(); }
+  else if (v==='hero')            { await loadModule('src/renderer/hero.js'); renderHeroView(); }
 }
 
 // ═══ NEXUS HUB ═════════════════════════════════════════
@@ -793,6 +839,11 @@ function renderNexusHome() {
     <div class="module-item" onclick="selectModule('navigator')">
       <span class="module-icon">${I.navigator}</span>
       <span class="module-name">${t('navigator')}</span>
+      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="module-item" onclick="selectModule('hero')">
+      <span class="module-icon">${I.hero}</span>
+      <span class="module-name">${t('hero')}</span>
       <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
   q('#main-inner')?.classList.remove('relation-main');
@@ -819,6 +870,13 @@ function selectModule(name) {
     q('.nav-btn[data-panel="navigator"]')?.classList.add('active');
     updateTopNavButton();
     loadModule('src/renderer/navigator.js').then(() => renderNavigatorView());
+  } else if (name === 'hero') {
+    S.view = 'hero';
+    S.game = null; S.gameTab = 'overview';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="hero"]')?.classList.add('active');
+    updateTopNavButton();
+    loadModule('src/renderer/hero.js').then(() => renderHeroView());
   }
 }
 
@@ -828,6 +886,7 @@ function returnToNexus() {
   S.timeline = null; S.map = null; S.mapAreaId = null;
   S.activeProjectTabId = null; S.projectHashtagId = null;
   S.world = null; S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
+  S.game = null; S.gameTab = 'overview';
   S.view = 'nexus';
   renderProjectTabs();
   renderNexusHome();

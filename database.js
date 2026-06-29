@@ -7,6 +7,7 @@ const map       = require('./src/db/map');
 const relation  = require('./src/db/relation');
 const hashtag   = require('./src/db/hashtag');
 const navigator = require('./src/db/navigator');
+const hero      = require('./src/db/hero');
 
 module.exports = {
   ...core,
@@ -17,4 +18,5 @@ module.exports = {
   ...relation,
   ...hashtag,
   ...navigator,
+  ...hero,
 };

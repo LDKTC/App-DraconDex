@@ -265,6 +265,82 @@ h('world:removeMaptlObj',   (id)                      => db.removeWorldMaptlObj(
 h('world:getTags',          (wid)                     => db.getWorldTags(wid));
 h('world:setTags',          (wid,tags)                => db.setWorldTags(wid,tags));
 
+// Hero (v2.3) — Game module
+h('game:getAll',            ()                        => db.getGames());
+h('game:get',               (id)                      => db.getGame(id));
+h('game:create',            (n,m,c)                   => db.createGame(n,m,c));
+h('game:update',            (id,n,m,c)                => db.updateGame(id,n,m,c));
+h('game:delete',            (id)                      => db.deleteGame(id));
+
+h('game:getDesc',           (gid)                     => db.getGameDesc(gid));
+h('game:addDesc',           (gid,t,c)                 => db.addGameDesc(gid,t,c));
+h('game:updateDesc',        (id,t,c)                  => db.updateGameDesc(id,t,c));
+h('game:deleteDesc',        (id)                      => db.deleteGameDesc(id));
+
+h('game:getNovelLink',      (gid)                     => db.getGameNovelLink(gid));
+h('game:setNovelLink',      (gid,pid)                 => db.setGameNovelLink(gid,pid));
+
+h('game:getCharacters',     (gid)                     => db.getGameCharacters(gid));
+h('game:createCharacter',   (gid,n,m)                 => db.createGameCharacter(gid,n,m));
+h('game:updateCharacter',   (id,n,m)                  => db.updateGameCharacter(id,n,m));
+h('game:deleteCharacter',   (id)                      => db.deleteGameCharacter(id));
+h('game:setCharLink',       (cid,pid,catid,oid)       => db.setGameCharLink(cid,pid,catid,oid));
+h('game:getStats',          (cid)                     => db.getGameStats(cid));
+h('game:createStat',        (cid,n,t)                 => db.createGameStat(cid,n,t));
+h('game:updateStat',        (id,n,t)                  => db.updateGameStat(id,n,t));
+h('game:deleteStat',        (id)                      => db.deleteGameStat(id));
+h('game:getStatLevelups',   (cid)                     => db.getGameStatLevelups(cid));
+h('game:upsertStatLevelup', (cid,tid,lv,val)          => db.upsertGameStatLevelup(cid,tid,lv,val));
+h('game:deleteStatLevelup', (cid,tid,lv)              => db.deleteGameStatLevelup(cid,tid,lv));
+h('game:getCharTags',       (cid)                     => db.getGameCharTags(cid));
+h('game:setCharTags',       (cid,tags)                => db.setGameCharTags(cid,tags));
+
+h('game:getItemCategories', (gid)                     => db.getGameItemCategories(gid));
+h('game:createItemCategory',(gid,n,m)                 => db.createGameItemCategory(gid,n,m));
+h('game:updateItemCategory',(id,n,m)                  => db.updateGameItemCategory(id,n,m));
+h('game:deleteItemCategory',(id)                      => db.deleteGameItemCategory(id));
+h('game:getItemTemplates',  (icid)                    => db.getGameItemTemplates(icid));
+h('game:createItemTemplate',(icid,n,t)                => db.createGameItemTemplate(icid,n,t));
+h('game:updateItemTemplate',(id,n,t)                  => db.updateGameItemTemplate(id,n,t));
+h('game:deleteItemTemplate',(id)                      => db.deleteGameItemTemplate(id));
+h('game:getItems',          (icid)                    => db.getGameItems(icid));
+h('game:createItem',        (icid,n,sym)              => db.createGameItem(icid,n,sym));
+h('game:updateItem',        (id,n,sym)                => db.updateGameItem(id,n,sym));
+h('game:deleteItem',        (id)                      => db.deleteGameItem(id));
+h('game:getItemAttrs',      (iid)                     => db.getGameItemAttrs(iid));
+h('game:upsertItemAttr',    (iid,tid,v)               => db.upsertGameItemAttr(iid,tid,v));
+h('game:getItemTags',       (iid)                     => db.getGameItemTags(iid));
+h('game:setItemTags',       (iid,tags)                => db.setGameItemTags(iid,tags));
+
+h('game:getStories',        (gid)                     => db.getGameStories(gid));
+h('game:createStory',       (gid,n,m)                 => db.createGameStory(gid,n,m));
+h('game:updateStory',       (id,n,m)                  => db.updateGameStory(id,n,m));
+h('game:deleteStory',       (id)                      => db.deleteGameStory(id));
+h('game:getDialogues',      (sid)                     => db.getGameDialogues(sid));
+h('game:createDialogue',    (sid,n,m,x,y)             => db.createGameDialogue(sid,n,m,x,y));
+h('game:updateDialogue',    (id,n,m,x,y)              => db.updateGameDialogue(id,n,m,x,y));
+h('game:deleteDialogue',    (id)                      => db.deleteGameDialogue(id));
+h('game:updateDialoguePos', (id,x,y)                  => db.updateGameDialoguePos(id,x,y));
+h('game:getDialogueEdges',  (sid)                     => db.getGameDialogueEdges(sid));
+h('game:createDialogueEdge',(fid,tid,cond)            => db.createGameDialogueEdge(fid,tid,cond));
+h('game:deleteDialogueEdge',(id)                      => db.deleteGameDialogueEdge(id));
+h('game:getDialogueLines',  (did)                     => db.getGameDialogueLines(did));
+h('game:createDialogueLine',(did,spk,txt,ord)         => db.createGameDialogueLine(did,spk,txt,ord));
+h('game:updateDialogueLine',(id,spk,txt,ord)          => db.updateGameDialogueLine(id,spk,txt,ord));
+h('game:deleteDialogueLine',(id)                      => db.deleteGameDialogueLine(id));
+
+h('game:getFuncCategories', (gid)                     => db.getGameFuncCategories(gid));
+h('game:createFuncCategory',(gid,n,t)                 => db.createGameFuncCategory(gid,n,t));
+h('game:updateFuncCategory',(id,n,t)                  => db.updateGameFuncCategory(id,n,t));
+h('game:deleteFuncCategory',(id)                      => db.deleteGameFuncCategory(id));
+h('game:getFunctions',      (fcid)                    => db.getGameFunctions(fcid));
+h('game:createFunction',    (fcid,n,tpl,cond,eff)     => db.createGameFunction(fcid,n,tpl,cond,eff));
+h('game:updateFunction',    (id,n,tpl,cond,eff)       => db.updateGameFunction(id,n,tpl,cond,eff));
+h('game:deleteFunction',    (id)                      => db.deleteGameFunction(id));
+
+h('game:getTags',           (gid)                     => db.getGameTags(gid));
+h('game:setTags',           (gid,tags)                => db.setGameTags(gid,tags));
+
 // Window controls for the custom title/tab bar.
 h('window:minimize', () => {
   const win = BrowserWindow.getFocusedWindow();
