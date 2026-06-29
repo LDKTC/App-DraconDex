@@ -310,6 +310,7 @@ const S = {
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
   // Navigator module state
   world:null, worldTab:'overview', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null,
+  worldCharCatFilter:{}, worldCatOpen:new Set(),
   // Hero module state
   game:null, gameTab:'overview',
   // Writer module state
@@ -641,7 +642,7 @@ function updateTopNavButton(){
     btn.style.display = (S.activeModule === 'director') ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.project-only').forEach(btn => {
-    btn.style.display = (S.activeModule === 'director') ? '' : 'none';
+    btn.style.display = (S.activeModule === 'director' && !!S.project) ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.navigator-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'navigator') ? '' : 'none';
@@ -819,6 +820,41 @@ function buildNpTree(pickId, excludeIds) {
   return html;
 }
 
+function buildLinkedNovelPicker(pickId, linkedProjects, currentName, onSelectCb) {
+  const label = currentName || '— select novel —';
+  const ids = new Set((linkedProjects || []).map(p => p.id));
+  let html = '';
+  for (const f of (S.folders || [])) {
+    const fps = (linkedProjects || []).filter(p => p.folder_id === f.id);
+    if (!fps.length) continue;
+    const open = S.npOpenFolders.has(f.id);
+    const col = f.color_code || '#6366f1';
+    html += `<div class="np-folder">
+      <div class="np-folder-head" onclick="event.stopPropagation();toggleNpFolder('${pickId}',${f.id})">
+        <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${open?90:0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="color:${col};line-height:1;display:flex;align-items:center">${I.folder}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(f.name)}</span>
+        <span style="color:var(--t3);font-size:11px">${fps.length}</span>
+      </div>
+      ${open ? fps.map(p => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('') : ''}
+    </div>`;
+  }
+  const unfiled = (linkedProjects || []).filter(p => !p.folder_id);
+  if (unfiled.length) {
+    if ((S.folders||[]).length && html) html += `<div style="border-top:1px solid var(--border);margin:4px 0"></div>`;
+    html += unfiled.map(p => `<div class="np-item np-unfiled" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('');
+  }
+  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No linked novels</div>`;
+  const cbAttr = onSelectCb ? ` data-on-select="${x(onSelectCb)}"` : '';
+  return `<div class="novel-picker" id="np-wrap-${pickId}" data-selected-id=""${cbAttr}>
+    <button class="np-btn" onclick="event.stopPropagation();toggleNovelPicker('${pickId}')" type="button">
+      <span id="np-label-${pickId}" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(label)}</span>
+      <svg style="width:10px;height:10px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="np-dropdown" id="np-drop-${pickId}" style="display:none">${html}</div>
+  </div>`;
+}
+
 function toggleNovelPicker(pickId) {
   const drop = q(`#np-drop-${pickId}`);
   if (!drop) return;
@@ -844,7 +880,11 @@ function selectNovelFromPicker(pickId, projId, name) {
   const drop = q(`#np-drop-${pickId}`);
   if (drop) drop.style.display = 'none';
   const wrap = q(`#np-wrap-${pickId}`);
-  if (wrap) wrap.dataset.selectedId = projId;
+  if (wrap) {
+    wrap.dataset.selectedId = projId;
+    const cb = wrap.dataset.onSelect;
+    if (cb && typeof window[cb] === 'function') window[cb](projId);
+  }
 }
 
 async function switchProjectTab(id){

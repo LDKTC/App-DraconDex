@@ -125,61 +125,110 @@ async function renderWorldOverview(w) {
 }
 
 async function renderWorldChars(worldId) {
-  const chars = await api.world.getCharacters(worldId);
-  if (!chars.length) return `<div class="empty"><div class="ei">${I.person}</div>
+  const [novelLinks, chars] = await Promise.all([
+    api.world.getNovelLinks(worldId),
+    api.world.getCharacters(worldId),
+  ]);
+
+  let filterHtml = '';
+  if (novelLinks.length) {
+    const rows = await Promise.all(novelLinks.map(async lk => {
+      const cats = await api.category.getAll(lk.project_ref);
+      const selCatId = S.worldCharCatFilter[lk.project_ref] || '';
+      const opts = cats.map(c => `<option value="${c.id}"${selCatId==c.id?' selected':''}>${x(c.category_name)}</option>`).join('');
+      return `<div style="display:flex;align-items:center;gap:8px;background:var(--bg2);padding:5px 10px;border-radius:6px">
+        <span style="font-size:.83em;color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(lk.project_name)}</span>
+        <select style="font-size:.83em;max-width:160px" onchange="setWorldCharCatFilter(${lk.project_ref},this.value)">
+          <option value="">— category —</option>${opts}
+        </select>
+      </div>`;
+    }));
+    filterHtml = `<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px">${rows.join('')}</div>`;
+  }
+
+  const addBtn = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button>
+  </div>`;
+
+  if (!chars.length) return filterHtml + `<div class="empty"><div class="ei">${I.person}</div>
     <button class="btn btn-p" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button></div>`;
 
-  return `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button>
-  </div>` + chars.map(c => {
-    const linkInfo = c.object_name
-      ? `<span style="font-size:.8em;color:var(--t3)">${x(c.project_name)} / ${x(c.category_name)} / ${x(c.object_name)}</span>`
-      : `<span style="font-size:.8em;color:var(--t3)">${t('noLink')}</span>`;
-    return `<div class="li" style="flex-direction:column;align-items:flex-start;padding:8px 10px;gap:2px">
+  let charsHtml = '';
+  for (const c of chars) {
+    const charLinks = await api.world.getCharLinks(c.id);
+    const linksHtml = charLinks.map(lk =>
+      `<div style="display:flex;align-items:center;gap:4px;font-size:.8em;color:var(--t3);padding:1px 0">
+        <span style="flex:1">${x(lk.project_name||'?')} / ${x(lk.category_name||'?')} / ${x(lk.object_name||'?')}</span>
+        <button class="btn btn-g btn-i" style="padding:1px 5px;font-size:11px" title="Remove link" onclick="removeWorldCharLink(${worldId},${lk.id})">×</button>
+      </div>`
+    ).join('');
+    charsHtml += `<div class="li" style="flex-direction:column;align-items:flex-start;padding:8px 10px;gap:4px">
       <div style="display:flex;width:100%;align-items:center;gap:8px">
         <span class="name" style="flex:1;font-weight:500">${x(c.name)}</span>
-        <button class="btn btn-g btn-i" onclick="openWorldCharModal(${worldId},${c.id})">${I.edit}</button>
+        <button class="btn btn-g btn-i" onclick="openEditWorldCharModal(${worldId},${c.id})">${I.edit}</button>
         <button class="btn btn-g btn-i" onclick="deleteWorldChar(${worldId},${c.id})">${I.delete}</button>
       </div>
-      ${linkInfo}
       ${c.memo ? `<div style="font-size:.82em;color:var(--t3)">${x(c.memo)}</div>` : ''}
+      ${linksHtml}
+      <button class="btn btn-g" style="font-size:.8em;padding:3px 8px;margin-top:2px" onclick="openAddCharLinkModal(${worldId},${c.id})">${I.plus} Add Novel Link</button>
     </div>`;
-  }).join('');
+  }
+  return filterHtml + addBtn + charsHtml;
+}
+
+function setWorldCharCatFilter(projectId, categoryId) {
+  S.worldCharCatFilter[projectId] = categoryId ? Number(categoryId) : null;
 }
 
 async function renderWorldCats(worldId) {
-  const cats = await api.world.getCategories(worldId);
-  if (!cats.length) return `<div class="empty"><div class="ei">${I.layer}</div>
-    <button class="btn btn-p" onclick="openWorldCatModal(${worldId})">${I.plus} ${t('worldCatNew')}</button></div>`;
+  const [charObjIds, novCats] = await Promise.all([
+    api.world.getCharObjectIds(worldId),
+    api.world.getLinkedNovCats(worldId),
+  ]);
 
-  let h = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldCatModal(${worldId})">${I.plus} ${t('worldCatNew')}</button>
-  </div>`;
-  for (const cat of cats) {
-    const linkInfo = cat.category_name
-      ? `<span style="font-size:.8em;color:var(--t3)">${x(cat.project_name)} / ${x(cat.category_name)}</span>`
-      : `<span style="font-size:.8em;color:var(--t3)">${t('noLink')}</span>`;
-    const objs = await api.world.getCatObjects(cat.id);
-    const objsHtml = objs.length
-      ? `<div style="margin-top:6px;padding-left:12px">` + objs.map(o =>
-          `<div class="li" style="display:flex;align-items:center;gap:8px;padding:4px 8px">
-            <span style="flex:1;font-size:.9em">${o.symbol ? `<span style="margin-right:4px">${x(o.symbol)}</span>` : ''}${x(o.name)}</span>
-            <button class="btn btn-g btn-i" onclick="openWorldCatObjModal(${cat.id},${o.id})">${I.edit}</button>
-            <button class="btn btn-g btn-i" onclick="deleteWorldCatObj(${worldId},${o.id})">${I.delete}</button>
-          </div>`).join('') + `</div>`
-      : '';
-    h += `<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="name" style="flex:1;font-weight:500">${x(cat.name)}</span>
-        <button class="btn btn-g btn-i" onclick="openWorldCatObjModal(${cat.id})">${I.plus}</button>
-        <button class="btn btn-g btn-i" onclick="openWorldCatModal(${worldId},${cat.id})">${I.edit}</button>
-        <button class="btn btn-g btn-i" onclick="deleteWorldCat(${worldId},${cat.id})">${I.delete}</button>
-      </div>
-      ${linkInfo}
-      ${objsHtml}
-    </div>`;
+  if (!novCats.length) return `<div class="empty"><div class="ei">${I.layer}</div>
+    <p style="color:var(--t3);font-size:.9em;max-width:280px;text-align:center">No novels linked to this world. Link novels in the Overview tab.</p></div>`;
+
+  const byNovel = new Map();
+  for (const cat of novCats) {
+    if (!byNovel.has(cat.project_id)) byNovel.set(cat.project_id, {name: cat.project_name, cats: []});
+    byNovel.get(cat.project_id).cats.push(cat);
+  }
+
+  let h = '';
+  for (const [, proj] of byNovel) {
+    h += `<div style="margin-bottom:16px">
+      <div style="font-weight:600;font-size:.93em;padding:4px 0 6px;color:var(--t1);border-bottom:1px solid var(--border);margin-bottom:6px">${x(proj.name)}</div>`;
+    for (const cat of proj.cats) {
+      const isOpen = S.worldCatOpen.has(cat.id);
+      let objsHtml = '';
+      if (isOpen) {
+        const objs = await api.world.getLinkedCatObjs(cat.id, charObjIds);
+        if (objs.length) {
+          objsHtml = `<div style="padding-left:14px;margin-top:4px">` + objs.map(o =>
+            `<div style="padding:3px 0;font-size:.87em;color:var(--t2)">${o.symbol ? `<span style="margin-right:4px">${x(o.symbol)}</span>` : ''}${x(o.name)}</div>`
+          ).join('') + `</div>`;
+        } else {
+          objsHtml = `<div style="padding-left:14px;font-size:.82em;color:var(--t3);margin-top:4px">No objects (or all linked as characters)</div>`;
+        }
+      }
+      h += `<div style="background:var(--bg2);border-radius:6px;padding:6px 10px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="toggleWorldCat(${worldId},${cat.id})">
+          <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${isOpen?90:0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <span style="flex:1;font-size:.9em">${x(cat.category_name)}</span>
+        </div>
+        ${objsHtml}
+      </div>`;
+    }
+    h += `</div>`;
   }
   return h;
+}
+
+async function toggleWorldCat(worldId, catId) {
+  if (S.worldCatOpen.has(catId)) S.worldCatOpen.delete(catId);
+  else S.worldCatOpen.add(catId);
+  await setWorldTab('categories');
 }
 
 async function renderWorldMaps(worldId) {
@@ -343,78 +392,140 @@ async function removeWorldNovelLink(id) {
   await setWorldTab('overview');
 }
 
-async function openWorldCharModal(worldId, id) {
-  const isEdit = !!id;
-  const chars = isEdit ? await api.world.getCharacters(worldId) : [];
-  const c = isEdit ? chars.find(ch => ch.id === id) : null;
-  const projs = await api.project.getAll();
-  const projOpts = projs.map(p => `<option value="${p.id}"${c?.project_ref===p.id?' selected':''}>${x(p.name)}</option>`).join('');
+async function openWorldCharModal(worldId) {
+  const links = await api.world.getNovelLinks(worldId);
+  const pickerHtml = buildLinkedNovelPicker('wcm-proj', links.map(l => ({
+    id: l.project_ref, name: l.project_name,
+    folder_id: (S.projects||[]).find(p => p.id===l.project_ref)?.folder_id,
+  })), null, 'loadWorldCharCatOptsFromPicker');
 
-  openModal(isEdit ? 'Edit Character' : 'New Character', `
-    <div class="form-row"><label>Name *</label><input id="wcm-name" value="${x(c?.name||'')}"></div>
-    <div class="form-row"><label>Memo</label><textarea id="wcm-memo" rows="2" style="width:100%;resize:vertical">${x(c?.memo||'')}</textarea></div>
-    <div class="form-row"><label>${t('worldCharLink')}</label>
-      <select id="wcm-proj" onchange="loadWorldCharCatOpts(${worldId})">
-        <option value="">— ${t('noLink')} —</option>${projOpts}
-      </select>
-    </div>
+  openModal('New Character', `
+    <div class="form-row"><label>Name *</label><input id="wcm-name" value=""></div>
+    <div class="form-row"><label>Memo</label><textarea id="wcm-memo" rows="2" style="width:100%;resize:vertical"></textarea></div>
+    <div class="form-row"><label>${t('worldCharLink')}</label>${pickerHtml}</div>
     <div id="wcm-cat-row" style="display:none" class="form-row"><label>Category</label>
       <select id="wcm-cat" onchange="loadWorldCharObjOpts()"><option value="">—</option></select>
     </div>
     <div id="wcm-obj-row" style="display:none" class="form-row"><label>Object</label>
       <select id="wcm-obj"><option value="">—</option></select>
     </div>
-    ${isEdit ? `<button class="btn btn-danger" style="margin-top:4px" onclick="deleteWorldChar(${worldId},${id})">Delete</button>` : ''}
     <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-p" onclick="saveWorldChar(${worldId},${id||'null'})">${isEdit?'Save':'Create'}</button>
+      <button class="btn btn-p" onclick="saveWorldChar(${worldId})">Create</button>
     </div>`);
-
-  if (c?.project_ref) {
-    await loadWorldCharCatOpts(worldId);
-    if (c?.category_ref) {
-      q('#wcm-cat').value = c.category_ref;
-      await loadWorldCharObjOpts();
-      if (c?.object_ref) q('#wcm-obj').value = c.object_ref;
-    }
-  }
 }
 
-async function loadWorldCharCatOpts(worldId) {
-  const pid = Number(q('#wcm-proj')?.value);
+async function openEditWorldCharModal(worldId, id) {
+  const chars = await api.world.getCharacters(worldId);
+  const c = chars.find(ch => ch.id === id);
+  openModal('Edit Character', `
+    <div class="form-row"><label>Name *</label><input id="wcm-name" value="${x(c?.name||'')}"></div>
+    <div class="form-row"><label>Memo</label><textarea id="wcm-memo" rows="2" style="width:100%;resize:vertical">${x(c?.memo||'')}</textarea></div>
+    <button class="btn btn-danger" style="margin-top:4px" onclick="deleteWorldChar(${worldId},${id})">Delete</button>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="updateWorldChar(${worldId},${id})">Save</button>
+    </div>`);
+}
+
+async function openAddCharLinkModal(worldId, charId) {
+  const links = await api.world.getNovelLinks(worldId);
+  const pickerHtml = buildLinkedNovelPicker('aclm-proj', links.map(l => ({
+    id: l.project_ref, name: l.project_name,
+    folder_id: (S.projects||[]).find(p => p.id===l.project_ref)?.folder_id,
+  })), null, 'loadAddCharLinkCatOpts');
+
+  openModal('Add Novel Link', `
+    <div class="form-row"><label>Novel</label>${pickerHtml}</div>
+    <div id="aclm-cat-row" style="display:none" class="form-row"><label>Category</label>
+      <select id="aclm-cat" onchange="loadAddCharLinkObjOpts()"><option value="">—</option></select>
+    </div>
+    <div id="aclm-obj-row" style="display:none" class="form-row"><label>Object</label>
+      <select id="aclm-obj"><option value="">—</option></select>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveAddCharLink(${worldId},${charId})">Add Link</button>
+    </div>`);
+}
+
+window.loadWorldCharCatOptsFromPicker = async function(projId) {
+  const pid = Number(projId);
   const catRow = q('#wcm-cat-row');
   const objRow = q('#wcm-obj-row');
-  if (!pid) { catRow.style.display='none'; objRow.style.display='none'; return; }
+  if (!pid) { if(catRow) catRow.style.display='none'; if(objRow) objRow.style.display='none'; return; }
   const cats = await api.category.getAll(pid);
   q('#wcm-cat').innerHTML = `<option value="">—</option>` + cats.map(c => `<option value="${c.id}">${x(c.category_name)}</option>`).join('');
-  catRow.style.display='';
-  objRow.style.display='none';
-}
+  if(catRow) catRow.style.display='';
+  if(objRow) objRow.style.display='none';
+};
+
+window.loadAddCharLinkCatOpts = async function(projId) {
+  const pid = Number(projId);
+  const catRow = q('#aclm-cat-row');
+  const objRow = q('#aclm-obj-row');
+  if (!pid) { if(catRow) catRow.style.display='none'; if(objRow) objRow.style.display='none'; return; }
+  const cats = await api.category.getAll(pid);
+  q('#aclm-cat').innerHTML = `<option value="">—</option>` + cats.map(c => `<option value="${c.id}">${x(c.category_name)}</option>`).join('');
+  if(catRow) catRow.style.display='';
+  if(objRow) objRow.style.display='none';
+};
 
 async function loadWorldCharObjOpts() {
   const cid = Number(q('#wcm-cat')?.value);
   const objRow = q('#wcm-obj-row');
-  if (!cid) { objRow.style.display='none'; return; }
+  if (!cid) { if(objRow) objRow.style.display='none'; return; }
   const objs = await api.object.getAll(cid);
   q('#wcm-obj').innerHTML = `<option value="">—</option>` + objs.map(o => `<option value="${o.id}">${x(o.name)}</option>`).join('');
-  objRow.style.display='';
+  if(objRow) objRow.style.display='';
 }
 
-async function saveWorldChar(worldId, id) {
+async function loadAddCharLinkObjOpts() {
+  const cid = Number(q('#aclm-cat')?.value);
+  const objRow = q('#aclm-obj-row');
+  if (!cid) { if(objRow) objRow.style.display='none'; return; }
+  const objs = await api.object.getAll(cid);
+  q('#aclm-obj').innerHTML = `<option value="">—</option>` + objs.map(o => `<option value="${o.id}">${x(o.name)}</option>`).join('');
+  if(objRow) objRow.style.display='';
+}
+
+async function saveWorldChar(worldId) {
   const name = q('#wcm-name')?.value?.trim();
   if (!name) return toast('Name required','err');
   const memo = q('#wcm-memo')?.value?.trim() || null;
-  const pid = Number(q('#wcm-proj')?.value) || null;
-  const catid = Number(q('#wcm-cat')?.value) || null;
-  const oid = Number(q('#wcm-obj')?.value) || null;
-  let charId = id;
-  if (id) await api.world.updateCharacter(id, name, memo);
-  else {
-    const r = await api.world.createCharacter(worldId, name, memo);
-    charId = r?.lastInsertRowid;
+  const r = await api.world.createCharacter(worldId, name, memo);
+  const charId = r?.lastInsertRowid;
+  if (charId) {
+    const pid = Number(q('#np-wrap-wcm-proj')?.dataset.selectedId) || null;
+    const catid = Number(q('#wcm-cat')?.value) || null;
+    const oid = Number(q('#wcm-obj')?.value) || null;
+    if (pid && oid) await api.world.addCharLink(charId, pid, catid, oid);
   }
-  if (charId) await api.world.setCharLink(charId, pid, catid, oid);
   closeModal();
+  await setWorldTab('characters');
+}
+
+async function updateWorldChar(worldId, id) {
+  const name = q('#wcm-name')?.value?.trim();
+  if (!name) return toast('Name required','err');
+  const memo = q('#wcm-memo')?.value?.trim() || null;
+  await api.world.updateCharacter(id, name, memo);
+  closeModal();
+  await setWorldTab('characters');
+}
+
+async function saveAddCharLink(worldId, charId) {
+  const pid = Number(q('#np-wrap-aclm-proj')?.dataset.selectedId) || null;
+  const catid = Number(q('#aclm-cat')?.value) || null;
+  const oid = Number(q('#aclm-obj')?.value) || null;
+  if (!pid || !oid) return toast('Select a novel and object','err');
+  await api.world.addCharLink(charId, pid, catid, oid);
+  closeModal();
+  await setWorldTab('characters');
+}
+
+async function removeWorldCharLink(worldId, linkId) {
+  await api.world.removeCharLinkById(linkId);
   await setWorldTab('characters');
 }
 
@@ -429,17 +540,17 @@ async function openWorldCatModal(worldId, id) {
   const isEdit = !!id;
   const cats = isEdit ? await api.world.getCategories(worldId) : [];
   const cat = isEdit ? cats.find(c => c.id === id) : null;
-  const projs = await api.project.getAll();
-  const projOpts = projs.map(p => `<option value="${p.id}"${cat?.project_ref===p.id?' selected':''}>${x(p.name)}</option>`).join('');
+  const novelLinks = await api.world.getNovelLinks(worldId);
+  const currentProjName = cat?.project_name || null;
+  const pickerHtml = buildLinkedNovelPicker('wcatm-proj', novelLinks.map(l => ({
+    id: l.project_ref, name: l.project_name,
+    folder_id: (S.projects||[]).find(p => p.id===l.project_ref)?.folder_id,
+  })), currentProjName, 'loadWorldCatCatOptsFromPicker');
 
   openModal(isEdit ? 'Edit Category' : 'New Category', `
     <div class="form-row"><label>Name *</label><input id="wcatm-name" value="${x(cat?.name||'')}"></div>
     <div class="form-row"><label>Memo</label><textarea id="wcatm-memo" rows="2" style="width:100%;resize:vertical">${x(cat?.memo||'')}</textarea></div>
-    <div class="form-row"><label>${t('worldCatLink')}</label>
-      <select id="wcatm-proj" onchange="loadWorldCatCatOpts(${worldId})">
-        <option value="">— ${t('noLink')} —</option>${projOpts}
-      </select>
-    </div>
+    <div class="form-row"><label>${t('worldCatLink')}</label>${pickerHtml}</div>
     <div id="wcatm-cat-row" style="display:none" class="form-row"><label>Novel Category</label>
       <select id="wcatm-cat"><option value="">—</option></select>
     </div>
@@ -450,25 +561,27 @@ async function openWorldCatModal(worldId, id) {
     </div>`);
 
   if (cat?.project_ref) {
-    await loadWorldCatCatOpts(worldId);
+    const wcatmWrap = q('#np-wrap-wcatm-proj');
+    if (wcatmWrap) wcatmWrap.dataset.selectedId = cat.project_ref;
+    await loadWorldCatCatOptsFromPicker(cat.project_ref);
     if (cat?.category_ref) q('#wcatm-cat').value = cat.category_ref;
   }
 }
 
-async function loadWorldCatCatOpts(worldId) {
-  const pid = Number(q('#wcatm-proj')?.value);
+window.loadWorldCatCatOptsFromPicker = async function(projId) {
+  const pid = Number(projId);
   const row = q('#wcatm-cat-row');
-  if (!pid) { row.style.display='none'; return; }
+  if (!pid) { if(row) row.style.display='none'; return; }
   const cats = await api.category.getAll(pid);
   q('#wcatm-cat').innerHTML = `<option value="">—</option>` + cats.map(c => `<option value="${c.id}">${x(c.category_name)}</option>`).join('');
-  row.style.display='';
-}
+  if(row) row.style.display='';
+};
 
 async function saveWorldCat(worldId, id) {
   const name = q('#wcatm-name')?.value?.trim();
   if (!name) return toast('Name required','err');
   const memo = q('#wcatm-memo')?.value?.trim() || null;
-  const pid = Number(q('#wcatm-proj')?.value) || null;
+  const pid = Number(q('#np-wrap-wcatm-proj')?.dataset.selectedId) || null;
   const catref = Number(q('#wcatm-cat')?.value) || null;
   let catId = id;
   if (id) await api.world.updateCategory(id, name, memo);

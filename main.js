@@ -223,12 +223,18 @@ h('world:addNovelLink',     (wid,pid)                 => db.addWorldNovelLink(wi
 h('world:removeNovelLink',  (id)                      => db.removeWorldNovelLink(id));
 
 h('world:getCharacters',    (wid)                     => db.getWorldCharacters(wid));
+h('world:getCharLinks',     (cid)                     => db.getWorldCharLinks(cid));
 h('world:createCharacter',  (wid,n,m)                 => db.createWorldCharacter(wid,n,m));
 h('world:updateCharacter',  (id,n,m)                  => db.updateWorldCharacter(id,n,m));
 h('world:deleteCharacter',  (id)                      => db.deleteWorldCharacter(id));
 h('world:setCharLink',      (cid,pid,catid,oid)       => db.setWorldCharLink(cid,pid,catid,oid));
+h('world:addCharLink',      (cid,pid,catid,oid)       => db.addWorldCharLink(cid,pid,catid,oid));
+h('world:removeCharLinkById',(id)                     => db.removeWorldCharLinkById(id));
+h('world:getCharObjectIds', (wid)                     => db.getWorldCharObjectIds(wid));
 h('world:getCharTags',      (cid)                     => db.getWorldCharTags(cid));
 h('world:setCharTags',      (cid,tags)                => db.setWorldCharTags(cid,tags));
+h('world:getLinkedNovCats', (wid)                     => db.getLinkedNovelCategories(wid));
+h('world:getLinkedCatObjs', (catId,excIds)            => db.getLinkedCatObjects(catId,excIds));
 
 h('world:getCategories',    (wid)                     => db.getWorldCategories(wid));
 h('world:createCategory',   (wid,n,m)                 => db.createWorldCategory(wid,n,m));
