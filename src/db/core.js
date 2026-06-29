@@ -632,6 +632,28 @@ function initDB() {
   if (!hasStory) db.prepare(`ALTER TABLE timeline_event ADD COLUMN story TEXT`).run();
   const hasNote = db.prepare(`PRAGMA table_info(object)`).all().some(c => c.name === 'note');
   if (!hasNote) { try { db.prepare(`ALTER TABLE object ADD COLUMN note TEXT`).run(); } catch (_) {} }
+
+  // Migration: allow multiple novel links per world character (drop UNIQUE(char_ref))
+  try {
+    const charLinkInfo = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='world_char_link'`).get();
+    if (charLinkInfo && charLinkInfo.sql && charLinkInfo.sql.includes('UNIQUE(char_ref)')) {
+      db.exec(`PRAGMA foreign_keys = OFF`);
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS world_char_link_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          char_ref INTEGER NOT NULL REFERENCES world_character(id) ON DELETE CASCADE,
+          project_ref INTEGER REFERENCES project(id) ON DELETE SET NULL,
+          category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL,
+          object_ref INTEGER REFERENCES object(id) ON DELETE SET NULL,
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT OR IGNORE INTO world_char_link_new SELECT * FROM world_char_link;
+        DROP TABLE world_char_link;
+        ALTER TABLE world_char_link_new RENAME TO world_char_link;
+      `);
+      db.exec(`PRAGMA foreign_keys = ON`);
+    }
+  } catch (_) {}
 }
 
 const getDatabasePath = () => path.join(path.dirname(app.getPath('userData')), 'novel-manager.db');

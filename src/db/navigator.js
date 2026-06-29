@@ -48,15 +48,34 @@ const removeWorldNovelLink = (id) =>
 // World characters
 const getWorldCharacters = (worldId) =>
   getDB().prepare(`
-    SELECT wc.*, wcl.project_ref, wcl.category_ref, wcl.object_ref,
-           o.name as object_name, p.name as project_name, oc.category_name
-    FROM world_character wc
-    LEFT JOIN world_char_link wcl ON wcl.char_ref=wc.id
-    LEFT JOIN object o ON wcl.object_ref=o.id
+    SELECT wc.id, wc.name, wc.memo, wc.world_ref
+    FROM world_character wc WHERE wc.world_ref=? ORDER BY wc.name
+  `).all(worldId);
+
+const getWorldCharLinks = (charId) =>
+  getDB().prepare(`
+    SELECT wcl.id, wcl.char_ref, wcl.project_ref, wcl.category_ref, wcl.object_ref,
+           p.name as project_name, oc.category_name, o.name as object_name
+    FROM world_char_link wcl
     LEFT JOIN project p ON wcl.project_ref=p.id
     LEFT JOIN object_category oc ON wcl.category_ref=oc.id
-    WHERE wc.world_ref=? ORDER BY wc.name
-  `).all(worldId);
+    LEFT JOIN object o ON wcl.object_ref=o.id
+    WHERE wcl.char_ref=? ORDER BY wcl.id
+  `).all(charId);
+
+const addWorldCharLink = (charId, projectId, categoryId, objectId) =>
+  getDB().prepare(`INSERT INTO world_char_link (char_ref,project_ref,category_ref,object_ref) VALUES (?,?,?,?)`)
+    .run(charId, projectId, categoryId || null, objectId);
+
+const removeWorldCharLinkById = (linkId) =>
+  getDB().prepare(`DELETE FROM world_char_link WHERE id=?`).run(linkId);
+
+const getWorldCharObjectIds = (worldId) =>
+  getDB().prepare(`
+    SELECT DISTINCT wcl.object_ref
+    FROM world_char_link wcl JOIN world_character wc ON wcl.char_ref=wc.id
+    WHERE wc.world_ref=? AND wcl.object_ref IS NOT NULL
+  `).all(worldId).map(r => r.object_ref);
 
 const createWorldCharacter = (worldId, name, memo) =>
   getDB().prepare(`INSERT INTO world_character (world_ref,name,memo) VALUES (?,?,?)`).run(worldId, name, memo||null);
@@ -209,6 +228,29 @@ const addWorldMaptlObj = (eventId, catObjectId) =>
 const removeWorldMaptlObj = (id) =>
   getDB().prepare(`DELETE FROM world_maptl_obj WHERE id=?`).run(id);
 
+// Linked novel categories (for Navigator categories tab)
+const getLinkedNovelCategories = (worldId) =>
+  getDB().prepare(`
+    SELECT oc.id, oc.category_name, oc.project_id, p.name as project_name
+    FROM world_novel_link wl
+    JOIN project p ON wl.project_ref=p.id
+    JOIN object_category oc ON oc.project_id=p.id
+    WHERE wl.world_ref=?
+    ORDER BY p.name, oc.category_name
+  `).all(worldId);
+
+const getLinkedCatObjects = (categoryId, excludeObjectIds) => {
+  const placeholders = (excludeObjectIds && excludeObjectIds.length)
+    ? excludeObjectIds.map(() => '?').join(',')
+    : 'NULL';
+  return getDB().prepare(`
+    SELECT o.*, uc.color_code
+    FROM object o LEFT JOIN use_color uc ON o.color=uc.id
+    WHERE o.category_id=? AND o.id NOT IN (${placeholders})
+    ORDER BY o.name
+  `).all(categoryId, ...(excludeObjectIds || []));
+};
+
 // World project hashtags
 const getWorldTags = (worldId) =>
   getDB().prepare(`SELECT h.*, uc.color_code FROM hashtag h LEFT JOIN use_color uc ON h.tag_color=uc.id JOIN world_project_hashtag wph ON h.id=wph.hashtag_id WHERE wph.world_id=? ORDER BY h.tag_name`).all(worldId);
@@ -225,11 +267,14 @@ module.exports = {
   getWorlds, getWorld, createWorld, updateWorld, deleteWorld,
   getWorldDesc, addWorldDesc, updateWorldDesc, deleteWorldDesc,
   getWorldNovelLinks, addWorldNovelLink, removeWorldNovelLink,
-  getWorldCharacters, createWorldCharacter, updateWorldCharacter, deleteWorldCharacter, setWorldCharLink,
+  getWorldCharacters, getWorldCharLinks, createWorldCharacter, updateWorldCharacter, deleteWorldCharacter,
+  addWorldCharLink, removeWorldCharLinkById, getWorldCharObjectIds,
+  setWorldCharLink,
   getWorldCharTags, setWorldCharTags,
   getWorldCategories, createWorldCategory, updateWorldCategory, deleteWorldCategory, setWorldCatLink,
   getWorldCatObjects, createWorldCatObject, updateWorldCatObject, deleteWorldCatObject,
   getWorldObjTags, setWorldObjTags,
+  getLinkedNovelCategories, getLinkedCatObjects,
   getWorldMaps, createWorldMap, updateWorldMap, deleteWorldMap, setWorldMapLink,
   getWorldMapTimelines, createWorldMapTimeline, updateWorldMapTimeline, deleteWorldMapTimeline,
   getWorldMaptlEvents, createWorldMaptlEvent, updateWorldMaptlEvent, deleteWorldMaptlEvent,
