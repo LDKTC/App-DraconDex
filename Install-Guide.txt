@@ -4,22 +4,22 @@ Step 1: After you download program of this file in your device
 
     -Open this folder by use your IDE Program eg. VSCode ,AntiGravity ,and another
     -After you open your IDE. Check that you has *all the important file we need*
-        -filename 
-        database.js 
-        ,index.html 
-        ,main.js 
-        ,package.json 
-        ,package-lock.json 
-        ,preload.js 
-        ,renderer.js 
-        ,start.js 
+        -filename
+        database.js
+        ,index.html
+        ,main.js
+        ,package.json
+        ,package-lock.json
+        ,preload.js
+        ,renderer.js
+        ,start.js
         ,Style.css
 
 Step 2: After you got all the file. run this in your terminal.
-        
+
         npm install
-        
-    -this should download need packages for this project. 
+
+    -this should download need packages for this project.
 
 Step 3: Check that everything is ready to build
 
@@ -45,8 +45,8 @@ Step 5: Check your App
 
         dist/
 
-    -you will found a App Name 
-        
+    -you will found a App Name
+
         Novel Manager 1.x.0.exe
 
     -Open the app to check that App was builded Correctly
@@ -54,3 +54,76 @@ Step 5: Check your App
 Step last: And done
 
     -You can move the folder Dist/ into The folder you want and changed into name you want.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  FLUTTER ANDROID APP (Mobile Version)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Requirement before start:
+    - Flutter SDK 3.44.4 or newer  (https://flutter.dev/docs/get-started/install)
+    - Android Studio with Android SDK 24+
+    - A phone with USB debugging ON  OR  an Android emulator
+
+Step 1: Go to the flutter_app folder
+
+        cd flutter_app
+
+Step 2: Download all packages
+
+        flutter pub get
+
+Step 3: Check that Flutter and Android is ready
+
+        flutter doctor
+
+    - Make sure Android toolchain shows no red X
+
+Step 4: Test the app on your phone or emulator
+
+        flutter run
+
+    - Connect your phone with USB and allow USB debugging when asked
+    - App will launch on your phone
+
+Step 5: Build the APK file
+
+    Option A - Split APK (smaller file, recommended for sharing):
+
+        flutter build apk --release --split-per-abi
+
+    Option B - Universal APK (works on all devices):
+
+        flutter build apk --release
+
+Step 6: Find your APK
+
+    - APK files will be in this folder:
+
+        flutter_app/build/app/outputs/flutter-apk/
+
+    - File names:
+        app-arm64-v8a-release.apk   (for most modern phones)
+        app-armeabi-v7a-release.apk (for older phones)
+        app-release.apk             (universal, larger size)
+
+Step 7: Install APK on your phone
+
+    Option A - USB cable:
+
+        adb install build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+    Option B - File transfer:
+        - Copy the APK file to your phone storage
+        - Open the APK file on your phone to install
+        - Allow "Install unknown apps" if asked
+
+Step last: Transfer your data from PC to phone
+
+    1. Open the PC app and go to the export option in settings
+       (or find novel-manager.db in your user data folder)
+    2. Copy the .db file to your phone
+    3. Open the Android app -> Settings -> Import Database
+    4. Select the .db file
+    5. All your projects will appear
