@@ -3,6 +3,16 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./database');
 
+// Ensure only one instance runs. The SQLite layer recovers from a stale lock dir
+// by deleting it on open, which is only safe if no other instance is using the DB.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+}
+app.on('second-instance', () => {
+  const win = BrowserWindow.getAllWindows()[0];
+  if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
+});
+
 // Keep app data next to the executable for portable builds.
 const isPackaged = app.isPackaged;
 const portableRoot = process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(app.getPath('exe'));

@@ -57,10 +57,16 @@ function getDB() {
         fs.closeSync(hfd);
       } catch (_) {}
     }
+    // node-sqlite3-wasm locks via a `<db>.lock` DIRECTORY (it can't use OS
+    // byte-range locks in WASM). A crash/kill leaves that directory orphaned, and
+    // every later open then fails with "database is locked" forever. main.js holds
+    // a single-instance lock, so if we get here no other process owns the DB and a
+    // leftover lock dir is always stale — remove it before opening.
+    try { fs.rmSync(dbPath + '.lock', { recursive: true, force: true }); } catch (_) {}
     db = adaptDb(new _RawDatabase(dbPath));
+    db.exec("PRAGMA busy_timeout = 5000");
     db.exec("PRAGMA journal_mode = DELETE");
     db.exec("PRAGMA foreign_keys = ON");
-    try { db.exec("PRAGMA busy_timeout = 5000"); } catch (e) { /* ignore if unsupported */ }
     initDB();
   }
   return db;
