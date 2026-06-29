@@ -3,7 +3,7 @@ const { getDB } = require('./core');
 function getDataSize() {
   const db = getDB();
   const modules = [
-    { name:'director', tables:['project','object_category','object','object_attribute','timeline','timeline_event','relation','relation_type','map_project','map_area','map_point'] },
+    { name:'director', tables:['project','object_category','object','object_attribute','timeline','timeline_event','relation','relation_type','map','map_area','map_point'] },
     { name:'navigator', tables:['world_project','world_description','world_character','world_category','world_cat_object','world_map','world_map_timeline','world_maptl_event'] },
     { name:'hero', tables:['game_project','game_character','game_stat_template','game_stat_levelup','game_item_category','game_item','game_story','game_dialogue','game_dial_next','game_dial_line','game_func_category','game_function'] },
     { name:'writer', tables:['library_project','library_series','library_document','series_description'] },
