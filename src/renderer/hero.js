@@ -25,6 +25,7 @@ async function renderHeroView() {
   if (S.game) await renderGameDetail(S.game.id);
   else q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
     <div class="ei">${I.hero}</div><h3>${t('hero')}</h3><p>${t('nexusWelcomeText')}</p></div>`;
+  updateTopNavButton();
 }
 
 async function selectGame(id) {
@@ -37,9 +38,6 @@ async function renderGameDetail(id) {
   const g = S.game || await api.game.get(id);
   if (!g) return;
   const col = g.color_code || '#6366f1';
-  const tabBar = HERO_TABS.map(tab =>
-    `<button class="tab-btn${S.gameTab===tab?' active':''}" onclick="setGameTab('${tab}')">${gameTabLabel(tab)}</button>`
-  ).join('');
   let body = '';
   if (S.gameTab === 'overview') body = await renderGameOverview(g);
   else if (S.gameTab === 'characters') body = await renderGameChars(g.id);
@@ -49,12 +47,12 @@ async function renderGameDetail(id) {
   else if (S.gameTab === 'tags') body = await renderGameTagsTab(g.id);
 
   q('#main-inner').innerHTML = `
-    <div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:8px">
-      <h2 style="margin:0;font-size:1.1em">${x(g.name)}</h2>
+    <div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:12px">
+      <h2 style="margin:0;font-size:1.1em">${x(g.name)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${x(gameTabLabel(S.gameTab))}</span></h2>
       ${g.memo ? `<div style="color:var(--t3);font-size:.85em;margin-top:2px">${x(g.memo)}</div>` : ''}
     </div>
-    <div class="tab-bar" style="margin-bottom:12px">${tabBar}</div>
     <div id="game-tab-body">${body}</div>`;
+  updateTopNavButton();
 }
 
 function gameTabLabel(tab) {

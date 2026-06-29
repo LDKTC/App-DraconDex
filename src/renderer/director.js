@@ -13,6 +13,8 @@ async function renderProjectSidebar(){
       <span class="dot" style="background:${col}"></span>
       <span class="name">${x(p.name)}</span>
       <button class="btn btn-g btn-i" onclick="openProjectModal(${p.id})" title="Edit project">${I.edit}</button>
+      <button class="btn btn-g btn-i" onclick="openFolderModal()" title="${t('newFolder')}">${I.folder}</button>
+      <button class="btn btn-g btn-i" onclick="openProjectModal()" title="${t('newProject')}">${I.plus}</button>
     </div>
     ${p.codename ? `<div class="project-side-code">${x(p.codename)}</div>` : ''}
   </div>`;

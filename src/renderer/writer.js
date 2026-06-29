@@ -17,6 +17,7 @@ async function renderWriterView() {
   else {
     q('#main-inner').innerHTML = `<div class="empty"><div class="ei">${I.writer}</div><p>${t('libraryNew')}</p></div>`;
   }
+  updateTopNavButton();
 }
 
 function selectLibrary(id) {
@@ -25,25 +26,30 @@ function selectLibrary(id) {
 }
 
 async function renderLibraryDetail(id) {
-  const tabs = ['overview','series','tags'];
   const tabLabels = { overview:t('libraryOverview'), series:t('librarySeries'), tags:t('libraryTags') };
+  const libs = await api.library.getProjects();
+  const lib = libs.find(l => l.id === id);
+  const col = lib?.color_code || '#6366f1';
   const mi = q('#main-inner');
   mi.innerHTML = `
-    <div class="detail-header">
-      <div class="detail-tabs">
-        ${tabs.map(tab => `<button class="tab-btn${S.libraryTab===tab?' active':''}" onclick="setLibraryTab('${tab}')">${tabLabels[tab]}</button>`).join('')}
+    <div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px">
+      <div style="flex:1;min-width:0">
+        <h2 style="margin:0;font-size:1.1em">${esc(lib?.name||'')} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${esc(tabLabels[S.libraryTab]||S.libraryTab)}</span></h2>
+        ${lib?.memo ? `<div style="color:var(--t3);font-size:.85em;margin-top:2px">${esc(lib.memo)}</div>` : ''}
       </div>
       <div class="detail-actions">
-        <button class="btn-sm" onclick="openLibraryModal(${id})">${t('edit')}</button>
-        <button class="btn-sm danger" onclick="deleteLibrary(${id})">${t('delete')}</button>
+        <button class="btn btn-g btn-i" onclick="openLibraryModal(${id})" title="${t('edit')}">${I.edit}</button>
+        <button class="btn btn-g btn-i" onclick="deleteLibrary(${id})" title="${t('delete')}" style="color:var(--danger)">${I.delete}</button>
       </div>
     </div>
     <div id="library-tab-body" class="tab-body"></div>`;
   await renderLibraryTab(id);
+  updateTopNavButton();
 }
 
 function setLibraryTab(tab) {
   S.libraryTab = tab;
+  S.librarySeries = null; S.libraryDoc = null;
   renderLibraryDetail(S.library);
 }
 

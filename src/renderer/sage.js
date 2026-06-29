@@ -10,6 +10,7 @@ async function renderSageView() {
     <div class="panel-item${S.sageTab==='linkerList'?' active':''}" onclick="setSageTab('linkerList')">${t('sageLinkerList')}</div>
     <div class="panel-item${S.sageTab==='linkerGraph'?' active':''}" onclick="setSageTab('linkerGraph')">${t('sageLinkerGraph')}</div>`;
   await renderSageTab();
+  updateTopNavButton();
 }
 
 function setSageTab(tab) {
