@@ -132,7 +132,10 @@
   </div>
 </div>
 <div id="toast"></div>
-  <!-- D3 is lazy-loaded when graph view is rendered -->
-  <script src="renderer.js"></script>
+  <!-- Core + Director loaded immediately; Timeline/Relation/Map/Hashtag lazy-loaded on first use -->
+  <script src="src/renderer/core.js"></script>
+  <script src="src/renderer/director.js"></script>
+  <script src="src/renderer/modals.js"></script>
+  <script src="src/renderer/search.js"></script>
 </body>
 </html>
