@@ -33,7 +33,11 @@ const I = {
   hero: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/></svg>`,
   item: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`,
   story: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
-  func: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`
+  func: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  book: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  writer: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  series: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  document: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
@@ -67,7 +71,13 @@ const L = {
     gameStoryNew:'New Story', gameFuncCatNew:'New Function Category', gameFuncNew:'New Function',
     gameStats:'Stats', gameLevelup:'Level-up', gameNovelLink:'Linked Novel',
     gameDialogue:'Dialogue', gameDialogueNew:'New Node', gameLine:'Line', gameLineNew:'New Line',
-    gameCondition:'Condition', gameEffects:'Effects'
+    gameCondition:'Condition', gameEffects:'Effects',
+    writer:'Writer', library:'Library', libraryNew:'New Library', libraryOverview:'Overview',
+    librarySeries:'Series', libraryTags:'Tags', libraryLinkedWorlds:'Linked Worlds',
+    seriesNew:'New Series', seriesOverview:'Overview', seriesDocs:'Documents', seriesChars:'Characters',
+    seriesObjects:'Objects', seriesTags:'Tags', docNew:'New Document', docEditor:'Document Editor',
+    exportPdf:'Export PDF', exportDocx:'Export DOCX', addChar:'Add Character',
+    addObject:'Add Object', addNovel:'Add Novel', addWorld:'Add World'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ',
@@ -92,7 +102,13 @@ const L = {
     gameStoryNew:'新規ストーリー', gameFuncCatNew:'新規機能カテゴリー', gameFuncNew:'新規機能',
     gameStats:'ステータス', gameLevelup:'レベルアップ', gameNovelLink:'リンク済み小説',
     gameDialogue:'ダイアログ', gameDialogueNew:'新規ノード', gameLine:'セリフ', gameLineNew:'新規セリフ',
-    gameCondition:'条件', gameEffects:'効果'
+    gameCondition:'条件', gameEffects:'効果',
+    writer:'ライター', library:'ライブラリ', libraryNew:'新規ライブラリ', libraryOverview:'概要',
+    librarySeries:'シリーズ', libraryTags:'タグ', libraryLinkedWorlds:'リンク済みワールド',
+    seriesNew:'新規シリーズ', seriesOverview:'概要', seriesDocs:'ドキュメント', seriesChars:'キャラクター',
+    seriesObjects:'オブジェクト', seriesTags:'タグ', docNew:'新規ドキュメント', docEditor:'ドキュメントエディタ',
+    exportPdf:'PDFエクスポート', exportDocx:'DOCXエクスポート', addChar:'キャラクター追加',
+    addObject:'オブジェクト追加', addNovel:'小説追加', addWorld:'ワールド追加'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기',
@@ -117,7 +133,13 @@ const L = {
     gameStoryNew:'새 스토리', gameFuncCatNew:'새 기능 카테고리', gameFuncNew:'새 기능',
     gameStats:'스탯', gameLevelup:'레벨업', gameNovelLink:'연결된 소설',
     gameDialogue:'다이얼로그', gameDialogueNew:'새 노드', gameLine:'대사', gameLineNew:'새 대사',
-    gameCondition:'조건', gameEffects:'효과'
+    gameCondition:'조건', gameEffects:'효과',
+    writer:'라이터', library:'라이브러리', libraryNew:'새 라이브러리', libraryOverview:'개요',
+    librarySeries:'시리즈', libraryTags:'태그', libraryLinkedWorlds:'연결된 세계',
+    seriesNew:'새 시리즈', seriesOverview:'개요', seriesDocs:'문서', seriesChars:'캐릭터',
+    seriesObjects:'오브젝트', seriesTags:'태그', docNew:'새 문서', docEditor:'문서 편집기',
+    exportPdf:'PDF 내보내기', exportDocx:'DOCX 내보내기', addChar:'캐릭터 추가',
+    addObject:'오브젝트 추가', addNovel:'소설 추가', addWorld:'세계 추가'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI',
@@ -142,7 +164,13 @@ const L = {
     gameStoryNew:'เพิ่มเนื้อเรื่อง', gameFuncCatNew:'เพิ่มหมวดหมู่ฟังก์ชัน', gameFuncNew:'เพิ่มฟังก์ชัน',
     gameStats:'สถิติ', gameLevelup:'เลเวลอัพ', gameNovelLink:'นิยายที่เชื่อมต่อ',
     gameDialogue:'บทสนทนา', gameDialogueNew:'โหนดใหม่', gameLine:'บทพูด', gameLineNew:'เพิ่มบทพูด',
-    gameCondition:'เงื่อนไข', gameEffects:'ผลลัพธ์'
+    gameCondition:'เงื่อนไข', gameEffects:'ผลลัพธ์',
+    writer:'Writer', library:'ไลบรารี', libraryNew:'สร้างไลบรารีใหม่', libraryOverview:'ภาพรวม',
+    librarySeries:'ซีรีส์', libraryTags:'แท็ก', libraryLinkedWorlds:'โลกที่เชื่อมต่อ',
+    seriesNew:'เพิ่มซีรีส์', seriesOverview:'ภาพรวม', seriesDocs:'เอกสาร', seriesChars:'ตัวละคร',
+    seriesObjects:'รายการ', seriesTags:'แท็ก', docNew:'เพิ่มเอกสาร', docEditor:'แก้ไขเอกสาร',
+    exportPdf:'ส่งออก PDF', exportDocx:'ส่งออก DOCX', addChar:'เพิ่มตัวละคร',
+    addObject:'เพิ่มรายการ', addNovel:'เพิ่มนิยาย', addWorld:'เพิ่มโลก'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小',
@@ -167,7 +195,13 @@ const L = {
     gameStoryNew:'新建剧情', gameFuncCatNew:'新建功能类别', gameFuncNew:'新建功能',
     gameStats:'属性', gameLevelup:'升级', gameNovelLink:'关联小说',
     gameDialogue:'对话', gameDialogueNew:'新建节点', gameLine:'台词', gameLineNew:'新建台词',
-    gameCondition:'条件', gameEffects:'效果'
+    gameCondition:'条件', gameEffects:'效果',
+    writer:'Writer', library:'图书馆', libraryNew:'新建图书馆', libraryOverview:'概览',
+    librarySeries:'系列', libraryTags:'标签', libraryLinkedWorlds:'关联世界',
+    seriesNew:'新建系列', seriesOverview:'概览', seriesDocs:'文档', seriesChars:'角色',
+    seriesObjects:'对象', seriesTags:'标签', docNew:'新建文档', docEditor:'文档编辑器',
+    exportPdf:'导出 PDF', exportDocx:'导出 DOCX', addChar:'添加角色',
+    addObject:'添加对象', addNovel:'添加小说', addWorld:'添加世界'
   }
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文' };
@@ -253,6 +287,8 @@ const S = {
   world:null, worldTab:'overview', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null,
   // Hero module state
   game:null, gameTab:'overview',
+  // Writer module state
+  library:null, libraryTab:'overview', librarySeries:null, librarySeriesTab:'docs', libraryDoc:null,
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -529,6 +565,9 @@ function updateTopNavButton(){
   });
   document.querySelectorAll('.nav-btn.hero-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'hero') ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-btn.writer-only').forEach(btn => {
+    btn.style.display = (S.activeModule === 'writer') ? '' : 'none';
   });
 }
 
@@ -820,6 +859,7 @@ async function switchView(v) {
   else if (v==='colors')          { await loadModule('src/renderer/hashtag.js'); q('#left-panel-inner').innerHTML=`<div class="ph"><h4>${t('colorPanel')}</h4></div>`; renderColorSettings(); }
   else if (v==='navigator')       { await loadModule('src/renderer/navigator.js'); renderNavigatorView(); }
   else if (v==='hero')            { await loadModule('src/renderer/hero.js'); renderHeroView(); }
+  else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
 }
 
 // ═══ NEXUS HUB ═════════════════════════════════════════
@@ -844,6 +884,11 @@ function renderNexusHome() {
     <div class="module-item" onclick="selectModule('hero')">
       <span class="module-icon">${I.hero}</span>
       <span class="module-name">${t('hero')}</span>
+      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="module-item" onclick="selectModule('writer')">
+      <span class="module-icon">${I.writer}</span>
+      <span class="module-name">${t('writer')}</span>
       <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
   q('#main-inner')?.classList.remove('relation-main');
@@ -877,6 +922,13 @@ function selectModule(name) {
     q('.nav-btn[data-panel="hero"]')?.classList.add('active');
     updateTopNavButton();
     loadModule('src/renderer/hero.js').then(() => renderHeroView());
+  } else if (name === 'writer') {
+    S.view = 'writer';
+    S.library = null; S.libraryTab = 'overview'; S.librarySeries = null; S.librarySeriesTab = 'docs'; S.libraryDoc = null;
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="writer"]')?.classList.add('active');
+    updateTopNavButton();
+    loadModule('src/renderer/writer.js').then(() => renderWriterView());
   }
 }
 
@@ -887,6 +939,7 @@ function returnToNexus() {
   S.activeProjectTabId = null; S.projectHashtagId = null;
   S.world = null; S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
   S.game = null; S.gameTab = 'overview';
+  S.library = null; S.libraryTab = 'overview'; S.librarySeries = null; S.librarySeriesTab = 'docs'; S.libraryDoc = null;
   S.view = 'nexus';
   renderProjectTabs();
   renderNexusHome();

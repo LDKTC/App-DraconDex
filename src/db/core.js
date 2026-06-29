@@ -551,6 +551,78 @@ function initDB() {
       hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
       UNIQUE(game_id,hashtag_id)
     );
+
+    CREATE TABLE IF NOT EXISTS library_project (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      memo TEXT,
+      color_ref INTEGER REFERENCES use_color(id),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS library_description (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      library_ref INTEGER NOT NULL REFERENCES library_project(id) ON DELETE CASCADE,
+      title TEXT,
+      content TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS library_world_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      library_ref INTEGER NOT NULL REFERENCES library_project(id) ON DELETE CASCADE,
+      world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+      updated_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(library_ref,world_ref)
+    );
+    CREATE TABLE IF NOT EXISTS library_series (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      library_ref INTEGER NOT NULL REFERENCES library_project(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      memo TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS series_description (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
+      title TEXT,
+      content TEXT,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS series_novel_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
+      project_ref INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+      updated_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(series_ref,project_ref)
+    );
+    CREATE TABLE IF NOT EXISTS series_char_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
+      object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
+      UNIQUE(series_ref,object_ref)
+    );
+    CREATE TABLE IF NOT EXISTS series_object_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
+      object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
+      UNIQUE(series_ref,object_ref)
+    );
+    CREATE TABLE IF NOT EXISTS series_hashtag (
+      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(series_ref,hashtag_id)
+    );
+    CREATE TABLE IF NOT EXISTS library_document (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      content_json TEXT DEFAULT '[]',
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS document_hashtag (
+      document_ref INTEGER NOT NULL REFERENCES library_document(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(document_ref,hashtag_id)
+    );
   `);
 
   if (!hasColumn(db, 'relation_type', 'color')) {

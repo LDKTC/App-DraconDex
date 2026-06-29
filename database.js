@@ -8,6 +8,7 @@ const relation  = require('./src/db/relation');
 const hashtag   = require('./src/db/hashtag');
 const navigator = require('./src/db/navigator');
 const hero      = require('./src/db/hero');
+const writer    = require('./src/db/writer');
 
 module.exports = {
   ...core,
@@ -19,4 +20,5 @@ module.exports = {
   ...hashtag,
   ...navigator,
   ...hero,
+  ...writer,
 };
