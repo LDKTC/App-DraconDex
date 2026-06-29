@@ -24,7 +24,11 @@ const I = {
   settings: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
   list: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
   table: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="10" y1="9" x2="10" y2="21"/></svg>`,
-  director: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 3.9"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>`
+  director: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 3.9"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>`,
+  globe: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+  person: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  layer: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+  navigator: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
@@ -45,7 +49,13 @@ const L = {
     newFolder:'New folder', newProject:'New project', createProject:'Create project',
     welcomeTitle:'Novel Manager', welcomeText:'Select a project from the list, or create a new one.',
     colorPanel:'Colors', saved:'Saved', deleted:'Deleted', created:'Created', applied:'Applied',
-    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'Choose a module to get started.'
+    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'Choose a module to get started.',
+    navigator:'Navigator', world:'World', worldNew:'New World', worldChars:'Characters', worldCats:'Categories',
+    worldMaps:'Maps', worldMapTimelines:'Map Timelines', worldOverview:'Overview', worldLinkedNovels:'Linked Novels',
+    worldTags:'Tags', worldCharNew:'New Character', worldCatNew:'New Category', worldMapNew:'New Map',
+    worldMaptlNew:'New Timeline', worldEventNew:'New Event', worldObjNew:'New Object',
+    worldCharLink:'Link to Novel Object', worldCatLink:'Link to Novel Category', worldMapLink:'Link to Novel Map',
+    noLink:'Not linked'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ',
@@ -57,7 +67,13 @@ const L = {
     newFolder:'新規フォルダー', newProject:'新規プロジェクト', createProject:'プロジェクト作成',
     welcomeTitle:'Novel Manager', welcomeText:'左の一覧からプロジェクトを選ぶか、新しく作成してください。',
     colorPanel:'色', saved:'保存しました', deleted:'削除しました', created:'作成しました', applied:'適用しました',
-    nexus:'Nexus', director:'ディレクター', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'モジュールを選択してください。'
+    nexus:'Nexus', director:'ディレクター', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'モジュールを選択してください。',
+    navigator:'ナビゲーター', world:'ワールド', worldNew:'新規ワールド', worldChars:'キャラクター', worldCats:'カテゴリー',
+    worldMaps:'マップ', worldMapTimelines:'マップタイムライン', worldOverview:'概要', worldLinkedNovels:'リンク済み小説',
+    worldTags:'タグ', worldCharNew:'新規キャラクター', worldCatNew:'新規カテゴリー', worldMapNew:'新規マップ',
+    worldMaptlNew:'新規タイムライン', worldEventNew:'新規イベント', worldObjNew:'新規オブジェクト',
+    worldCharLink:'小説オブジェクトにリンク', worldCatLink:'小説カテゴリーにリンク', worldMapLink:'小説マップにリンク',
+    noLink:'リンクなし'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기',
@@ -69,7 +85,13 @@ const L = {
     newFolder:'새 폴더', newProject:'새 프로젝트', createProject:'프로젝트 만들기',
     welcomeTitle:'Novel Manager', welcomeText:'왼쪽 목록에서 프로젝트를 선택하거나 새 프로젝트를 만드세요.',
     colorPanel:'색상', saved:'저장됨', deleted:'삭제됨', created:'생성됨', applied:'적용됨',
-    nexus:'Nexus', director:'디렉터', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'모듈을 선택하세요.'
+    nexus:'Nexus', director:'디렉터', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'모듈을 선택하세요.',
+    navigator:'네비게이터', world:'세계', worldNew:'새 세계', worldChars:'캐릭터', worldCats:'카테고리',
+    worldMaps:'맵', worldMapTimelines:'맵 타임라인', worldOverview:'개요', worldLinkedNovels:'연결된 소설',
+    worldTags:'태그', worldCharNew:'새 캐릭터', worldCatNew:'새 카테고리', worldMapNew:'새 맵',
+    worldMaptlNew:'새 타임라인', worldEventNew:'새 이벤트', worldObjNew:'새 오브젝트',
+    worldCharLink:'소설 오브젝트에 연결', worldCatLink:'소설 카테고리에 연결', worldMapLink:'소설 맵에 연결',
+    noLink:'연결 없음'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI',
@@ -81,7 +103,13 @@ const L = {
     newFolder:'สร้างโฟลเดอร์ใหม่', newProject:'สร้างโปรเจกต์ใหม่', createProject:'สร้างโปรเจกต์ใหม่',
     welcomeTitle:'Novel Manager', welcomeText:'เลือกโปรเจกต์จากรายการทางซ้าย หรือสร้างโปรเจกต์ใหม่',
     colorPanel:'สี', saved:'บันทึกแล้ว', deleted:'ลบแล้ว', created:'สร้างแล้ว', applied:'ปรับใช้แล้ว',
-    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'เลือกโมดูลที่ต้องการใช้งาน'
+    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'เลือกโมดูลที่ต้องการใช้งาน',
+    navigator:'Navigator', world:'โลก', worldNew:'สร้างโลกใหม่', worldChars:'ตัวละคร', worldCats:'หมวดหมู่',
+    worldMaps:'แผนที่', worldMapTimelines:'ไทม์ไลน์แผนที่', worldOverview:'ภาพรวม', worldLinkedNovels:'นิยายที่เชื่อมต่อ',
+    worldTags:'แท็ก', worldCharNew:'เพิ่มตัวละคร', worldCatNew:'เพิ่มหมวดหมู่', worldMapNew:'เพิ่มแผนที่',
+    worldMaptlNew:'เพิ่มไทม์ไลน์', worldEventNew:'เพิ่มเหตุการณ์', worldObjNew:'เพิ่มรายการ',
+    worldCharLink:'เชื่อมกับตัวละครในนิยาย', worldCatLink:'เชื่อมกับหมวดหมู่ในนิยาย', worldMapLink:'เชื่อมกับแผนที่ในนิยาย',
+    noLink:'ยังไม่เชื่อมต่อ'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小',
@@ -93,7 +121,13 @@ const L = {
     newFolder:'新建文件夹', newProject:'新建项目', createProject:'创建项目',
     welcomeTitle:'Novel Manager', welcomeText:'从左侧列表选择项目，或创建一个新项目。',
     colorPanel:'颜色', saved:'已保存', deleted:'已删除', created:'已创建', applied:'已应用',
-    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'选择一个模块以开始。'
+    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'选择一个模块以开始。',
+    navigator:'Navigator', world:'世界', worldNew:'新建世界', worldChars:'角色', worldCats:'类别',
+    worldMaps:'地图', worldMapTimelines:'地图时间线', worldOverview:'概览', worldLinkedNovels:'关联小说',
+    worldTags:'标签', worldCharNew:'新建角色', worldCatNew:'新建类别', worldMapNew:'新建地图',
+    worldMaptlNew:'新建时间线', worldEventNew:'新建事件', worldObjNew:'新建对象',
+    worldCharLink:'链接到小说对象', worldCatLink:'链接到小说类别', worldMapLink:'链接到小说地图',
+    noLink:'未链接'
   }
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文' };
@@ -175,6 +209,8 @@ const S = {
   settings:loadUiSettings(),
   relListHeight:null,
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
+  // Navigator module state
+  world:null, worldTab:'overview', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null,
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -445,6 +481,9 @@ function updateTopNavButton(){
   });
   document.querySelectorAll('.nav-btn.project-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'director' && !!S.project) ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-btn.navigator-only').forEach(btn => {
+    btn.style.display = (S.activeModule === 'navigator') ? '' : 'none';
   });
 }
 
@@ -734,6 +773,7 @@ async function switchView(v) {
   else if (v==='hashtag')         { await loadModule('src/renderer/hashtag.js'); renderHashtagView(); }
   else if (v==='project-hashtag') { await loadModule('src/renderer/hashtag.js'); renderProjectHashtagView(); }
   else if (v==='colors')          { await loadModule('src/renderer/hashtag.js'); q('#left-panel-inner').innerHTML=`<div class="ph"><h4>${t('colorPanel')}</h4></div>`; renderColorSettings(); }
+  else if (v==='navigator')       { await loadModule('src/renderer/navigator.js'); renderNavigatorView(); }
 }
 
 // ═══ NEXUS HUB ═════════════════════════════════════════
@@ -748,6 +788,11 @@ function renderNexusHome() {
     <div class="module-item" onclick="selectModule('director')">
       <span class="module-icon">${I.director}</span>
       <span class="module-name">${t('director')}</span>
+      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="module-item" onclick="selectModule('navigator')">
+      <span class="module-icon">${I.navigator}</span>
+      <span class="module-name">${t('navigator')}</span>
       <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
   q('#main-inner')?.classList.remove('relation-main');
@@ -767,6 +812,13 @@ function selectModule(name) {
     updateTopNavButton();
     renderSidebar();
     renderWelcome();
+  } else if (name === 'navigator') {
+    S.view = 'navigator';
+    S.world = null; S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="navigator"]')?.classList.add('active');
+    updateTopNavButton();
+    loadModule('src/renderer/navigator.js').then(() => renderNavigatorView());
   }
 }
 
@@ -775,6 +827,7 @@ function returnToNexus() {
   S.project = null; S.category = null; S.object = null;
   S.timeline = null; S.map = null; S.mapAreaId = null;
   S.activeProjectTabId = null; S.projectHashtagId = null;
+  S.world = null; S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
   S.view = 'nexus';
   renderProjectTabs();
   renderNexusHome();

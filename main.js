@@ -206,6 +206,65 @@ h('hashtag:getObjectsByTag', (tagId, projectId) => db.getObjectsByHashtag(tagId,
 h('hashtag:getEventsByTag', (tagId, projectId) => db.getEventsByHashtag(tagId, projectId));
 h('project:getAllUsedTags', (pid) => db.getAllProjectUsedTags(pid));
 
+// Navigator (v2.2) — World module
+h('world:getAll',           ()                        => db.getWorlds());
+h('world:get',              (id)                      => db.getWorld(id));
+h('world:create',           (n,m,c)                   => db.createWorld(n,m,c));
+h('world:update',           (id,n,m,c)                => db.updateWorld(id,n,m,c));
+h('world:delete',           (id)                      => db.deleteWorld(id));
+
+h('world:getDesc',          (wid)                     => db.getWorldDesc(wid));
+h('world:addDesc',          (wid,title,content)       => db.addWorldDesc(wid,title,content));
+h('world:updateDesc',       (id,title,content)        => db.updateWorldDesc(id,title,content));
+h('world:deleteDesc',       (id)                      => db.deleteWorldDesc(id));
+
+h('world:getNovelLinks',    (wid)                     => db.getWorldNovelLinks(wid));
+h('world:addNovelLink',     (wid,pid)                 => db.addWorldNovelLink(wid,pid));
+h('world:removeNovelLink',  (id)                      => db.removeWorldNovelLink(id));
+
+h('world:getCharacters',    (wid)                     => db.getWorldCharacters(wid));
+h('world:createCharacter',  (wid,n,m)                 => db.createWorldCharacter(wid,n,m));
+h('world:updateCharacter',  (id,n,m)                  => db.updateWorldCharacter(id,n,m));
+h('world:deleteCharacter',  (id)                      => db.deleteWorldCharacter(id));
+h('world:setCharLink',      (cid,pid,catid,oid)       => db.setWorldCharLink(cid,pid,catid,oid));
+h('world:getCharTags',      (cid)                     => db.getWorldCharTags(cid));
+h('world:setCharTags',      (cid,tags)                => db.setWorldCharTags(cid,tags));
+
+h('world:getCategories',    (wid)                     => db.getWorldCategories(wid));
+h('world:createCategory',   (wid,n,m)                 => db.createWorldCategory(wid,n,m));
+h('world:updateCategory',   (id,n,m)                  => db.updateWorldCategory(id,n,m));
+h('world:deleteCategory',   (id)                      => db.deleteWorldCategory(id));
+h('world:setCatLink',       (catId,pid,catref)        => db.setWorldCatLink(catId,pid,catref));
+
+h('world:getCatObjects',    (catId)                   => db.getWorldCatObjects(catId));
+h('world:createCatObject',  (catId,n,sym)             => db.createWorldCatObject(catId,n,sym));
+h('world:updateCatObject',  (id,n,sym)                => db.updateWorldCatObject(id,n,sym));
+h('world:deleteCatObject',  (id)                      => db.deleteWorldCatObject(id));
+h('world:getObjTags',       (oid)                     => db.getWorldObjTags(oid));
+h('world:setObjTags',       (oid,tags)                => db.setWorldObjTags(oid,tags));
+
+h('world:getMaps',          (wid)                     => db.getWorldMaps(wid));
+h('world:createMap',        (wid,n,m)                 => db.createWorldMap(wid,n,m));
+h('world:updateMap',        (id,n,m)                  => db.updateWorldMap(id,n,m));
+h('world:deleteMap',        (id)                      => db.deleteWorldMap(id));
+h('world:setMapLink',       (mid,pid,msrc,aref)       => db.setWorldMapLink(mid,pid,msrc,aref));
+
+h('world:getMapTimelines',  (wid)                     => db.getWorldMapTimelines(wid));
+h('world:createMapTimeline',(wid,mid,n)               => db.createWorldMapTimeline(wid,mid,n));
+h('world:updateMapTimeline',(id,mid,n)                => db.updateWorldMapTimeline(id,mid,n));
+h('world:deleteMapTimeline',(id)                      => db.deleteWorldMapTimeline(id));
+
+h('world:getMaptlEvents',   (tlid)                    => db.getWorldMaptlEvents(tlid));
+h('world:createMaptlEvent', (tlid,n,ord)              => db.createWorldMaptlEvent(tlid,n,ord));
+h('world:updateMaptlEvent', (id,n,ord)                => db.updateWorldMaptlEvent(id,n,ord));
+h('world:deleteMaptlEvent', (id)                      => db.deleteWorldMaptlEvent(id));
+h('world:getMaptlObjs',     (evid)                    => db.getWorldMaptlObjs(evid));
+h('world:addMaptlObj',      (evid,coid)               => db.addWorldMaptlObj(evid,coid));
+h('world:removeMaptlObj',   (id)                      => db.removeWorldMaptlObj(id));
+
+h('world:getTags',          (wid)                     => db.getWorldTags(wid));
+h('world:setTags',          (wid,tags)                => db.setWorldTags(wid,tags));
+
 // Window controls for the custom title/tab bar.
 h('window:minimize', () => {
   const win = BrowserWindow.getFocusedWindow();
