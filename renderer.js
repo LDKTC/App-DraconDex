@@ -23,7 +23,8 @@ const I = {
   fields: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>`,
   settings: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
   list: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
-  table: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="10" y1="9" x2="10" y2="21"/></svg>`
+  table: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="10" y1="9" x2="10" y2="21"/></svg>`,
+  director: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 3.9"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
@@ -43,7 +44,8 @@ const L = {
     importDb:'Import DB', exportDb:'Export DB', search:'Search...',
     newFolder:'New folder', newProject:'New project', createProject:'Create project',
     welcomeTitle:'Novel Manager', welcomeText:'Select a project from the list, or create a new one.',
-    colorPanel:'Colors', saved:'Saved', deleted:'Deleted', created:'Created', applied:'Applied'
+    colorPanel:'Colors', saved:'Saved', deleted:'Deleted', created:'Created', applied:'Applied',
+    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'Choose a module to get started.'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ',
@@ -54,7 +56,8 @@ const L = {
     importDb:'DBをインポート', exportDb:'DBをエクスポート', search:'検索...',
     newFolder:'新規フォルダー', newProject:'新規プロジェクト', createProject:'プロジェクト作成',
     welcomeTitle:'Novel Manager', welcomeText:'左の一覧からプロジェクトを選ぶか、新しく作成してください。',
-    colorPanel:'色', saved:'保存しました', deleted:'削除しました', created:'作成しました', applied:'適用しました'
+    colorPanel:'色', saved:'保存しました', deleted:'削除しました', created:'作成しました', applied:'適用しました',
+    nexus:'Nexus', director:'ディレクター', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'モジュールを選択してください。'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기',
@@ -65,7 +68,8 @@ const L = {
     importDb:'DB 가져오기', exportDb:'DB 내보내기', search:'검색...',
     newFolder:'새 폴더', newProject:'새 프로젝트', createProject:'프로젝트 만들기',
     welcomeTitle:'Novel Manager', welcomeText:'왼쪽 목록에서 프로젝트를 선택하거나 새 프로젝트를 만드세요.',
-    colorPanel:'색상', saved:'저장됨', deleted:'삭제됨', created:'생성됨', applied:'적용됨'
+    colorPanel:'색상', saved:'저장됨', deleted:'삭제됨', created:'생성됨', applied:'적용됨',
+    nexus:'Nexus', director:'디렉터', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'모듈을 선택하세요.'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI',
@@ -76,7 +80,8 @@ const L = {
     importDb:'Import DB', exportDb:'Export DB', search:'ค้นหา...',
     newFolder:'สร้างโฟลเดอร์ใหม่', newProject:'สร้างโปรเจกต์ใหม่', createProject:'สร้างโปรเจกต์ใหม่',
     welcomeTitle:'Novel Manager', welcomeText:'เลือกโปรเจกต์จากรายการทางซ้าย หรือสร้างโปรเจกต์ใหม่',
-    colorPanel:'สี', saved:'บันทึกแล้ว', deleted:'ลบแล้ว', created:'สร้างแล้ว', applied:'ปรับใช้แล้ว'
+    colorPanel:'สี', saved:'บันทึกแล้ว', deleted:'ลบแล้ว', created:'สร้างแล้ว', applied:'ปรับใช้แล้ว',
+    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'เลือกโมดูลที่ต้องการใช้งาน'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小',
@@ -87,7 +92,8 @@ const L = {
     importDb:'导入 DB', exportDb:'导出 DB', search:'搜索...',
     newFolder:'新建文件夹', newProject:'新建项目', createProject:'创建项目',
     welcomeTitle:'Novel Manager', welcomeText:'从左侧列表选择项目，或创建一个新项目。',
-    colorPanel:'颜色', saved:'已保存', deleted:'已删除', created:'已创建', applied:'已应用'
+    colorPanel:'颜色', saved:'已保存', deleted:'已删除', created:'已创建', applied:'已应用',
+    nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'选择一个模块以开始。'
   }
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文' };
@@ -157,10 +163,11 @@ function loadUiSettings(){
 const S = {
   folders:[], projects:[], colors:[],
   recentColors:[],
+  activeModule:null,
   project:null, category:null, object:null,
   timeline:null, relTab:0, map:null, mapAreaId:null, mapTool:'move',
   descOpen:false, openFolders:new Set(),
-  view:'projects',
+  view:'nexus',
   catView:'list',
   projectTabs:[],
   activeProjectTabId:null,
@@ -187,8 +194,7 @@ async function init() {
   renderSettingsMenu();
   translateStaticChrome();
   renderProjectTabs();
-  renderSidebar();
-  renderWelcome();
+  renderNexusHome();
   bindNav();
   bindSearch();
 }
@@ -349,7 +355,7 @@ function translateStaticChrome(){
   q('#btn-import-db')?.setAttribute('title', t('importDb'));
   q('#btn-export-db')?.setAttribute('title', t('exportDb'));
   applyLeftPanelState();
-  updateProjectNavButton();
+  updateTopNavButton();
   translateCommonUiText();
 }
 
@@ -413,18 +419,22 @@ function bindWindowChrome(){
   });
 }
 
-function updateProjectNavButton(){
+function updateTopNavButton(){
   const logoBtn = q('#nav-logo-btn');
-  const inProject = !!S.project;
+  const inModule = !!S.activeModule;
   if(logoBtn){
-    logoBtn.innerHTML = inProject
+    logoBtn.innerHTML = inModule
       ? I.return
       : `<img src="Image/DraconDex-Symbol.png" class="brand-img" alt="DraconDex">`;
-    logoBtn.setAttribute('title', inProject ? t('Back to project list') : 'DraconDex');
-    logoBtn.classList.toggle('is-return', inProject);
+    const title = !inModule ? 'DraconDex' : S.project ? t('Back to project list') : 'Back to Nexus';
+    logoBtn.setAttribute('title', title);
+    logoBtn.classList.toggle('is-return', inModule);
   }
+  document.querySelectorAll('.nav-btn.director-only').forEach(btn => {
+    btn.style.display = (S.activeModule === 'director') ? '' : 'none';
+  });
   document.querySelectorAll('.nav-btn.project-only').forEach(btn => {
-    btn.style.display = inProject ? '' : 'none';
+    btn.style.display = (S.activeModule === 'director' && !!S.project) ? '' : 'none';
   });
 }
 
@@ -435,7 +445,7 @@ function returnToProjectList(){
   document.querySelectorAll('.nav-btn[data-panel]').forEach(b=>b.classList.remove('active'));
   q('.nav-btn[data-panel="projects"]')?.classList.add('active');
   renderProjectTabs();
-  updateProjectNavButton();
+  updateTopNavButton();
   renderSidebar();
   renderWelcome();
 }
@@ -469,7 +479,7 @@ function renderProjectTabs(){
       <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
     </button>
   `).join('');
-  document.title = S.project ? `${S.project.name} - Novel Manager` : 'Novel Manager';
+  document.title = S.project ? `${S.project.name} - DraconDex` : 'DraconDex';
 }
 
 async function switchProjectTab(id){
@@ -635,13 +645,14 @@ async function addColorFromPicker(){
 function bindNav() {
   q('#nav-logo-btn')?.addEventListener('click', () => {
     if(S.project) returnToProjectList();
+    else if(S.activeModule) returnToNexus();
   });
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.nav-btn[data-panel]').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       S.view = btn.dataset.panel;
-      updateProjectNavButton();
+      updateTopNavButton();
       switchView(S.view);
     });
   });
@@ -683,14 +694,59 @@ function switchView(v) {
     konvaStage = null;
   }
   q('#main-inner')?.classList.toggle('relation-main', v === 'relation');
-  updateProjectNavButton();
-  if      (v==='projects')        { if(S.project) renderProject(); else { renderSidebar(); renderWelcome(); } }
+  updateTopNavButton();
+  if      (v==='nexus')           renderNexusHome();
+  else if (v==='projects')        { if(S.project) renderProject(); else { renderSidebar(); renderWelcome(); } }
   else if (v==='timeline')        renderTimelineView();
   else if (v==='relation')        renderRelationView();
   else if (v==='map')             renderMapView();
   else if (v==='hashtag')         renderHashtagView();
   else if (v==='project-hashtag') renderProjectHashtagView();
   else if (v==='colors')          { q('#left-panel-inner').innerHTML=`<div class="ph"><h4>${t('colorPanel')}</h4></div>`; renderColorSettings(); }
+}
+
+// ═══ NEXUS HUB ═════════════════════════════════════════
+function renderNexusHome() {
+  S.view = 'nexus';
+  S.activeModule = null;
+  if (konvaStage) { try { konvaStage.destroy(); } catch(e){} konvaStage = null; }
+  document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+  updateTopNavButton();
+  q('#left-panel-inner').innerHTML = `
+    <div class="ph"><h4>${t('nexus')}</h4></div>
+    <div class="module-item" onclick="selectModule('director')">
+      <span class="module-icon">${I.director}</span>
+      <span class="module-name">${t('director')}</span>
+      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  q('#main-inner')?.classList.remove('relation-main');
+  q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
+    <div class="ei"><img src="Image/DraconDex-Symbol.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+    <h3>${t('nexusWelcomeTitle')}</h3>
+    <p>${t('nexusWelcomeText')}</p>
+  </div>`;
+}
+
+function selectModule(name) {
+  S.activeModule = name;
+  if (name === 'director') {
+    S.view = 'projects';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="projects"]')?.classList.add('active');
+    updateTopNavButton();
+    renderSidebar();
+    renderWelcome();
+  }
+}
+
+function returnToNexus() {
+  S.activeModule = null;
+  S.project = null; S.category = null; S.object = null;
+  S.timeline = null; S.map = null; S.mapAreaId = null;
+  S.activeProjectTabId = null; S.projectHashtagId = null;
+  S.view = 'nexus';
+  renderProjectTabs();
+  renderNexusHome();
 }
 
 // ═══ SIDEBAR ═══════════════════════════════════════════
@@ -703,8 +759,9 @@ async function reloadSidebar() {
     .map(t => tabFromProject(byId.get(t.id)));
   if(S.activeProjectTabId && !byId.has(S.activeProjectTabId)) S.activeProjectTabId = null;
   renderProjectTabs();
-  updateProjectNavButton();
-  if(S.project && S.view === 'projects') await renderProjectSidebar();
+  updateTopNavButton();
+  if(!S.activeModule) renderNexusHome();
+  else if(S.project && S.view === 'projects') await renderProjectSidebar();
   else renderSidebar();
 }
 
@@ -854,6 +911,7 @@ async function selectProject(id) {
 }
 
 async function activateProject(project) {
+  S.activeModule = 'director';
   S.project = project; S.object=null; S.timeline=null; S.map=null; S.mapAreaId=null; S.projectHashtagId=null;
   S.activeProjectTabId = project.id;
   const cats = await api.category.getAll(project.id); S.category=cats[0]||null;
@@ -861,7 +919,7 @@ async function activateProject(project) {
   document.querySelectorAll('.nav-btn[data-panel]').forEach(b=>b.classList.remove('active'));
   q('.nav-btn[data-panel="projects"]')?.classList.add('active');
   renderProjectTabs();
-  updateProjectNavButton();
+  updateTopNavButton();
   await renderProject();
 }
 
@@ -3121,6 +3179,7 @@ async function selectSearchHashtag(tid){
 }
 
 Object.assign(window, {
+  selectModule, returnToNexus,
   setUiSetting, setUiSizeFromSlider, updateUiSizeLabel, toggleSettingsMenu, startRelListResize,
   openTemplateModal, addTemplate, delTemplate,
   switchRelViewMode, updateRelCategoryView, updateRelObjectView,

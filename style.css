@@ -214,6 +214,19 @@ body{
 .nav-btn:hover{background:var(--hover);color:var(--t1)}
 .nav-btn.active{background:var(--accent);color:#fff}
 .nav-util{font-size:15px}
+.nav-btn.director-only{display:none}
+
+/* MODULE ITEM (nexus left panel) */
+.module-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:var(--r);
+  cursor:pointer;color:var(--t1);font-size:14px;font-weight:500;
+  transition:all var(--ease);
+}
+.module-item:hover{background:var(--hover)}
+.module-icon{display:flex;align-items:center;color:var(--accent);flex-shrink:0}
+.module-name{flex:1}
+.module-chevron{width:14px;height:14px;color:var(--t3);flex-shrink:0}
 
 /* LEFT PANEL */
 #left-panel{
