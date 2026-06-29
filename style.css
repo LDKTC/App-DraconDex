@@ -989,4 +989,21 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .mention-option small{color:var(--t3);font-size:11px;margin-left:6px}
 .empty-hint{color:var(--t3);font-size:13px;padding:8px 0;font-style:italic}
 
+/* Sage module */
+.sage-card{display:flex;align-items:center;gap:12px;background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:16px}
+.sage-card-icon .icon{width:28px;height:28px;color:var(--t2)}
+.sage-card-name{font-size:13px;font-weight:600;color:var(--t1)}
+.sage-card-count{font-size:22px;font-weight:700;color:var(--accent);line-height:1}
+.sage-card-count span{font-size:12px;font-weight:400;color:var(--t3);margin-left:2px}
+
+.sage-stat-card{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:12px;display:flex;flex-direction:column;gap:4px}
+.sage-stat-num{font-size:28px;font-weight:700;line-height:1}
+.sage-stat-label{font-size:11px;color:var(--t3)}
+
+.sage-table{width:100%;border-collapse:collapse;font-size:13px}
+.sage-table th{text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);color:var(--t2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.sage-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--t1)}
+.sage-table tr:hover td{background:var(--raised)}
+.sage-type-badge{font-size:10px;padding:2px 6px;border-radius:10px;color:#fff;font-weight:600;opacity:.85}
+
 

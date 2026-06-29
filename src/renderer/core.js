@@ -37,7 +37,9 @@ const I = {
   book: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
   writer: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
   series: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
-  document: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`
+  document: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
+  chart: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
+  sage: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
@@ -77,7 +79,10 @@ const L = {
     seriesNew:'New Series', seriesOverview:'Overview', seriesDocs:'Documents', seriesChars:'Characters',
     seriesObjects:'Objects', seriesTags:'Tags', docNew:'New Document', docEditor:'Document Editor',
     exportPdf:'Export PDF', exportDocx:'Export DOCX', addChar:'Add Character',
-    addObject:'Add Object', addNovel:'Add Novel', addWorld:'Add World'
+    addObject:'Add Object', addNovel:'Add Novel', addWorld:'Add World',
+    sage:'Sage', sageDataSize:'Data Size', sageObjectAmount:'Object Amount',
+    sageLinkerList:'Linker List', sageLinkerGraph:'Linker Graph', sageRows:'rows',
+    sageModule:'Module', sageFrom:'From', sageTo:'To', sageType:'Type'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ',
@@ -108,7 +113,10 @@ const L = {
     seriesNew:'新規シリーズ', seriesOverview:'概要', seriesDocs:'ドキュメント', seriesChars:'キャラクター',
     seriesObjects:'オブジェクト', seriesTags:'タグ', docNew:'新規ドキュメント', docEditor:'ドキュメントエディタ',
     exportPdf:'PDFエクスポート', exportDocx:'DOCXエクスポート', addChar:'キャラクター追加',
-    addObject:'オブジェクト追加', addNovel:'小説追加', addWorld:'ワールド追加'
+    addObject:'オブジェクト追加', addNovel:'小説追加', addWorld:'ワールド追加',
+    sage:'Sage', sageDataSize:'データサイズ', sageObjectAmount:'オブジェクト数',
+    sageLinkerList:'リンク一覧', sageLinkerGraph:'リンクグラフ', sageRows:'件',
+    sageModule:'モジュール', sageFrom:'元', sageTo:'先', sageType:'種類'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기',
@@ -139,7 +147,10 @@ const L = {
     seriesNew:'새 시리즈', seriesOverview:'개요', seriesDocs:'문서', seriesChars:'캐릭터',
     seriesObjects:'오브젝트', seriesTags:'태그', docNew:'새 문서', docEditor:'문서 편집기',
     exportPdf:'PDF 내보내기', exportDocx:'DOCX 내보내기', addChar:'캐릭터 추가',
-    addObject:'오브젝트 추가', addNovel:'소설 추가', addWorld:'세계 추가'
+    addObject:'오브젝트 추가', addNovel:'소설 추가', addWorld:'세계 추가',
+    sage:'Sage', sageDataSize:'데이터 크기', sageObjectAmount:'오브젝트 수',
+    sageLinkerList:'링커 목록', sageLinkerGraph:'링커 그래프', sageRows:'개',
+    sageModule:'모듈', sageFrom:'출처', sageTo:'대상', sageType:'유형'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI',
@@ -170,7 +181,10 @@ const L = {
     seriesNew:'เพิ่มซีรีส์', seriesOverview:'ภาพรวม', seriesDocs:'เอกสาร', seriesChars:'ตัวละคร',
     seriesObjects:'รายการ', seriesTags:'แท็ก', docNew:'เพิ่มเอกสาร', docEditor:'แก้ไขเอกสาร',
     exportPdf:'ส่งออก PDF', exportDocx:'ส่งออก DOCX', addChar:'เพิ่มตัวละคร',
-    addObject:'เพิ่มรายการ', addNovel:'เพิ่มนิยาย', addWorld:'เพิ่มโลก'
+    addObject:'เพิ่มรายการ', addNovel:'เพิ่มนิยาย', addWorld:'เพิ่มโลก',
+    sage:'Sage', sageDataSize:'ขนาดข้อมูล', sageObjectAmount:'จำนวนรายการ',
+    sageLinkerList:'รายการเชื่อมต่อ', sageLinkerGraph:'กราฟเชื่อมต่อ', sageRows:'รายการ',
+    sageModule:'โมดูล', sageFrom:'แหล่ง', sageTo:'ปลายทาง', sageType:'ประเภท'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小',
@@ -201,7 +215,10 @@ const L = {
     seriesNew:'新建系列', seriesOverview:'概览', seriesDocs:'文档', seriesChars:'角色',
     seriesObjects:'对象', seriesTags:'标签', docNew:'新建文档', docEditor:'文档编辑器',
     exportPdf:'导出 PDF', exportDocx:'导出 DOCX', addChar:'添加角色',
-    addObject:'添加对象', addNovel:'添加小说', addWorld:'添加世界'
+    addObject:'添加对象', addNovel:'添加小说', addWorld:'添加世界',
+    sage:'Sage', sageDataSize:'数据大小', sageObjectAmount:'对象数量',
+    sageLinkerList:'链接列表', sageLinkerGraph:'链接图', sageRows:'条',
+    sageModule:'模块', sageFrom:'来源', sageTo:'目标', sageType:'类型'
   }
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文' };
@@ -289,6 +306,8 @@ const S = {
   game:null, gameTab:'overview',
   // Writer module state
   library:null, libraryTab:'overview', librarySeries:null, librarySeriesTab:'docs', libraryDoc:null,
+  // Sage module state
+  sageTab:'dataSize',
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -568,6 +587,9 @@ function updateTopNavButton(){
   });
   document.querySelectorAll('.nav-btn.writer-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'writer') ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-btn.sage-only').forEach(btn => {
+    btn.style.display = (S.activeModule === 'sage') ? '' : 'none';
   });
 }
 
@@ -860,6 +882,7 @@ async function switchView(v) {
   else if (v==='navigator')       { await loadModule('src/renderer/navigator.js'); renderNavigatorView(); }
   else if (v==='hero')            { await loadModule('src/renderer/hero.js'); renderHeroView(); }
   else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
+  else if (v==='sage')            { await loadModule('src/renderer/sage.js'); renderSageView(); }
 }
 
 // ═══ NEXUS HUB ═════════════════════════════════════════
@@ -889,6 +912,11 @@ function renderNexusHome() {
     <div class="module-item" onclick="selectModule('writer')">
       <span class="module-icon">${I.writer}</span>
       <span class="module-name">${t('writer')}</span>
+      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="module-item" onclick="selectModule('sage')">
+      <span class="module-icon">${I.sage}</span>
+      <span class="module-name">${t('sage')}</span>
       <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
   q('#main-inner')?.classList.remove('relation-main');
@@ -929,6 +957,12 @@ function selectModule(name) {
     q('.nav-btn[data-panel="writer"]')?.classList.add('active');
     updateTopNavButton();
     loadModule('src/renderer/writer.js').then(() => renderWriterView());
+  } else if (name === 'sage') {
+    S.view = 'sage';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="sage"]')?.classList.add('active');
+    updateTopNavButton();
+    loadModule('src/renderer/sage.js').then(() => renderSageView());
   }
 }
 

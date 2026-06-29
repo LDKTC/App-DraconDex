@@ -279,6 +279,12 @@ contextBridge.exposeInMainWorld('api', {
     exportPdf:          (html,name)      => inv('library:exportPdf', html,name),
     exportDocx:         (blocks,name)    => inv('library:exportDocx', blocks,name),
   },
+  sage: {
+    getDataSize:     () => inv('sage:getDataSize'),
+    getObjectAmounts:() => inv('sage:getObjectAmounts'),
+    getLinkerList:   () => inv('sage:getLinkerList'),
+    getLinkerGraph:  () => inv('sage:getLinkerGraph'),
+  },
   window: {
     minimize:       () => inv('window:minimize'),
     toggleMaximize: () => inv('window:toggleMaximize'),

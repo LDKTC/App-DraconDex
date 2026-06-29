@@ -445,7 +445,7 @@ async function saveDocument(docId, name) {
   if (!editor) return;
   const blocks = htmlToBlocks(editor);
   await api.library.updateDoc(docId, name, JSON.stringify(blocks));
-  showToast(t('saved'));
+  toast(t('saved'));
 }
 
 async function exportDocPdf(docId, name) {
@@ -453,7 +453,7 @@ async function exportDocPdf(docId, name) {
   if (!editor) return;
   const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;max-width:800px;margin:40px auto;line-height:1.6}h1{font-size:2em}h2{font-size:1.5em}.mention-chip{background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:4px}</style></head><body>${editor.innerHTML}</body></html>`;
   const result = await api.library.exportPdf(htmlContent, name+'.pdf');
-  if (!result.canceled) showToast(t('saved'));
+  if (!result.canceled) toast(t('saved'));
 }
 
 async function exportDocDocx(docId, name) {
@@ -461,7 +461,7 @@ async function exportDocDocx(docId, name) {
   if (!editor) return;
   const blocks = htmlToBlocks(editor);
   const result = await api.library.exportDocx(blocks, name+'.docx');
-  if (!result.canceled) showToast(t('saved'));
+  if (!result.canceled) toast(t('saved'));
 }
 
 // ═══ LIBRARY MODALS ══════════════════════════════════════

@@ -394,6 +394,12 @@ h('library:exportPdf', async (_e, htmlContent, defaultName) => {
   return { filePath };
 });
 
+// Sage / Analytics
+h('sage:getDataSize',    () => db.getDataSize());
+h('sage:getObjectAmounts', () => db.getObjectAmounts());
+h('sage:getLinkerList',  () => db.getLinkerList());
+h('sage:getLinkerGraph', () => db.getLinkerGraph());
+
 h('library:exportDocx', async (_e, blocks, defaultName) => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     defaultPath: defaultName || 'document.docx',

@@ -9,6 +9,7 @@ const hashtag   = require('./src/db/hashtag');
 const navigator = require('./src/db/navigator');
 const hero      = require('./src/db/hero');
 const writer    = require('./src/db/writer');
+const sage      = require('./src/db/sage');
 
 module.exports = {
   ...core,
@@ -21,4 +22,5 @@ module.exports = {
   ...navigator,
   ...hero,
   ...writer,
+  ...sage,
 };
