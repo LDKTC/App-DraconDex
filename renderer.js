@@ -261,6 +261,13 @@ function applyUiSettings(){
   const scale = S.settings.size / 100;
   document.documentElement.style.setProperty('--ui-scale', String(scale));
   document.body.style.zoom = String(scale);
+  if(scale !== 1){
+    document.body.style.height = `${(100 / scale).toFixed(4)}vh`;
+    document.body.style.width  = `${(100 / scale).toFixed(4)}vw`;
+  } else {
+    document.body.style.height = '';
+    document.body.style.width  = '';
+  }
 }
 
 function setUiSetting(key, value){
@@ -425,11 +432,14 @@ function updateTopNavButton(){
   if(logoBtn){
     logoBtn.innerHTML = inModule
       ? I.return
-      : `<img src="Image/DraconDex-Symbol.png" class="brand-img" alt="DraconDex">`;
+      : `<img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex">`;
     const title = !inModule ? 'DraconDex' : S.project ? t('Back to project list') : 'Back to Nexus';
     logoBtn.setAttribute('title', title);
     logoBtn.classList.toggle('is-return', inModule);
   }
+  document.querySelectorAll('.nav-btn.nexus-only').forEach(btn => {
+    btn.style.display = (!S.activeModule) ? '' : 'none';
+  });
   document.querySelectorAll('.nav-btn.director-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'director') ? '' : 'none';
   });
@@ -730,7 +740,7 @@ function renderNexusHome() {
     </div>`;
   q('#main-inner')?.classList.remove('relation-main');
   q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
-    <div class="ei"><img src="Image/DraconDex-Symbol.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+    <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
     <h3>${t('nexusWelcomeTitle')}</h3>
     <p>${t('nexusWelcomeText')}</p>
   </div>`;

@@ -1,4 +1,5 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{height:100%;overflow:hidden}
 
 :root{
 	--bg:      #0f0f13;
@@ -202,7 +203,10 @@ body{
 }
 .nav-logo-btn:hover{background:var(--hover);color:var(--t1)}
 .nav-logo-btn.is-return{color:var(--accent)}
-.brand-img{height:24px;width:24px;object-fit:contain;display:block}
+.brand-img{height:24px;width:24px;object-fit:contain;display:block;content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="daylight"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="moonlight"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
+body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
 .nav-btn{
 	width:40px;height:40px;border:none;
 	background:transparent; border-radius:var(--r);
