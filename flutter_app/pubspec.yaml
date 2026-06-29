@@ -1,0 +1,61 @@
+name: dracondex
+description: "DraconDex - Novel data management app"
+publish_to: 'none'
+version: 2.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Database
+  sqflite: ^2.4.1
+  path: ^1.9.0
+  path_provider: ^2.1.5
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # Settings persistence
+  shared_preferences: ^2.3.5
+
+  # File import/export
+  file_picker: ^9.0.1
+  share_plus: ^10.1.4
+
+  # Color picker
+  flutter_colorpicker: ^1.1.0
+
+  # Relations force-directed graph
+  graphview: ^1.2.0
+
+  # Internationalization
+  intl: ^0.20.2
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/images/
+
+  fonts:
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+        - asset: assets/fonts/NotoSans-Bold.ttf
+          weight: 700
