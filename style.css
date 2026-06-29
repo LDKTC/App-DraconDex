@@ -956,4 +956,54 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 /* Nav logo icon sizes */
 .nav-logo-btn .icon{width:20px;height:20px}
 
+/* Writer module */
+.series-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:12px 0}
+.series-card{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .15s}
+.series-card:hover{border-color:var(--accent)}
+.series-card-icon .icon{width:32px;height:32px;color:var(--t2)}
+.series-card-name{font-weight:600;font-size:14px;text-align:center;color:var(--t1)}
+.series-card-memo{font-size:12px;color:var(--t3);text-align:center}
+
+.doc-list{display:flex;flex-direction:column;gap:4px;padding:4px 0}
+.doc-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--rs);background:var(--raised);border:1px solid var(--border)}
+.doc-item:hover{border-color:var(--accent)}
+.doc-icon .icon,.doc-icon{width:16px;height:16px;color:var(--t3)}
+.doc-name{flex:1;cursor:pointer;color:var(--accent);font-size:13px}
+.doc-name:hover{text-decoration:underline}
+.doc-date{font-size:11px;color:var(--t3);margin-right:8px}
+
+.doc-editor-bar{display:flex;align-items:center;gap:6px;padding:8px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.doc-editor-name{font-weight:600;font-size:14px;color:var(--t1)}
+.doc-editor-toolbar{display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tbar-btn{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:3px 8px;cursor:pointer;color:var(--t1);font-size:12px;min-width:28px}
+.tbar-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.doc-editor{flex:1;padding:16px;outline:none;min-height:300px;line-height:1.8;font-size:14px;color:var(--t1);caret-color:var(--accent)}
+.doc-editor h1{font-size:1.8em;margin:16px 0 8px}
+.doc-editor h2{font-size:1.4em;margin:12px 0 6px}
+.doc-editor p{margin:0 0 8px}
+
+.mention-chip{background:var(--accent);color:#fff;padding:1px 6px;border-radius:10px;font-size:12px;user-select:none;display:inline-block;margin:0 2px}
+.mention-dropdown{position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);box-shadow:0 4px 16px rgba(0,0,0,.2);max-width:280px;max-height:200px;overflow-y:auto}
+.mention-option{padding:6px 12px;cursor:pointer;font-size:13px;color:var(--t1)}
+.mention-option:hover{background:var(--raised)}
+.mention-option small{color:var(--t3);font-size:11px;margin-left:6px}
+.empty-hint{color:var(--t3);font-size:13px;padding:8px 0;font-style:italic}
+
+/* Sage module */
+.sage-card{display:flex;align-items:center;gap:12px;background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:16px}
+.sage-card-icon .icon{width:28px;height:28px;color:var(--t2)}
+.sage-card-name{font-size:13px;font-weight:600;color:var(--t1)}
+.sage-card-count{font-size:22px;font-weight:700;color:var(--accent);line-height:1}
+.sage-card-count span{font-size:12px;font-weight:400;color:var(--t3);margin-left:2px}
+
+.sage-stat-card{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);padding:12px;display:flex;flex-direction:column;gap:4px}
+.sage-stat-num{font-size:28px;font-weight:700;line-height:1}
+.sage-stat-label{font-size:11px;color:var(--t3)}
+
+.sage-table{width:100%;border-collapse:collapse;font-size:13px}
+.sage-table th{text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);color:var(--t2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.sage-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--t1)}
+.sage-table tr:hover td{background:var(--raised)}
+.sage-type-badge{font-size:10px;padding:2px 6px;border-radius:10px;color:#fff;font-weight:600;opacity:.85}
+
 

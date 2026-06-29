@@ -9,6 +9,7 @@
     "build:portable": "electron-builder --win portable"
   },
   "dependencies": {
+    "docx": "^9.7.1",
     "node-sqlite3-wasm": "^0.8.59"
   },
   "devDependencies": {
@@ -30,6 +31,7 @@
       "style.css",
       "database.js",
       "package.json",
+      "src/**/*",
       "Image/**/*",
       "node_modules/**/*"
     ],

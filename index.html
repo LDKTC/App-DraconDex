@@ -47,6 +47,64 @@
         <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>
       </svg>
     </button>
+    <button class="nav-btn nexus-only" title="Navigator" style="display:none" onclick="selectModule('navigator')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    </button>
+    <button class="nav-btn navigator-only" data-panel="navigator" title="Navigator" style="display:none">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    </button>
+    <button class="nav-btn nexus-only" title="Hero" style="display:none" onclick="selectModule('hero')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/>
+        <line x1="13" y1="19" x2="19" y2="13"/>
+        <line x1="16" y1="16" x2="20" y2="20"/>
+        <line x1="19" y1="21" x2="21" y2="19"/>
+      </svg>
+    </button>
+    <button class="nav-btn hero-only" data-panel="hero" title="Hero" style="display:none">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/>
+        <line x1="13" y1="19" x2="19" y2="13"/>
+        <line x1="16" y1="16" x2="20" y2="20"/>
+        <line x1="19" y1="21" x2="21" y2="19"/>
+      </svg>
+    </button>
+    <button class="nav-btn nexus-only" title="Writer" style="display:none" onclick="selectModule('writer')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    </button>
+    <button class="nav-btn writer-only" data-panel="writer" title="Writer" style="display:none">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    </button>
+    <button class="nav-btn nexus-only" title="Sage" style="display:none" onclick="selectModule('sage')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+        <line x1="2" y1="20" x2="22" y2="20"/>
+      </svg>
+    </button>
+    <button class="nav-btn sage-only" data-panel="sage" title="Sage" style="display:none">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+        <line x1="2" y1="20" x2="22" y2="20"/>
+      </svg>
+    </button>
     <button class="nav-btn director-only" data-panel="projects" title="โปรเจกต์" style="display:none">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -132,7 +190,10 @@
   </div>
 </div>
 <div id="toast"></div>
-  <!-- D3 is lazy-loaded when graph view is rendered -->
-  <script src="renderer.js"></script>
+  <!-- Core + Director loaded immediately; Timeline/Relation/Map/Hashtag lazy-loaded on first use -->
+  <script src="src/renderer/core.js"></script>
+  <script src="src/renderer/director.js"></script>
+  <script src="src/renderer/modals.js"></script>
+  <script src="src/renderer/search.js"></script>
 </body>
 </html>

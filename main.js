@@ -206,6 +206,222 @@ h('hashtag:getObjectsByTag', (tagId, projectId) => db.getObjectsByHashtag(tagId,
 h('hashtag:getEventsByTag', (tagId, projectId) => db.getEventsByHashtag(tagId, projectId));
 h('project:getAllUsedTags', (pid) => db.getAllProjectUsedTags(pid));
 
+// Navigator (v2.2) — World module
+h('world:getAll',           ()                        => db.getWorlds());
+h('world:get',              (id)                      => db.getWorld(id));
+h('world:create',           (n,m,c)                   => db.createWorld(n,m,c));
+h('world:update',           (id,n,m,c)                => db.updateWorld(id,n,m,c));
+h('world:delete',           (id)                      => db.deleteWorld(id));
+
+h('world:getDesc',          (wid)                     => db.getWorldDesc(wid));
+h('world:addDesc',          (wid,title,content)       => db.addWorldDesc(wid,title,content));
+h('world:updateDesc',       (id,title,content)        => db.updateWorldDesc(id,title,content));
+h('world:deleteDesc',       (id)                      => db.deleteWorldDesc(id));
+
+h('world:getNovelLinks',    (wid)                     => db.getWorldNovelLinks(wid));
+h('world:addNovelLink',     (wid,pid)                 => db.addWorldNovelLink(wid,pid));
+h('world:removeNovelLink',  (id)                      => db.removeWorldNovelLink(id));
+
+h('world:getCharacters',    (wid)                     => db.getWorldCharacters(wid));
+h('world:createCharacter',  (wid,n,m)                 => db.createWorldCharacter(wid,n,m));
+h('world:updateCharacter',  (id,n,m)                  => db.updateWorldCharacter(id,n,m));
+h('world:deleteCharacter',  (id)                      => db.deleteWorldCharacter(id));
+h('world:setCharLink',      (cid,pid,catid,oid)       => db.setWorldCharLink(cid,pid,catid,oid));
+h('world:getCharTags',      (cid)                     => db.getWorldCharTags(cid));
+h('world:setCharTags',      (cid,tags)                => db.setWorldCharTags(cid,tags));
+
+h('world:getCategories',    (wid)                     => db.getWorldCategories(wid));
+h('world:createCategory',   (wid,n,m)                 => db.createWorldCategory(wid,n,m));
+h('world:updateCategory',   (id,n,m)                  => db.updateWorldCategory(id,n,m));
+h('world:deleteCategory',   (id)                      => db.deleteWorldCategory(id));
+h('world:setCatLink',       (catId,pid,catref)        => db.setWorldCatLink(catId,pid,catref));
+
+h('world:getCatObjects',    (catId)                   => db.getWorldCatObjects(catId));
+h('world:createCatObject',  (catId,n,sym)             => db.createWorldCatObject(catId,n,sym));
+h('world:updateCatObject',  (id,n,sym)                => db.updateWorldCatObject(id,n,sym));
+h('world:deleteCatObject',  (id)                      => db.deleteWorldCatObject(id));
+h('world:getObjTags',       (oid)                     => db.getWorldObjTags(oid));
+h('world:setObjTags',       (oid,tags)                => db.setWorldObjTags(oid,tags));
+
+h('world:getMaps',          (wid)                     => db.getWorldMaps(wid));
+h('world:createMap',        (wid,n,m)                 => db.createWorldMap(wid,n,m));
+h('world:updateMap',        (id,n,m)                  => db.updateWorldMap(id,n,m));
+h('world:deleteMap',        (id)                      => db.deleteWorldMap(id));
+h('world:setMapLink',       (mid,pid,msrc,aref)       => db.setWorldMapLink(mid,pid,msrc,aref));
+
+h('world:getMapTimelines',  (wid)                     => db.getWorldMapTimelines(wid));
+h('world:createMapTimeline',(wid,mid,n)               => db.createWorldMapTimeline(wid,mid,n));
+h('world:updateMapTimeline',(id,mid,n)                => db.updateWorldMapTimeline(id,mid,n));
+h('world:deleteMapTimeline',(id)                      => db.deleteWorldMapTimeline(id));
+
+h('world:getMaptlEvents',   (tlid)                    => db.getWorldMaptlEvents(tlid));
+h('world:createMaptlEvent', (tlid,n,ord)              => db.createWorldMaptlEvent(tlid,n,ord));
+h('world:updateMaptlEvent', (id,n,ord)                => db.updateWorldMaptlEvent(id,n,ord));
+h('world:deleteMaptlEvent', (id)                      => db.deleteWorldMaptlEvent(id));
+h('world:getMaptlObjs',     (evid)                    => db.getWorldMaptlObjs(evid));
+h('world:addMaptlObj',      (evid,coid)               => db.addWorldMaptlObj(evid,coid));
+h('world:removeMaptlObj',   (id)                      => db.removeWorldMaptlObj(id));
+
+h('world:getTags',          (wid)                     => db.getWorldTags(wid));
+h('world:setTags',          (wid,tags)                => db.setWorldTags(wid,tags));
+
+// Hero (v2.3) — Game module
+h('game:getAll',            ()                        => db.getGames());
+h('game:get',               (id)                      => db.getGame(id));
+h('game:create',            (n,m,c)                   => db.createGame(n,m,c));
+h('game:update',            (id,n,m,c)                => db.updateGame(id,n,m,c));
+h('game:delete',            (id)                      => db.deleteGame(id));
+
+h('game:getDesc',           (gid)                     => db.getGameDesc(gid));
+h('game:addDesc',           (gid,t,c)                 => db.addGameDesc(gid,t,c));
+h('game:updateDesc',        (id,t,c)                  => db.updateGameDesc(id,t,c));
+h('game:deleteDesc',        (id)                      => db.deleteGameDesc(id));
+
+h('game:getNovelLink',      (gid)                     => db.getGameNovelLink(gid));
+h('game:setNovelLink',      (gid,pid)                 => db.setGameNovelLink(gid,pid));
+
+h('game:getCharacters',     (gid)                     => db.getGameCharacters(gid));
+h('game:createCharacter',   (gid,n,m)                 => db.createGameCharacter(gid,n,m));
+h('game:updateCharacter',   (id,n,m)                  => db.updateGameCharacter(id,n,m));
+h('game:deleteCharacter',   (id)                      => db.deleteGameCharacter(id));
+h('game:setCharLink',       (cid,pid,catid,oid)       => db.setGameCharLink(cid,pid,catid,oid));
+h('game:getStats',          (cid)                     => db.getGameStats(cid));
+h('game:createStat',        (cid,n,t)                 => db.createGameStat(cid,n,t));
+h('game:updateStat',        (id,n,t)                  => db.updateGameStat(id,n,t));
+h('game:deleteStat',        (id)                      => db.deleteGameStat(id));
+h('game:getStatLevelups',   (cid)                     => db.getGameStatLevelups(cid));
+h('game:upsertStatLevelup', (cid,tid,lv,val)          => db.upsertGameStatLevelup(cid,tid,lv,val));
+h('game:deleteStatLevelup', (cid,tid,lv)              => db.deleteGameStatLevelup(cid,tid,lv));
+h('game:getCharTags',       (cid)                     => db.getGameCharTags(cid));
+h('game:setCharTags',       (cid,tags)                => db.setGameCharTags(cid,tags));
+
+h('game:getItemCategories', (gid)                     => db.getGameItemCategories(gid));
+h('game:createItemCategory',(gid,n,m)                 => db.createGameItemCategory(gid,n,m));
+h('game:updateItemCategory',(id,n,m)                  => db.updateGameItemCategory(id,n,m));
+h('game:deleteItemCategory',(id)                      => db.deleteGameItemCategory(id));
+h('game:getItemTemplates',  (icid)                    => db.getGameItemTemplates(icid));
+h('game:createItemTemplate',(icid,n,t)                => db.createGameItemTemplate(icid,n,t));
+h('game:updateItemTemplate',(id,n,t)                  => db.updateGameItemTemplate(id,n,t));
+h('game:deleteItemTemplate',(id)                      => db.deleteGameItemTemplate(id));
+h('game:getItems',          (icid)                    => db.getGameItems(icid));
+h('game:createItem',        (icid,n,sym)              => db.createGameItem(icid,n,sym));
+h('game:updateItem',        (id,n,sym)                => db.updateGameItem(id,n,sym));
+h('game:deleteItem',        (id)                      => db.deleteGameItem(id));
+h('game:getItemAttrs',      (iid)                     => db.getGameItemAttrs(iid));
+h('game:upsertItemAttr',    (iid,tid,v)               => db.upsertGameItemAttr(iid,tid,v));
+h('game:getItemTags',       (iid)                     => db.getGameItemTags(iid));
+h('game:setItemTags',       (iid,tags)                => db.setGameItemTags(iid,tags));
+
+h('game:getStories',        (gid)                     => db.getGameStories(gid));
+h('game:createStory',       (gid,n,m)                 => db.createGameStory(gid,n,m));
+h('game:updateStory',       (id,n,m)                  => db.updateGameStory(id,n,m));
+h('game:deleteStory',       (id)                      => db.deleteGameStory(id));
+h('game:getDialogues',      (sid)                     => db.getGameDialogues(sid));
+h('game:createDialogue',    (sid,n,m,x,y)             => db.createGameDialogue(sid,n,m,x,y));
+h('game:updateDialogue',    (id,n,m,x,y)              => db.updateGameDialogue(id,n,m,x,y));
+h('game:deleteDialogue',    (id)                      => db.deleteGameDialogue(id));
+h('game:updateDialoguePos', (id,x,y)                  => db.updateGameDialoguePos(id,x,y));
+h('game:getDialogueEdges',  (sid)                     => db.getGameDialogueEdges(sid));
+h('game:createDialogueEdge',(fid,tid,cond)            => db.createGameDialogueEdge(fid,tid,cond));
+h('game:deleteDialogueEdge',(id)                      => db.deleteGameDialogueEdge(id));
+h('game:getDialogueLines',  (did)                     => db.getGameDialogueLines(did));
+h('game:createDialogueLine',(did,spk,txt,ord)         => db.createGameDialogueLine(did,spk,txt,ord));
+h('game:updateDialogueLine',(id,spk,txt,ord)          => db.updateGameDialogueLine(id,spk,txt,ord));
+h('game:deleteDialogueLine',(id)                      => db.deleteGameDialogueLine(id));
+
+h('game:getFuncCategories', (gid)                     => db.getGameFuncCategories(gid));
+h('game:createFuncCategory',(gid,n,t)                 => db.createGameFuncCategory(gid,n,t));
+h('game:updateFuncCategory',(id,n,t)                  => db.updateGameFuncCategory(id,n,t));
+h('game:deleteFuncCategory',(id)                      => db.deleteGameFuncCategory(id));
+h('game:getFunctions',      (fcid)                    => db.getGameFunctions(fcid));
+h('game:createFunction',    (fcid,n,tpl,cond,eff)     => db.createGameFunction(fcid,n,tpl,cond,eff));
+h('game:updateFunction',    (id,n,tpl,cond,eff)       => db.updateGameFunction(id,n,tpl,cond,eff));
+h('game:deleteFunction',    (id)                      => db.deleteGameFunction(id));
+
+h('game:getTags',           (gid)                     => db.getGameTags(gid));
+h('game:setTags',           (gid,tags)                => db.setGameTags(gid,tags));
+
+// Writer / Library
+h('library:getProjects',          ()                         => db.getLibraryProjects());
+h('library:createProject',        (n,m,c)                    => db.createLibraryProject(n,m,c));
+h('library:updateProject',        (id,n,m,c)                 => db.updateLibraryProject(id,n,m,c));
+h('library:deleteProject',        (id)                       => db.deleteLibraryProject(id));
+h('library:getDescriptions',      (lid)                      => db.getLibraryDescriptions(lid));
+h('library:createDescription',    (lid,t,c)                  => db.createLibraryDescription(lid,t,c));
+h('library:updateDescription',    (id,t,c)                   => db.updateLibraryDescription(id,t,c));
+h('library:deleteDescription',    (id)                       => db.deleteLibraryDescription(id));
+h('library:getWorldLinks',        (lid)                      => db.getLibraryWorldLinks(lid));
+h('library:addWorldLink',         (lid,wid)                  => db.addLibraryWorldLink(lid,wid));
+h('library:removeWorldLink',      (id)                       => db.removeLibraryWorldLink(id));
+h('library:getSeries',            (lid)                      => db.getLibrarySeries(lid));
+h('library:createSeries',         (lid,n,m)                  => db.createLibrarySeries(lid,n,m));
+h('library:updateSeries',         (id,n,m)                   => db.updateLibrarySeries(id,n,m));
+h('library:deleteSeries',         (id)                       => db.deleteLibrarySeries(id));
+h('library:getSeriesDescs',       (sid)                      => db.getSeriesDescriptions(sid));
+h('library:createSeriesDesc',     (sid,t,c)                  => db.createSeriesDescription(sid,t,c));
+h('library:updateSeriesDesc',     (id,t,c)                   => db.updateSeriesDescription(id,t,c));
+h('library:deleteSeriesDesc',     (id)                       => db.deleteSeriesDescription(id));
+h('library:getSeriesNovels',      (sid)                      => db.getSeriesNovelLinks(sid));
+h('library:addSeriesNovel',       (sid,pid)                  => db.addSeriesNovelLink(sid,pid));
+h('library:removeSeriesNovel',    (id)                       => db.removeSeriesNovelLink(id));
+h('library:getSeriesChars',       (sid)                      => db.getSeriesCharLinks(sid));
+h('library:addSeriesChar',        (sid,oid)                  => db.addSeriesCharLink(sid,oid));
+h('library:removeSeriesChar',     (id)                       => db.removeSeriesCharLink(id));
+h('library:getSeriesObjects',     (sid)                      => db.getSeriesObjectLinks(sid));
+h('library:addSeriesObject',      (sid,oid)                  => db.addSeriesObjectLink(sid,oid));
+h('library:removeSeriesObject',   (id)                       => db.removeSeriesObjectLink(id));
+h('library:getSeriesTags',        (sid)                      => db.getSeriesHashtags(sid));
+h('library:toggleSeriesTag',      (sid,hid)                  => db.toggleSeriesHashtag(sid,hid));
+h('library:getDocs',              (sid)                      => db.getSeriesDocuments(sid));
+h('library:createDoc',            (sid,n)                    => db.createDocument(sid,n));
+h('library:getDoc',               (id)                       => db.getDocument(id));
+h('library:updateDoc',            (id,n,cj)                  => db.updateDocument(id,n,cj));
+h('library:deleteDoc',            (id)                       => db.deleteDocument(id));
+h('library:getDocTags',           (did)                      => db.getDocumentHashtags(did));
+h('library:toggleDocTag',         (did,hid)                  => db.toggleDocumentHashtag(did,hid));
+
+h('library:exportPdf', async (_e, htmlContent, defaultName) => {
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    defaultPath: defaultName || 'document.pdf',
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+  });
+  if (canceled || !filePath) return { canceled: true };
+  const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false } });
+  await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent));
+  const pdfBuffer = await win.webContents.printToPDF({ printBackground: true });
+  win.close();
+  fs.writeFileSync(filePath, pdfBuffer);
+  return { filePath };
+});
+
+// Sage / Analytics
+h('sage:getDataSize',    () => db.getDataSize());
+h('sage:getObjectAmounts', () => db.getObjectAmounts());
+h('sage:getLinkerList',  () => db.getLinkerList());
+h('sage:getLinkerGraph', () => db.getLinkerGraph());
+
+h('library:exportDocx', async (_e, blocks, defaultName) => {
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    defaultPath: defaultName || 'document.docx',
+    filters: [{ name: 'Word Document', extensions: ['docx'] }],
+  });
+  if (canceled || !filePath) return { canceled: true };
+  const { Document, Paragraph, TextRun, Packer } = require('docx');
+  const paragraphs = (blocks || []).map(block => {
+    const runs = (block.nodes || []).map(n => {
+      if (n.type === 'mention') return new TextRun({ text: n.label, bold: true });
+      return new TextRun({ text: n.text || '' });
+    });
+    if (block.type === 'heading1') return new Paragraph({ text: '', children: runs, heading: 'Heading1' });
+    if (block.type === 'heading2') return new Paragraph({ text: '', children: runs, heading: 'Heading2' });
+    return new Paragraph({ children: runs });
+  });
+  const doc = new Document({ sections: [{ children: paragraphs }] });
+  const buffer = await Packer.toBuffer(doc);
+  fs.writeFileSync(filePath, buffer);
+  return { filePath };
+});
+
 // Window controls for the custom title/tab bar.
 h('window:minimize', () => {
   const win = BrowserWindow.getFocusedWindow();
