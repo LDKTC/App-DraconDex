@@ -58,7 +58,7 @@ class _ProjectDialogState extends ConsumerState<ProjectDialog> {
             const SizedBox(height: 12),
             foldersAsync.when(
               data: (folders) => DropdownButtonFormField<int?>(
-                value: _selectedFolderId,
+                initialValue: _selectedFolderId,
                 decoration: const InputDecoration(labelText: 'Folder'),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('No Folder')),
@@ -67,7 +67,7 @@ class _ProjectDialogState extends ConsumerState<ProjectDialog> {
                 onChanged: (v) => setState(() => _selectedFolderId = v),
               ),
               loading: () => const SizedBox(),
-              error: (_, __) => const SizedBox(),
+              error: (_, _) => const SizedBox(),
             ),
             const SizedBox(height: 12),
             Row(children: [
@@ -106,7 +106,7 @@ class _ProjectDialogState extends ConsumerState<ProjectDialog> {
         }
       },
       loading: () async {},
-      error: (_, __) async {},
+      error: (_, _) async {},
     );
     if (mounted) Navigator.of(context).pop();
   }

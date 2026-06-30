@@ -57,13 +57,13 @@ class _ColorPickerSheetState extends ConsumerState<ColorPickerSheet> {
                   recentAsync.when(
                     data: (recent) => _section('Recent', recent, theme),
                     loading: () => const SizedBox(),
-                    error: (_, __) => const SizedBox(),
+                    error: (_, _) => const SizedBox(),
                   ),
                   const SizedBox(height: 16),
                   colorsAsync.when(
                     data: (colors) => _section('All Colors', colors, theme),
                     loading: () => const CircularProgressIndicator(),
-                    error: (_, __) => const SizedBox(),
+                    error: (_, _) => const SizedBox(),
                   ),
                   const SizedBox(height: 16),
                   Text('Custom', style: theme.textTheme.titleSmall),

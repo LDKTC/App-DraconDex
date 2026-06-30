@@ -5,7 +5,7 @@ import '../../../../providers/db_providers.dart';
 
 final _templatesProvider = FutureProvider.family<List<TemplateModel>, int>((ref, catId) async {
   final dao = ref.watch(categoryDaoProvider);
-  return dao.when(data: (d) => d.getTemplates(catId), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getTemplates(catId), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 class TemplateDialog extends ConsumerStatefulWidget {
@@ -38,7 +38,7 @@ class _TemplateDialogState extends ConsumerState<TemplateDialog> {
           children: [
             templatesAsync.when(
               loading: () => const CircularProgressIndicator(),
-              error: (_, __) => const SizedBox(),
+              error: (_, _) => const SizedBox(),
               data: (templates) => templates.isEmpty
                   ? const Text('No fields yet.')
                   : Column(
@@ -51,7 +51,7 @@ class _TemplateDialogState extends ConsumerState<TemplateDialog> {
                             await ref.read(categoryDaoProvider).when(
                               data: (d) => d.deleteTemplate(t.id),
                               loading: () async {},
-                              error: (_, __) async {},
+                              error: (_, _) async {},
                             );
                             ref.invalidate(_templatesProvider(widget.category.id));
                           },
@@ -71,7 +71,7 @@ class _TemplateDialogState extends ConsumerState<TemplateDialog> {
                   await ref.read(categoryDaoProvider).when(
                     data: (d) => d.createTemplate(widget.category.id, name, 'text'),
                     loading: () async {},
-                    error: (_, __) async {},
+                    error: (_, _) async {},
                   );
                   _newNameCtrl.clear();
                   ref.invalidate(_templatesProvider(widget.category.id));

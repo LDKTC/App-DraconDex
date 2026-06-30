@@ -10,7 +10,7 @@ final _searchResultProvider = FutureProvider.family<SearchResult?, String>((ref,
   return ref.watch(searchDaoProvider).when(
         data: (d) => d.searchAll(query),
         loading: () => null,
-        error: (_, __) => null,
+        error: (_, _) => null,
       );
 });
 

@@ -39,7 +39,7 @@ class ColorsScreen extends ConsumerWidget {
                   final deleted = await ref.read(colorDaoProvider).when(
                     data: (d) => d.deleteColor(c.id),
                     loading: () => Future.value(false),
-                    error: (_, __) => Future.value(false),
+                    error: (_, _) => Future.value(false),
                   );
                   if (!deleted && ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
@@ -82,7 +82,7 @@ class ColorsScreen extends ConsumerWidget {
               await ref.read(colorDaoProvider).when(
                 data: (d) => d.addColor(hex),
                 loading: () async {},
-                error: (_, __) async {},
+                error: (_, _) async {},
               );
               ref.invalidate(colorsProvider);
               if (ctx.mounted) Navigator.of(ctx).pop();

@@ -10,22 +10,22 @@ import 'dialogs/relation_dialog.dart';
 
 final _relationTypesProvider = FutureProvider<List<RelationTypeModel>>((ref) async {
   final dao = ref.watch(relationDaoProvider);
-  return dao.when(data: (d) => d.getRelationTypes(), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getRelationTypes(), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 final _relOBOBProvider = FutureProvider.family<List<RelationObObModel>, int>((ref, pid) async {
   final dao = ref.watch(relationDaoProvider);
-  return dao.when(data: (d) => d.getRelationsOBOB(pid), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getRelationsOBOB(pid), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 final _relOBTLProvider = FutureProvider.family<List<RelationObTlModel>, int>((ref, pid) async {
   final dao = ref.watch(relationDaoProvider);
-  return dao.when(data: (d) => d.getRelationsOBTL(pid), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getRelationsOBTL(pid), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 final _relTLTLProvider = FutureProvider.family<List<RelationTlTlModel>, int>((ref, pid) async {
   final dao = ref.watch(relationDaoProvider);
-  return dao.when(data: (d) => d.getRelationsTLTL(pid), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getRelationsTLTL(pid), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 class RelationScreen extends ConsumerWidget {

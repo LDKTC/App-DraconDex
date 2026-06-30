@@ -11,7 +11,7 @@ final _projectUsedTagsProvider = FutureProvider.family<List<HashtagModel>, int>(
   return ref.watch(hashtagDaoProvider).when(
         data: (d) => d.getAllProjectUsedTags(pid),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -44,7 +44,7 @@ class ProjectTagsScreen extends ConsumerWidget {
                     await ref.read(hashtagDaoProvider).when(
                       data: (d) => d.setProjectTags(projectId, ids.toList()),
                       loading: () async {},
-                      error: (_, __) async {},
+                      error: (_, _) async {},
                     );
                     ref.invalidate(projectTagsProvider(projectId));
                     ref.invalidate(_projectUsedTagsProvider(projectId));
@@ -144,7 +144,7 @@ final _ObjsByTagProvider = FutureProvider.family((ref, _TagKey key) async {
   return ref.watch(hashtagDaoProvider).when(
         data: (d) => d.getObjectsByHashtag(key.tagId, key.projectId),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -152,6 +152,6 @@ final _EventsByTagProvider = FutureProvider.family((ref, _TagKey key) async {
   return ref.watch(hashtagDaoProvider).when(
         data: (d) => d.getEventsByHashtag(key.tagId, key.projectId),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });

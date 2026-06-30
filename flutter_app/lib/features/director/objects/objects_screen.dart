@@ -13,12 +13,12 @@ import 'dialogs/template_dialog.dart';
 
 final _categoriesProvider = FutureProvider.family<List<CategoryModel>, int>((ref, projectId) async {
   final dao = ref.watch(categoryDaoProvider);
-  return dao.when(data: (d) => d.getCategories(projectId), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getCategories(projectId), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 final _objectsProvider = FutureProvider.family<List<ObjectModel>, int>((ref, catId) async {
   final dao = ref.watch(objectDaoProvider);
-  return dao.when(data: (d) => d.getObjects(catId), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getObjects(catId), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 class ObjectsScreen extends ConsumerStatefulWidget {

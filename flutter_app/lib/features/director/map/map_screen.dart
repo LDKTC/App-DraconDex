@@ -13,7 +13,7 @@ final _mapsProvider = FutureProvider.family<List<MapModel>, int>((ref, pid) asyn
   return ref.watch(mapDaoProvider).when(
         data: (d) => d.getMaps(pid),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -21,7 +21,7 @@ final _areasProvider = FutureProvider.family<List<MapAreaModel>, int>((ref, mapI
   return ref.watch(mapDaoProvider).when(
         data: (d) => d.getMapAreas(mapId),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -29,7 +29,7 @@ final _pointsProvider = FutureProvider.family<List<MapPointModel>, int>((ref, ar
   return ref.watch(mapDaoProvider).when(
         data: (d) => d.getMapAreaPoints(areaId),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -159,7 +159,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     await ref.read(mapDaoProvider).when(
       data: (d) => d.setMapAreaPoints(_selectedAreaId!, _pendingPoints),
       loading: () async {},
-      error: (_, __) async {},
+      error: (_, _) async {},
     );
     ref.invalidate(_pointsProvider(_selectedAreaId!));
   }

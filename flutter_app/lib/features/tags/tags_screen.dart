@@ -131,7 +131,7 @@ class _TagFormDialogState extends ConsumerState<_TagFormDialog> {
         }
       },
       loading: () async {},
-      error: (_, __) async {},
+      error: (_, _) async {},
     );
     if (mounted) Navigator.of(context).pop();
   }

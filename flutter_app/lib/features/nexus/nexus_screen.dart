@@ -15,7 +15,7 @@ class NexusScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
-                  Image.asset('assets/images/DraconDex-SymbolColor.png', height: 40, errorBuilder: (_, __, ___) => const SizedBox(width: 40)),
+                  Image.asset('assets/images/DraconDex-SymbolColor.png', height: 40, errorBuilder: (_, _, _) => const SizedBox(width: 40)),
                   const SizedBox(width: 16),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

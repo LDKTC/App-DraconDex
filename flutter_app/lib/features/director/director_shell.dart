@@ -109,7 +109,7 @@ class _SideRail extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           decoration: selected
                               ? BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                                   border: Border(
                                     left: BorderSide(color: Theme.of(context).colorScheme.primary, width: 3),
                                   ),
@@ -121,7 +121,7 @@ class _SideRail extends StatelessWidget {
                                 item.icon,
                                 color: selected
                                     ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -130,7 +130,7 @@ class _SideRail extends StatelessWidget {
                                   fontSize: 9,
                                   color: selected
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 ),
                                 textAlign: TextAlign.center,
                                 maxLines: 1,

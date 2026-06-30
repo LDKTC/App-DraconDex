@@ -26,11 +26,11 @@ class MapCanvasPainter extends CustomPainter {
           : theme.colorScheme.primary;
 
       final fillPaint = Paint()
-        ..color = color.withOpacity(area.id == selectedAreaId ? 0.4 : 0.2)
+        ..color = color.withValues(alpha: area.id == selectedAreaId ? 0.4 : 0.2)
         ..style = PaintingStyle.fill;
 
       final strokePaint = Paint()
-        ..color = area.id == selectedAreaId ? color : color.withOpacity(0.8)
+        ..color = area.id == selectedAreaId ? color : color.withValues(alpha: 0.8)
         ..style = PaintingStyle.stroke
         ..strokeWidth = area.id == selectedAreaId ? 2.5 : 1.5;
 

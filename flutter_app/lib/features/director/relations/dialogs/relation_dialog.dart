@@ -12,7 +12,7 @@ final _relTypesDialogProvider = FutureProvider<List<RelationTypeModel>>((ref) as
   return ref.watch(relationDaoProvider).when(
         data: (d) => d.getRelationTypes(),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -20,7 +20,7 @@ final _projObjectsDialogProvider = FutureProvider.family<List<ObjectModel>, int>
   return ref.watch(objectDaoProvider).when(
         data: (d) => d.getProjectObjects(pid),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -28,7 +28,7 @@ final _projTimelinesDialogProvider = FutureProvider.family<List<TimelineModel>, 
   return ref.watch(timelineDaoProvider).when(
         data: (d) => d.getTimelines(pid),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -36,7 +36,7 @@ final _projEventsDialogProvider = FutureProvider.family<List<TimelineEventModel>
   return ref.watch(timelineDaoProvider).when(
         data: (d) => d.getEvents(tlId),
         loading: () => Future.value([]),
-        error: (_, __) => Future.value([]),
+        error: (_, _) => Future.value([]),
       );
 });
 
@@ -74,7 +74,7 @@ class _RelationDialogState extends ConsumerState<RelationDialog> {
               loading: () => const CircularProgressIndicator(),
               error: (e, _) => Text('$e'),
               data: (types) => DropdownButtonFormField<int?>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(labelText: 'Relation Type (optional)'),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('— None —')),
@@ -174,7 +174,7 @@ class _RelationDialogState extends ConsumerState<RelationDialog> {
         }
       },
       loading: () async {},
-      error: (_, __) async {},
+      error: (_, _) async {},
     );
     if (mounted) Navigator.of(context).pop();
   }
@@ -190,7 +190,7 @@ class _ObjectDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<int?>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(labelText: label),
       items: objects
           .map((o) => DropdownMenuItem(
@@ -232,7 +232,7 @@ class _TimelineEventSelectorState extends ConsumerState<_TimelineEventSelector> 
           loading: () => const CircularProgressIndicator(),
           error: (e, _) => Text('$e'),
           data: (tls) => DropdownButtonFormField<int?>(
-            value: _tlId,
+            initialValue: _tlId,
             decoration: const InputDecoration(labelText: 'Timeline'),
             items: tls
                 .map((t) => DropdownMenuItem(value: t.id, child: Text(t.name ?? 'Timeline ${t.id}')))
@@ -251,7 +251,7 @@ class _TimelineEventSelectorState extends ConsumerState<_TimelineEventSelector> 
               loading: () => const CircularProgressIndicator(),
               error: (e, _) => Text('$e'),
               data: (events) => DropdownButtonFormField<int?>(
-                value: widget.selectedEventId,
+                initialValue: widget.selectedEventId,
                 decoration: InputDecoration(labelText: widget.label),
                 items: events
                     .map((e) => DropdownMenuItem(value: e.id, child: Text(e.name ?? 'Event ${e.id}')))

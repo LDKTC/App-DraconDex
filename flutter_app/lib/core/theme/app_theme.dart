@@ -101,7 +101,7 @@ class AppTheme {
         unselectedIconTheme: IconThemeData(color: t2),
         selectedLabelTextStyle: TextStyle(color: accent),
         unselectedLabelTextStyle: TextStyle(color: t2),
-        indicatorColor: accent.withOpacity(0.15),
+        indicatorColor: accent.withValues(alpha: 0.15),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: raised,

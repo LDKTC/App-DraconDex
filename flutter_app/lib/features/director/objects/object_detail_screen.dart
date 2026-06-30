@@ -10,17 +10,17 @@ import '../../../widgets/tag_selector_sheet.dart';
 
 final _objectDetailProvider = FutureProvider.family<ObjectModel?, int>((ref, id) async {
   final dao = ref.watch(objectDaoProvider);
-  return dao.when(data: (d) => d.getObject(id), loading: () => Future.value(null), error: (_, __) => Future.value(null));
+  return dao.when(data: (d) => d.getObject(id), loading: () => Future.value(null), error: (_, _) => Future.value(null));
 });
 
 final _objectAttrsProvider = FutureProvider.family<List<ObjectAttributeModel>, int>((ref, id) async {
   final dao = ref.watch(objectDaoProvider);
-  return dao.when(data: (d) => d.getObjectAttrs(id), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getObjectAttrs(id), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 final _objectTagsProvider = FutureProvider.family<List<HashtagModel>, int>((ref, id) async {
   final dao = ref.watch(hashtagDaoProvider);
-  return dao.when(data: (d) => d.getObjectTags(id), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getObjectTags(id), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 class ObjectDetailScreen extends ConsumerWidget {
@@ -34,7 +34,7 @@ class ObjectDetailScreen extends ConsumerWidget {
     final tagsAsync = ref.watch(_objectTagsProvider(objectId));
 
     return Scaffold(
-      appBar: AppBar(title: objectAsync.when(data: (o) => Text(o?.name ?? ''), loading: () => const Text(''), error: (_, __) => const Text(''))),
+      appBar: AppBar(title: objectAsync.when(data: (o) => Text(o?.name ?? ''), loading: () => const Text(''), error: (_, _) => const Text(''))),
       body: objectAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -75,7 +75,7 @@ class _ObjectBody extends StatelessWidget {
         const SizedBox(height: 8),
         attrsAsync.when(
           loading: () => const CircularProgressIndicator(),
-          error: (_, __) => const SizedBox(),
+          error: (_, _) => const SizedBox(),
           data: (attrs) => attrs.isEmpty
               ? const Text('No fields defined. Add fields in category settings.')
               : Column(
@@ -123,7 +123,7 @@ class _ObjectBody extends StatelessWidget {
             children: tags.map((t) => HashtagChip(tag: t)).toList(),
           ),
           loading: () => const SizedBox(),
-          error: (_, __) => const SizedBox(),
+          error: (_, _) => const SizedBox(),
         ),
       ],
     );
@@ -181,7 +181,7 @@ class _AttrFieldState extends ConsumerState<_AttrField> {
     await widget.ref.read(objectDaoProvider).when(
       data: (d) => d.upsertAttr(widget.objectId, widget.attr.id, _ctrl.text.isEmpty ? null : _ctrl.text),
       loading: () async {},
-      error: (_, __) async {},
+      error: (_, _) async {},
     );
     setState(() => _dirty = false);
   }
@@ -235,7 +235,7 @@ class _NoteFieldState extends ConsumerState<_NoteField> {
     await widget.ref.read(objectDaoProvider).when(
       data: (d) => d.updateObjectNote(widget.objectId, _ctrl.text.isEmpty ? null : _ctrl.text),
       loading: () async {},
-      error: (_, __) async {},
+      error: (_, _) async {},
     );
     setState(() => _dirty = false);
   }

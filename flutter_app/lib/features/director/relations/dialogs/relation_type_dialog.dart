@@ -9,7 +9,7 @@ import '../../../../widgets/confirm_dialog.dart';
 
 final _rtListProvider = FutureProvider<List<RelationTypeModel>>((ref) async {
   final dao = ref.watch(relationDaoProvider);
-  return dao.when(data: (d) => d.getRelationTypes(), loading: () => Future.value([]), error: (_, __) => Future.value([]));
+  return dao.when(data: (d) => d.getRelationTypes(), loading: () => Future.value([]), error: (_, _) => Future.value([]));
 });
 
 class RelationTypeDialog extends ConsumerWidget {
@@ -143,7 +143,7 @@ class _RelationTypeFormDialogState extends ConsumerState<_RelationTypeFormDialog
         }
       },
       loading: () async {},
-      error: (_, __) async {},
+      error: (_, _) async {},
     );
     if (mounted) Navigator.of(context).pop();
   }

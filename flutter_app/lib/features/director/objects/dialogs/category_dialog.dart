@@ -72,7 +72,7 @@ class _CategoryDialogState extends ConsumerState<CategoryDialog> {
         }
       },
       loading: () async {},
-      error: (_, __) async {},
+      error: (_, _) async {},
     );
     if (mounted) Navigator.of(context).pop();
   }

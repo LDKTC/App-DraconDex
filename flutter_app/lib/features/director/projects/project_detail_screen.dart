@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../providers/project_provider.dart';
-import '../../../providers/db_providers.dart';
 import '../../../data/models/project_model.dart';
 import '../../../widgets/color_dot.dart';
 import 'dialogs/project_dialog.dart';
