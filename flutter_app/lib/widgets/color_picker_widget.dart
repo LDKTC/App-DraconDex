@@ -78,13 +78,14 @@ class _ColorPickerSheetState extends ConsumerState<ColorPickerSheet> {
                   FilledButton(
                     onPressed: () async {
                       final hex = '#${_pickerColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+                      final navigator = Navigator.of(context);
                       final dao = ref.read(colorDaoProvider);
                       dao.whenData((d) async {
                         await d.addColor(hex);
                         final colors = await d.getColors();
                         final found = colors.where((c) => c.colorCode.toUpperCase() == hex).firstOrNull;
                         if (found != null && mounted) widget.onColorSelected(found);
-                        if (mounted) Navigator.of(context).pop();
+                        if (mounted) navigator.pop();
                       });
                     },
                     child: const Text('Use Custom Color'),

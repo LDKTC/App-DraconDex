@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/models/hashtag_model.dart';
 import '../providers/hashtag_provider.dart';
 import 'color_dot.dart';
 

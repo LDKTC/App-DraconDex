@@ -85,8 +85,8 @@ class _TagTile extends ConsumerWidget {
       title: Text(tag.name),
       children: [
         Consumer(builder: (ctx, ref, _) {
-          final objsAsync = ref.watch(_ObjsByTagProvider((_TagKey(tag.id, projectId))));
-          final eventsAsync = ref.watch(_EventsByTagProvider((_TagKey(tag.id, projectId))));
+          final objsAsync = ref.watch(_objsByTagProvider((_TagKey(tag.id, projectId))));
+          final eventsAsync = ref.watch(_eventsByTagProvider((_TagKey(tag.id, projectId))));
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -140,7 +140,7 @@ class _TagKey {
   int get hashCode => Object.hash(tagId, projectId);
 }
 
-final _ObjsByTagProvider = FutureProvider.family((ref, _TagKey key) async {
+final _objsByTagProvider = FutureProvider.family((ref, _TagKey key) async {
   return ref.watch(hashtagDaoProvider).when(
         data: (d) => d.getObjectsByHashtag(key.tagId, key.projectId),
         loading: () => Future.value([]),
@@ -148,7 +148,7 @@ final _ObjsByTagProvider = FutureProvider.family((ref, _TagKey key) async {
       );
 });
 
-final _EventsByTagProvider = FutureProvider.family((ref, _TagKey key) async {
+final _eventsByTagProvider = FutureProvider.family((ref, _TagKey key) async {
   return ref.watch(hashtagDaoProvider).when(
         data: (d) => d.getEventsByHashtag(key.tagId, key.projectId),
         loading: () => Future.value([]),

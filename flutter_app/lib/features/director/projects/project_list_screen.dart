@@ -7,7 +7,6 @@ import '../../../providers/project_provider.dart';
 import '../../../providers/db_providers.dart';
 import '../../../widgets/color_dot.dart';
 import '../../../widgets/confirm_dialog.dart';
-import '../../../widgets/color_picker_widget.dart';
 import 'dialogs/folder_dialog.dart';
 import 'dialogs/project_dialog.dart';
 

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/object_model.dart';
 import '../../../data/models/hashtag_model.dart';
 import '../../../providers/db_providers.dart';
-import '../../../providers/hashtag_provider.dart';
 import '../../../widgets/color_dot.dart';
 import '../../../widgets/hashtag_chip.dart';
 import '../../../widgets/tag_selector_sheet.dart';

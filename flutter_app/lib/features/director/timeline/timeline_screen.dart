@@ -5,7 +5,6 @@ import '../../../providers/db_providers.dart';
 import '../../../providers/project_provider.dart';
 import '../../../widgets/color_dot.dart';
 import '../../../widgets/confirm_dialog.dart';
-import '../../../widgets/color_picker_widget.dart';
 import 'dialogs/timeline_dialog.dart';
 import 'dialogs/event_dialog.dart';
 import 'timeline_graph_painter.dart';

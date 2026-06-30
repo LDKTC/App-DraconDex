@@ -50,7 +50,7 @@ class ColorsScreen extends ConsumerWidget {
                   }
                 }),
                 child: Tooltip(
-                  message: c.colorCode ?? '',
+                  message: c.colorCode,
                   child: ColorDot(colorCode: c.colorCode, size: 48),
                 ),
               );

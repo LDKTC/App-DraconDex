@@ -55,7 +55,6 @@ class _RelationDialogState extends ConsumerState<RelationDialog> {
   ColorModel? _color;
   int? _fromId;
   int? _toId;
-  int? _selectedTimelineId;
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +194,7 @@ class _ObjectDropdown extends StatelessWidget {
       items: objects
           .map((o) => DropdownMenuItem(
                 value: o.id,
-                child: Text('${o.name ?? 'Object ${o.id}'} (${o.categoryName ?? ''})'),
+                child: Text('${o.name} (${o.categoryName ?? ''})'),
               ))
           .toList(),
       onChanged: onChanged,

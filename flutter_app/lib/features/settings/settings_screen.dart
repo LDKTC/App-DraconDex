@@ -42,12 +42,16 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           _SectionHeader('Language'),
-          ..._supportedLocales.entries.map((e) => RadioListTile<String>(
-            title: Text(e.value),
-            value: e.key,
+          RadioGroup<String>(
             groupValue: settings.locale.languageCode,
             onChanged: (v) { if (v != null) notifier.setLocale(Locale(v)); },
-          )),
+            child: Column(
+              children: _supportedLocales.entries.map((e) => RadioListTile<String>(
+                title: Text(e.value),
+                value: e.key,
+              )).toList(),
+            ),
+          ),
           const Divider(),
           _SectionHeader('Data'),
           ListTile(
