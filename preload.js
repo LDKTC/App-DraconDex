@@ -88,6 +88,7 @@ contextBridge.exposeInMainWorld('api', {
     deleteTLTL: (id)      => inv('relation:deleteTLTL', id),
     getProjectObjects: (pid) => inv('relation:getProjectObjects', pid),
     getProjectEvents: (pid)  => inv('relation:getProjectEvents', pid),
+    getEventLinks: (eid)     => inv('relation:getEventLinks', eid),
   },
   map: {
     getAll: (pid)            => inv('map:getAll', pid),

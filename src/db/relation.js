@@ -11,7 +11,7 @@ const getProjectObjects = (pid) =>
 
 const getProjectEvents = (pid) =>
   getDB().prepare(`
-    SELECT te.id, te.event_name, t.line_name,
+    SELECT te.id, te.event_name, t.id as timeline_id, t.line_name,
       s.day s_day, s.month s_month, s.years s_years,
       uc.color_code, tlc.color_code AS timeline_color_code
     FROM timeline_event te JOIN timeline t ON te.timeline_id=t.id
@@ -19,6 +19,20 @@ const getProjectEvents = (pid) =>
     LEFT JOIN timeline_date s ON te.start_at=s.id
     WHERE t.project_id=? ORDER BY t.line_name,s.years,s.month,s.day
   `).all(pid);
+
+const getEventLinks = (eventId) =>
+  getDB().prepare(`
+    SELECT ro.id, r.id rel_id, rt.relation_name, rtc.color_code,
+      te1.id from_event_id, te1.event_name from_name, t1.line_name from_tl,
+      te2.id to_event_id, te2.event_name to_name, t2.line_name to_tl
+    FROM relation_tltl ro JOIN relation r ON ro.relation_id=r.id
+    LEFT JOIN relation_type rt ON r.relation_type=rt.id
+    LEFT JOIN use_color rtc ON rt.color=rtc.id
+    JOIN timeline_event te1 ON ro.timeline_from=te1.id JOIN timeline t1 ON te1.timeline_id=t1.id
+    JOIN timeline_event te2 ON ro.timeline_to=te2.id JOIN timeline t2 ON te2.timeline_id=t2.id
+    WHERE te1.id=? OR te2.id=?
+    ORDER BY rt.relation_name, te1.event_name
+  `).all(eventId, eventId);
 
 const getRelationTypes = () =>
   getDB().prepare(`SELECT rt.*, uc.color_code FROM relation_type rt LEFT JOIN use_color uc ON rt.color = uc.id ORDER BY rt.relation_name`).all();
@@ -103,7 +117,7 @@ const deleteRelationTLTL = (id) => {
 };
 
 module.exports = {
-  getProjectObjects, getProjectEvents,
+  getProjectObjects, getProjectEvents, getEventLinks,
   getRelationTypes, createRelationType, updateRelationType, deleteRelationType,
   getRelationsOBOB, createRelationOBOB, deleteRelationOBOB,
   getRelationsOBTL, createRelationOBTL, deleteRelationOBTL,

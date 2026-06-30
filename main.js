@@ -163,6 +163,7 @@ h('relation:createTLTL',  (pid,tid,c,f,t) => db.createRelationTLTL(pid,tid,c,f,t
 h('relation:deleteTLTL',  (id) => db.deleteRelationTLTL(id));
 h('relation:getProjectObjects', (pid) => db.getProjectObjects(pid));
 h('relation:getProjectEvents',  (pid) => db.getProjectEvents(pid));
+h('relation:getEventLinks',     (eid) => db.getEventLinks(eid));
 
 // Mapping
 h('map:getAll',      (pid) => db.getMaps(pid));

@@ -213,8 +213,71 @@ async function openEventModal(tlid,evId=null){
     <div class="fg"><label>สี</label>${await colorPicker(ev?.color)}</div>
     <div class="fg"><label>สตอรี่</label><textarea id="ev-story" placeholder="เขียนสตอรี่ที่เกิดขึ้นในเหตุการณ์นี้...">${x(ev?.story||'')}</textarea></div>
     ${await hashtagSelector('ev', evTags)}
+    ${evId ? '<div id="ev-tl-links-wrap"></div>' : ''}
     <div class="mfoot">${ev?`<button class="btn btn-d" onclick="delEvent(${evId},${tlid})">ลบ</button>`:''}<button class="btn btn-s" onclick="closeModal()">ยกเลิก</button><button class="btn btn-p" onclick="${ev?`saveEvent(${evId},${tlid})`:`createTimelineEvent(${tlid})`}">${ev?'บันทึก':'สร้าง'}</button></div>`);
   setTimeout(()=>q('#ev-n').focus(),60);
+  if(evId) refreshEventLinksSection(evId, tlid);
+}
+
+async function refreshEventLinksSection(evId, tlid){
+  const wrap = q('#ev-tl-links-wrap');
+  if(!wrap) return;
+  const [links, allEvents, types] = await Promise.all([
+    api.relation.getEventLinks(evId),
+    api.relation.getProjectEvents(S.project.id),
+    api.relation.getTypes(),
+  ]);
+  const otherEvents = allEvents.filter(e => e.timeline_id !== tlid);
+  const typeOpts = `<option value="">-- ประเภท --</option>${types.map(t=>`<option value="${t.id}">${x(t.relation_name)}</option>`).join('')}`;
+  let linksHtml = links.length ? links.map(l => {
+    const isFrom = l.from_event_id === evId;
+    const otherName = isFrom ? l.to_name : l.from_name;
+    const otherTl   = isFrom ? l.to_tl   : l.from_tl;
+    const relBadge  = l.relation_name ? `<span class="mini-rel-kind" style="color:${l.color_code||'var(--t3)'}">${x(l.relation_name)}</span>` : '';
+    return `<div class="mini-rel-item">
+      <span class="mini-rel-rel">${x(otherTl)}</span>
+      <span style="color:var(--t3)">→</span>
+      <span class="mini-rel-to" style="flex:1">${x(otherName)}</span>
+      ${relBadge}
+      <button class="btn btn-s btn-i" style="color:var(--danger)" onclick="removeEventTimelineLink(${l.id},${evId},${tlid})">${I.delete}</button>
+    </div>`;
+  }).join('') : `<div style="font-size:12px;color:var(--t3);padding:4px 0">ยังไม่มีการเชื่อมต่อ</div>`;
+  const pickerHtml = otherEvents.length
+    ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
+        <select id="ev-tl-link-target" style="flex:1;min-width:140px">${evtOptions(otherEvents)}</select>
+        <select id="ev-tl-link-type" style="min-width:110px">${typeOpts}</select>
+        <button class="btn btn-s" onclick="addEventTimelineLink(${evId},${tlid})">เชื่อมต่อ</button>
+      </div>`
+    : `<div style="font-size:12px;color:var(--t3);margin-top:4px">ไม่มี Timeline อื่นในโปรเจกต์นี้</div>`;
+  wrap.innerHTML = `<div class="detail-relations" style="padding:12px 0 0">
+    <div class="tags-head"><span style="font-size:12.5px;font-weight:600;color:var(--t2)">เชื่อมต่อกับ Timeline อื่น</span></div>
+    <div id="ev-tl-links-list">${linksHtml}</div>
+    ${pickerHtml}
+  </div>`;
+}
+
+async function addEventTimelineLink(evId, tlid){
+  const targetId = parseInt(q('#ev-tl-link-target')?.value);
+  if(!targetId){ toast('เลือกเหตุการณ์ที่ต้องการเชื่อมต่อ','err'); return; }
+  const existing = await api.relation.getEventLinks(evId);
+  const alreadyLinked = existing.some(l =>
+    (l.from_event_id === evId && l.to_event_id === targetId) ||
+    (l.to_event_id === evId && l.from_event_id === targetId)
+  );
+  if(alreadyLinked){ toast('มีการเชื่อมต่อนี้อยู่แล้ว','err'); return; }
+  try{
+    const typeId = q('#ev-tl-link-type')?.value || null;
+    await api.relation.createTLTL(S.project.id, typeId||null, null, evId, targetId);
+    await refreshEventLinksSection(evId, tlid);
+    toast('เชื่อมต่อ Timeline แล้ว','ok');
+  }catch(e){ toast(e.message,'err'); console.error(e); }
+}
+
+async function removeEventTimelineLink(linkId, evId, tlid){
+  if(!confirm('ลบการเชื่อมต่อนี้?')) return;
+  await api.relation.deleteTLTL(linkId);
+  await refreshEventLinksSection(evId, tlid);
+  toast('ลบการเชื่อมต่อแล้ว');
 }
 
 async function getDateFromInputs(prefix){
