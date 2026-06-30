@@ -138,9 +138,7 @@ async function renderWorldOverview(w) {
   const linkedIds = new Set(novels.map(n => n.project_ref));
   const addHtml = linkable.length
     ? `<div style="display:flex;gap:6px;align-items:center">
-        <select id="wov-novel" style="font-size:.85em;max-width:220px">
-          ${linkable.map(p => `<option value="${p.id}">${x(p.name)}${p.codename ? ' · ' + x(p.codename) : ''}</option>`).join('')}
-        </select>
+        ${buildNovelPickerHtml('wov-novel', null, linkedIds)}
         <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="addWorldNovel(${w.id})">${I.plus} Link</button>
       </div>`
     : `<span style="color:var(--t3);font-size:.8em">All novels linked</span>`;
@@ -155,7 +153,7 @@ async function renderWorldOverview(w) {
 }
 
 async function addWorldNovel(worldId) {
-  const pid = Number(q('#wov-novel')?.value);
+  const pid = Number(q('#np-wrap-wov-novel')?.dataset.selectedId);
   if (!pid) return;
   await api.world.addNovel(worldId, pid);
   await setWorldTab('overview');
@@ -170,7 +168,7 @@ async function removeWorldNovel(id) {
 async function renderWorldChars(worldId) {
   const chars = await api.world.getCharacters(worldId);
   const head = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <button class="btn btn-g" style="padding:5px 11px;font-size:12px" onclick="openCharCategoriesModal(${worldId})">${I.layer} Categories</button>
+    <button class="btn btn-s" style="padding:5px 11px;font-size:12px" onclick="openCharCategoriesModal(${worldId})">${I.layer} Categories</button>
     <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button>
   </div>`;
 
@@ -252,10 +250,12 @@ async function openCharCategoriesModal(worldId) {
       </div>`).join('')
     : `<div style="color:var(--t3);font-size:.85em;padding:6px 0">None — link more novels.</div>`;
   openModal('Character Categories', `
-    <p style="color:var(--t3);font-size:.85em;margin:0 0 8px">Enable categories whose objects can be linked to characters.</p>
-    <h4 style="margin:8px 0 4px">Enabled</h4>${enabledHtml}
-    <h4 style="margin:12px 0 4px">Available</h4>${availHtml}
-    <div class="mfoot"><button class="btn btn-g" onclick="closeModal()">Close</button></div>`);
+    <div class="modal-hint">${I.layer}<span>Enable categories whose objects can be linked to characters.</span></div>
+    <div class="modal-section-h first">Enabled <span class="count">${enabled.length}</span></div>
+    <div class="modal-data">${enabledHtml}</div>
+    <div class="modal-section-h">Available <span class="count">${available.length}</span></div>
+    <div class="modal-data">${availHtml}</div>
+    <div class="mfoot"><button class="btn btn-s" onclick="closeModal()">Close</button></div>`);
 }
 
 async function addCharCategory(worldId, catref) {
@@ -271,20 +271,59 @@ async function removeCharCategory(worldId, id) {
 async function openCharLinksModal(worldId, charId) {
   const available = await api.world.getLinkableCharObjects(worldId, charId);
   const availHtml = available.length
-    ? `<select id="wclm-obj" style="width:100%">
-        ${available.map(o => `<option value="${o.id}">${x(o.category_name || '')} / ${x(o.name)}</option>`).join('')}
-      </select>
+    ? `<div class="form-row"><label>Object</label>${buildObjectPickerHtml('wclm-obj', available)}</div>
       <div class="mfoot">
-        <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-s" onclick="closeModal()">Cancel</button>
         <button class="btn btn-p" onclick="addCharLink(${worldId},${charId})">Link</button>
       </div>`
-    : `<p style="color:var(--t3)">No objects available. Enable character categories that contain objects.</p>
-      <div class="mfoot"><button class="btn btn-g" onclick="closeModal()">Close</button></div>`;
-  openModal('Link Object', `<div class="form-row"><label>Object</label></div>${availHtml}`);
+    : `<div class="modal-hint">${I.layer}<span>No objects available. Enable character categories that contain objects.</span></div>
+      <div class="mfoot"><button class="btn btn-s" onclick="closeModal()">Close</button></div>`;
+  openModal('Link Object', availHtml);
+}
+
+// Category→object picker — same visual style as the novel picker (.np-*),
+// grouping objects under their category instead of projects under folders.
+function buildObjectPickerHtml(pickId, objects) {
+  const groups = new Map();
+  for (const o of (objects || [])) {
+    const k = o.category_name || '—';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(o);
+  }
+  let inner = '';
+  for (const [cat, objs] of groups) {
+    inner += `<div class="np-folder">
+      <div class="np-folder-head" onclick="event.stopPropagation();toggleObjPickerGroup(this)">
+        <svg class="np-caret" style="width:8px;height:8px;flex-shrink:0;transform:rotate(90deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(cat)}</span>
+        <span style="color:var(--t3);font-size:11px">${objs.length}</span>
+      </div>
+      <div class="np-group-items">
+        ${objs.map(o => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${o.id},'${x(o.name)}')">${x(o.name)}</div>`).join('')}
+      </div>
+    </div>`;
+  }
+  if (!inner) inner = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No objects available</div>`;
+  return `<div class="novel-picker" id="np-wrap-${pickId}" data-selected-id="" style="width:100%">
+    <button class="np-btn" onclick="event.stopPropagation();toggleNovelPicker('${pickId}')" type="button" style="width:100%;min-width:0">
+      <span id="np-label-${pickId}" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— select object —</span>
+      <svg style="width:10px;height:10px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="np-dropdown" id="np-drop-${pickId}" style="display:none">${inner}</div>
+  </div>`;
+}
+
+function toggleObjPickerGroup(headEl) {
+  const items = headEl.nextElementSibling;
+  if (!items) return;
+  const hidden = items.style.display === 'none';
+  items.style.display = hidden ? '' : 'none';
+  const caret = headEl.querySelector('.np-caret');
+  if (caret) caret.style.transform = hidden ? 'rotate(90deg)' : 'rotate(0deg)';
 }
 
 async function addCharLink(worldId, charId) {
-  const oid = Number(q('#wclm-obj')?.value);
+  const oid = Number(q('#np-wrap-wclm-obj')?.dataset.selectedId);
   if (!oid) return;
   await api.world.addCharLink(charId, oid);
   closeModal();

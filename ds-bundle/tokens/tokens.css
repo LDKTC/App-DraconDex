@@ -1,0 +1,83 @@
+/* DraconDex design tokens — extracted from style.css (v2.5.2)
+ * Tokens-only export: this is a vanilla-JS Electron app with no React
+ * component library, so only the token layer is synced.
+ *
+ * Color roles are theme-scoped (3 themes). Non-color tokens are global.
+ * Default :root equals the "midnight" theme.
+ */
+
+:root {
+  /* ── Radius ─────────────────────────────── */
+  --rs: 4px;   /* small  */
+  --r:  8px;   /* medium */
+  --rl: 12px;  /* large  */
+
+  /* ── Layout ─────────────────────────────── */
+  --nav: 56px;
+  --sidebar: 264px;
+
+  /* ── Motion ─────────────────────────────── */
+  --ease: .15s ease;
+
+  /* ── Scale ──────────────────────────────── */
+  --ui-scale: 1;
+
+  /* ── Color (default = midnight) ─────────── */
+  --bg:      #0f0f13;
+  --surface: #18181f;
+  --raised:  #22222d;
+  --hover:   #2a2a38;
+  --border:  #2e2e3f;
+  --t1:      #e8e8f0;
+  --t2:      #9090a8;
+  --t3:      #5a5a72;
+  --accent:  #6366f1;
+  --accentH: #818cf8;
+  --danger:  #ef4444;
+  --success: #22c55e;
+}
+
+body[data-theme="daylight"] {
+  --bg:      #f4f6fb;
+  --surface: #ffffff;
+  --raised:  #eef1f7;
+  --hover:   #e2e7f0;
+  --border:  #ccd3df;
+  --t1:      #172033;
+  --t2:      #596274;
+  --t3:      #8a94a6;
+  --accent:  #2563eb;
+  --accentH: #3b82f6;
+  --danger:  #dc2626;
+  --success: #16a34a;
+}
+
+body[data-theme="moonlight"] {
+  --bg:      #101620;
+  --surface: #182231;
+  --raised:  #223044;
+  --hover:   #2d3b52;
+  --border:  #334258;
+  --t1:      #edf4ff;
+  --t2:      #a6b3c7;
+  --t3:      #66758c;
+  --accent:  #7c9cff;
+  --accentH: #9bb5ff;
+  --danger:  #f87171;
+  --success: #34d399;
+}
+
+body[data-theme="midnight"] {
+  --bg:      #0f0f13;
+  --surface: #18181f;
+  --raised:  #22222d;
+  --hover:   #2a2a38;
+  --border:  #2e2e3f;
+  --t1:      #e8e8f0;
+  --t2:      #9090a8;
+  --t3:      #5a5a72;
+  --accent:  #6366f1;
+  --accentH: #818cf8;
+  --danger:  #ef4444;
+  --success: #22c55e;
+}

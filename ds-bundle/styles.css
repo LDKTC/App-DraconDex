@@ -1,0 +1,11 @@
+/* DraconDex — design-sync entry stylesheet (tokens-only export).
+ * Rendered designs receive this file's transitive @import closure.
+ * No component CSS is synced (vanilla-JS Electron app, no component library). */
+@import "./tokens/tokens.css";
+
+body {
+  font-family: 'Segoe UI Emoji','Segoe UI Symbol','Segoe UI',system-ui,-apple-system,sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--t1);
+}

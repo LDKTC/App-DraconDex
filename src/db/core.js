@@ -6,15 +6,26 @@ const { app } = require('electron');
 
 function adaptDb(rawDb) {
   const origPrepare = rawDb.prepare.bind(rawDb);
+  // node-sqlite3-wasm keeps a prepared statement (and its schema read-lock)
+  // alive until finalize(). Prepare-and-finalize per call so no statement is
+  // ever left open — otherwise leaked statements block later DDL (DROP/ALTER)
+  // with SQLITE_LOCKED "database table is locked", and the Navigator schema
+  // migration silently fails. Re-preparing per call also keeps statement
+  // objects safely reusable (e.g. `const ins = db.prepare(...)` in import loops).
   rawDb.prepare = (sql) => {
-    const stmt = origPrepare(sql);
+    const exec = (method, args, transform) => {
+      const stmt = origPrepare(sql);
+      try {
+        const r = stmt[method](args);
+        return transform ? transform(r) : r;
+      } finally {
+        stmt.finalize();
+      }
+    };
     return {
-      all: (...args) => stmt.all(args),
-      get: (...args) => {
-        const r = stmt.get(args);
-        return r === null ? undefined : r;
-      },
-      run: (...args) => stmt.run(args),
+      all: (...args) => exec('all', args),
+      get: (...args) => exec('get', args, (r) => (r === null ? undefined : r)),
+      run: (...args) => exec('run', args),
     };
   };
   rawDb.transaction = (fn) => (...args) => {

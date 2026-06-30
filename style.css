@@ -440,6 +440,31 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 #modal-body{padding:18px;overflow-y:auto;flex:1}
 .mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
 
+/* Modal: separate description (hint callout) from data (labeled sections) */
+.modal-hint{
+	display:flex;gap:8px;align-items:flex-start;
+	background:var(--raised);border:1px solid var(--border);
+	border-left:3px solid var(--accent);border-radius:var(--rs);
+	padding:8px 11px;margin:0 0 14px;
+	color:var(--t2);font-size:12.5px;line-height:1.45;
+}
+.modal-hint .icon{width:14px;height:14px;flex-shrink:0;margin-top:1px;color:var(--accent)}
+.modal-section-h{
+	display:flex;align-items:center;gap:8px;
+	font-size:11px;font-weight:700;color:var(--t3);
+	text-transform:uppercase;letter-spacing:.05em;
+	margin:16px 0 6px;
+}
+.modal-section-h.first{margin-top:4px}
+.modal-section-h .count{
+	background:var(--raised);border:1px solid var(--border);
+	color:var(--t2);border-radius:999px;
+	padding:0 7px;font-size:10px;line-height:16px;font-weight:600;
+}
+/* Data rows inside a modal aren't row-clickable — only their action button is */
+.modal-data .li{cursor:default;background:var(--bg);border:1px solid var(--border);margin-bottom:4px}
+.modal-data .li:hover{background:var(--bg);color:var(--t2)}
+
 /* CONTENT HEADER */
 .ch{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
 .ch h2{font-size:19px;font-weight:700;flex:1}
@@ -1198,4 +1223,7 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 }
 .np-item.np-unfiled{padding-left:12px}
 .np-item:hover{background:var(--hover)}
+/* Inside a modal the dropdown flows in-place (modal-body clips absolute children) */
+#modal-body .novel-picker{display:block}
+#modal-body .np-dropdown{position:static;margin-top:4px;box-shadow:none;width:100%}
 
