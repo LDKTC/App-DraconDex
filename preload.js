@@ -131,6 +131,37 @@ contextBridge.exposeInMainWorld('api', {
     getLinkableProjects:     (wid)           => inv('world:getLinkableProjects', wid),
     addNovel:                (wid,pid)       => inv('world:addNovel', wid,pid),
     removeNovel:             (id)            => inv('world:removeNovel', id),
+    setNovelCharCat:         (wnid,catref)   => inv('world:setNovelCharCat', wnid,catref),
+
+    // World-owned ("original") category→object→attribute→template
+    origCat: {
+      getAll:  (wid)    => inv('world:origCatGetAll', wid),
+      create:  (wid,n,c)=> inv('world:origCatCreate', wid,n,c),
+      update:  (id,n,c) => inv('world:origCatUpdate', id,n,c),
+      delete:  (id)     => inv('world:origCatDelete', id),
+    },
+    origTmpl: {
+      getAll:  (cid)    => inv('world:origTmplGetAll', cid),
+      create:  (cid,d,t)=> inv('world:origTmplCreate', cid,d,t),
+      update:  (id,d,t) => inv('world:origTmplUpdate', id,d,t),
+      delete:  (id)     => inv('world:origTmplDelete', id),
+    },
+    origObj: {
+      getAll:     (cid)     => inv('world:origObjGetAll', cid),
+      get:        (id)      => inv('world:origObjGet', id),
+      create:     (wid,cid,n,c) => inv('world:origObjCreate', wid,cid,n,c),
+      update:     (id,n,c)  => inv('world:origObjUpdate', id,n,c),
+      updateNote: (id,note) => inv('world:origObjUpdateNote', id,note),
+      delete:     (id)      => inv('world:origObjDelete', id),
+      getAttrs:   (oid)     => inv('world:origObjGetAttrs', oid),
+      upsertAttr: (oid,tid,v) => inv('world:origObjUpsertAttr', oid,tid,v),
+    },
+    desc: {
+      getAll:  (wid)    => inv('world:getDesc', wid),
+      add:     (wid,n,t)=> inv('world:addDesc', wid,n,t),
+      update:  (id,n,t) => inv('world:updDesc', id,n,t),
+      delete:  (id)     => inv('world:delDesc', id),
+    },
 
     getCharacters:           (wid)           => inv('world:getCharacters', wid),
     createCharacter:         (wid,n,sym,c)   => inv('world:createCharacter', wid,n,sym,c),

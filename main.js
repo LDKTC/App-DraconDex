@@ -218,6 +218,30 @@ h('world:getNovels',        (wid)                     => db.getWorldNovels(wid))
 h('world:getLinkableProjects',(wid)                   => db.getLinkableProjects(wid));
 h('world:addNovel',         (wid,pid)                 => db.addWorldNovel(wid,pid));
 h('world:removeNovel',      (id)                      => db.removeWorldNovel(id));
+h('world:setNovelCharCat',  (wnid,catref)             => db.setNovelCharCat(wnid,catref));
+
+// World-owned ("original") category→object→attribute→template
+h('world:origCatGetAll',    (wid)                     => db.getOrigCategories(wid));
+h('world:origCatCreate',    (wid,n,c)                 => db.createOrigCategory(wid,n,c));
+h('world:origCatUpdate',    (id,n,c)                  => db.updateOrigCategory(id,n,c));
+h('world:origCatDelete',    (id)                      => db.deleteOrigCategory(id));
+h('world:origTmplGetAll',   (cid)                     => db.getOrigTemplates(cid));
+h('world:origTmplCreate',   (cid,d,t)                 => db.createOrigTemplate(cid,d,t));
+h('world:origTmplUpdate',   (id,d,t)                  => db.updateOrigTemplate(id,d,t));
+h('world:origTmplDelete',   (id)                      => db.deleteOrigTemplate(id));
+h('world:origObjGetAll',    (cid)                     => db.getOrigObjects(cid));
+h('world:origObjGet',       (id)                      => db.getOrigObject(id));
+h('world:origObjCreate',    (wid,cid,n,c)             => db.createOrigObject(wid,cid,n,c));
+h('world:origObjUpdate',    (id,n,c)                  => db.updateOrigObject(id,n,c));
+h('world:origObjUpdateNote',(id,note)                 => db.updateOrigObjectNote(id,note));
+h('world:origObjDelete',    (id)                      => db.deleteOrigObject(id));
+h('world:origObjGetAttrs',  (oid)                     => db.getOrigObjectAttrs(oid));
+h('world:origObjUpsertAttr',(oid,tid,v)              => db.upsertOrigAttr(oid,tid,v));
+
+h('world:getDesc',          (wid)                     => db.getWorldDesc(wid));
+h('world:addDesc',          (wid,n,t)                 => db.addWorldDesc(wid,n,t));
+h('world:updDesc',          (id,n,t)                  => db.updateWorldDesc(id,n,t));
+h('world:delDesc',          (id)                      => db.deleteWorldDesc(id));
 
 h('world:getCharacters',    (wid)                     => db.getWorldCharacters(wid));
 h('world:createCharacter',  (wid,n,sym,c)             => db.createWorldCharacter(wid,n,sym,c));

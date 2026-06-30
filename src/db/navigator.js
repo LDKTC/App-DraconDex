@@ -24,11 +24,15 @@ const deleteWorld = (id) =>
 // ---- Novels --------------------------------------------------------------
 const getWorldNovels = (worldId) =>
   getDB().prepare(`
-    SELECT wn.id, wn.world_ref, wn.project_ref, p.codename, p.name, uc.color_code
+    SELECT wn.id, wn.world_ref, wn.project_ref, wn.char_category_ref, p.codename, p.name, uc.color_code
     FROM world_novel wn JOIN project p ON wn.project_ref=p.id
     LEFT JOIN use_color uc ON p.project_color=uc.id
     WHERE wn.world_ref=? ORDER BY p.name
   `).all(worldId);
+
+// Designate the single "character category" for a linked novel (or clear with null).
+const setNovelCharCat = (worldNovelId, categoryRef) =>
+  getDB().prepare(`UPDATE world_novel SET char_category_ref=?,update_at=datetime('now') WHERE id=?`).run(categoryRef || null, worldNovelId);
 
 const getLinkableProjects = (worldId) =>
   getDB().prepare(`
@@ -275,9 +279,77 @@ const removeEventObject = (id) => {
   return true;
 };
 
+// ═══ World-owned ("original") category→object→attribute→template ═════════
+//  Mirrors the Director schema (object_category/template/object/attribute)
+//  but keyed to world_project — the world owns this data, not the novels.
+
+// ---- Original categories --------------------------------------------------
+const getOrigCategories = (worldId) =>
+  getDB().prepare(`SELECT oc.*, uc.color_code FROM world_orig_category oc LEFT JOIN use_color uc ON oc.color=uc.id WHERE oc.world_ref=? ORDER BY oc.category_name`).all(worldId);
+const createOrigCategory = (worldId, name, colorId) =>
+  getDB().prepare(`INSERT INTO world_orig_category (category_name,world_ref,color) VALUES (?,?,?)`).run(name, worldId, colorId || null);
+const updateOrigCategory = (id, name, colorId) =>
+  getDB().prepare(`UPDATE world_orig_category SET category_name=?,color=?,update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
+const deleteOrigCategory = (id) =>
+  getDB().prepare(`DELETE FROM world_orig_category WHERE id=?`).run(id);
+
+// ---- Original templates (fields) -----------------------------------------
+const getOrigTemplates = (categoryId) =>
+  getDB().prepare(`SELECT * FROM world_orig_template WHERE category_id=? ORDER BY display_order, id`).all(categoryId);
+const createOrigTemplate = (categoryId, description, type) =>
+  getDB().prepare(`INSERT INTO world_orig_template (category_id,description,attribute_type) VALUES (?,?,?)`).run(categoryId, description, type || 'text');
+const updateOrigTemplate = (id, description, type) =>
+  getDB().prepare(`UPDATE world_orig_template SET description=?,attribute_type=?,update_at=datetime('now') WHERE id=?`).run(description, type, id);
+const deleteOrigTemplate = (id) =>
+  getDB().prepare(`DELETE FROM world_orig_template WHERE id=?`).run(id);
+
+// ---- Original objects -----------------------------------------------------
+const getOrigObjects = (categoryId) =>
+  getDB().prepare(`SELECT o.*, uc.color_code FROM world_orig_object o LEFT JOIN use_color uc ON o.color=uc.id WHERE o.category_id=? ORDER BY o.name`).all(categoryId);
+const getOrigObject = (id) =>
+  getDB().prepare(`SELECT o.*, uc.color_code FROM world_orig_object o LEFT JOIN use_color uc ON o.color=uc.id WHERE o.id=?`).get(id);
+const createOrigObject = (worldId, categoryId, name, colorId) =>
+  getDB().prepare(`INSERT INTO world_orig_object (name,world_ref,category_id,color) VALUES (?,?,?,?)`).run(name, worldId, categoryId, colorId || null);
+const updateOrigObject = (id, name, colorId) =>
+  getDB().prepare(`UPDATE world_orig_object SET name=?,color=?,update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
+const updateOrigObjectNote = (id, note) =>
+  getDB().prepare(`UPDATE world_orig_object SET note=?,update_at=datetime('now') WHERE id=?`).run(note, id);
+const deleteOrigObject = (id) =>
+  getDB().prepare(`DELETE FROM world_orig_object WHERE id=?`).run(id);
+
+// ---- Original attributes ---------------------------------------------------
+const getOrigObjectAttrs = (objectId) =>
+  getDB().prepare(`
+    SELECT ot.id, ot.description, ot.attribute_type, oa.attribute_value
+    FROM world_orig_template ot
+    LEFT JOIN world_orig_attribute oa ON oa.template_id = ot.id AND oa.object_id = ?
+    WHERE ot.category_id = (SELECT category_id FROM world_orig_object WHERE id = ?)
+    ORDER BY ot.display_order, ot.id
+  `).all(objectId, objectId);
+const upsertOrigAttr = (objectId, templateId, value) =>
+  getDB().prepare(`
+    INSERT INTO world_orig_attribute (object_id, template_id, attribute_value) VALUES (?,?,?)
+    ON CONFLICT(object_id, template_id) DO UPDATE SET attribute_value=excluded.attribute_value, update_at=datetime('now')
+  `).run(objectId, templateId, value);
+
+// ---- World description -----------------------------------------------------
+const getWorldDesc = (worldId) =>
+  getDB().prepare(`SELECT * FROM world_description WHERE world_ref=? ORDER BY id`).all(worldId);
+const addWorldDesc = (worldId, name, text) =>
+  getDB().prepare(`INSERT INTO world_description (world_ref,attribute_name,attribute_text) VALUES (?,?,?)`).run(worldId, name, text);
+const updateWorldDesc = (id, name, text) =>
+  getDB().prepare(`UPDATE world_description SET attribute_name=?,attribute_text=?,update_at=datetime('now') WHERE id=?`).run(name, text, id);
+const deleteWorldDesc = (id) =>
+  getDB().prepare(`DELETE FROM world_description WHERE id=?`).run(id);
+
 module.exports = {
   getWorlds, getWorld, createWorld, updateWorld, deleteWorld,
-  getWorldNovels, getLinkableProjects, addWorldNovel, removeWorldNovel,
+  getWorldNovels, getLinkableProjects, addWorldNovel, removeWorldNovel, setNovelCharCat,
+  getOrigCategories, createOrigCategory, updateOrigCategory, deleteOrigCategory,
+  getOrigTemplates, createOrigTemplate, updateOrigTemplate, deleteOrigTemplate,
+  getOrigObjects, getOrigObject, createOrigObject, updateOrigObject, updateOrigObjectNote, deleteOrigObject,
+  getOrigObjectAttrs, upsertOrigAttr,
+  getWorldDesc, addWorldDesc, updateWorldDesc, deleteWorldDesc,
   getWorldCharacters, createWorldCharacter, updateWorldCharacter, deleteWorldCharacter,
   getCharacterCategories, addCharacterCategory, removeCharacterCategory,
   getCharacterLinks, getLinkableCharacterObjects, addCharacterLink, removeCharacterLink,

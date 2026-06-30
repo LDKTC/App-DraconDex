@@ -355,6 +355,7 @@ function initDB() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
       project_ref INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+      char_category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL,
       update_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(world_ref,project_ref)
     );
@@ -469,6 +470,53 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now')),
       CHECK ((world_object_ref IS NOT NULL) + (world_character_ref IS NOT NULL) = 1),
       UNIQUE(event_ref,point_ref)
+    );
+
+    -- Navigator world-owned ("original") data: category→object→attribute→template,
+    -- mirroring the Director schema but keyed to world_project (not borrowed from novels). --
+    CREATE TABLE IF NOT EXISTS world_orig_category (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+      category_name TEXT NOT NULL,
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(category_name, world_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS world_orig_template (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category_id INTEGER NOT NULL REFERENCES world_orig_category(id) ON DELETE CASCADE,
+      description TEXT NOT NULL,
+      attribute_type TEXT DEFAULT 'text',
+      display_order INTEGER DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS world_orig_object (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+      category_id INTEGER NOT NULL REFERENCES world_orig_category(id) ON DELETE CASCADE,
+      color INTEGER REFERENCES use_color(id),
+      note TEXT,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS world_orig_attribute (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      object_id INTEGER NOT NULL REFERENCES world_orig_object(id) ON DELETE CASCADE,
+      template_id INTEGER NOT NULL REFERENCES world_orig_template(id) ON DELETE CASCADE,
+      attribute_value TEXT,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(object_id, template_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS world_description (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+      attribute_name TEXT,
+      attribute_text TEXT,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     -- Hero (v2.3) --
@@ -717,6 +765,9 @@ function initDB() {
         db.prepare(`UPDATE world_project SET color=color_ref WHERE color IS NULL`).run();
       }
     } catch (_) {}
+  }
+  if (hasTable(db, 'world_novel') && !hasColumn(db, 'world_novel', 'char_category_ref')) {
+    try { db.prepare(`ALTER TABLE world_novel ADD COLUMN char_category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL`).run(); } catch (_) {}
   }
   const hasStory = db.prepare(`PRAGMA table_info(timeline_event)`).all().some(c => c.name === 'story');
   if (!hasStory) db.prepare(`ALTER TABLE timeline_event ADD COLUMN story TEXT`).run();

@@ -299,6 +299,14 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .ftgl.open{transform:rotate(90deg)}
 .fchildren{padding-left:10px}
 
+/* Navigator: per-novel "character category" fav toggle (person emoji) */
+.char-fav{
+	background:none;border:none;cursor:pointer;padding:0 1px;line-height:1;
+	font-size:13px;filter:grayscale(1);opacity:.4;transition:opacity var(--ease),filter var(--ease);
+}
+.char-fav:hover{opacity:.75}
+.char-fav.active{filter:none;opacity:1}
+
 /* PROJECT CONTEXT SIDEBAR */
 .project-side-head{
 	padding:12px 12px 10px;
