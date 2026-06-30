@@ -681,6 +681,18 @@ async function goToActiveProject(){
   else { renderSidebar(); renderWelcome(); }
 }
 
+// Navigator equivalent of returnToProjectList: deselect the active world and
+// show the world ("navi project") list in the left panel.
+async function goToNavigatorList(){
+  S.world = null;
+  S.view = 'navigator';
+  document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+  q('.nav-btn[data-panel="navigator"]')?.classList.add('active');
+  updateTopNavButton();
+  await loadModule('src/renderer/navigator.js');
+  renderNavigatorView();
+}
+
 function tabFromProject(project){
   return {
     id: project.id,
