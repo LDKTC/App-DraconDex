@@ -333,6 +333,7 @@ async function init() {
   bindLeftPanelToggle();
   applyLeftPanelState();
   observeUiLanguage();
+  removeLegacyDirectorProjectButton();
   buildModuleSubNav();
   renderSettingsMenu();
   translateStaticChrome();
@@ -346,6 +347,10 @@ async function init() {
 }
 
 // ═══ HELPERS ═══════════════════════════════════════════
+function removeLegacyDirectorProjectButton(){
+  q('#nav-sidebar > .nav-btn.director-only[data-panel="projects"]')?.remove();
+}
+
 const q = (s) => document.querySelector(s);
 const x = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 // `esc` is an alias for `x` used by the Writer/Sage modules.
@@ -639,8 +644,9 @@ function updateTopNavButton(){
     btn.style.display = (!S.activeModule) ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.director-only').forEach(btn => {
-    btn.style.display = (S.activeModule === 'director') ? '' : 'none';
+    btn.style.display = (S.activeModule === 'director') ? 'flex' : 'none';
   });
+  q('#director-project-shortcut')?.classList.toggle('active', S.activeModule === 'director' && S.view === 'projects');
   document.querySelectorAll('.nav-btn.project-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'director' && !!S.project) ? '' : 'none';
   });
@@ -679,6 +685,11 @@ async function goToActiveProject(){
   updateTopNavButton();
   if(S.project) await renderProject();
   else { renderSidebar(); renderWelcome(); }
+}
+
+async function openDirectorProjectShortcut(){
+  if(S.activeModule !== 'director') S.activeModule = 'director';
+  await goToActiveProject();
 }
 
 // Navigator equivalent of returnToProjectList: deselect the active world and

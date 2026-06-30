@@ -443,6 +443,7 @@ function updateTopNavButton(){
   document.querySelectorAll('.nav-btn.director-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'director') ? '' : 'none';
   });
+  q('#director-project-shortcut')?.classList.toggle('active', S.activeModule === 'director' && S.view === 'projects');
   document.querySelectorAll('.nav-btn.project-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'director' && !!S.project) ? '' : 'none';
   });
@@ -462,12 +463,17 @@ function returnToProjectList(){
 
 
 async function goToActiveProject(){
-  if(!S.project) return;
   S.view = 'projects';
   document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
   q('.nav-btn[data-panel="projects"]')?.classList.add('active');
   updateTopNavButton();
-  await renderProject();
+  if(S.project) await renderProject();
+  else { renderSidebar(); renderWelcome(); }
+}
+
+async function openDirectorProjectShortcut(){
+  if(S.activeModule !== 'director') S.activeModule = 'director';
+  await goToActiveProject();
 }
 
 function tabFromProject(project){

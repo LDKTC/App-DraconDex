@@ -1,3 +1,16 @@
+function ensureKonva(){
+  if(window.Konva) return Promise.resolve();
+  if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
+  window.__konvaLoading = true;
+  return new Promise((resolve,reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/konva@9/konva.min.js';
+    s.onload = ()=>{ window.__konvaLoading = false; resolve(); };
+    s.onerror = ()=>{ window.__konvaLoading = false; reject(new Error('Failed to load Konva')); };
+    document.body.appendChild(s);
+  });
+}
+
 function renderAreaList(areas){
   if(!areas.length){
     return `<div class="empty" style="padding:18px 10px"><p>ยังไม่มี Area</p></div>`;

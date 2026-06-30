@@ -1,3 +1,6 @@
+const relationNodeState = {catView:{}, objView:{}, projectView:{}};
+const relationWbViewState = {catView:{}, objView:{}, projectView:{}};
+
 async function renderForceGraph(graphData, opts={}){
   const c = q('#wb-container');
   if(!c) return;
@@ -254,8 +257,8 @@ async function renderCategoryWhiteboard(catId){
   const projectObjs = await api.relation.getProjectObjects(S.project.id);
   const byKey = new Map(projectObjs.map(o=>[`${o.category_name}::${o.name}`,o.id]));
   const objIdSet = new Set(objs.map(o=>o.id));
-  if(!nodeState.catView[selectedCatId]) nodeState.catView[selectedCatId]={};
-  const positions = nodeState.catView[selectedCatId];
+  if(!relationNodeState.catView[selectedCatId]) relationNodeState.catView[selectedCatId]={};
+  const positions = relationNodeState.catView[selectedCatId];
   const radius=150, cx=300, cy=200, anglePerNode=Math.PI*2/Math.max(objs.length,1);
   objs.forEach((o,i)=>{ if(!positions[o.id]) positions[o.id]={x:cx+Math.cos(i*anglePerNode)*radius, y:cy+Math.sin(i*anglePerNode)*radius}; });
   // Build graph data for React Force Graph
@@ -299,8 +302,8 @@ async function renderObjectWhiteboard(objId){
   const relObjs  = Array.from(relObjMap.values());
   const myTlRels = tlRels.filter(r=>{ const from=objByKey.get(`${r.from_cat}::${r.from_name}`); return from?.id===selectedObjId; });
   const tlNodes  = myTlRels.map((r,i)=>({ id:`tl-${i}-${r.id}`, name:r.to_name||'Event', type:'timeline', color_code:r.color_code||'#06b6d4', relation_name:r.relation_name||'', date_text:fmtDate(r.s_day,r.s_month,r.s_years,0,0) }));
-  if(!nodeState.objView[selectedObjId]) nodeState.objView[selectedObjId]={};
-  const positions = nodeState.objView[selectedObjId];
+  if(!relationNodeState.objView[selectedObjId]) relationNodeState.objView[selectedObjId]={};
+  const positions = relationNodeState.objView[selectedObjId];
   if(!positions[selectedObjId]) positions[selectedObjId]={x:300,y:200};
   const radius=120, cx=300, cy=200;
   const aroundNodes=[...relObjs,...tlNodes];
@@ -339,8 +342,8 @@ async function renderProjectWhiteboard(projectId){
   const rels = await api.relation.getOBOB(projectId);
   const objByKey = new Map(allObjs.map(o=>[`${o.category_name}::${o.name}`, o]));
   const objIdSet = new Set(allObjs.map(o=>o.id));
-  if(!nodeState.projectView[projectId]) nodeState.projectView[projectId]={};
-  const positions = nodeState.projectView[projectId];
+  if(!relationNodeState.projectView[projectId]) relationNodeState.projectView[projectId]={};
+  const positions = relationNodeState.projectView[projectId];
   const radius=170, cx=300, cy=200, anglePerNode=(2*Math.PI)/Math.max(allObjs.length,1);
   allObjs.forEach((o,i)=>{
     if(!positions[o.id]) positions[o.id]={ x:cx+Math.cos(i*anglePerNode)*radius, y:cy+Math.sin(i*anglePerNode)*radius };
@@ -396,9 +399,9 @@ function startRelListResize(e){
 }
 
 function getWbViewStore(viewType){
-  if(viewType==='cat') return wbViewState.catView;
-  if(viewType==='obj') return wbViewState.objView;
-  return wbViewState.projectView;
+  if(viewType==='cat') return relationWbViewState.catView;
+  if(viewType==='obj') return relationWbViewState.objView;
+  return relationWbViewState.projectView;
 }
 function ensureWbViewState(viewType,viewId){
   const store = getWbViewStore(viewType);
@@ -514,7 +517,7 @@ document.addEventListener('mousemove',function(e){
   }
   if(dragState){
     const viewKey = dragState.viewType==='cat' ? 'catView' : (dragState.viewType==='obj' ? 'objView' : 'projectView');
-    const pos=nodeState[viewKey][dragState.viewId]||{};
+    const pos=relationNodeState[viewKey][dragState.viewId]||{};
     if(!pos[dragState.objId]) pos[dragState.objId]={x:0,y:0};
     const t = ensureWbViewState(dragState.viewType, dragState.viewId);
     const scale = t.scale || 1;

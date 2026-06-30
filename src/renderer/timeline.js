@@ -1,3 +1,8 @@
+function autoExpand(el){
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 async function renderTimelineView(){
   if(!S.project){
     q('#left-panel-inner').innerHTML=`<div class="empty" style="padding:40px 10px"><div class="ei">${I.timeline}</div><p style="text-align:center">กรุณาเลือกโปรเจกต์ก่อน</p></div>`;

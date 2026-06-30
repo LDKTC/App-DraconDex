@@ -70,6 +70,12 @@ function hasColumn(conn, tableName, columnName) {
   return conn.prepare(`PRAGMA table_info(${tableName})`).all().some((c) => c.name === columnName);
 }
 
+function hasAnyMissingColumns(conn, specs) {
+  return specs.some(([tableName, columnNames]) =>
+    hasTable(conn, tableName) && columnNames.some((columnName) => !hasColumn(conn, tableName, columnName))
+  );
+}
+
 function initDB() {
   // One-time migration: clean-replace the legacy Navigator (v2.2) schema with
   // the new v2.5.2 "World" schema. Detected by the legacy `world_cat_object`
@@ -79,10 +85,39 @@ function initDB() {
   try {
     const legacyNav =
       hasTable(db, 'world_cat_object') ||
-      (hasColumn(db, 'world_project', 'color_ref') && !hasColumn(db, 'world_project', 'codename'));
+      (hasColumn(db, 'world_project', 'color_ref') && !hasColumn(db, 'world_project', 'codename')) ||
+      hasAnyMissingColumns(db, [
+        ['world_project', ['codename', 'name', 'memo', 'color']],
+        ['world_novel', ['world_ref', 'project_ref']],
+        ['world_character', ['world_ref', 'name', 'symbol', 'color']],
+        ['world_character_category', ['world_ref', 'category_ref']],
+        ['world_character_link', ['character_ref', 'object_ref']],
+        ['world_category', ['world_ref', 'category_ref']],
+        ['world_object', ['category_ref', 'object_ref', 'symbol']],
+        ['world_map', ['world_ref', 'map_ref']],
+        ['world_map_area', ['world_map_ref', 'area_ref', 'color']],
+        ['world_map_point', ['world_map_area_ref', 'point_ref']],
+        ['world_timeline', ['world_ref', 'name', 'world_map_ref']],
+        ['world_timeline_date', ['day', 'month', 'years', 'hour', 'minute']],
+        ['world_timeline_event', ['timeline_ref', 'date_ref']],
+        ['world_timeline_point', ['x', 'y']],
+        ['world_timeline_object', ['event_ref', 'world_object_ref', 'world_character_ref', 'point_ref']],
+      ]);
     if (legacyNav) {
       db.exec(`PRAGMA foreign_keys = OFF`);
       db.exec(`
+        DROP TABLE IF EXISTS library_world_link;
+        DROP TABLE IF EXISTS world_timeline_object;
+        DROP TABLE IF EXISTS world_timeline_point;
+        DROP TABLE IF EXISTS world_timeline_event;
+        DROP TABLE IF EXISTS world_timeline_date;
+        DROP TABLE IF EXISTS world_timeline;
+        DROP TABLE IF EXISTS world_map_point;
+        DROP TABLE IF EXISTS world_map_area;
+        DROP TABLE IF EXISTS world_object;
+        DROP TABLE IF EXISTS world_character_link;
+        DROP TABLE IF EXISTS world_character_category;
+        DROP TABLE IF EXISTS world_novel;
         DROP TABLE IF EXISTS world_maptl_obj;
         DROP TABLE IF EXISTS world_maptl_event;
         DROP TABLE IF EXISTS world_map_timeline;
@@ -663,6 +698,14 @@ function initDB() {
 
   if (!hasColumn(db, 'relation_type', 'color')) {
     try { db.prepare(`ALTER TABLE relation_type ADD COLUMN color INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
+  }
+  if (hasTable(db, 'world_project') && !hasColumn(db, 'world_project', 'color')) {
+    try {
+      db.prepare(`ALTER TABLE world_project ADD COLUMN color INTEGER REFERENCES use_color(id)`).run();
+      if (hasColumn(db, 'world_project', 'color_ref')) {
+        db.prepare(`UPDATE world_project SET color=color_ref WHERE color IS NULL`).run();
+      }
+    } catch (_) {}
   }
   const hasStory = db.prepare(`PRAGMA table_info(timeline_event)`).all().some(c => c.name === 'story');
   if (!hasStory) db.prepare(`ALTER TABLE timeline_event ADD COLUMN story TEXT`).run();

@@ -135,6 +135,7 @@ async function renderWorldOverview(w) {
       </div>`).join('')
     : `<div style="color:var(--t3);font-size:.85em;padding:8px 0">No novels linked.</div>`;
 
+  const linkedIds = new Set(novels.map(n => n.project_ref));
   const addHtml = linkable.length
     ? `<div style="display:flex;gap:6px;align-items:center">
         <select id="wov-novel" style="font-size:.85em;max-width:220px">
