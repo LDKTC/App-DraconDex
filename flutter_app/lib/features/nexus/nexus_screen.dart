@@ -41,6 +41,11 @@ class NexusScreen extends StatelessWidget {
                     onTap: () => context.go('/projects'),
                   ),
                   _ModuleTile(
+                    icon: Icons.public,
+                    label: 'Navigator',
+                    onTap: () => context.go('/worlds'),
+                  ),
+                  _ModuleTile(
                     icon: Icons.search,
                     label: 'Search',
                     onTap: () => context.go('/search'),

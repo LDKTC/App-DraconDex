@@ -205,6 +205,174 @@ CREATE TABLE IF NOT EXISTS event_hashtag (
   UNIQUE(event_id, hashtag_id)
 )''';
 
+// ---------------------------------------------------------------------------
+// Navigator module (v2.5.2 "World") — cross-novel world-building layer.
+// Links into Director tables: project, object_category, object, map, map_area,
+// map_point, use_color.
+// ---------------------------------------------------------------------------
+
+const String createWorldProject = '''
+CREATE TABLE IF NOT EXISTS world_project (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  codename TEXT UNIQUE,
+  name TEXT NOT NULL,
+  memo TEXT,
+  color INTEGER REFERENCES use_color(id),
+  update_at TEXT NOT NULL DEFAULT (datetime('now'))
+)''';
+
+const String createWorldNovel = '''
+CREATE TABLE IF NOT EXISTS world_novel (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+  project_ref INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(world_ref, project_ref)
+)''';
+
+const String createWorldCharacter = '''
+CREATE TABLE IF NOT EXISTS world_character (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  symbol TEXT,
+  color INTEGER REFERENCES use_color(id),
+  update_at TEXT NOT NULL DEFAULT (datetime('now'))
+)''';
+
+const String createWorldCharacterCategory = '''
+CREATE TABLE IF NOT EXISTS world_character_category (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+  category_ref INTEGER NOT NULL REFERENCES object_category(id) ON DELETE CASCADE,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(world_ref, category_ref)
+)''';
+
+const String createWorldCharacterLink = '''
+CREATE TABLE IF NOT EXISTS world_character_link (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_ref INTEGER NOT NULL REFERENCES world_character(id) ON DELETE CASCADE,
+  object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(character_ref, object_ref)
+)''';
+
+const String createWorldCategory = '''
+CREATE TABLE IF NOT EXISTS world_category (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+  category_ref INTEGER NOT NULL REFERENCES object_category(id) ON DELETE CASCADE,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(world_ref, category_ref)
+)''';
+
+const String createWorldObject = '''
+CREATE TABLE IF NOT EXISTS world_object (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_ref INTEGER NOT NULL REFERENCES world_category(id) ON DELETE CASCADE,
+  object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
+  symbol TEXT,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(category_ref, object_ref)
+)''';
+
+const String createWorldMap = '''
+CREATE TABLE IF NOT EXISTS world_map (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+  map_ref INTEGER NOT NULL REFERENCES map(id) ON DELETE CASCADE,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(world_ref, map_ref)
+)''';
+
+const String createWorldMapArea = '''
+CREATE TABLE IF NOT EXISTS world_map_area (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_map_ref INTEGER NOT NULL REFERENCES world_map(id) ON DELETE CASCADE,
+  area_ref INTEGER NOT NULL REFERENCES map_area(id) ON DELETE CASCADE,
+  color INTEGER REFERENCES use_color(id),
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(world_map_ref, area_ref)
+)''';
+
+const String createWorldMapPoint = '''
+CREATE TABLE IF NOT EXISTS world_map_point (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_map_area_ref INTEGER NOT NULL REFERENCES world_map_area(id) ON DELETE CASCADE,
+  point_ref INTEGER NOT NULL REFERENCES map_point(id) ON DELETE CASCADE,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(world_map_area_ref, point_ref)
+)''';
+
+const String createWorldTimeline = '''
+CREATE TABLE IF NOT EXISTS world_timeline (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  world_map_ref INTEGER REFERENCES world_map(id) ON DELETE SET NULL,
+  update_at TEXT NOT NULL DEFAULT (datetime('now'))
+)''';
+
+const String createWorldTimelineDate = '''
+CREATE TABLE IF NOT EXISTS world_timeline_date (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  day INTEGER NOT NULL,
+  month INTEGER NOT NULL,
+  years INTEGER NOT NULL,
+  hour INTEGER NOT NULL DEFAULT 0,
+  minute INTEGER NOT NULL DEFAULT 0,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(day, month, years, hour, minute)
+)''';
+
+const String createWorldTimelineEvent = '''
+CREATE TABLE IF NOT EXISTS world_timeline_event (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  timeline_ref INTEGER NOT NULL REFERENCES world_timeline(id) ON DELETE CASCADE,
+  date_ref INTEGER NOT NULL REFERENCES world_timeline_date(id),
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(timeline_ref, date_ref)
+)''';
+
+const String createWorldTimelinePoint = '''
+CREATE TABLE IF NOT EXISTS world_timeline_point (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  x REAL NOT NULL,
+  y REAL NOT NULL,
+  update_at TEXT NOT NULL DEFAULT (datetime('now'))
+)''';
+
+const String createWorldTimelineObject = '''
+CREATE TABLE IF NOT EXISTS world_timeline_object (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_ref INTEGER NOT NULL REFERENCES world_timeline_event(id) ON DELETE CASCADE,
+  world_object_ref INTEGER REFERENCES world_object(id) ON DELETE CASCADE,
+  world_character_ref INTEGER REFERENCES world_character(id) ON DELETE CASCADE,
+  point_ref INTEGER REFERENCES world_timeline_point(id) ON DELETE SET NULL,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  CHECK ((world_object_ref IS NOT NULL) + (world_character_ref IS NOT NULL) = 1),
+  UNIQUE(event_ref, point_ref)
+)''';
+
+const List<String> worldCreateStatements = [
+  createWorldProject,
+  createWorldNovel,
+  createWorldCharacter,
+  createWorldCharacterCategory,
+  createWorldCharacterLink,
+  createWorldCategory,
+  createWorldObject,
+  createWorldMap,
+  createWorldMapArea,
+  createWorldMapPoint,
+  createWorldTimeline,
+  createWorldTimelineDate,
+  createWorldTimelineEvent,
+  createWorldTimelinePoint,
+  createWorldTimelineObject,
+];
+
 const List<String> defaultColors = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
   '#f97316', '#eab308', '#22c55e', '#06b6d4',
@@ -236,4 +404,5 @@ const List<String> allCreateStatements = [
   createProjectHashtag,
   createObjectHashtag,
   createEventHashtag,
+  ...worldCreateStatements,
 ];

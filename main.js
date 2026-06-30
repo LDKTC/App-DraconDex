@@ -207,70 +207,61 @@ h('hashtag:getObjectsByTag', (tagId, projectId) => db.getObjectsByHashtag(tagId,
 h('hashtag:getEventsByTag', (tagId, projectId) => db.getEventsByHashtag(tagId, projectId));
 h('project:getAllUsedTags', (pid) => db.getAllProjectUsedTags(pid));
 
-// Navigator (v2.2) — World module
+// Navigator (v2.5.2) — World module
 h('world:getAll',           ()                        => db.getWorlds());
 h('world:get',              (id)                      => db.getWorld(id));
-h('world:create',           (n,m,c)                   => db.createWorld(n,m,c));
-h('world:update',           (id,n,m,c)                => db.updateWorld(id,n,m,c));
+h('world:create',           (code,n,m,c)              => db.createWorld(code,n,m,c));
+h('world:update',           (id,code,n,m,c)           => db.updateWorld(id,code,n,m,c));
 h('world:delete',           (id)                      => db.deleteWorld(id));
 
-h('world:getDesc',          (wid)                     => db.getWorldDesc(wid));
-h('world:addDesc',          (wid,title,content)       => db.addWorldDesc(wid,title,content));
-h('world:updateDesc',       (id,title,content)        => db.updateWorldDesc(id,title,content));
-h('world:deleteDesc',       (id)                      => db.deleteWorldDesc(id));
-
-h('world:getNovelLinks',    (wid)                     => db.getWorldNovelLinks(wid));
-h('world:addNovelLink',     (wid,pid)                 => db.addWorldNovelLink(wid,pid));
-h('world:removeNovelLink',  (id)                      => db.removeWorldNovelLink(id));
+h('world:getNovels',        (wid)                     => db.getWorldNovels(wid));
+h('world:getLinkableProjects',(wid)                   => db.getLinkableProjects(wid));
+h('world:addNovel',         (wid,pid)                 => db.addWorldNovel(wid,pid));
+h('world:removeNovel',      (id)                      => db.removeWorldNovel(id));
 
 h('world:getCharacters',    (wid)                     => db.getWorldCharacters(wid));
-h('world:getCharLinks',     (cid)                     => db.getWorldCharLinks(cid));
-h('world:createCharacter',  (wid,n,m)                 => db.createWorldCharacter(wid,n,m));
-h('world:updateCharacter',  (id,n,m)                  => db.updateWorldCharacter(id,n,m));
+h('world:createCharacter',  (wid,n,sym,c)             => db.createWorldCharacter(wid,n,sym,c));
+h('world:updateCharacter',  (id,n,sym,c)              => db.updateWorldCharacter(id,n,sym,c));
 h('world:deleteCharacter',  (id)                      => db.deleteWorldCharacter(id));
-h('world:setCharLink',      (cid,pid,catid,oid)       => db.setWorldCharLink(cid,pid,catid,oid));
-h('world:addCharLink',      (cid,pid,catid,oid)       => db.addWorldCharLink(cid,pid,catid,oid));
-h('world:removeCharLinkById',(id)                     => db.removeWorldCharLinkById(id));
-h('world:getCharObjectIds', (wid)                     => db.getWorldCharObjectIds(wid));
-h('world:getCharTags',      (cid)                     => db.getWorldCharTags(cid));
-h('world:setCharTags',      (cid,tags)                => db.setWorldCharTags(cid,tags));
-h('world:getLinkedNovCats', (wid)                     => db.getLinkedNovelCategories(wid));
-h('world:getLinkedCatObjs', (catId,excIds)            => db.getLinkedCatObjects(catId,excIds));
+h('world:getCharCategories',(wid)                     => db.getCharacterCategories(wid));
+h('world:addCharCategory',  (wid,catref)              => db.addCharacterCategory(wid,catref));
+h('world:removeCharCategory',(id)                     => db.removeCharacterCategory(id));
+h('world:getCharLinks',     (cid)                     => db.getCharacterLinks(cid));
+h('world:getLinkableCharObjects',(wid,cid)            => db.getLinkableCharacterObjects(wid,cid));
+h('world:addCharLink',      (cid,oref)                => db.addCharacterLink(cid,oref));
+h('world:removeCharLink',   (id)                      => db.removeCharacterLink(id));
 
 h('world:getCategories',    (wid)                     => db.getWorldCategories(wid));
-h('world:createCategory',   (wid,n,m)                 => db.createWorldCategory(wid,n,m));
-h('world:updateCategory',   (id,n,m)                  => db.updateWorldCategory(id,n,m));
-h('world:deleteCategory',   (id)                      => db.deleteWorldCategory(id));
-h('world:setCatLink',       (catId,pid,catref)        => db.setWorldCatLink(catId,pid,catref));
+h('world:getLinkableCategories',(wid,forChars)        => db.getLinkableCategories(wid,forChars));
+h('world:addCategory',      (wid,catref)              => db.addWorldCategory(wid,catref));
+h('world:removeCategory',   (id)                      => db.removeWorldCategory(id));
 
-h('world:getCatObjects',    (catId)                   => db.getWorldCatObjects(catId));
-h('world:createCatObject',  (catId,n,sym)             => db.createWorldCatObject(catId,n,sym));
-h('world:updateCatObject',  (id,n,sym)                => db.updateWorldCatObject(id,n,sym));
-h('world:deleteCatObject',  (id)                      => db.deleteWorldCatObject(id));
-h('world:getObjTags',       (oid)                     => db.getWorldObjTags(oid));
-h('world:setObjTags',       (oid,tags)                => db.setWorldObjTags(oid,tags));
+h('world:getObjects',       (wcid)                    => db.getWorldObjects(wcid));
+h('world:getLinkableObjects',(wcid)                   => db.getLinkableObjects(wcid));
+h('world:addObject',        (wcid,oref,sym)           => db.addWorldObject(wcid,oref,sym));
+h('world:updateObjectSymbol',(id,sym)                 => db.updateWorldObjectSymbol(id,sym));
+h('world:removeObject',     (id)                      => db.removeWorldObject(id));
 
 h('world:getMaps',          (wid)                     => db.getWorldMaps(wid));
-h('world:createMap',        (wid,n,m)                 => db.createWorldMap(wid,n,m));
-h('world:updateMap',        (id,n,m)                  => db.updateWorldMap(id,n,m));
-h('world:deleteMap',        (id)                      => db.deleteWorldMap(id));
-h('world:setMapLink',       (mid,pid,msrc,aref)       => db.setWorldMapLink(mid,pid,msrc,aref));
+h('world:getLinkableMaps',  (wid)                     => db.getLinkableMaps(wid));
+h('world:addMap',           (wid,mref)                => db.addWorldMap(wid,mref));
+h('world:removeMap',        (id)                      => db.removeWorldMap(id));
 
-h('world:getMapTimelines',  (wid)                     => db.getWorldMapTimelines(wid));
-h('world:createMapTimeline',(wid,mid,n)               => db.createWorldMapTimeline(wid,mid,n));
-h('world:updateMapTimeline',(id,mid,n)                => db.updateWorldMapTimeline(id,mid,n));
-h('world:deleteMapTimeline',(id)                      => db.deleteWorldMapTimeline(id));
+h('world:getTimelines',     (wid)                     => db.getWorldTimelines(wid));
+h('world:createTimeline',   (wid,n,wmref)             => db.createWorldTimeline(wid,n,wmref));
+h('world:updateTimeline',   (id,n,wmref)              => db.updateWorldTimeline(id,n,wmref));
+h('world:deleteTimeline',   (id)                      => db.deleteWorldTimeline(id));
 
-h('world:getMaptlEvents',   (tlid)                    => db.getWorldMaptlEvents(tlid));
-h('world:createMaptlEvent', (tlid,n,ord)              => db.createWorldMaptlEvent(tlid,n,ord));
-h('world:updateMaptlEvent', (id,n,ord)                => db.updateWorldMaptlEvent(id,n,ord));
-h('world:deleteMaptlEvent', (id)                      => db.deleteWorldMaptlEvent(id));
-h('world:getMaptlObjs',     (evid)                    => db.getWorldMaptlObjs(evid));
-h('world:addMaptlObj',      (evid,coid)               => db.addWorldMaptlObj(evid,coid));
-h('world:removeMaptlObj',   (id)                      => db.removeWorldMaptlObj(id));
+h('world:getEvents',        (tlid)                    => db.getTimelineEvents(tlid));
+h('world:createEvent',      (tlid,d,mo,y,hr,mi)       => db.createTimelineEvent(tlid,d,mo,y,hr,mi));
+h('world:deleteEvent',      (id)                      => db.deleteTimelineEvent(id));
 
-h('world:getTags',          (wid)                     => db.getWorldTags(wid));
-h('world:setTags',          (wid,tags)                => db.setWorldTags(wid,tags));
+h('world:getEventObjects',  (evid)                    => db.getEventObjects(evid));
+h('world:getPlaceableObjects',(wid)                   => db.getPlaceableObjects(wid));
+h('world:getPlaceableCharacters',(wid)                => db.getPlaceableCharacters(wid));
+h('world:addEventObject',   (evid,oref,cref,x,y)      => db.addEventObject(evid,oref,cref,x,y));
+h('world:updateEventObjectPoint',(id,x,y)             => db.updateEventObjectPoint(id,x,y));
+h('world:removeEventObject',(id)                      => db.removeEventObject(id));
 
 // Hero (v2.3) — Game module
 h('game:getAll',            ()                        => db.getGames());

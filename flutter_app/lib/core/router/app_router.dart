@@ -14,9 +14,17 @@ import '../../features/tags/tags_screen.dart';
 import '../../features/colors/colors_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/navigator/navigator_shell.dart';
+import '../../features/navigator/worlds/world_list_screen.dart';
+import '../../features/navigator/novels/world_novels_screen.dart';
+import '../../features/navigator/characters/world_characters_screen.dart';
+import '../../features/navigator/categories/world_categories_screen.dart';
+import '../../features/navigator/maps/world_maps_screen.dart';
+import '../../features/navigator/timeline/world_timeline_screen.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 final _shellKey = GlobalKey<NavigatorState>();
+final _navigatorShellKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
   navigatorKey: _rootKey,
@@ -95,6 +103,46 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/settings',
           builder: (ctx, state) => const SettingsScreen(),
+        ),
+      ],
+    ),
+    ShellRoute(
+      navigatorKey: _navigatorShellKey,
+      builder: (ctx, state, child) => NavigatorShell(child: child),
+      routes: [
+        GoRoute(
+          path: '/worlds',
+          builder: (ctx, state) => const WorldListScreen(),
+        ),
+        GoRoute(
+          path: '/world/:worldId/novels',
+          builder: (ctx, state) => WorldNovelsScreen(
+            worldId: int.parse(state.pathParameters['worldId']!),
+          ),
+        ),
+        GoRoute(
+          path: '/world/:worldId/characters',
+          builder: (ctx, state) => WorldCharactersScreen(
+            worldId: int.parse(state.pathParameters['worldId']!),
+          ),
+        ),
+        GoRoute(
+          path: '/world/:worldId/categories',
+          builder: (ctx, state) => WorldCategoriesScreen(
+            worldId: int.parse(state.pathParameters['worldId']!),
+          ),
+        ),
+        GoRoute(
+          path: '/world/:worldId/maps',
+          builder: (ctx, state) => WorldMapsScreen(
+            worldId: int.parse(state.pathParameters['worldId']!),
+          ),
+        ),
+        GoRoute(
+          path: '/world/:worldId/timeline',
+          builder: (ctx, state) => WorldTimelineScreen(
+            worldId: int.parse(state.pathParameters['worldId']!),
+          ),
         ),
       ],
     ),

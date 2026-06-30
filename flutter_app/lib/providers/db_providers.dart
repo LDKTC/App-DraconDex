@@ -11,6 +11,7 @@ import '../data/dao/map_dao.dart';
 import '../data/dao/relation_dao.dart';
 import '../data/dao/hashtag_dao.dart';
 import '../data/dao/search_dao.dart';
+import '../data/dao/world_dao.dart';
 
 final databaseProvider = FutureProvider<Database>((ref) async {
   return DatabaseHelper.instance.database;
@@ -54,4 +55,8 @@ final hashtagDaoProvider = Provider<AsyncValue<HashtagDao>>((ref) {
 
 final searchDaoProvider = Provider<AsyncValue<SearchDao>>((ref) {
   return ref.watch(databaseProvider).whenData((db) => SearchDao(db));
+});
+
+final worldDaoProvider = Provider<AsyncValue<WorldDao>>((ref) {
+  return ref.watch(databaseProvider).whenData((db) => WorldDao(db));
 });

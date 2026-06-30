@@ -71,6 +71,39 @@ function hasColumn(conn, tableName, columnName) {
 }
 
 function initDB() {
+  // One-time migration: clean-replace the legacy Navigator (v2.2) schema with
+  // the new v2.5.2 "World" schema. Detected by the legacy `world_cat_object`
+  // table / the old `world_project.color_ref` column (now `color`). Old
+  // navigator data is intentionally dropped; the new tables are recreated by
+  // the CREATE IF NOT EXISTS block below.
+  try {
+    const legacyNav =
+      hasTable(db, 'world_cat_object') ||
+      (hasColumn(db, 'world_project', 'color_ref') && !hasColumn(db, 'world_project', 'codename'));
+    if (legacyNav) {
+      db.exec(`PRAGMA foreign_keys = OFF`);
+      db.exec(`
+        DROP TABLE IF EXISTS world_maptl_obj;
+        DROP TABLE IF EXISTS world_maptl_event;
+        DROP TABLE IF EXISTS world_map_timeline;
+        DROP TABLE IF EXISTS world_map_link;
+        DROP TABLE IF EXISTS world_cat_object;
+        DROP TABLE IF EXISTS world_cat_link;
+        DROP TABLE IF EXISTS world_obj_hashtag;
+        DROP TABLE IF EXISTS world_char_hashtag;
+        DROP TABLE IF EXISTS world_char_link;
+        DROP TABLE IF EXISTS world_character;
+        DROP TABLE IF EXISTS world_category;
+        DROP TABLE IF EXISTS world_novel_link;
+        DROP TABLE IF EXISTS world_description;
+        DROP TABLE IF EXISTS world_project_hashtag;
+        DROP TABLE IF EXISTS world_map;
+        DROP TABLE IF EXISTS world_project;
+      `);
+      db.exec(`PRAGMA foreign_keys = ON`);
+    }
+  } catch (_) {}
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS use_color (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -262,28 +295,21 @@ function initDB() {
       UNIQUE(event_id,hashtag_id)
     );
 
-    -- Navigator (v2.2) --
+    -- Navigator (v2.5.2 "World") --
     CREATE TABLE IF NOT EXISTS world_project (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codename TEXT UNIQUE,
       name TEXT NOT NULL,
       memo TEXT,
-      color_ref INTEGER REFERENCES use_color(id),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS world_description (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
-      title TEXT,
-      content TEXT,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS world_novel_link (
+    CREATE TABLE IF NOT EXISTS world_novel (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
       project_ref INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(world_ref,project_ref)
     );
 
@@ -291,102 +317,112 @@ function initDB() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
-      memo TEXT,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      symbol TEXT,
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS world_char_link (
+    CREATE TABLE IF NOT EXISTS world_character_category (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      char_ref INTEGER NOT NULL REFERENCES world_character(id) ON DELETE CASCADE,
-      project_ref INTEGER REFERENCES project(id) ON DELETE SET NULL,
-      category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL,
-      object_ref INTEGER REFERENCES object(id) ON DELETE SET NULL,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(char_ref)
+      world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+      category_ref INTEGER NOT NULL REFERENCES object_category(id) ON DELETE CASCADE,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(world_ref,category_ref)
     );
 
-    CREATE TABLE IF NOT EXISTS world_char_hashtag (
-      char_id INTEGER NOT NULL REFERENCES world_character(id) ON DELETE CASCADE,
-      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
-      UNIQUE(char_id,hashtag_id)
+    CREATE TABLE IF NOT EXISTS world_character_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      character_ref INTEGER NOT NULL REFERENCES world_character(id) ON DELETE CASCADE,
+      object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(character_ref,object_ref)
     );
 
     CREATE TABLE IF NOT EXISTS world_category (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      memo TEXT,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      category_ref INTEGER NOT NULL REFERENCES object_category(id) ON DELETE CASCADE,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(world_ref,category_ref)
     );
 
-    CREATE TABLE IF NOT EXISTS world_cat_link (
+    CREATE TABLE IF NOT EXISTS world_object (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      cat_ref INTEGER NOT NULL REFERENCES world_category(id) ON DELETE CASCADE,
-      project_ref INTEGER REFERENCES project(id) ON DELETE SET NULL,
-      category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(cat_ref)
-    );
-
-    CREATE TABLE IF NOT EXISTS world_cat_object (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      cat_ref INTEGER NOT NULL REFERENCES world_category(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
+      category_ref INTEGER NOT NULL REFERENCES world_category(id) ON DELETE CASCADE,
+      object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
       symbol TEXT,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS world_obj_hashtag (
-      obj_id INTEGER NOT NULL REFERENCES world_cat_object(id) ON DELETE CASCADE,
-      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
-      UNIQUE(obj_id,hashtag_id)
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(category_ref,object_ref)
     );
 
     CREATE TABLE IF NOT EXISTS world_map (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      memo TEXT,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      map_ref INTEGER NOT NULL REFERENCES map(id) ON DELETE CASCADE,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(world_ref,map_ref)
     );
 
-    CREATE TABLE IF NOT EXISTS world_map_link (
+    CREATE TABLE IF NOT EXISTS world_map_area (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      map_ref INTEGER NOT NULL REFERENCES world_map(id) ON DELETE CASCADE,
-      project_ref INTEGER REFERENCES project(id) ON DELETE SET NULL,
-      map_ref_src INTEGER REFERENCES map(id) ON DELETE SET NULL,
-      area_ref INTEGER REFERENCES map_area(id) ON DELETE SET NULL,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(map_ref)
+      world_map_ref INTEGER NOT NULL REFERENCES world_map(id) ON DELETE CASCADE,
+      area_ref INTEGER NOT NULL REFERENCES map_area(id) ON DELETE CASCADE,
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(world_map_ref,area_ref)
     );
 
-    CREATE TABLE IF NOT EXISTS world_map_timeline (
+    CREATE TABLE IF NOT EXISTS world_map_point (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      world_map_area_ref INTEGER NOT NULL REFERENCES world_map_area(id) ON DELETE CASCADE,
+      point_ref INTEGER NOT NULL REFERENCES map_point(id) ON DELETE CASCADE,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(world_map_area_ref,point_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS world_timeline (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
-      map_ref INTEGER REFERENCES world_map(id) ON DELETE SET NULL,
       name TEXT NOT NULL,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      world_map_ref INTEGER REFERENCES world_map(id) ON DELETE SET NULL,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS world_maptl_event (
+    CREATE TABLE IF NOT EXISTS world_timeline_date (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      timeline_ref INTEGER NOT NULL REFERENCES world_map_timeline(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      order_index INTEGER NOT NULL DEFAULT 0,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      day INTEGER NOT NULL,
+      month INTEGER NOT NULL,
+      years INTEGER NOT NULL,
+      hour INTEGER NOT NULL DEFAULT 0,
+      minute INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(day,month,years,hour,minute)
     );
 
-    CREATE TABLE IF NOT EXISTS world_maptl_obj (
+    CREATE TABLE IF NOT EXISTS world_timeline_event (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      event_ref INTEGER NOT NULL REFERENCES world_maptl_event(id) ON DELETE CASCADE,
-      cat_object_ref INTEGER REFERENCES world_cat_object(id) ON DELETE SET NULL,
-      UNIQUE(event_ref,cat_object_ref)
+      timeline_ref INTEGER NOT NULL REFERENCES world_timeline(id) ON DELETE CASCADE,
+      date_ref INTEGER NOT NULL REFERENCES world_timeline_date(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(timeline_ref,date_ref)
     );
 
-    CREATE TABLE IF NOT EXISTS world_project_hashtag (
-      world_id INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
-      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
-      UNIQUE(world_id,hashtag_id)
+    CREATE TABLE IF NOT EXISTS world_timeline_point (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x REAL NOT NULL,
+      y REAL NOT NULL,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS world_timeline_object (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_ref INTEGER NOT NULL REFERENCES world_timeline_event(id) ON DELETE CASCADE,
+      world_object_ref INTEGER REFERENCES world_object(id) ON DELETE CASCADE,
+      world_character_ref INTEGER REFERENCES world_character(id) ON DELETE CASCADE,
+      point_ref INTEGER REFERENCES world_timeline_point(id) ON DELETE SET NULL,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      CHECK ((world_object_ref IS NOT NULL) + (world_character_ref IS NOT NULL) = 1),
+      UNIQUE(event_ref,point_ref)
     );
 
     -- Hero (v2.3) --
@@ -632,28 +668,6 @@ function initDB() {
   if (!hasStory) db.prepare(`ALTER TABLE timeline_event ADD COLUMN story TEXT`).run();
   const hasNote = db.prepare(`PRAGMA table_info(object)`).all().some(c => c.name === 'note');
   if (!hasNote) { try { db.prepare(`ALTER TABLE object ADD COLUMN note TEXT`).run(); } catch (_) {} }
-
-  // Migration: allow multiple novel links per world character (drop UNIQUE(char_ref))
-  try {
-    const charLinkInfo = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='world_char_link'`).get();
-    if (charLinkInfo && charLinkInfo.sql && charLinkInfo.sql.includes('UNIQUE(char_ref)')) {
-      db.exec(`PRAGMA foreign_keys = OFF`);
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS world_char_link_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          char_ref INTEGER NOT NULL REFERENCES world_character(id) ON DELETE CASCADE,
-          project_ref INTEGER REFERENCES project(id) ON DELETE SET NULL,
-          category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL,
-          object_ref INTEGER REFERENCES object(id) ON DELETE SET NULL,
-          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-        );
-        INSERT OR IGNORE INTO world_char_link_new SELECT * FROM world_char_link;
-        DROP TABLE world_char_link;
-        ALTER TABLE world_char_link_new RENAME TO world_char_link;
-      `);
-      db.exec(`PRAGMA foreign_keys = ON`);
-    }
-  } catch (_) {}
 }
 
 const getDatabasePath = () => path.join(path.dirname(app.getPath('userData')), 'novel-manager.db');

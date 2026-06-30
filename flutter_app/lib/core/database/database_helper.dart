@@ -27,7 +27,17 @@ class DatabaseHelper {
       version: 1,
       onCreate: _onCreate,
       onConfigure: _onConfigure,
+      onOpen: _onOpen,
     );
+  }
+
+  // Runs on every open (fresh or existing). Idempotent ensure-step for tables
+  // added after the initial schema — notably the Navigator (v2.5.2 "World")
+  // module — since the DB version is pinned at 1 and onCreate won't re-run.
+  Future<void> _onOpen(Database db) async {
+    for (final sql in worldCreateStatements) {
+      await db.execute(sql);
+    }
   }
 
   Future<void> _onConfigure(Database db) async {
