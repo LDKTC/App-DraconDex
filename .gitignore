@@ -4,3 +4,4 @@ build/
 tmp-user-data/
 *.log
 
+.flutter_sdk/flutter
