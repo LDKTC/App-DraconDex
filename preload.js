@@ -167,9 +167,6 @@ contextBridge.exposeInMainWorld('api', {
     createCharacter:         (wid,n,sym,c)   => inv('world:createCharacter', wid,n,sym,c),
     updateCharacter:         (id,n,sym,c)    => inv('world:updateCharacter', id,n,sym,c),
     deleteCharacter:         (id)            => inv('world:deleteCharacter', id),
-    getCharCategories:       (wid)           => inv('world:getCharCategories', wid),
-    addCharCategory:         (wid,catref)    => inv('world:addCharCategory', wid,catref),
-    removeCharCategory:      (id)            => inv('world:removeCharCategory', id),
     getCharLinks:            (cid)           => inv('world:getCharLinks', cid),
     getLinkableCharObjects:  (wid,cid)       => inv('world:getLinkableCharObjects', wid,cid),
     addCharLink:             (cid,oref)      => inv('world:addCharLink', cid,oref),
@@ -181,15 +178,14 @@ contextBridge.exposeInMainWorld('api', {
     removeCategory:          (id)            => inv('world:removeCategory', id),
 
     getObjects:              (wcid)          => inv('world:getObjects', wcid),
-    getLinkableObjects:      (wcid)          => inv('world:getLinkableObjects', wcid),
-    addObject:               (wcid,oref,sym) => inv('world:addObject', wcid,oref,sym),
     updateObjectSymbol:      (id,sym)        => inv('world:updateObjectSymbol', id,sym),
-    removeObject:            (id)            => inv('world:removeObject', id),
+    getSymbolCollection:     ()              => inv('world:getSymbolCollection'),
 
     getMaps:                 (wid)           => inv('world:getMaps', wid),
     getLinkableMaps:         (wid)           => inv('world:getLinkableMaps', wid),
     addMap:                  (wid,mref)      => inv('world:addMap', wid,mref),
     removeMap:               (id)            => inv('world:removeMap', id),
+    getMapAreas:             (wmid)          => inv('world:getMapAreas', wmid),
 
     getTimelines:            (wid)           => inv('world:getTimelines', wid),
     createTimeline:          (wid,n,wmref)   => inv('world:createTimeline', wid,n,wmref),

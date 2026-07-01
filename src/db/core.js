@@ -398,8 +398,15 @@ function initDB() {
       category_ref INTEGER NOT NULL REFERENCES world_category(id) ON DELETE CASCADE,
       object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
       symbol TEXT,
+      symbol_ref INTEGER REFERENCES symbol_collection(id) ON DELETE SET NULL,
       update_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(category_ref,object_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS symbol_collection (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      glyph TEXT NOT NULL UNIQUE,
+      label TEXT
     );
 
     CREATE TABLE IF NOT EXISTS world_map (
@@ -768,6 +775,22 @@ function initDB() {
   }
   if (hasTable(db, 'world_novel') && !hasColumn(db, 'world_novel', 'char_category_ref')) {
     try { db.prepare(`ALTER TABLE world_novel ADD COLUMN char_category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL`).run(); } catch (_) {}
+  }
+  if (hasTable(db, 'world_object') && !hasColumn(db, 'world_object', 'symbol_ref')) {
+    try { db.prepare(`ALTER TABLE world_object ADD COLUMN symbol_ref INTEGER REFERENCES symbol_collection(id) ON DELETE SET NULL`).run(); } catch (_) {}
+  }
+  if (hasTable(db, 'symbol_collection')) {
+    const symCount = db.prepare(`SELECT COUNT(*) AS n FROM symbol_collection`).get().n;
+    if (symCount === 0) {
+      const seed = ['⚔️ Sword', '🛡️ Shield', '🏹 Bow', '🗡️ Dagger', '🔥 Fire', '💧 Water', '🌿 Nature', '⚡ Lightning',
+        '🌙 Moon', '☀️ Sun', '⭐ Star', '👑 Crown', '💀 Skull', '🔮 Orb', '📜 Scroll', '💎 Gem',
+        '🐉 Dragon', '🦁 Lion', '🐺 Wolf', '🦅 Eagle', '🏰 Castle', '⚓ Anchor', '🕯️ Candle', '⚖️ Scale'];
+      const ins = db.prepare(`INSERT OR IGNORE INTO symbol_collection (glyph,label) VALUES (?,?)`);
+      for (const s of seed) {
+        const [glyph, ...rest] = s.split(' ');
+        ins.run(glyph, rest.join(' '));
+      }
+    }
   }
   const hasStory = db.prepare(`PRAGMA table_info(timeline_event)`).all().some(c => c.name === 'story');
   if (!hasStory) db.prepare(`ALTER TABLE timeline_event ADD COLUMN story TEXT`).run();

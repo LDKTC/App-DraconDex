@@ -104,7 +104,7 @@ async function renderWorldSidebar(world) {
               const active = n.char_category_ref === c.id;
               const cc = c.color_code || '#6366f1';
               return `<div class="li" style="display:flex;align-items:center;gap:6px">
-                <button class="char-fav${active ? ' active' : ''}" title="Set as the character category for this novel" onclick="event.stopPropagation();toggleNovelCharCat(${n.id},${c.id})">🧑</button>
+                <button class="char-fav${active ? ' active' : ''}" title="Set as the character category for this novel" onclick="event.stopPropagation();toggleNovelCharCat(${n.id},${c.id})">${I.person}</button>
                 <div class="dot" style="background:${cc}"></div>
                 <span class="name" style="flex:1">${x(c.category_name)}</span>
               </div>`;
@@ -674,8 +674,7 @@ async function delWorldDesc(id) { if (!confirm('Delete this detail?')) return; a
 // ═══ Characters ══════════════════════════════════════
 async function renderWorldChars(worldId) {
   const chars = await api.world.getCharacters(worldId);
-  const head = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <button class="btn btn-s" style="padding:5px 11px;font-size:12px" onclick="openCharCategoriesModal(${worldId})">${I.layer} Categories</button>
+  const head = `<div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:8px">
     <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button>
   </div>`;
 
@@ -739,42 +738,6 @@ async function deleteWorldChar(worldId, id) {
   await setWorldTab('characters');
 }
 
-async function openCharCategoriesModal(worldId) {
-  const [enabled, available] = await Promise.all([
-    api.world.getCharCategories(worldId),
-    api.world.getLinkableCategories(worldId, true),
-  ]);
-  const enabledHtml = enabled.length
-    ? enabled.map(c => `<div class="li" style="display:flex;align-items:center;gap:8px">
-        <span class="name" style="flex:1;font-size:.88em">${x(c.category_name)} <span style="color:var(--t3);font-size:.85em">${x(c.project_name || '')}</span></span>
-        <button class="btn btn-g btn-i" title="Remove" onclick="removeCharCategory(${worldId},${c.id})">${I.delete}</button>
-      </div>`).join('')
-    : `<div style="color:var(--t3);font-size:.85em;padding:6px 0">None enabled.</div>`;
-  const availHtml = available.length
-    ? available.map(c => `<div class="li" style="display:flex;align-items:center;gap:8px">
-        <span class="name" style="flex:1;font-size:.88em">${x(c.category_name)} <span style="color:var(--t3);font-size:.85em">${x(c.project_name || '')}</span></span>
-        <button class="btn btn-g btn-i" title="Enable" onclick="addCharCategory(${worldId},${c.id})">${I.plus}</button>
-      </div>`).join('')
-    : `<div style="color:var(--t3);font-size:.85em;padding:6px 0">None — link more novels.</div>`;
-  openModal('Character Categories', `
-    <div class="modal-hint">${I.layer}<span>Enable categories whose objects can be linked to characters.</span></div>
-    <div class="modal-section-h first">Enabled <span class="count">${enabled.length}</span></div>
-    <div class="modal-data">${enabledHtml}</div>
-    <div class="modal-section-h">Available <span class="count">${available.length}</span></div>
-    <div class="modal-data">${availHtml}</div>
-    <div class="mfoot"><button class="btn btn-s" onclick="closeModal()">Close</button></div>`);
-}
-
-async function addCharCategory(worldId, catref) {
-  await api.world.addCharCategory(worldId, catref);
-  await openCharCategoriesModal(worldId);
-}
-
-async function removeCharCategory(worldId, id) {
-  await api.world.removeCharCategory(id);
-  await openCharCategoriesModal(worldId);
-}
-
 async function openCharLinksModal(worldId, charId) {
   const available = await api.world.getLinkableCharObjects(worldId, charId);
   const availHtml = available.length
@@ -783,31 +746,48 @@ async function openCharLinksModal(worldId, charId) {
         <button class="btn btn-s" onclick="closeModal()">Cancel</button>
         <button class="btn btn-p" onclick="addCharLink(${worldId},${charId})">Link</button>
       </div>`
-    : `<div class="modal-hint">${I.layer}<span>No objects available. Enable character categories that contain objects.</span></div>
+    : `<div class="modal-hint">${I.layer}<span>No objects available. Set a category as the character category for a linked novel (${I.person} button in the sidebar).</span></div>
       <div class="mfoot"><button class="btn btn-s" onclick="closeModal()">Close</button></div>`;
   openModal('Link Object', availHtml);
 }
 
 // Category→object picker — same visual style as the novel picker (.np-*),
-// grouping objects under their category instead of projects under folders.
+// grouping objects by linked novel first, then by category (with the
+// category's color shown as a dot) nested inside.
 function buildObjectPickerHtml(pickId, objects) {
-  const groups = new Map();
+  const novelGroups = new Map();
   for (const o of (objects || [])) {
-    const k = o.category_name || '—';
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k).push(o);
+    const nk = o.project_name || '—';
+    if (!novelGroups.has(nk)) novelGroups.set(nk, new Map());
+    const catGroups = novelGroups.get(nk);
+    const ck = o.category_name || '—';
+    if (!catGroups.has(ck)) catGroups.set(ck, { color: o.category_color || '#6366f1', objs: [] });
+    catGroups.get(ck).objs.push(o);
   }
   let inner = '';
-  for (const [cat, objs] of groups) {
+  for (const [novel, catGroups] of novelGroups) {
+    const novelCount = [...catGroups.values()].reduce((n, g) => n + g.objs.length, 0);
+    let catInner = '';
+    for (const [cat, { color, objs }] of catGroups) {
+      catInner += `<div class="np-folder">
+        <div class="np-folder-head" style="padding-left:22px" onclick="event.stopPropagation();toggleObjPickerGroup(this)">
+          <svg class="np-caret" style="width:8px;height:8px;flex-shrink:0;transform:rotate(90deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="dot" style="background:${color};width:8px;height:8px;flex-shrink:0"></div>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(cat)}</span>
+          <span style="color:var(--t3);font-size:11px">${objs.length}</span>
+        </div>
+        <div class="np-group-items">
+          ${objs.map(o => `<div class="np-item" style="padding-left:42px" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${o.id},'${x(o.name)}')">${x(o.name)}</div>`).join('')}
+        </div>
+      </div>`;
+    }
     inner += `<div class="np-folder">
       <div class="np-folder-head" onclick="event.stopPropagation();toggleObjPickerGroup(this)">
         <svg class="np-caret" style="width:8px;height:8px;flex-shrink:0;transform:rotate(90deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(cat)}</span>
-        <span style="color:var(--t3);font-size:11px">${objs.length}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${x(novel)}</span>
+        <span style="color:var(--t3);font-size:11px">${novelCount}</span>
       </div>
-      <div class="np-group-items">
-        ${objs.map(o => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${o.id},'${x(o.name)}')">${x(o.name)}</div>`).join('')}
-      </div>
+      <div class="np-group-items">${catInner}</div>
     </div>`;
   }
   if (!inner) inner = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No objects available</div>`;
@@ -852,42 +832,29 @@ async function renderWorldCats(worldId) {
     return head + `<div class="empty"><div class="ei">${I.layer}</div>
       <p style="color:var(--t3);text-align:center;max-width:280px">No categories yet. Link novels, then add their categories.</p></div>`;
   }
-  S.worldCatOpen = S.worldCatOpen || new Set();
   let h = '';
   for (const cat of cats) {
-    const isOpen = S.worldCatOpen.has(cat.id);
-    let objsHtml = '';
-    if (isOpen) {
-      const objs = await api.world.getObjects(cat.id);
-      objsHtml = objs.length
-        ? `<div style="padding-left:14px;margin-top:4px">` + objs.map(o =>
-            `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:.87em;color:var(--t2)">
-              <div class="dot" style="background:${o.color_code || '#6366f1'};width:8px;height:8px"></div>
-              <span style="flex:1">${o.symbol ? `<span style="margin-right:4px">${x(o.symbol)}</span>` : ''}${x(o.name)}</span>
-              <button class="btn btn-g btn-i" style="padding:1px 5px;font-size:11px" title="Remove" onclick="removeWorldObject(${worldId},${o.id})">×</button>
-            </div>`).join('') + `</div>`
-        : `<div style="padding-left:14px;font-size:.82em;color:var(--t3);margin-top:4px">No objects.</div>`;
-    }
+    // Objects are auto-synced live from the novel's category — no manual add/remove.
+    const objs = await api.world.getObjects(cat.id);
+    const objsHtml = objs.length
+      ? `<div style="padding-left:14px;margin-top:4px">` + objs.map(o =>
+          `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:.87em;color:var(--t2)">
+            <div class="dot" style="background:${o.color_code || '#6366f1'};width:8px;height:8px"></div>
+            <span style="flex:1">${o.symbol ? `<span style="margin-right:4px">${x(o.symbol)}</span>` : ''}${x(o.name)}</span>
+            <button class="btn btn-g btn-i" style="padding:1px 5px;font-size:11px" title="Choose symbol" onclick="openObjectSymbolModal(${worldId},${o.id},${o.symbol_ref || 'null'})">${I.plus}</button>
+          </div>`).join('') + `</div>`
+      : `<div style="padding-left:14px;font-size:.82em;color:var(--t3);margin-top:4px">No objects.</div>`;
     h += `<div style="background:var(--bg2);border-radius:6px;padding:6px 10px;margin-bottom:6px">
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1" onclick="toggleWorldCat(${worldId},${cat.id})">
-          <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${isOpen ? 90 : 0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <div style="display:flex;align-items:center;gap:8px;flex:1">
           <span style="font-size:.9em">${x(cat.category_name)} <span style="color:var(--t3);font-size:.85em">${x(cat.project_name || '')}</span></span>
         </div>
-        <button class="btn btn-g btn-i" title="Add object" onclick="openAddObjectModal(${worldId},${cat.id})">${I.plus}</button>
         <button class="btn btn-g btn-i" title="Remove category" onclick="removeWorldCategory(${worldId},${cat.id})">${I.delete}</button>
       </div>
       ${objsHtml}
     </div>`;
   }
   return head + h;
-}
-
-async function toggleWorldCat(worldId, catId) {
-  S.worldCatOpen = S.worldCatOpen || new Set();
-  if (S.worldCatOpen.has(catId)) S.worldCatOpen.delete(catId);
-  else S.worldCatOpen.add(catId);
-  await setWorldTab('categories');
 }
 
 async function openAddCategoryModal(worldId) {
@@ -919,35 +886,20 @@ async function removeWorldCategory(worldId, id) {
   await setWorldTab('categories');
 }
 
-async function openAddObjectModal(worldId, wcid) {
-  const linkable = await api.world.getLinkableObjects(wcid);
-  if (!linkable.length) return toast('No objects available in this category', 'err');
-  openModal('Add Object', `
-    <div class="form-row"><label>Object</label>
-      <select id="wao-obj" style="width:100%">
-        ${linkable.map(o => `<option value="${o.id}">${x(o.name)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="form-row"><label>Symbol</label><input id="wao-sym" value="" placeholder="optional"></div>
+async function openObjectSymbolModal(worldId, objectId, currentSymbolRef) {
+  const picker = await symbolPicker('wos-sym-ref', currentSymbolRef || null);
+  openModal('Choose Symbol', `
+    <div class="form-row"><label>Symbol</label>${picker}</div>
     <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-p" onclick="addWorldObject(${worldId},${wcid})">Add</button>
+      <button class="btn btn-p" onclick="saveObjectSymbol(${worldId},${objectId})">Save</button>
     </div>`);
 }
 
-async function addWorldObject(worldId, wcid) {
-  const oref = Number(q('#wao-obj')?.value);
-  if (!oref) return;
-  const sym = q('#wao-sym')?.value?.trim() || null;
-  await api.world.addObject(wcid, oref, sym);
-  S.worldCatOpen = S.worldCatOpen || new Set();
-  S.worldCatOpen.add(wcid);
+async function saveObjectSymbol(worldId, objectId) {
+  const symRef = Number(q('#wos-sym-ref')?.value) || null;
+  await api.world.updateObjectSymbol(objectId, symRef);
   closeModal();
-  await setWorldTab('categories');
-}
-
-async function removeWorldObject(worldId, id) {
-  await api.world.removeObject(id);
   await setWorldTab('categories');
 }
 
@@ -961,11 +913,27 @@ async function renderWorldMaps(worldId) {
     return head + `<div class="empty"><div class="ei">${I.map}</div>
       <p style="color:var(--t3);text-align:center;max-width:280px">No maps yet. Link novels, then add their maps.</p></div>`;
   }
-  return head + maps.map(m => `<div class="li" style="display:flex;align-items:center;gap:8px">
-    <div class="dot" style="background:${m.color_code || '#6366f1'}"></div>
-    <span class="name" style="flex:1">${x(m.map_name || '(untitled map)')} <span style="color:var(--t3);font-size:.8em">${x(m.project_name || '')}</span></span>
-    <button class="btn btn-g btn-i" title="Remove" onclick="removeWorldMap(${worldId},${m.id})">${I.delete}</button>
-  </div>`).join('');
+  let h = '';
+  for (const m of maps) {
+    // Areas are auto-synced live from the novel's map — no manual add/remove.
+    const areas = await api.world.getMapAreas(m.id);
+    const areasHtml = areas.length
+      ? `<div style="padding-left:14px;margin-top:4px">` + areas.map(a =>
+          `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:.87em;color:var(--t2)">
+            <div class="dot" style="background:${a.color_code || '#6366f1'};width:8px;height:8px"></div>
+            <span style="flex:1">${x(a.area_name || '(untitled area)')}</span>
+          </div>`).join('') + `</div>`
+      : `<div style="padding-left:14px;font-size:.82em;color:var(--t3);margin-top:4px">No areas.</div>`;
+    h += `<div style="background:var(--bg2);border-radius:6px;padding:6px 10px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="dot" style="background:${m.color_code || '#6366f1'}"></div>
+        <span class="name" style="flex:1">${x(m.map_name || '(untitled map)')} <span style="color:var(--t3);font-size:.8em">${x(m.project_name || '')}</span></span>
+        <button class="btn btn-g btn-i" title="Remove" onclick="removeWorldMap(${worldId},${m.id})">${I.delete}</button>
+      </div>
+      ${areasHtml}
+    </div>`;
+  }
+  return head + h;
 }
 
 async function openAddMapModal(worldId) {

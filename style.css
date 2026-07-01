@@ -302,10 +302,10 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 /* Navigator: per-novel "character category" fav toggle (person emoji) */
 .char-fav{
 	background:none;border:none;cursor:pointer;padding:0 1px;line-height:1;
-	font-size:13px;filter:grayscale(1);opacity:.4;transition:opacity var(--ease),filter var(--ease);
+	font-size:13px;color:var(--t3);transition:color var(--ease);
 }
-.char-fav:hover{opacity:.75}
-.char-fav.active{filter:none;opacity:1}
+.char-fav:hover{color:var(--t1)}
+.char-fav.active{color:#6366f1}
 
 /* PROJECT CONTEXT SIDEBAR */
 .project-side-head{
@@ -421,6 +421,14 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 }
 .cswatch:hover{transform:scale(1.15)}
 .cswatch.sel{border-color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.3)}
+
+.symswatch{
+	width:30px;height:30px;border-radius:var(--rs);cursor:pointer;
+	display:flex;align-items:center;justify-content:center;font-size:16px;
+	border:2px solid var(--border);background:var(--bg2);transition:all var(--ease);
+}
+.symswatch:hover{transform:scale(1.1);border-color:var(--t3)}
+.symswatch.sel{border-color:#6366f1;box-shadow:0 0 0 1px rgba(99,102,241,.4)}
 
 /* MODAL */
 #modal-overlay{

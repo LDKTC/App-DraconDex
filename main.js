@@ -247,9 +247,6 @@ h('world:getCharacters',    (wid)                     => db.getWorldCharacters(w
 h('world:createCharacter',  (wid,n,sym,c)             => db.createWorldCharacter(wid,n,sym,c));
 h('world:updateCharacter',  (id,n,sym,c)              => db.updateWorldCharacter(id,n,sym,c));
 h('world:deleteCharacter',  (id)                      => db.deleteWorldCharacter(id));
-h('world:getCharCategories',(wid)                     => db.getCharacterCategories(wid));
-h('world:addCharCategory',  (wid,catref)              => db.addCharacterCategory(wid,catref));
-h('world:removeCharCategory',(id)                     => db.removeCharacterCategory(id));
 h('world:getCharLinks',     (cid)                     => db.getCharacterLinks(cid));
 h('world:getLinkableCharObjects',(wid,cid)            => db.getLinkableCharacterObjects(wid,cid));
 h('world:addCharLink',      (cid,oref)                => db.addCharacterLink(cid,oref));
@@ -261,15 +258,14 @@ h('world:addCategory',      (wid,catref)              => db.addWorldCategory(wid
 h('world:removeCategory',   (id)                      => db.removeWorldCategory(id));
 
 h('world:getObjects',       (wcid)                    => db.getWorldObjects(wcid));
-h('world:getLinkableObjects',(wcid)                   => db.getLinkableObjects(wcid));
-h('world:addObject',        (wcid,oref,sym)           => db.addWorldObject(wcid,oref,sym));
 h('world:updateObjectSymbol',(id,sym)                 => db.updateWorldObjectSymbol(id,sym));
-h('world:removeObject',     (id)                      => db.removeWorldObject(id));
+h('world:getSymbolCollection',()                      => db.getSymbolCollection());
 
 h('world:getMaps',          (wid)                     => db.getWorldMaps(wid));
 h('world:getLinkableMaps',  (wid)                     => db.getLinkableMaps(wid));
 h('world:addMap',           (wid,mref)                => db.addWorldMap(wid,mref));
 h('world:removeMap',        (id)                      => db.removeWorldMap(id));
+h('world:getMapAreas',      (wmid)                    => db.getWorldMapAreas(wmid));
 
 h('world:getTimelines',     (wid)                     => db.getWorldTimelines(wid));
 h('world:createTimeline',   (wid,n,wmref)             => db.createWorldTimeline(wid,n,wmref));

@@ -966,6 +966,28 @@ async function colorPicker(selId=null) {
   </div>`;
 }
 
+// ═══ SYMBOL PICKER ═════════════════════════════════════
+function buildSymbolSwatches(symbols, selId, hiddenInputId){
+  return symbols.map(s =>
+    `<div class="symswatch ${selId===s.id?'sel':''}" title="${x(s.label||'')}" onclick="pickSymbol('${hiddenInputId}',this,${s.id})">${x(s.glyph)}</div>`
+  ).join('');
+}
+
+async function symbolPicker(hiddenInputId, selId=null) {
+  const symbols = await api.world.getSymbolCollection();
+  return `<div class="cpicker-wrap">
+    <div class="cgrid">${buildSymbolSwatches(symbols, selId, hiddenInputId) || '<span class="cpicker-empty">No symbols available</span>'}</div>
+    <input type="hidden" id="${hiddenInputId}" value="${selId||''}">
+  </div>`;
+}
+
+function pickSymbol(hiddenInputId, el, id){
+  const input = q(`#${hiddenInputId}`);
+  if (input) input.value = id;
+  el.parentElement.querySelectorAll('.symswatch').forEach(n => n.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
 async function hashtagSelector(prefix, selectedIds){
   const tags = await api.hashtag.getAll();
   const selected = (selectedIds||[]).map(t=>typeof t==='object'?t.id:parseInt(t,10)).filter(Boolean);

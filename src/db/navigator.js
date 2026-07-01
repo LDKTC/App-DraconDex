@@ -61,22 +61,6 @@ const updateWorldCharacter = (id, name, symbol, colorId) =>
 const deleteWorldCharacter = (id) =>
   getDB().prepare(`DELETE FROM world_character WHERE id=?`).run(id);
 
-const getCharacterCategories = (worldId) =>
-  getDB().prepare(`
-    SELECT wcc.id, wcc.world_ref, wcc.category_ref, oc.category_name, p.name AS project_name, uc.color_code
-    FROM world_character_category wcc
-    JOIN object_category oc ON wcc.category_ref=oc.id
-    JOIN project p ON oc.project_id=p.id
-    LEFT JOIN use_color uc ON oc.color=uc.id
-    WHERE wcc.world_ref=? ORDER BY p.name, oc.category_name
-  `).all(worldId);
-
-const addCharacterCategory = (worldId, categoryRef) =>
-  getDB().prepare(`INSERT OR IGNORE INTO world_character_category (world_ref,category_ref) VALUES (?,?)`).run(worldId, categoryRef);
-
-const removeCharacterCategory = (id) =>
-  getDB().prepare(`DELETE FROM world_character_category WHERE id=?`).run(id);
-
 const getCharacterLinks = (characterId) =>
   getDB().prepare(`
     SELECT wcl.id, wcl.object_ref, o.name, oc.category_name, uc.color_code
@@ -89,13 +73,14 @@ const getCharacterLinks = (characterId) =>
 
 const getLinkableCharacterObjects = (worldId, characterId) =>
   getDB().prepare(`
-    SELECT o.id, o.name, oc.category_name, uc.color_code
+    SELECT o.id, o.name, oc.category_name, oc.id AS category_id, p.name AS project_name, p.id AS project_id, catuc.color_code AS category_color
     FROM object o
     JOIN object_category oc ON o.category_id=oc.id
-    LEFT JOIN use_color uc ON o.color=uc.id
-    WHERE oc.id IN (SELECT category_ref FROM world_character_category WHERE world_ref=?)
+    JOIN project p ON oc.project_id=p.id
+    LEFT JOIN use_color catuc ON oc.color=catuc.id
+    WHERE oc.id IN (SELECT char_category_ref FROM world_novel WHERE world_ref=? AND char_category_ref IS NOT NULL)
       AND o.id NOT IN (SELECT object_ref FROM world_character_link WHERE character_ref=?)
-    ORDER BY oc.category_name, o.name
+    ORDER BY p.name, oc.category_name, o.name
   `).all(worldId, characterId);
 
 const addCharacterLink = (characterId, objectRef) =>
@@ -130,40 +115,50 @@ const getLinkableCategories = (worldId, forCharacters) => {
   `).all(worldId, worldId);
 };
 
-const addWorldCategory = (worldId, categoryRef) =>
-  getDB().prepare(`INSERT OR IGNORE INTO world_category (world_ref,category_ref) VALUES (?,?)`).run(worldId, categoryRef);
+const addWorldCategory = (worldId, categoryRef) => {
+  const db = getDB();
+  const info = db.prepare(`INSERT OR IGNORE INTO world_category (world_ref,category_ref) VALUES (?,?)`).run(worldId, categoryRef);
+  return info.lastInsertRowid || db.prepare(`SELECT id FROM world_category WHERE world_ref=? AND category_ref=?`).get(worldId, categoryRef)?.id;
+};
 
 const removeWorldCategory = (id) =>
   getDB().prepare(`DELETE FROM world_category WHERE id=?`).run(id);
 
-const getWorldObjects = (worldCategoryId) =>
-  getDB().prepare(`
-    SELECT wo.id, wo.category_ref, wo.object_ref, wo.symbol, o.name, uc.color_code
+// Keeps world_object mirrored to the source category's current members:
+// inserts objects that were added to the category since the last sync and
+// drops rows for objects no longer in it. Runs on every read so the world
+// view always reflects the novel's category live, with no manual add/remove.
+const syncWorldCategoryObjects = (worldCategoryId) => {
+  const db = getDB();
+  const wc = db.prepare(`SELECT category_ref FROM world_category WHERE id=?`).get(worldCategoryId);
+  if (!wc) return;
+  const objects = db.prepare(`SELECT id FROM object WHERE category_id=?`).all(wc.category_ref);
+  const validIds = new Set(objects.map(o => o.id));
+  const insObj = db.prepare(`INSERT OR IGNORE INTO world_object (category_ref,object_ref) VALUES (?,?)`);
+  for (const o of objects) insObj.run(worldCategoryId, o.id);
+  const existing = db.prepare(`SELECT id, object_ref FROM world_object WHERE category_ref=?`).all(worldCategoryId);
+  const del = db.prepare(`DELETE FROM world_object WHERE id=?`);
+  for (const row of existing) if (!validIds.has(row.object_ref)) del.run(row.id);
+};
+
+const getWorldObjects = (worldCategoryId) => {
+  syncWorldCategoryObjects(worldCategoryId);
+  return getDB().prepare(`
+    SELECT wo.id, wo.category_ref, wo.object_ref, wo.symbol_ref, sc.glyph AS symbol, sc.label AS symbol_label, o.name, uc.color_code
     FROM world_object wo
     JOIN object o ON wo.object_ref=o.id
     LEFT JOIN use_color uc ON o.color=uc.id
+    LEFT JOIN symbol_collection sc ON wo.symbol_ref=sc.id
     WHERE wo.category_ref=? ORDER BY o.name
   `).all(worldCategoryId);
+};
 
-const getLinkableObjects = (worldCategoryId) =>
-  getDB().prepare(`
-    SELECT o.id, o.name, oc.category_name, uc.color_code
-    FROM object o
-    JOIN object_category oc ON o.category_id=oc.id
-    LEFT JOIN use_color uc ON o.color=uc.id
-    WHERE o.category_id = (SELECT category_ref FROM world_category WHERE id=?)
-      AND o.id NOT IN (SELECT object_ref FROM world_object WHERE category_ref=?)
-    ORDER BY o.name
-  `).all(worldCategoryId, worldCategoryId);
+const updateWorldObjectSymbol = (id, symbolRef) =>
+  getDB().prepare(`UPDATE world_object SET symbol_ref=?,update_at=datetime('now') WHERE id=?`).run(symbolRef||null, id);
 
-const addWorldObject = (worldCategoryId, objectRef, symbol) =>
-  getDB().prepare(`INSERT OR IGNORE INTO world_object (category_ref,object_ref,symbol) VALUES (?,?,?)`).run(worldCategoryId, objectRef, symbol||null);
-
-const updateWorldObjectSymbol = (id, symbol) =>
-  getDB().prepare(`UPDATE world_object SET symbol=?,update_at=datetime('now') WHERE id=?`).run(symbol||null, id);
-
-const removeWorldObject = (id) =>
-  getDB().prepare(`DELETE FROM world_object WHERE id=?`).run(id);
+// ---- Symbol collection -----------------------------------------------
+const getSymbolCollection = () =>
+  getDB().prepare(`SELECT id, glyph, label FROM symbol_collection ORDER BY id`).all();
 
 // ---- Maps ----------------------------------------------------------------
 const getWorldMaps = (worldId) =>
@@ -192,6 +187,34 @@ const addWorldMap = (worldId, mapRef) =>
 
 const removeWorldMap = (id) =>
   getDB().prepare(`DELETE FROM world_map WHERE id=?`).run(id);
+
+// Mirrors syncWorldCategoryObjects — keeps world_map_area in sync with the
+// source map's current areas so the world view is a live reflection, no
+// manual add/remove needed.
+const syncWorldMapAreas = (worldMapId) => {
+  const db = getDB();
+  const wm = db.prepare(`SELECT map_ref FROM world_map WHERE id=?`).get(worldMapId);
+  if (!wm) return;
+  const areas = db.prepare(`SELECT id FROM map_area WHERE map_id=?`).all(wm.map_ref);
+  const validIds = new Set(areas.map(a => a.id));
+  const insArea = db.prepare(`INSERT OR IGNORE INTO world_map_area (world_map_ref,area_ref) VALUES (?,?)`);
+  for (const a of areas) insArea.run(worldMapId, a.id);
+  const existing = db.prepare(`SELECT id, area_ref FROM world_map_area WHERE world_map_ref=?`).all(worldMapId);
+  const del = db.prepare(`DELETE FROM world_map_area WHERE id=?`);
+  for (const row of existing) if (!validIds.has(row.area_ref)) del.run(row.id);
+};
+
+const getWorldMapAreas = (worldMapId) => {
+  syncWorldMapAreas(worldMapId);
+  return getDB().prepare(`
+    SELECT wma.id, wma.world_map_ref, wma.area_ref, ma.area_name, COALESCE(wuc.color_code, auc.color_code) AS color_code
+    FROM world_map_area wma
+    JOIN map_area ma ON wma.area_ref=ma.id
+    LEFT JOIN use_color wuc ON wma.color=wuc.id
+    LEFT JOIN use_color auc ON ma.color=auc.id
+    WHERE wma.world_map_ref=? ORDER BY ma.area_name
+  `).all(worldMapId);
+};
 
 // ---- Timeline ------------------------------------------------------------
 const getWorldTimelines = (worldId) =>
@@ -351,11 +374,11 @@ module.exports = {
   getOrigObjectAttrs, upsertOrigAttr,
   getWorldDesc, addWorldDesc, updateWorldDesc, deleteWorldDesc,
   getWorldCharacters, createWorldCharacter, updateWorldCharacter, deleteWorldCharacter,
-  getCharacterCategories, addCharacterCategory, removeCharacterCategory,
   getCharacterLinks, getLinkableCharacterObjects, addCharacterLink, removeCharacterLink,
   getWorldCategories, getLinkableCategories, addWorldCategory, removeWorldCategory,
-  getWorldObjects, getLinkableObjects, addWorldObject, updateWorldObjectSymbol, removeWorldObject,
-  getWorldMaps, getLinkableMaps, addWorldMap, removeWorldMap,
+  getWorldObjects, updateWorldObjectSymbol,
+  getSymbolCollection,
+  getWorldMaps, getLinkableMaps, addWorldMap, removeWorldMap, getWorldMapAreas,
   getWorldTimelines, createWorldTimeline, updateWorldTimeline, deleteWorldTimeline,
   getTimelineEvents, createTimelineEvent, deleteTimelineEvent,
   getEventObjects, getPlaceableObjects, getPlaceableCharacters,
