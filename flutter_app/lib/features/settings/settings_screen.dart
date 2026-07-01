@@ -130,6 +130,10 @@ class SettingsScreen extends ConsumerWidget {
     'ja': '日本語',
     'ko': '한국어',
     'zh': '中文',
+    'vi': 'Tiếng Việt',
+    'id': 'Bahasa Indonesia',
+    'es': 'Español',
+    'pt': 'Português (Brasil)',
   };
 }
 
