@@ -37,6 +37,10 @@ class DraconDexApp extends ConsumerWidget {
           Locale('id'),
           Locale('es'),
           Locale('pt'),
+          Locale('fr'),
+          Locale('de'),
+          Locale('ru'),
+          Locale('qd'),
         ],
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,

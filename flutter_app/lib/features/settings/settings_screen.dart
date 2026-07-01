@@ -134,6 +134,10 @@ class SettingsScreen extends ConsumerWidget {
     'id': 'Bahasa Indonesia',
     'es': 'Español',
     'pt': 'Português (Brasil)',
+    'fr': 'Français',
+    'de': 'Deutsch',
+    'ru': 'Русский',
+    'qd': '🐉 Draconic',
   };
 }
 
