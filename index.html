@@ -54,12 +54,18 @@
         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
       </svg>
     </button>
-    <button class="nav-btn navigator-only" data-panel="navigator" title="Navigator" style="display:none" onclick="goToNavigatorList()">
+    <button class="nav-btn navigator-only" data-panel="navigator" data-worldtab="original" title="Navigator" style="display:none" onclick="setWorldTab('original')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/>
         <line x1="2" y1="12" x2="22" y2="12"/>
         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
       </svg>
+    </button>
+    <button class="nav-btn navigator-only" data-panel="navigator" data-worldtab="chars-cats" title="Characters & Categories" style="display:none" onclick="setWorldTab('chars-cats')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+    <button class="nav-btn navigator-only" data-panel="navigator" data-worldtab="maps-timeline" title="Map Timelines" style="display:none" onclick="setWorldTab('maps-timeline')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/></svg>
     </button>
     <button class="nav-btn nexus-only" title="Hero" style="display:none" onclick="selectModule('hero')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

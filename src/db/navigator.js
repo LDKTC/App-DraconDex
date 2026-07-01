@@ -252,18 +252,24 @@ const createTimelineEvent = (timelineId, day, month, years, hour, minute) => {
 const deleteTimelineEvent = (id) =>
   getDB().prepare(`DELETE FROM world_timeline_event WHERE id=?`).run(id);
 
+// Symbol resolution mirrors getWorldObjects: world_object stores either a
+// symbol_collection reference (shared glyph) or a custom glyph directly, the
+// two mutually exclusive (see updateWorldObjectSymbol) — so wo's symbol_ref
+// must be joined through symbol_collection here too, same as world_character's
+// symbol (which is always plain resolved text, no ref column).
 const getEventObjects = (eventId) =>
   getDB().prepare(`
     SELECT t.id, t.event_ref, t.world_object_ref, t.world_character_ref, t.point_ref,
            pt.x, pt.y,
            COALESCE(oo.name, wc.name) AS label,
-           COALESCE(wo.symbol, wc.symbol) AS symbol,
+           COALESCE(wosc.glyph, wo.symbol, wc.symbol) AS symbol,
            COALESCE(ucc.color_code, uco.color_code) AS color_code
     FROM world_timeline_object t
     LEFT JOIN world_timeline_point pt ON t.point_ref=pt.id
     LEFT JOIN world_object wo ON t.world_object_ref=wo.id
     LEFT JOIN object oo ON wo.object_ref=oo.id
     LEFT JOIN use_color uco ON oo.color=uco.id
+    LEFT JOIN symbol_collection wosc ON wo.symbol_ref=wosc.id
     LEFT JOIN world_character wc ON t.world_character_ref=wc.id
     LEFT JOIN use_color ucc ON wc.color=ucc.id
     WHERE t.event_ref=? ORDER BY label
@@ -271,12 +277,13 @@ const getEventObjects = (eventId) =>
 
 const getPlaceableObjects = (worldId) =>
   getDB().prepare(`
-    SELECT wo.id, o.name, oc.category_name, uc.color_code
+    SELECT wo.id, o.name, oc.category_name, uc.color_code, COALESCE(sc.glyph, wo.symbol) AS symbol
     FROM world_object wo
     JOIN world_category wcat ON wo.category_ref=wcat.id
     JOIN object o ON wo.object_ref=o.id
     JOIN object_category oc ON o.category_id=oc.id
     LEFT JOIN use_color uc ON o.color=uc.id
+    LEFT JOIN symbol_collection sc ON wo.symbol_ref=sc.id
     WHERE wcat.world_ref=? ORDER BY o.name
   `).all(worldId);
 

@@ -44,7 +44,7 @@ const I = {
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
-const UI_THEME_OPTIONS = ['daylight','moonlight','midnight'];
+const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh'];
 const UI_SIZE_MIN = 50;
 const UI_SIZE_MAX = 200;
@@ -53,6 +53,7 @@ const L = {
   en: {
     settings:'Settings', theme:'Theme', language:'Language', uiSize:'UI Size',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
+    redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     openProject:'Open project', closeTab:'Close tab', minimize:'Minimize', maximize:'Maximize', close:'Close',
     collapsePanel:'Collapse panel', openPanel:'Open panel',
     projects:'Projects', timeline:'Timeline', relation:'Relations', map:'Mapping', hashtag:'Tags', colors:'Colors',
@@ -62,7 +63,7 @@ const L = {
     colorPanel:'Colors', saved:'Saved', deleted:'Deleted', created:'Created', applied:'Applied',
     edit:'Edit', delete:'Delete', add:'Add', remove:'Remove', save:'Save', name:'Name', memo:'Memo', color:'Color', title:'Title', content:'Content',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'Choose a module to get started.',
-    navigator:'Navigator', world:'World', worldNew:'New World', worldChars:'Characters', worldCats:'Categories',
+    navigator:'Navigator', world:'World', worldNew:'New World', worldChars:'Characters', worldCats:'Categories', worldCharsCats:'Characters & Categories',
     worldMaps:'Maps', worldMapTimelines:'Map Timelines', worldTimeline:'Timeline', worldOverview:'Overview', worldOrig:'Original', worldLinkedNovels:'Linked Novels', worldOrigCats:'Original Categories', worldDetails:'World Details',
     worldTags:'Tags', worldCharNew:'New Character', worldCatNew:'New Category', worldMapNew:'New Map',
     worldMaptlNew:'New Timeline', worldEventNew:'New Event', worldObjNew:'New Object',
@@ -88,6 +89,7 @@ const L = {
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
+    redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     openProject:'プロジェクトを開く', closeTab:'タブを閉じる', minimize:'最小化', maximize:'最大化', close:'閉じる',
     collapsePanel:'パネルを折りたたむ', openPanel:'パネルを開く',
     projects:'プロジェクト', timeline:'タイムライン', relation:'関係', map:'マッピング', hashtag:'タグ', colors:'色',
@@ -97,7 +99,7 @@ const L = {
     colorPanel:'色', saved:'保存しました', deleted:'削除しました', created:'作成しました', applied:'適用しました',
     edit:'編集', delete:'削除', add:'追加', remove:'削除', save:'保存', name:'名前', memo:'メモ', color:'色', title:'タイトル', content:'内容',
     nexus:'Nexus', director:'ディレクター', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'モジュールを選択してください。',
-    navigator:'ナビゲーター', world:'ワールド', worldNew:'新規ワールド', worldChars:'キャラクター', worldCats:'カテゴリー',
+    navigator:'ナビゲーター', world:'ワールド', worldNew:'新規ワールド', worldChars:'キャラクター', worldCats:'カテゴリー', worldCharsCats:'キャラクター・カテゴリー',
     worldMaps:'マップ', worldMapTimelines:'マップタイムライン', worldTimeline:'タイムライン', worldOverview:'概要', worldOrig:'オリジナル', worldLinkedNovels:'リンク済み小説', worldOrigCats:'オリジナルカテゴリー', worldDetails:'ワールド詳細',
     worldTags:'タグ', worldCharNew:'新規キャラクター', worldCatNew:'新規カテゴリー', worldMapNew:'新規マップ',
     worldMaptlNew:'新規タイムライン', worldEventNew:'新規イベント', worldObjNew:'新規オブジェクト',
@@ -123,6 +125,7 @@ const L = {
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
+    redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     openProject:'프로젝트 열기', closeTab:'탭 닫기', minimize:'최소화', maximize:'최대화', close:'닫기',
     collapsePanel:'패널 접기', openPanel:'패널 열기',
     projects:'프로젝트', timeline:'타임라인', relation:'관계', map:'매핑', hashtag:'태그', colors:'색상',
@@ -132,7 +135,7 @@ const L = {
     colorPanel:'색상', saved:'저장됨', deleted:'삭제됨', created:'생성됨', applied:'적용됨',
     edit:'수정', delete:'삭제', add:'추가', remove:'제거', save:'저장', name:'이름', memo:'메모', color:'색상', title:'제목', content:'내용',
     nexus:'Nexus', director:'디렉터', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'모듈을 선택하세요.',
-    navigator:'네비게이터', world:'세계', worldNew:'새 세계', worldChars:'캐릭터', worldCats:'카테고리',
+    navigator:'네비게이터', world:'세계', worldNew:'새 세계', worldChars:'캐릭터', worldCats:'카테고리', worldCharsCats:'캐릭터 및 카테고리',
     worldMaps:'맵', worldMapTimelines:'맵 타임라인', worldTimeline:'타임라인', worldOverview:'개요', worldOrig:'오리지널', worldLinkedNovels:'연결된 소설', worldOrigCats:'오리지널 카테고리', worldDetails:'세계 상세',
     worldTags:'태그', worldCharNew:'새 캐릭터', worldCatNew:'새 카테고리', worldMapNew:'새 맵',
     worldMaptlNew:'새 타임라인', worldEventNew:'새 이벤트', worldObjNew:'새 오브젝트',
@@ -158,6 +161,7 @@ const L = {
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
+    redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     openProject:'เปิดโปรเจกต์', closeTab:'ปิดแท็บ', minimize:'ย่อหน้าต่าง', maximize:'ขยายหน้าต่าง', close:'ปิด',
     collapsePanel:'พับ Panel', openPanel:'เปิด Panel',
     projects:'โปรเจกต์', timeline:'Timeline', relation:'ความสัมพันธ์', map:'Mapping', hashtag:'ป้ายกำกับ', colors:'สี',
@@ -167,7 +171,7 @@ const L = {
     colorPanel:'สี', saved:'บันทึกแล้ว', deleted:'ลบแล้ว', created:'สร้างแล้ว', applied:'ปรับใช้แล้ว',
     edit:'แก้ไข', delete:'ลบ', add:'เพิ่ม', remove:'นำออก', save:'บันทึก', name:'ชื่อ', memo:'บันทึกย่อ', color:'สี', title:'หัวข้อ', content:'เนื้อหา',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'เลือกโมดูลที่ต้องการใช้งาน',
-    navigator:'Navigator', world:'โลก', worldNew:'สร้างโลกใหม่', worldChars:'ตัวละคร', worldCats:'หมวดหมู่',
+    navigator:'Navigator', world:'โลก', worldNew:'สร้างโลกใหม่', worldChars:'ตัวละคร', worldCats:'หมวดหมู่', worldCharsCats:'ตัวละครและหมวดหมู่',
     worldMaps:'แผนที่', worldMapTimelines:'ไทม์ไลน์แผนที่', worldTimeline:'ไทม์ไลน์', worldOverview:'ภาพรวม', worldOrig:'หมวดหมู่ของโลก', worldLinkedNovels:'นิยายที่เชื่อมต่อ', worldOrigCats:'หมวดหมู่ของโลก', worldDetails:'รายละเอียดโลก',
     worldTags:'แท็ก', worldCharNew:'เพิ่มตัวละคร', worldCatNew:'เพิ่มหมวดหมู่', worldMapNew:'เพิ่มแผนที่',
     worldMaptlNew:'เพิ่มไทม์ไลน์', worldEventNew:'เพิ่มเหตุการณ์', worldObjNew:'เพิ่มรายการ',
@@ -193,6 +197,7 @@ const L = {
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
+    redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     openProject:'打开项目', closeTab:'关闭标签', minimize:'最小化', maximize:'最大化', close:'关闭',
     collapsePanel:'收起面板', openPanel:'打开面板',
     projects:'项目', timeline:'时间线', relation:'关系', map:'映射', hashtag:'标签', colors:'颜色',
@@ -202,7 +207,7 @@ const L = {
     colorPanel:'颜色', saved:'已保存', deleted:'已删除', created:'已创建', applied:'已应用',
     edit:'编辑', delete:'删除', add:'添加', remove:'移除', save:'保存', name:'名称', memo:'备注', color:'颜色', title:'标题', content:'内容',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'选择一个模块以开始。',
-    navigator:'Navigator', world:'世界', worldNew:'新建世界', worldChars:'角色', worldCats:'类别',
+    navigator:'Navigator', world:'世界', worldNew:'新建世界', worldChars:'角色', worldCats:'类别', worldCharsCats:'角色与类别',
     worldMaps:'地图', worldMapTimelines:'地图时间线', worldTimeline:'时间线', worldOverview:'概览', worldOrig:'原创', worldLinkedNovels:'关联小说', worldOrigCats:'原创类别', worldDetails:'世界详情',
     worldTags:'标签', worldCharNew:'新建角色', worldCatNew:'新建类别', worldMapNew:'新建地图',
     worldMaptlNew:'新建时间线', worldEventNew:'新建事件', worldObjNew:'新建对象',
@@ -311,7 +316,7 @@ const S = {
   // Navigator module state
   world:null, worldTab:'original', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null,
   worldOrigCat:null, worldOrigObject:null, worldOrigCatView:'list', worldNovelOpen:new Set(),
-  worldCharCatFilter:{}, worldCatOpen:new Set(),
+  worldCharCatFilter:{}, worldCatOpen:new Set(), worldMapTool:null,
   // Hero module state
   game:null, gameTab:'overview',
   // Writer module state
@@ -382,6 +387,50 @@ function openModal(title,body) {
   if(modalEl){ modalEl.tabIndex = -1; setTimeout(()=>{ try{ modalEl.focus(); }catch(e){} }, 30); }
 }
 function closeModal() { q('#modal-overlay').classList.add('hidden'); }
+
+// Custom in-app confirm dialog. Replaces native window.confirm(), which on
+// Electron leaves the renderer unable to receive mouse input until the window
+// is re-focused (or DevTools is opened) — the long-standing "UI frozen after
+// delete" bug. Returns a Promise<boolean>; call sites use `await uiConfirm(...)`.
+function uiConfirm(message, opts = {}) {
+  const { okText = 'OK', cancelText = 'Cancel', danger = true } = opts;
+  return new Promise(resolve => {
+    document.getElementById('confirm-overlay')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'confirm-overlay';
+    const box = document.createElement('div');
+    box.id = 'confirm-box';
+    const msg = document.createElement('div');
+    msg.className = 'confirm-msg';
+    msg.textContent = message;
+    const actions = document.createElement('div');
+    actions.className = 'confirm-actions';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-s';
+    cancelBtn.textContent = cancelText;
+    const okBtn = document.createElement('button');
+    okBtn.className = 'btn ' + (danger ? 'btn-d' : 'btn-p');
+    okBtn.textContent = okText;
+    actions.append(cancelBtn, okBtn);
+    box.append(msg, actions);
+    ov.append(box);
+    document.body.append(ov);
+    const finish = (val) => {
+      document.removeEventListener('keydown', onKey, true);
+      ov.remove();
+      resolve(val);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      else if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    };
+    okBtn.addEventListener('click', () => finish(true));
+    cancelBtn.addEventListener('click', () => finish(false));
+    ov.addEventListener('mousedown', (e) => { if (e.target === ov) finish(false); });
+    document.addEventListener('keydown', onKey, true);
+    setTimeout(() => { try { okBtn.focus(); } catch (e) {} }, 20);
+  });
+}
 
 function applyLeftPanelState(){
   q('#app')?.classList.toggle('left-panel-collapsed', S.leftPanelCollapsed);
@@ -582,11 +631,10 @@ function bindWindowChrome(){
 
 // Submodule symbols shown on the nav rail when a module's project/entity is active,
 // mirroring Director's project-only icons (Timeline / Relation / Map / Tags).
+// Navigator's 3 world tabs are plain static `.navigator-only` buttons in index.html
+// (each carries a `data-worldtab`) rather than a MODULE_SUBNAV-driven row, since there
+// are only 3 of them and the first one doubles as the module's main nav-rail button.
 const MODULE_SUBNAV = {
-  navigator: { setter:'setWorldTab', items:[
-    ['original','star','worldOrig'], ['characters','person','worldChars'],
-    ['categories','layer','worldCats'], ['maps','map','worldMaps'],
-    ['timeline','timeline','worldTimeline'] ] },
   hero: { setter:'setGameTab', items:[
     ['overview','list','gameOverview'], ['characters','person','gameChars'],
     ['items','item','gameItems'], ['story','story','gameStory'],
@@ -615,12 +663,11 @@ function buildModuleSubNav(){
 
 function updateModuleSubNav(){
   const show = {
-    navigator: S.activeModule === 'navigator' && !!S.world,
     hero:      S.activeModule === 'hero'      && !!S.game,
     writer:    S.activeModule === 'writer'    && !!S.library,
     sage:      S.activeModule === 'sage',
   };
-  const cur = { navigator:S.worldTab, hero:S.gameTab, writer:S.libraryTab, sage:S.sageTab };
+  const cur = { hero:S.gameTab, writer:S.libraryTab, sage:S.sageTab };
   for(const mod of Object.keys(MODULE_SUBNAV)){
     document.querySelectorAll(`.nav-btn.${mod}-sub`).forEach(btn => {
       btn.style.display = show[mod] ? '' : 'none';
@@ -630,6 +677,7 @@ function updateModuleSubNav(){
   }
 }
 
+
 function updateTopNavButton(){
   const logoBtn = q('#nav-logo-btn');
   const inModule = !!S.activeModule;
@@ -637,7 +685,7 @@ function updateTopNavButton(){
     logoBtn.innerHTML = inModule
       ? I.return
       : `<img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex">`;
-    const title = !inModule ? 'DraconDex' : S.project ? t('Back to project list') : 'Back to Nexus';
+    const title = !inModule ? 'DraconDex' : S.project ? t('Back to project list') : S.world ? t('Back to world list') : 'Back to Nexus';
     logoBtn.setAttribute('title', title);
     logoBtn.classList.toggle('is-return', inModule);
   }
@@ -652,7 +700,9 @@ function updateTopNavButton(){
     btn.style.display = (S.activeModule === 'director' && !!S.project) ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.navigator-only').forEach(btn => {
-    btn.style.display = (S.activeModule === 'navigator') ? '' : 'none';
+    const isMain = btn.dataset.worldtab === 'original';
+    btn.style.display = (S.activeModule === 'navigator' && (isMain || !!S.world)) ? '' : 'none';
+    btn.classList.toggle('active', S.activeModule === 'navigator' && !!S.world && btn.dataset.worldtab === S.worldTab);
   });
   document.querySelectorAll('.nav-btn.hero-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'hero') ? '' : 'none';
@@ -1121,6 +1171,7 @@ async function addColorFromPicker(){
 function bindNav() {
   q('#nav-logo-btn')?.addEventListener('click', () => {
     if(S.project) returnToProjectList();
+    else if(S.world) goToNavigatorList();
     else if(S.activeModule) returnToNexus();
   });
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn=>{
@@ -1149,7 +1200,7 @@ async function exportDatabaseFile(){
 }
 
 async function importDatabaseFile(){
-  if(!confirm('Import DB แล้วรวมข้อมูลที่ยังไม่ซ้ำกับฐานข้อมูลปัจจุบัน ใช่หรือไม่?')) return;
+  if(!await uiConfirm('Import DB แล้วรวมข้อมูลที่ยังไม่ซ้ำกับฐานข้อมูลปัจจุบัน ใช่หรือไม่?')) return;
   try{
     const res = await api.db.importFileMerge();
     if(res?.canceled) return;

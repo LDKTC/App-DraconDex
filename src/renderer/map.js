@@ -347,7 +347,7 @@ async function openMapModal(id=null){
 }
 async function createMap(){ const n=q('#map-n').value.trim(); if(!n) return; const r=await api.map.create(S.project.id,n,q('#sel-color').value||null); closeModal(); const maps=await api.map.getAll(S.project.id); S.map=maps.find(t=>t.id===r.lastInsertRowid)||null; await renderMapView(); toast('สร้าง Map แล้ว','ok'); }
 async function saveMap(id){ const n=q('#map-n').value.trim(); if(!n) return; await api.map.update(id,n,q('#sel-color').value||null); closeModal(); const maps=await api.map.getAll(S.project.id); S.map=maps.find(t=>t.id===id)||null; await renderMapView(); toast('บันทึกแล้ว','ok'); }
-async function delMap(id){ if(!confirm('ลบ Map นี้?')) return; await api.map.delete(id); closeModal(); if(S.map?.id===id) S.map=null; S.mapAreaId=null; await renderMapView(); toast('ลบเรียบร้อยแล้ว'); }
+async function delMap(id){ if(!await uiConfirm('ลบ Map นี้?')) return; await api.map.delete(id); closeModal(); if(S.map?.id===id) S.map=null; S.mapAreaId=null; await renderMapView(); toast('ลบเรียบร้อยแล้ว'); }
 
 async function openMapAreaModal(id=null){
   if(!S.map) return;
@@ -360,7 +360,7 @@ async function openMapAreaModal(id=null){
 }
 async function createMapArea(){ const n=q('#area-n').value.trim(); if(!n || !S.map) return; const r=await api.map.createArea(S.map.id,n,q('#sel-color').value||null); closeModal(); S.mapAreaId=r.lastInsertRowid; mapState.pointsByArea[S.mapAreaId]=[]; await renderMapView(); toast('สร้าง Area แล้ว','ok'); }
 async function saveMapArea(id){ const n=q('#area-n').value.trim(); if(!n) return; await api.map.updateArea(id,n,q('#sel-color').value||null); closeModal(); await renderMapView(); toast('บันทึกแล้ว','ok'); }
-async function delMapArea(id){ if(!confirm('ลบ Area นี้?')) return; await api.map.deleteArea(id); closeModal(); if(S.mapAreaId===id) S.mapAreaId=null; delete mapState.pointsByArea[id]; await renderMapView(); toast('ลบเรียบร้อยแล้ว'); }
+async function delMapArea(id){ if(!await uiConfirm('ลบ Area นี้?')) return; await api.map.deleteArea(id); closeModal(); if(S.mapAreaId===id) S.mapAreaId=null; delete mapState.pointsByArea[id]; await renderMapView(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ HASHTAG VIEW ══════════════════════════════════════
 function autoExpand(el){

@@ -347,7 +347,7 @@ async function saveGame(id) {
 }
 
 async function deleteGame(id) {
-  if (!confirm('Delete this game and all its data?')) return;
+  if (!await uiConfirm('Delete this game and all its data?')) return;
   await api.game.delete(id); S.game = null; closeModal(); await renderHeroView();
 }
 
@@ -375,7 +375,7 @@ async function saveGameDesc(gameId, id) {
 }
 
 async function deleteGameDesc(id) {
-  if (!confirm('Delete this description?')) return;
+  if (!await uiConfirm('Delete this description?')) return;
   await api.game.deleteDesc(id); await setGameTab('overview');
 }
 
@@ -452,7 +452,7 @@ async function saveGameChar(gameId, id) {
 }
 
 async function deleteGameChar(gameId, id) {
-  if (!confirm('Delete this character?')) return;
+  if (!await uiConfirm('Delete this character?')) return;
   await api.game.deleteCharacter(id); closeModal(); await setGameTab('characters');
 }
 
@@ -477,7 +477,7 @@ async function saveGameStat(charId) {
 }
 
 async function deleteGameStat(gameId, statId) {
-  if (!confirm('Delete this stat?')) return;
+  if (!await uiConfirm('Delete this stat?')) return;
   await api.game.deleteStat(statId); await setGameTab('characters');
 }
 
@@ -506,7 +506,7 @@ async function saveGameItemCat(gameId, id) {
 }
 
 async function deleteGameItemCat(gameId, id) {
-  if (!confirm('Delete this item category?')) return;
+  if (!await uiConfirm('Delete this item category?')) return;
   await api.game.deleteItemCategory(id); closeModal(); await setGameTab('items');
 }
 
@@ -569,12 +569,12 @@ async function saveGameItem(catId, id) {
 }
 
 async function deleteGameItem(gameId, id) {
-  if (!confirm('Delete this item?')) return;
+  if (!await uiConfirm('Delete this item?')) return;
   await api.game.deleteItem(id); await setGameTab('items');
 }
 
 async function deleteGameItemById(id) {
-  if (!confirm('Delete this item?')) return;
+  if (!await uiConfirm('Delete this item?')) return;
   await api.game.deleteItem(id); closeModal(); await setGameTab('items');
 }
 
@@ -603,7 +603,7 @@ async function saveGameStory(gameId, id) {
 }
 
 async function deleteGameStory(gameId, id) {
-  if (!confirm('Delete this story?')) return;
+  if (!await uiConfirm('Delete this story?')) return;
   await api.game.deleteStory(id); closeModal(); await setGameTab('story');
 }
 
@@ -632,7 +632,7 @@ async function saveGameDialogue(storyId, id) {
 }
 
 async function deleteDialogue(storyId, id) {
-  if (!confirm('Delete this dialogue node?')) return;
+  if (!await uiConfirm('Delete this dialogue node?')) return;
   await api.game.deleteDialogue(id); closeModal(); await setGameTab('story');
 }
 
@@ -713,7 +713,7 @@ async function saveGameFuncCat(gameId, id) {
 }
 
 async function deleteGameFuncCat(gameId, id) {
-  if (!confirm('Delete this function category?')) return;
+  if (!await uiConfirm('Delete this function category?')) return;
   await api.game.deleteFuncCategory(id); closeModal(); await setGameTab('functions');
 }
 
@@ -746,7 +746,7 @@ async function saveGameFunc(catId, id) {
 }
 
 async function deleteGameFunc(gameId, id) {
-  if (!confirm('Delete this function?')) return;
+  if (!await uiConfirm('Delete this function?')) return;
   await api.game.deleteFunction(id); closeModal(); await setGameTab('functions');
 }
 

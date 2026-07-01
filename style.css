@@ -62,6 +62,101 @@ body[data-theme="midnight"]{
 	--danger:#ef4444;
 	--success:#22c55e;
 }
+/* Priority order (dominant -> minor): black > copper > red > orange */
+body[data-theme="redEclipse"]{
+	--bg:#0a0808;
+	--surface:#150f0f;
+	--raised:#201616;
+	--hover:#2b1e1e;
+	--border:#3a2624;
+	--t1:#f6ece4;
+	--t2:#bb9a8a;
+	--t3:#7c5f52;
+	--accent:#b8703c;
+	--accentH:#dc2626;
+	--danger:#f97316;
+	--success:#22c55e;
+}
+/* Priority order (dominant -> minor): indigo > sky-blue > cloud > white.
+   A bright daytime-sky theme — light backgrounds, indigo carried by the accent
+   and text rather than a dark canvas. */
+body[data-theme="clearSky"]{
+	--bg:#e8f3ff;
+	--surface:#ffffff;
+	--raised:#d8ebff;
+	--hover:#c4ddfb;
+	--border:#aacbee;
+	--t1:#22306e;
+	--t2:#4f61a3;
+	--t3:#8497c4;
+	--accent:#4f5fe0;
+	--accentH:#38bdf8;
+	--danger:#dc2626;
+	--success:#16a34a;
+}
+/* Priority order (dominant -> minor): dark blue > deep purple > stars(white) > black */
+body[data-theme="clearStar"]{
+	--bg:#0a1128;
+	--surface:#101d42;
+	--raised:#16254f;
+	--hover:#1d2f61;
+	--border:#34285e;
+	--t1:#f5f3ff;
+	--t2:#b9b6d9;
+	--t3:#6f6a94;
+	--accent:#7c3aed;
+	--accentH:#c4b5fd;
+	--danger:#ef4444;
+	--success:#22c55e;
+}
+/* Priority order (dominant -> minor): pastel rainbow > light-blue > cloud > white.
+   Surfaces span the spectrum (pink -> mint -> peach -> periwinkle) at a bolder
+   pastel saturation so the rainbow reads clearly rather than washing out. */
+body[data-theme="afterRain"]{
+	--bg:#f0dbe8;
+	--surface:#ebe3ea;
+	--raised:#c6ebd5;
+	--hover:#f0d6b4;
+	--border:#c4b6ec;
+	--t1:#463a5c;
+	--t2:#7a6c96;
+	--t3:#aa9ec6;
+	--accent:#4fb4f5;
+	--accentH:#ef8fe0;
+	--danger:#fb7185;
+	--success:#4fd699;
+}
+/* Full-spectrum theme: light, readable surfaces float over a pastel-rainbow
+   backdrop; the nav rail and left panel go translucent so the rainbow shows
+   through, and primary/active accents use a rainbow gradient. */
+body[data-theme="rainbow"]{
+	--bg:#fdf3fb;
+	--surface:#ffffff;
+	--raised:#fbecf7;
+	--hover:#f6e0f2;
+	--border:#ecd2e9;
+	--t1:#3a2b46;
+	--t2:#6d5b7c;
+	--t3:#a493b3;
+	--accent:#d6249f;
+	--accentH:#7c3aed;
+	--danger:#fb7185;
+	--success:#22c55e;
+}
+body[data-theme="rainbow"] #window-frame{
+	background:linear-gradient(135deg,#ffb3ba,#ffdfba,#fdffb6,#baffc9,#bae1ff,#d5baff,#ffbaf2);
+	background-attachment:fixed;
+}
+body[data-theme="rainbow"] #main-area,
+body[data-theme="rainbow"] #main-inner{background:transparent}
+body[data-theme="rainbow"] #nav-sidebar,
+body[data-theme="rainbow"] #left-panel{background:rgba(255,255,255,.7);backdrop-filter:blur(6px)}
+body[data-theme="rainbow"] .nav-btn.active,
+body[data-theme="rainbow"] .btn-p,
+body[data-theme="rainbow"] .btn-p:hover{
+	background:linear-gradient(120deg,#f5515f,#f7a531,#3fd07f,#38a3f1,#9b5cf6);
+	border-color:transparent;color:#fff;
+}
 
 body{
 	font-family:'Segoe UI Emoji','Segoe UI Symbol','Segoe UI',system-ui,-apple-system,sans-serif;
@@ -207,6 +302,11 @@ body{
 body[data-theme="daylight"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
 body[data-theme="moonlight"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
 body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="redEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="clearSky"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="clearStar"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="afterRain"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
+body[data-theme="rainbow"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
 .nav-btn{
 	width:40px;height:40px;border:none;
 	background:transparent; border-radius:var(--r);
@@ -287,6 +387,23 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .li:hover .acts{display:flex}
 /* Hovering the char-symbol button shouldn't also highlight the whole row */
 .li:has(> div > .char-sym-btn:hover){background:transparent;color:var(--t2)}
+
+/* World character's linked-object chips: clamped to one row by default so a
+   long link list doesn't blow up the card's height; an expand button (shown
+   only when it actually overflows, see refreshCharLinkOverflow) reveals the
+   rest as additional wrapped rows. */
+.char-link-wrap{position:relative;width:100%}
+.char-link-row{display:flex;flex-wrap:wrap;gap:6px;width:100%;max-height:28px;overflow:hidden;padding-right:26px}
+.char-link-row.char-link-expanded{max-height:none}
+.char-link-chip{display:flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap;
+  font-size:.8em;color:var(--t3);background:var(--raised);border:1px solid var(--border);
+  border-radius:var(--rs);padding:2px 4px 2px 8px}
+.char-link-chip .btn-i{padding:1px 5px;font-size:11px}
+.char-link-expand{display:none;position:absolute;top:0;right:0;width:22px;height:22px;
+  align-items:center;justify-content:center;background:var(--raised);border:1px solid var(--border);
+  border-radius:var(--rs);color:var(--t3);font-size:11px;cursor:pointer;line-height:1}
+.char-link-expand:hover{background:var(--hover);color:var(--t1)}
+.char-link-expand.show{display:flex}
 
 /* FOLDER */
 .folder-sec{margin-bottom:2px}
@@ -473,6 +590,10 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 #modal-close:hover{background:var(--hover);color:var(--t1)}
 #modal-body{padding:18px;overflow-y:auto;flex:1}
 .mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+#confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px)}
+#confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);width:360px;max-width:92vw;padding:20px;box-shadow:0 24px 64px rgba(0,0,0,.55)}
+.confirm-msg{font-size:13px;color:var(--t1);line-height:1.5;white-space:pre-wrap}
+.confirm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 
 /* Modal: separate description (hint callout) from data (labeled sections) */
 .modal-hint{
@@ -631,6 +752,8 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .ht-card-name{font-size:14px;font-weight:600;color:var(--t1)}
 .ht-card-date{font-size:12px;color:var(--t2)}
 .ht-card-actions{display:flex;gap:4px;justify-content:flex-end}
+.wmtl-hint{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin:2px 0 8px;font-size:11px;color:var(--t3);line-height:1.4}
+.wmtl-hint span{white-space:nowrap}
 .timeline-graph-board{position:relative;width:100%;height:400px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:default}
 .timeline-graph-board.is-panning{cursor:grabbing}
 .timeline-axis-tip{position:absolute;z-index:4;padding:5px 8px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--t1);font-size:11px;white-space:nowrap;pointer-events:none;box-shadow:0 8px 18px rgba(0,0,0,.35)}
@@ -1095,8 +1218,14 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
    ════════════════════════════════════════════════════════════════ */
 
 /* Legacy surface aliases referenced by Hero/Navigator inline styles.
-   Resolve lazily against the active theme's tokens. */
-:root{ --bg2:var(--raised); --bg3:var(--hover); }
+   Must be declared on `body`, not `:root`: a custom property's var()
+   references resolve against the values live on the element where it's
+   declared, not lazily re-evaluated per descendant. --raised/--hover are
+   overridden on body[data-theme=X] (a descendant of :root) — aliasing from
+   :root would freeze --bg2/--bg3 to :root's own base --raised/--hover
+   forever, which was exactly why folder-sec and other --bg2 consumers never
+   changed color across themes. */
+body{ --bg2:var(--raised); --bg3:var(--hover); }
 
 /* ── Sidebar list item (Sage/Writer left panel) → mirrors .li ── */
 .panel-item{

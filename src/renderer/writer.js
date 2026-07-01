@@ -508,7 +508,7 @@ async function saveLibrary(id) {
 }
 
 async function deleteLibrary(id) {
-  if (!confirm(t('delete')+'?')) return;
+  if (!await uiConfirm(t('delete')+'?')) return;
   await api.library.deleteProject(id);
   S.library = null;
   renderWriterView();
@@ -594,7 +594,7 @@ async function saveSeries(libId, id) {
 }
 
 async function deleteSeries(id) {
-  if (!confirm(t('delete')+'?')) return;
+  if (!await uiConfirm(t('delete')+'?')) return;
   await api.library.deleteSeries(id);
   S.librarySeries = null;
   renderLibrarySeriesTab(S.library);
@@ -727,7 +727,7 @@ async function saveNewDoc(seriesId) {
 }
 
 async function deleteDoc(id) {
-  if (!confirm(t('delete')+'?')) return;
+  if (!await uiConfirm(t('delete')+'?')) return;
   await api.library.deleteDoc(id);
   renderSeriesTab(S.librarySeries);
 }

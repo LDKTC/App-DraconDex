@@ -9,7 +9,7 @@ async function openFolderModal(id=null){
 }
 async function createFolder(){ const n=q('#fn').value.trim(); if(!n) return; await api.folder.create(n,q('#fm').value.trim(),q('#sel-color').value||null); closeModal(); await reloadSidebar(); toast('สร้างโฟลเดอร์เรียบร้อยแล้ว','ok'); }
 async function saveFolder(id){ const n=q('#fn').value.trim(); if(!n) return; await api.folder.update(id,n,q('#fm').value.trim(),q('#sel-color').value||null); closeModal(); await reloadSidebar(); toast('บันทึกเรียบร้อยแล้ว','ok'); }
-async function delFolder(id){ if(!confirm('ลบโฟลเดอร์?')) return; await api.folder.delete(id); closeModal(); await reloadSidebar(); toast('ลบเรียบร้อยแล้ว'); }
+async function delFolder(id){ if(!await uiConfirm('ลบโฟลเดอร์?')) return; await api.folder.delete(id); closeModal(); await reloadSidebar(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ MODALS: PROJECT ═══════════════════════════════════
 async function openProjectModal(id=null){
@@ -50,7 +50,7 @@ async function saveProject(id){
   toast('บันทึกเรียบร้อยแล้ว','ok');
 }
 async function delProject(id){
-  if(!confirm('ลบโปรเจกต์? ข้อมูลทั้งหมดจะหาย')) return;
+  if(!await uiConfirm('ลบโปรเจกต์? ข้อมูลทั้งหมดจะหาย')) return;
   const wasActive = S.project?.id === id;
   await api.project.delete(id);
   closeModal();
@@ -83,7 +83,7 @@ async function openDescModal(id=null){
 }
 async function addDesc(){ const n=q('#dn').value.trim(),t=q('#dt').value.trim(); await api.project.addDesc(S.project.id,n,t); closeModal(); S.descOpen=true; await renderProject(); toast('เพิ่มเรียบร้อยแล้ว','ok'); }
 async function saveDesc(id){ const n=q('#dn').value.trim(),t=q('#dt').value.trim(); await api.project.updDesc(id,n,t); closeModal(); await renderProject(); toast('บันทึกเรียบร้อยแล้ว','ok'); }
-async function delDesc(id){ if(!confirm('ลบรายละเอียดนี้?')) return; await api.project.delDesc(id); closeModal(); await renderProject(); toast('ลบเรียบร้อยแล้ว'); }
+async function delDesc(id){ if(!await uiConfirm('ลบรายละเอียดนี้?')) return; await api.project.delDesc(id); closeModal(); await renderProject(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ MODALS: CATEGORY ══════════════════════════════════
 async function openCategoryModal(id=null){
@@ -98,7 +98,7 @@ async function openCategoryModal(id=null){
 }
 async function createCategory(){ const n=q('#cn').value.trim(); if(!n) return; await api.category.create(S.project.id,n,q('#sel-color').value||null); closeModal(); const cats=await api.category.getAll(S.project.id); S.category=cats[cats.length-1]; await renderProject(); toast('สร้าง Category เรียบร้อยแล้ว','ok'); }
 async function saveCategory(id){ const n=q('#cn').value.trim(); if(!n) return; await api.category.update(id,n,q('#sel-color').value||null); closeModal(); const cats=await api.category.getAll(S.project.id); S.category=cats.find(c=>c.id===id)||cats[0]||null; await renderProject(); toast('บันทึกเรียบร้อยแล้ว','ok'); }
-async function delCategory(id){ if(!confirm('ลบ Category? Objects ทั้งหมดจะหายด้วย')) return; await api.category.delete(id); closeModal(); const cats=await api.category.getAll(S.project.id); S.category=cats[0]||null; S.object=null; await renderProject(); toast('ลบเรียบร้อยแล้ว'); }
+async function delCategory(id){ if(!await uiConfirm('ลบ Category? Objects ทั้งหมดจะหายด้วย')) return; await api.category.delete(id); closeModal(); const cats=await api.category.getAll(S.project.id); S.category=cats[0]||null; S.object=null; await renderProject(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ MODALS: TEMPLATE ══════════════════════════════════
 async function openTemplateModal(catId){
@@ -128,7 +128,7 @@ async function addTemplate(catId){
 }
 async function delTemplate(id,catId){
   try{
-    if(!confirm('ลบ Field? ค่าทั้งหมดใน Field นี้จะหาย')) return;
+    if(!await uiConfirm('ลบ Field? ค่าทั้งหมดใน Field นี้จะหาย')) return;
     await api.template.delete(id);
     // Re-fetch templates and re-render list to keep UI consistent
     const tmpls = await api.template.getAll(catId);
@@ -173,7 +173,7 @@ async function saveObject(id){
   await api.object.setTags(id,tags);
   closeModal(); S.object=await api.object.get(id); await renderCatBody(S.category.id); toast('บันทึกเรียบร้อยแล้ว','ok');
 }
-async function delObject(id){ if(!confirm('ลบรายการนี้?')) return; await api.object.delete(id); closeModal(); if(S.object?.id===id) S.object=null; await renderCatBody(S.category.id); toast('ลบเรียบร้อยแล้ว'); }
+async function delObject(id){ if(!await uiConfirm('ลบรายการนี้?')) return; await api.object.delete(id); closeModal(); if(S.object?.id===id) S.object=null; await renderCatBody(S.category.id); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ MODALS: TIMELINE ══════════════════════════════════
 async function openTimelineModal(id=null){
@@ -187,7 +187,7 @@ async function openTimelineModal(id=null){
 }
 async function createTimeline(){ const n=q('#tn').value.trim(); if(!n) return; const r=await api.timeline.create(S.project.id,n,q('#sel-color').value||null); closeModal(); const tls=await api.timeline.getAll(S.project.id); S.timeline=tls.find(t=>t.id===r.lastInsertRowid)||null; await renderTimelineView(); toast('สร้าง Timeline เรียบร้อยแล้ว','ok'); }
 async function saveTimeline(id){ const n=q('#tn').value.trim(); if(!n) return; await api.timeline.update(id,n,q('#sel-color').value||null); closeModal(); const tls=await api.timeline.getAll(S.project.id); S.timeline=tls.find(t=>t.id===id)||null; await renderTimelineView(); toast('บันทึกเรียบร้อยแล้ว','ok'); }
-async function delTimeline(id){ if(!confirm('ลบ Timeline? เหตุการณ์ทั้งหมดจะหาย')) return; await api.timeline.delete(id); closeModal(); if(S.timeline?.id===id) S.timeline=null; await renderTimelineView(); toast('ลบเรียบร้อยแล้ว'); }
+async function delTimeline(id){ if(!await uiConfirm('ลบ Timeline? เหตุการณ์ทั้งหมดจะหาย')) return; await api.timeline.delete(id); closeModal(); if(S.timeline?.id===id) S.timeline=null; await renderTimelineView(); toast('ลบเรียบร้อยแล้ว'); }
 
 function dateInputsHTML(prefix,ev,dayKey,mKey,yKey,hKey,minKey){
   return `<div class="date-row-inline">
@@ -274,7 +274,7 @@ async function addEventTimelineLink(evId, tlid){
 }
 
 async function removeEventTimelineLink(linkId, evId, tlid){
-  if(!confirm('ลบการเชื่อมต่อนี้?')) return;
+  if(!await uiConfirm('ลบการเชื่อมต่อนี้?')) return;
   await api.relation.deleteTLTL(linkId);
   await refreshEventLinksSection(evId, tlid);
   toast('ลบการเชื่อมต่อแล้ว');
@@ -322,7 +322,7 @@ async function saveEventStory(evId){
   }catch(e){ toast(e.message,'err'); console.error(e); }
 }
 
-async function delEvent(evId,tlid){ if(!confirm('ลบเหตุการณ์นี้?')) return; await api.timeline.deleteEvent(evId); closeModal(); await renderTimelineDetail(tlid); toast('ลบเรียบร้อยแล้ว'); }
+async function delEvent(evId,tlid){ if(!await uiConfirm('ลบเหตุการณ์นี้?')) return; await api.timeline.deleteEvent(evId); closeModal(); await renderTimelineDetail(tlid); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ MODALS: RELATION TYPE ═════════════════════════════
 async function openRelTypeModal(id=null){
@@ -336,7 +336,7 @@ async function openRelTypeModal(id=null){
 }
 async function createRelType(){ const n=q('#rt-n').value.trim(); if(!n) return; await api.relation.createType(n,q('#sel-color').value||null); closeModal(); await renderRelationView(); toast('สร้างประเภทแล้ว','ok'); }
 async function updateRelType(id){ const n=q('#rt-n').value.trim(); if(!n) return; await api.relation.updateType(id,n,q('#sel-color').value||null); closeModal(); await renderRelationView(); toast('บันทึกเรียบร้อยแล้ว','ok'); }
-async function delRelType(id){ if(!confirm('ลบประเภทนี้?')) return; await api.relation.deleteType(id); await renderRelationView(); toast('ลบเรียบร้อยแล้ว'); }
+async function delRelType(id){ if(!await uiConfirm('ลบประเภทนี้?')) return; await api.relation.deleteType(id); await renderRelationView(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ MODALS: RELATION ══════════════════════════════════
 function groupByKey(arr,key){ const g={}; arr.forEach(i=>{ const k=i[key]; if(!g[k])g[k]=[]; g[k].push(i); }); return g; }
@@ -392,7 +392,7 @@ async function createRelTLTL(){
   try{ const fid=parseInt(q('#rel-from').value),tid=parseInt(q('#rel-to').value); if(fid===tid){toast('เลือกเหตุการณ์ที่ต่างกัน','err');return;} await api.relation.createTLTL(S.project.id,q('#rel-type').value||null,null,fid,tid); closeModal(); await renderRelationView(); toast('เพิ่มความสัมพันธ์แล้ว','ok'); }
   catch(e){ toast(e.message,'err'); console.error(e); }
 }
-async function delRel(id,type){ if(!confirm('ลบความสัมพันธ์?')) return; if(type==='obob') await api.relation.deleteOBOB(id); else if(type==='obtl') await api.relation.deleteOBTL(id); else await api.relation.deleteTLTL(id); await renderRelationView(); toast('ลบเรียบร้อยแล้ว'); }
+async function delRel(id,type){ if(!await uiConfirm('ลบความสัมพันธ์?')) return; if(type==='obob') await api.relation.deleteOBOB(id); else if(type==='obtl') await api.relation.deleteOBTL(id); else await api.relation.deleteTLTL(id); await renderRelationView(); toast('ลบเรียบร้อยแล้ว'); }
 async function saveRel(relId){
   try{
     await api.relation.update(relId, q('#rel-type').value||null, null);
@@ -413,7 +413,7 @@ async function openHashtagModal(id=null){
 }
 async function createHashtag(){ const n=q('#ht-n').value.trim(); if(!n) return; await api.hashtag.create(n,q('#sel-color').value||null); closeModal(); await renderHashtagView(); toast('สร้าง Tag เรียบร้อยแล้ว','ok'); }
 async function saveHashtag(id){ const n=q('#ht-n').value.trim(); if(!n) return; await api.hashtag.update(id,n,q('#sel-color').value||null); closeModal(); await renderHashtagView(); toast('บันทึกเรียบร้อยแล้ว','ok'); }
-async function delHashtag(id){ if(!confirm('ลบ Tag นี้?')) return; await api.hashtag.delete(id); closeModal(); await renderHashtagView(); toast('ลบเรียบร้อยแล้ว'); }
+async function delHashtag(id){ if(!await uiConfirm('ลบ Tag นี้?')) return; await api.hashtag.delete(id); closeModal(); await renderHashtagView(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ GLOBAL SEARCH ═════════════════════════════════════
 let _searchTimeout;
