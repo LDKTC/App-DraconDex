@@ -780,16 +780,16 @@ function initDB() {
     try { db.prepare(`ALTER TABLE world_object ADD COLUMN symbol_ref INTEGER REFERENCES symbol_collection(id) ON DELETE SET NULL`).run(); } catch (_) {}
   }
   if (hasTable(db, 'symbol_collection')) {
-    const symCount = db.prepare(`SELECT COUNT(*) AS n FROM symbol_collection`).get().n;
-    if (symCount === 0) {
-      const seed = ['⚔️ Sword', '🛡️ Shield', '🏹 Bow', '🗡️ Dagger', '🔥 Fire', '💧 Water', '🌿 Nature', '⚡ Lightning',
-        '🌙 Moon', '☀️ Sun', '⭐ Star', '👑 Crown', '💀 Skull', '🔮 Orb', '📜 Scroll', '💎 Gem',
-        '🐉 Dragon', '🦁 Lion', '🐺 Wolf', '🦅 Eagle', '🏰 Castle', '⚓ Anchor', '🕯️ Candle', '⚖️ Scale'];
-      const ins = db.prepare(`INSERT OR IGNORE INTO symbol_collection (glyph,label) VALUES (?,?)`);
-      for (const s of seed) {
-        const [glyph, ...rest] = s.split(' ');
-        ins.run(glyph, rest.join(' '));
-      }
+    const seed = ['⚔️ Sword', '🛡️ Shield', '🏹 Bow', '🗡️ Dagger', '🔥 Fire', '💧 Water', '🌿 Nature', '⚡ Lightning',
+      '🌙 Moon', '☀️ Sun', '⭐ Star', '👑 Crown', '💀 Skull', '🔮 Orb', '📜 Scroll', '💎 Gem',
+      '🐉 Dragon', '🦁 Lion', '🐺 Wolf', '🦅 Eagle', '🏰 Castle', '⚓ Anchor', '🕯️ Candle', '⚖️ Scale',
+      '🪄 Magic', '🧿 Talisman', '🪶 Feather', '🕳️ Portal', '🧭 Compass', '🪨 Stone', '🌊 Wave', '🌪️ Storm',
+      '🌸 Bloom', '🌾 Grain', '🍀 Clover', '🪐 Planet', '🧩 Puzzle', '🪙 Coin', '🔑 Key', '🧱 Brick',
+      '🛶 Boat', '🧺 Basket', '🧬 DNA', '🫧 Bubble', '🪞 Mirror', '📡 Signal', '🧯 Extinguisher', '🗝️ Key'];
+    const ins = db.prepare(`INSERT OR IGNORE INTO symbol_collection (glyph,label) VALUES (?,?)`);
+    for (const s of seed) {
+      const [glyph, ...rest] = s.split(' ');
+      ins.run(glyph, rest.join(' '));
     }
   }
   const hasStory = db.prepare(`PRAGMA table_info(timeline_event)`).all().some(c => c.name === 'story');

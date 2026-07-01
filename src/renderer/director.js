@@ -57,7 +57,7 @@ async function renderProjectSidebar(){
 function projItem(p){
   const act=S.project?.id===p.id, col=p.color_code||'#6366f1';
   return `<div class="li ${act?'active':''}" onclick="selectProject(${p.id})">
-    <div class="dot" style="background:${col}"></div><span class="name">${x(p.name)}</span>
+    <div class="dot" style="background:${col}"></div>${p.codename ? `<span class="tag">${x(p.codename)}</span>` : ''}<span class="name">${x(p.name)}</span>
     <div class="acts">
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openProjectModal(${p.id})">${I.edit}</button>
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();delProject(${p.id})" style="color:var(--danger)">${I.delete}</button>

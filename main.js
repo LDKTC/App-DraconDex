@@ -258,7 +258,7 @@ h('world:addCategory',      (wid,catref)              => db.addWorldCategory(wid
 h('world:removeCategory',   (id)                      => db.removeWorldCategory(id));
 
 h('world:getObjects',       (wcid)                    => db.getWorldObjects(wcid));
-h('world:updateObjectSymbol',(id,sym)                 => db.updateWorldObjectSymbol(id,sym));
+h('world:updateObjectSymbol',(id,sym,custom)          => db.updateWorldObjectSymbol(id,sym,custom));
 h('world:getSymbolCollection',()                      => db.getSymbolCollection());
 
 h('world:getMaps',          (wid)                     => db.getWorldMaps(wid));

@@ -948,44 +948,62 @@ function buildColorSwatches(colors, selId){
   ).join('');
 }
 
+// #cpicker-grid always lists every color sorted by hex code, independent of use/recency order.
+const sortColorsByHex = (colors) => [...(colors||[])].sort((a,b) => a.color_code.localeCompare(b.color_code));
+
 async function colorPicker(selId=null) {
   S.recentColors = await api.color.getRecent();
   const recent = buildColorSwatches(S.recentColors, selId);
-  const all    = buildColorSwatches(S.colors, selId);
+  const all    = buildColorSwatches(sortColorsByHex(S.colors), selId);
+  const selColor = (S.colors || []).find(c => c.id === selId) || (S.recentColors || []).find(c => c.id === selId);
+  const nativeVal = selColor?.color_code || '#6366f1';
   return `<div class="cpicker-wrap">
+    <div class="cpicker-custom">
+      <input type="color" id="cpicker-native" value="${nativeVal}" oninput="onColorPickerPreview(this.value)" title="เลือกสี">
+      <span class="cpicker-hex-lbl" id="cpicker-hex-lbl">${nativeVal}</span>
+      <button class="btn btn-s" type="button" onclick="addColorFromPicker()">เพิ่มสีใหม่</button>
+    </div>
     <div class="cpicker-row-lbl">ใช้ล่าสุด</div>
     <div class="crecent-row" id="cpicker-recent">${recent || '<span class="cpicker-empty">ยังไม่มีประวัติการใช้สี</span>'}</div>
     <div class="cpicker-row-lbl">สีทั้งหมด</div>
     <div class="cgrid" id="cpicker-grid">${all}</div>
-    <div class="cpicker-custom">
-      <input type="color" id="cpicker-native" value="#6366f1" oninput="onColorPickerPreview(this.value)" title="เลือกสี">
-      <span class="cpicker-hex-lbl" id="cpicker-hex-lbl">#6366f1</span>
-      <button class="btn btn-s" type="button" onclick="addColorFromPicker()">เพิ่มสีใหม่</button>
-    </div>
     <input type="hidden" id="sel-color" value="${selId||''}">
   </div>`;
 }
 
 // ═══ SYMBOL PICKER ═════════════════════════════════════
-function buildSymbolSwatches(symbols, selId, hiddenInputId){
+function buildSymbolSwatches(symbols, selId, hiddenInputId, previewId, customInputId){
   return symbols.map(s =>
-    `<div class="symswatch ${selId===s.id?'sel':''}" title="${x(s.label||'')}" onclick="pickSymbol('${hiddenInputId}',this,${s.id})">${x(s.glyph)}</div>`
+    `<button type="button" class="symswatch ${selId===s.id?'sel':''}" title="${x(s.label||'')}" onclick="pickSymbol('${hiddenInputId}','${previewId||''}','${customInputId||''}',this,${s.id},'${x(s.glyph).replace(/'/g,"\\'")}')">${x(s.glyph)}</button>`
   ).join('');
 }
 
-async function symbolPicker(hiddenInputId, selId=null) {
+async function symbolPicker(hiddenInputId, selId=null, previewId=null, customInputId=null) {
   const symbols = await api.world.getSymbolCollection();
   return `<div class="cpicker-wrap">
-    <div class="cgrid">${buildSymbolSwatches(symbols, selId, hiddenInputId) || '<span class="cpicker-empty">No symbols available</span>'}</div>
+    <div class="cgrid">${buildSymbolSwatches(symbols, selId, hiddenInputId, previewId, customInputId) || '<span class="cpicker-empty">No symbols available</span>'}</div>
     <input type="hidden" id="${hiddenInputId}" value="${selId||''}">
   </div>`;
 }
 
-function pickSymbol(hiddenInputId, el, id){
+function pickSymbol(hiddenInputId, previewId, customInputId, el, id, glyph){
   const input = q(`#${hiddenInputId}`);
   if (input) input.value = id;
   el.parentElement.querySelectorAll('.symswatch').forEach(n => n.classList.remove('sel'));
   el.classList.add('sel');
+  if (previewId) { const p = q(`#${previewId}`); if (p) p.textContent = glyph || '+'; }
+  if (customInputId) { const c = q(`#${customInputId}`); if (c) c.value = glyph || ''; }
+}
+
+// Typing a custom glyph deselects any picked collection symbol — the two are mutually exclusive.
+function onSymbolCustomInput(hiddenInputId, previewId, value){
+  const preview = q(`#${previewId}`);
+  if (preview) preview.textContent = value || '+';
+  const input = q(`#${hiddenInputId}`);
+  if (input) {
+    input.value = '';
+    input.closest('.cpicker-wrap')?.querySelectorAll('.symswatch').forEach(n => n.classList.remove('sel'));
+  }
 }
 
 async function hashtagSelector(prefix, selectedIds){
@@ -1067,6 +1085,11 @@ async function pickColor(el,id) {
   if (wrap) wrap.querySelectorAll('.cswatch').forEach(s=>s.classList.remove('sel'));
   el.classList.add('sel');
   q('#sel-color').value = id;
+  const code = (S.colors||[]).find(c=>c.id===id)?.color_code || (S.recentColors||[]).find(c=>c.id===id)?.color_code;
+  if (code) {
+    const native = q('#cpicker-native'); if (native) native.value = code;
+    const lbl = q('#cpicker-hex-lbl'); if (lbl) lbl.textContent = code;
+  }
   await api.color.markUsed(id);
   S.recentColors = await api.color.getRecent();
   const rec = q('#cpicker-recent');
@@ -1087,7 +1110,7 @@ async function addColorFromPicker(){
   if (nc) await api.color.markUsed(nc.id);
   S.recentColors = await api.color.getRecent();
   const grid = q('#cpicker-grid');
-  if (grid) grid.innerHTML = buildColorSwatches(S.colors, nc?.id);
+  if (grid) grid.innerHTML = buildColorSwatches(sortColorsByHex(S.colors), nc?.id);
   const rec = q('#cpicker-recent');
   if (rec) rec.innerHTML = buildColorSwatches(S.recentColors, nc?.id) || '<span class="cpicker-empty">ยังไม่มีประวัติการใช้สี</span>';
   if (nc) q('#sel-color').value = nc.id;

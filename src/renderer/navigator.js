@@ -694,7 +694,8 @@ async function renderWorldChars(worldId) {
     html += `<div class="li" style="flex-direction:column;align-items:flex-start;padding:8px 10px;gap:4px">
       <div style="display:flex;width:100%;align-items:center;gap:8px">
         <div class="dot" style="background:${c.color_code || '#6366f1'}"></div>
-        <span class="name" style="flex:1;font-weight:500">${x(c.name)}${c.symbol ? ` <span style="color:var(--t3)">${x(c.symbol)}</span>` : ''}</span>
+        <button class="btn btn-g btn-i char-sym-btn" style="padding:1px 5px;font-size:11px" title="Choose symbol" data-symbol="${x(c.symbol || '')}" onclick="event.stopPropagation();openCharSymbolModal(${worldId},${c.id},this.dataset.symbol)">${c.symbol ? x(c.symbol) : I.plus}</button>
+        <span class="name" style="flex:1;font-weight:500">${x(c.name)}</span>
         <button class="btn btn-g btn-i" onclick="openWorldCharModal(${worldId},${c.id})">${I.edit}</button>
         <button class="btn btn-g btn-i" onclick="deleteWorldChar(${worldId},${c.id})">${I.delete}</button>
       </div>
@@ -734,6 +735,37 @@ async function saveWorldChar(worldId, id) {
 async function deleteWorldChar(worldId, id) {
   if (!confirm('Delete this character?')) return;
   await api.world.deleteCharacter(id);
+  closeModal();
+  await setWorldTab('characters');
+}
+
+async function openCharSymbolModal(worldId, charId, currentSymbolText) {
+  const picker = await symbolPicker('wcs-sym-ref', null, 'wcs-sym-preview', 'wcs-sym-custom');
+  openModal('Choose Symbol', `
+    <div class="symsel-box">
+      <span class="symsel-preview" id="wcs-sym-preview">${x(currentSymbolText || '+')}</span>
+      <input type="text" class="symsel-input" id="wcs-sym-custom" placeholder="Type a custom symbol..." maxlength="4" value="${x(currentSymbolText || '')}" oninput="onSymbolCustomInput('wcs-sym-ref','wcs-sym-preview',this.value)">
+    </div>
+    <div class="form-row"><label>Symbol</label>${picker}</div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveCharSymbol(${worldId},${charId})">Save</button>
+    </div>`);
+}
+
+async function saveCharSymbol(worldId, charId) {
+  const symRef = Number(q('#wcs-sym-ref')?.value) || null;
+  const customText = (q('#wcs-sym-custom')?.value || '').trim();
+  let symbol = customText || null;
+  if (symRef) {
+    const symbols = await api.world.getSymbolCollection();
+    const found = symbols.find(s => s.id === symRef);
+    if (found) symbol = found.glyph;
+  }
+  const chars = await api.world.getCharacters(worldId);
+  const c = chars.find(ch => ch.id === charId);
+  if (!c) return closeModal();
+  await api.world.updateCharacter(charId, c.name, symbol, c.color);
   closeModal();
   await setWorldTab('characters');
 }
@@ -832,29 +864,40 @@ async function renderWorldCats(worldId) {
     return head + `<div class="empty"><div class="ei">${I.layer}</div>
       <p style="color:var(--t3);text-align:center;max-width:280px">No categories yet. Link novels, then add their categories.</p></div>`;
   }
+  S.worldCatOpen = S.worldCatOpen || new Set();
   let h = '';
   for (const cat of cats) {
-    // Objects are auto-synced live from the novel's category — no manual add/remove.
-    const objs = await api.world.getObjects(cat.id);
-    const objsHtml = objs.length
-      ? `<div style="padding-left:14px;margin-top:4px">` + objs.map(o =>
-          `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:.87em;color:var(--t2)">
-            <div class="dot" style="background:${o.color_code || '#6366f1'};width:8px;height:8px"></div>
-            <span style="flex:1">${o.symbol ? `<span style="margin-right:4px">${x(o.symbol)}</span>` : ''}${x(o.name)}</span>
-            <button class="btn btn-g btn-i" style="padding:1px 5px;font-size:11px" title="Choose symbol" onclick="openObjectSymbolModal(${worldId},${o.id},${o.symbol_ref || 'null'})">${I.plus}</button>
-          </div>`).join('') + `</div>`
-      : `<div style="padding-left:14px;font-size:.82em;color:var(--t3);margin-top:4px">No objects.</div>`;
-    h += `<div style="background:var(--bg2);border-radius:6px;padding:6px 10px;margin-bottom:6px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px;flex:1">
-          <span style="font-size:.9em">${x(cat.category_name)} <span style="color:var(--t3);font-size:.85em">${x(cat.project_name || '')}</span></span>
-        </div>
-        <button class="btn btn-g btn-i" title="Remove category" onclick="removeWorldCategory(${worldId},${cat.id})">${I.delete}</button>
+    const open = S.worldCatOpen.has(cat.id);
+    let objsHtml = '';
+    if (open) {
+      // Objects are auto-synced live from the novel's category — no manual add/remove.
+      const objs = await api.world.getObjects(cat.id);
+      objsHtml = objs.length
+        ? `<div class="fchildren">` + objs.map(o =>
+            `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:.87em;color:var(--t2)">
+              <div class="dot" style="background:${o.color_code || '#6366f1'};width:8px;height:8px"></div>
+              <button class="btn btn-g btn-i" style="padding:1px 5px;font-size:11px" title="Choose symbol" data-symbol="${x(o.symbol || '')}" onclick="event.stopPropagation();openObjectSymbolModal(${worldId},${o.id},${o.symbol_ref || 'null'},this.dataset.symbol)">${o.symbol ? x(o.symbol) : I.plus}</button>
+              <span style="flex:1">${x(o.name)}</span>
+            </div>`).join('') + `</div>`
+        : `<div class="fchildren"><div style="font-size:.82em;color:var(--t3)">No objects.</div></div>`;
+    }
+    h += `<div class="folder-sec" style="background:var(--bg2);border-radius:6px;padding:6px 10px;margin-bottom:6px">
+      <div class="fhead" style="gap:8px;padding:0;text-transform:none;font-weight:400;color:inherit" onclick="toggleWorldCatOpen(${cat.id})">
+        <svg class="ftgl ${open ? 'open' : ''}" style="width:8px;height:8px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="font-size:.9em;flex:1">${x(cat.category_name)} <span style="color:var(--t3);font-size:.85em">${x(cat.project_name || '')}</span></span>
+        <button class="btn btn-g btn-i" title="Remove category" onclick="event.stopPropagation();removeWorldCategory(${worldId},${cat.id})">${I.delete}</button>
       </div>
       ${objsHtml}
     </div>`;
   }
   return head + h;
+}
+
+async function toggleWorldCatOpen(catId) {
+  S.worldCatOpen = S.worldCatOpen || new Set();
+  if (S.worldCatOpen.has(catId)) S.worldCatOpen.delete(catId);
+  else S.worldCatOpen.add(catId);
+  await setWorldTab('categories');
 }
 
 async function openAddCategoryModal(worldId) {
@@ -886,9 +929,13 @@ async function removeWorldCategory(worldId, id) {
   await setWorldTab('categories');
 }
 
-async function openObjectSymbolModal(worldId, objectId, currentSymbolRef) {
-  const picker = await symbolPicker('wos-sym-ref', currentSymbolRef || null);
+async function openObjectSymbolModal(worldId, objectId, currentSymbolRef, currentSymbolText) {
+  const picker = await symbolPicker('wos-sym-ref', currentSymbolRef || null, 'wos-sym-preview', 'wos-sym-custom');
   openModal('Choose Symbol', `
+    <div class="symsel-box">
+      <span class="symsel-preview" id="wos-sym-preview">${x(currentSymbolText || '+')}</span>
+      <input type="text" class="symsel-input" id="wos-sym-custom" placeholder="Type a custom symbol..." maxlength="4" value="${x(currentSymbolText || '')}" oninput="onSymbolCustomInput('wos-sym-ref','wos-sym-preview',this.value)">
+    </div>
     <div class="form-row"><label>Symbol</label>${picker}</div>
     <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
@@ -898,7 +945,8 @@ async function openObjectSymbolModal(worldId, objectId, currentSymbolRef) {
 
 async function saveObjectSymbol(worldId, objectId) {
   const symRef = Number(q('#wos-sym-ref')?.value) || null;
-  await api.world.updateObjectSymbol(objectId, symRef);
+  const customText = (q('#wos-sym-custom')?.value || '').trim();
+  await api.world.updateObjectSymbol(objectId, symRef, symRef ? null : (customText || null));
   closeModal();
   await setWorldTab('categories');
 }

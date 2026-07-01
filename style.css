@@ -285,6 +285,8 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .li .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .li .acts{display:none;gap:2px}
 .li:hover .acts{display:flex}
+/* Hovering the char-symbol button shouldn't also highlight the whole row */
+.li:has(> div > .char-sym-btn:hover){background:transparent;color:var(--t2)}
 
 /* FOLDER */
 .folder-sec{margin-bottom:2px}
@@ -415,6 +417,7 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 
 /* COLOR GRID */
 .cgrid{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+#cpicker-grid{max-height:112px;overflow-y:auto;padding-right:2px}
 .cswatch{
 	width:26px;height:26px;border-radius:50%;cursor:pointer;
 	border:3px solid transparent;transition:all var(--ease);
@@ -423,12 +426,27 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .cswatch.sel{border-color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.3)}
 
 .symswatch{
-	width:30px;height:30px;border-radius:var(--rs);cursor:pointer;
-	display:flex;align-items:center;justify-content:center;font-size:16px;
-	border:2px solid var(--border);background:var(--bg2);transition:all var(--ease);
+	width:30px;height:30px;padding:0;border-radius:var(--rs);cursor:pointer;
+	display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;
+	border:1px solid var(--border);background:var(--raised);color:var(--t1);
+	transition:transform var(--ease),background var(--ease),border-color var(--ease),box-shadow var(--ease);
 }
-.symswatch:hover{transform:scale(1.1);border-color:var(--t3)}
-.symswatch.sel{border-color:#6366f1;box-shadow:0 0 0 1px rgba(99,102,241,.4)}
+.symswatch:hover{transform:translateY(-1px);background:var(--hover);border-color:var(--t3)}
+.symswatch.sel{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 0 1px rgba(99,102,241,.25)}
+
+#modal-body .form-row .cgrid .symswatch,
+#modal-body .form-row .cgrid .symswatch:nth-child(n){
+	width:38px;height:38px;min-width:38px;padding:0;border-radius:999px;
+	display:inline-flex;align-items:center;justify-content:center;
+	font-size:19px;line-height:1;border:1px solid var(--border);
+	background:var(--bg2);color:var(--t1);box-shadow:none;
+}
+#modal-body .form-row .cgrid .symswatch:hover{
+	transform:translateY(-1px);background:var(--hover);border-color:var(--t3)
+}
+#modal-body .form-row .cgrid .symswatch.sel{
+	background:var(--accent);color:#fff;border-color:var(--accent)
+}
 
 /* MODAL */
 #modal-overlay{
@@ -753,12 +771,30 @@ body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.
 .palette-item:hover{border-color:var(--accent);background:var(--hover)}
 .palette-swatch{width:24px;height:24px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,0.1)}
 .palette-code{flex:1;font-size:11px;font-family:'Courier New',monospace;color:var(--t2)}
+.symsel-box{
+	display:flex;align-items:center;gap:10px;
+	background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+	padding:8px 11px;margin-bottom:14px;
+}
+.symsel-preview{
+	width:38px;height:38px;min-width:38px;border-radius:999px;
+	display:inline-flex;align-items:center;justify-content:center;
+	font-size:19px;line-height:1;background:var(--bg);border:1px solid var(--border);color:var(--t1);
+}
+.symsel-input{
+	flex:1;background:var(--bg);border:1px solid var(--border);
+	border-radius:var(--r);color:var(--t1);padding:8px 11px;
+	font-size:13.5px;font-family:inherit;outline:none;
+	transition:border-color var(--ease);
+}
+.symsel-input:focus{border-color:var(--accent)}
+
 .cpicker-wrap{display:flex;flex-direction:column;gap:6px}
 .cpicker-row-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)}
 .crecent-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .cpicker-empty{font-size:11px;color:var(--t3)}
 .crecent-row .cswatch{width:20px;height:20px;border-radius:50%;flex:0 0 auto}
-.cpicker-custom{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);margin-top:4px}
+.cpicker-custom{display:flex;align-items:center;gap:8px;padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:8px}
 .cpicker-custom input[type="color"]{width:30px;height:30px;padding:0;border:2px solid var(--border);border-radius:var(--rs);cursor:pointer;background:transparent;flex-shrink:0}
 .cpicker-custom input[type="color"]::-webkit-color-swatch-wrapper{padding:2px}
 .cpicker-custom input[type="color"]::-webkit-color-swatch{border:none;border-radius:2px}

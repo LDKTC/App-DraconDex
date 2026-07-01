@@ -178,7 +178,7 @@ contextBridge.exposeInMainWorld('api', {
     removeCategory:          (id)            => inv('world:removeCategory', id),
 
     getObjects:              (wcid)          => inv('world:getObjects', wcid),
-    updateObjectSymbol:      (id,sym)        => inv('world:updateObjectSymbol', id,sym),
+    updateObjectSymbol:      (id,sym,custom) => inv('world:updateObjectSymbol', id,sym,custom),
     getSymbolCollection:     ()              => inv('world:getSymbolCollection'),
 
     getMaps:                 (wid)           => inv('world:getMaps', wid),

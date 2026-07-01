@@ -144,7 +144,7 @@ const syncWorldCategoryObjects = (worldCategoryId) => {
 const getWorldObjects = (worldCategoryId) => {
   syncWorldCategoryObjects(worldCategoryId);
   return getDB().prepare(`
-    SELECT wo.id, wo.category_ref, wo.object_ref, wo.symbol_ref, sc.glyph AS symbol, sc.label AS symbol_label, o.name, uc.color_code
+    SELECT wo.id, wo.category_ref, wo.object_ref, wo.symbol_ref, COALESCE(sc.glyph, wo.symbol) AS symbol, sc.label AS symbol_label, o.name, uc.color_code
     FROM world_object wo
     JOIN object o ON wo.object_ref=o.id
     LEFT JOIN use_color uc ON o.color=uc.id
@@ -153,8 +153,12 @@ const getWorldObjects = (worldCategoryId) => {
   `).all(worldCategoryId);
 };
 
-const updateWorldObjectSymbol = (id, symbolRef) =>
-  getDB().prepare(`UPDATE world_object SET symbol_ref=?,update_at=datetime('now') WHERE id=?`).run(symbolRef||null, id);
+// symbolRef selects a shared symbol_collection glyph; customText stores a one-off glyph
+// directly on the row (for symbols the user needs but hasn't added to the shared collection).
+// The two are mutually exclusive — setting one clears the other.
+const updateWorldObjectSymbol = (id, symbolRef, customText) =>
+  getDB().prepare(`UPDATE world_object SET symbol_ref=?,symbol=?,update_at=datetime('now') WHERE id=?`)
+    .run(symbolRef || null, symbolRef ? null : (customText || null), id);
 
 // ---- Symbol collection -----------------------------------------------
 const getSymbolCollection = () =>
