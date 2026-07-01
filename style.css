@@ -77,9 +77,9 @@ body[data-theme="redEclipse"]{
 	--danger:#f97316;
 	--success:#22c55e;
 }
-/* Priority order (dominant -> minor): indigo > sky-blue > cloud > white.
-   A bright daytime-sky theme — light backgrounds, indigo carried by the accent
-   and text rather than a dark canvas. */
+/* Priority order (main -> minor): deep sky blue > royal blue > cloud > white.
+   A bright daytime-sky theme — light backgrounds, with the primary action
+   color carried by main/minor/button rather than a dark canvas. */
 body[data-theme="clearSky"]{
 	--bg:#e8f3ff;
 	--surface:#ffffff;
@@ -89,8 +89,9 @@ body[data-theme="clearSky"]{
 	--t1:#22306e;
 	--t2:#4f61a3;
 	--t3:#8497c4;
-	--accent:#4f5fe0;
-	--accentH:#38bdf8;
+	--accent:#00bfff;
+	--accentH:#4169e1;
+	--button:#0080ff;
 	--danger:#dc2626;
 	--success:#16a34a;
 }
@@ -157,6 +158,76 @@ body[data-theme="rainbow"] .btn-p:hover{
 	background:linear-gradient(120deg,#f5515f,#f7a531,#3fd07f,#38a3f1,#9b5cf6);
 	border-color:transparent;color:#fff;
 }
+/* Priority order (main -> minor): hot pink > ember glow > cream > blush.
+   A soft sunrise theme — warm, light surfaces with a hot-pink/ember accent. */
+body[data-theme="atDawn"]{
+	--bg:#fdeee8;
+	--surface:#ffffff;
+	--raised:#ffe4e1;
+	--hover:#ffd6cc;
+	--border:#ffc2b8;
+	--t1:#5c2a3a;
+	--t2:#8a5468;
+	--t3:#c191a0;
+	--accent:#ff69b4;
+	--accentH:#ff6f3c;
+	--button:#ffb627;
+	--danger:#dc2626;
+	--success:#16a34a;
+}
+/* Priority order (main -> minor): nebula glow > dusk rose > deep violet > black.
+   A cosmic dusk theme — dark violet canvas lit by a glowing nebula accent. */
+body[data-theme="atDusk"]{
+	--bg:#1a0f2e;
+	--surface:#241640;
+	--raised:#2f1d52;
+	--hover:#3a2563;
+	--border:#46296e;
+	--t1:#f3e8ff;
+	--t2:#c4a8dd;
+	--t3:#8870a8;
+	--accent:#b24bf3;
+	--accentH:#c9748a;
+	--button:#d6473c;
+	--danger:#fb7185;
+	--success:#22c55e;
+}
+/* Priority order (main -> minor): sun-drenched gold > apricot ice > cream > white.
+   A bright midday theme — warm, sunlit surfaces with a golden-yellow accent. */
+body[data-theme="atDay"]{
+	--bg:#fffaf0;
+	--surface:#ffffff;
+	--raised:#fff3d6;
+	--hover:#ffe9b3;
+	--border:#ffd97d;
+	--t1:#4a3a12;
+	--t2:#7a6230;
+	--t3:#b39a63;
+	--accent:#e8a93c;
+	--accentH:#ffcba4;
+	--button:#d4a017;
+	--danger:#dc2626;
+	--success:#16a34a;
+}
+/* Priority order (main -> minor): midnight blue > navy blue > deep black.
+   A dark eclipse theme — near-black canvas with cool blue accents. */
+body[data-theme="blueEclipse"]{
+	--bg:#05050f;
+	--surface:#0b0b1f;
+	--raised:#10102c;
+	--hover:#161638;
+	--border:#1c1c44;
+	--t1:#e8e8f5;
+	--t2:#9797b8;
+	--t3:#55557a;
+	--accent:#191970;
+	--accentH:#000080;
+	--button:#c9ccd4;
+	--danger:#ef4444;
+	--success:#22c55e;
+}
+body[data-theme="blueEclipse"] .btn-p,
+body[data-theme="blueEclipse"] .modal-actions button{color:#1a1a26}
 
 body{
 	font-family:'Segoe UI Emoji','Segoe UI Symbol','Segoe UI',system-ui,-apple-system,sans-serif;
@@ -307,6 +378,10 @@ body[data-theme="clearSky"] .brand-img{content:url('Image/DraconDex-SymbolBlack.
 body[data-theme="clearStar"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
 body[data-theme="afterRain"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
 body[data-theme="rainbow"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
+body[data-theme="atDawn"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="atDusk"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="atDay"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
 .nav-btn{
 	width:40px;height:40px;border:none;
 	background:transparent; border-radius:var(--r);
@@ -509,7 +584,7 @@ body[data-theme="rainbow"] .brand-img{content:url('Image/DraconDex-SymbolColor.p
 	cursor:pointer;font-size:13.5px;font-weight:500;
 	transition:all var(--ease);font-family:inherit;
 }
-.btn-p{background:var(--accent);color:#fff}
+.btn-p{background:var(--button, var(--accent));color:#fff}
 .btn-p:hover{background:var(--accentH)}
 .btn-s{background:var(--raised);color:var(--t1);border:1px solid var(--border)}
 .btn-s:hover{background:var(--hover)}
@@ -1363,7 +1438,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .modal-actions button{
 	display:inline-flex;align-items:center;gap:6px;
 	padding:7px 15px;border:none;border-radius:var(--r);
-	background:var(--accent);color:#fff;cursor:pointer;
+	background:var(--button, var(--accent));color:#fff;cursor:pointer;
 	font-size:13.5px;font-weight:500;font-family:inherit;transition:all var(--ease);
 }
 .modal-actions button:hover{background:var(--accentH)}

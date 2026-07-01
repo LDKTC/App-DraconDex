@@ -44,7 +44,7 @@ const I = {
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
-const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow'];
+const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','de','ru','qd'];
 const UI_SIZE_MIN = 50;
 const UI_SIZE_MAX = 200;
@@ -54,6 +54,7 @@ const L = {
     settings:'Settings', theme:'Theme', language:'Language', uiSize:'UI Size',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Open project', closeTab:'Close tab', minimize:'Minimize', maximize:'Maximize', close:'Close',
     collapsePanel:'Collapse panel', openPanel:'Open panel',
     projects:'Projects', timeline:'Timeline', relation:'Relations', map:'Mapping', hashtag:'Tags', colors:'Colors',
@@ -90,6 +91,7 @@ const L = {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'プロジェクトを開く', closeTab:'タブを閉じる', minimize:'最小化', maximize:'最大化', close:'閉じる',
     collapsePanel:'パネルを折りたたむ', openPanel:'パネルを開く',
     projects:'プロジェクト', timeline:'タイムライン', relation:'関係', map:'マッピング', hashtag:'タグ', colors:'色',
@@ -126,6 +128,7 @@ const L = {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'프로젝트 열기', closeTab:'탭 닫기', minimize:'최소화', maximize:'최대화', close:'닫기',
     collapsePanel:'패널 접기', openPanel:'패널 열기',
     projects:'프로젝트', timeline:'타임라인', relation:'관계', map:'매핑', hashtag:'태그', colors:'색상',
@@ -162,6 +165,7 @@ const L = {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'เปิดโปรเจกต์', closeTab:'ปิดแท็บ', minimize:'ย่อหน้าต่าง', maximize:'ขยายหน้าต่าง', close:'ปิด',
     collapsePanel:'พับ Panel', openPanel:'เปิด Panel',
     projects:'โปรเจกต์', timeline:'Timeline', relation:'ความสัมพันธ์', map:'Mapping', hashtag:'ป้ายกำกับ', colors:'สี',
@@ -198,6 +202,7 @@ const L = {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'打开项目', closeTab:'关闭标签', minimize:'最小化', maximize:'最大化', close:'关闭',
     collapsePanel:'收起面板', openPanel:'打开面板',
     projects:'项目', timeline:'时间线', relation:'关系', map:'映射', hashtag:'标签', colors:'颜色',
@@ -234,6 +239,7 @@ const L = {
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Mở dự án', closeTab:'Đóng tab', minimize:'Thu nhỏ', maximize:'Phóng to', close:'Đóng',
     collapsePanel:'Thu gọn bảng', openPanel:'Mở bảng',
     projects:'Dự án', timeline:'Dòng thời gian', relation:'Quan hệ', map:'Bản đồ', hashtag:'Thẻ', colors:'Màu sắc',
@@ -270,6 +276,7 @@ const L = {
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Buka proyek', closeTab:'Tutup tab', minimize:'Perkecil', maximize:'Perbesar', close:'Tutup',
     collapsePanel:'Ciutkan panel', openPanel:'Buka panel',
     projects:'Proyek', timeline:'Linimasa', relation:'Relasi', map:'Pemetaan', hashtag:'Tag', colors:'Warna',
@@ -306,6 +313,7 @@ const L = {
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Abrir proyecto', closeTab:'Cerrar pestaña', minimize:'Minimizar', maximize:'Maximizar', close:'Cerrar',
     collapsePanel:'Contraer panel', openPanel:'Abrir panel',
     projects:'Proyectos', timeline:'Cronología', relation:'Relaciones', map:'Mapeo', hashtag:'Etiquetas', colors:'Colores',
@@ -342,6 +350,7 @@ const L = {
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Abrir projeto', closeTab:'Fechar aba', minimize:'Minimizar', maximize:'Maximizar', close:'Fechar',
     collapsePanel:'Recolher painel', openPanel:'Abrir painel',
     projects:'Projetos', timeline:'Linha do tempo', relation:'Relações', map:'Mapeamento', hashtag:'Tags', colors:'Cores',
@@ -378,6 +387,7 @@ const L = {
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Ouvrir le projet', closeTab:'Fermer l\'onglet', minimize:'Réduire', maximize:'Agrandir', close:'Fermer',
     collapsePanel:'Réduire le panneau', openPanel:'Ouvrir le panneau',
     projects:'Projets', timeline:'Chronologie', relation:'Relations', map:'Cartographie', hashtag:'Tags', colors:'Couleurs',
@@ -414,6 +424,7 @@ const L = {
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Projekt öffnen', closeTab:'Tab schließen', minimize:'Minimieren', maximize:'Maximieren', close:'Schließen',
     collapsePanel:'Panel einklappen', openPanel:'Panel öffnen',
     projects:'Projekte', timeline:'Zeitleiste', relation:'Beziehungen', map:'Kartierung', hashtag:'Tags', colors:'Farben',
@@ -450,6 +461,7 @@ const L = {
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Открыть проект', closeTab:'Закрыть вкладку', minimize:'Свернуть', maximize:'Развернуть', close:'Закрыть',
     collapsePanel:'Свернуть панель', openPanel:'Открыть панель',
     projects:'Проекты', timeline:'Хронология', relation:'Отношения', map:'Картография', hashtag:'Теги', colors:'Цвета',
@@ -486,6 +498,7 @@ const L = {
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
+    atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
     openProject:'Vaskorra Vorqu', closeTab:'Klemuur Tabyx', minimize:'Krynshu', maximize:'Draznorr', close:'Klemuur',
     collapsePanel:'Foldra Panylx', openPanel:'Vaskorra Panylx',
     projects:'Vorquenn', timeline:'Khronofang', relation:'Kynshall', map:'Territhramapp', hashtag:'Markiss', colors:'Chroniss',
@@ -797,8 +810,8 @@ function updateUiSizeLabel(value){
 function renderSettingsMenu(){
   const menu = q('#settings-menu');
   if(!menu) return;
-  const themeButtons = UI_THEME_OPTIONS.map(theme =>
-    `<button class="settings-option ${S.settings.theme===theme?'active':''}" onclick="setUiSetting('theme','${theme}')">${t(theme)}</button>`
+  const themeOptions = UI_THEME_OPTIONS.map(theme =>
+    `<option value="${theme}" ${S.settings.theme===theme?'selected':''}>${t(theme)}</option>`
   ).join('');
   const languageOptions = UI_LANGUAGE_OPTIONS.map(lang =>
     `<option value="${lang}" ${S.settings.language===lang?'selected':''}>${LANGUAGE_LABELS[lang]}</option>`
@@ -810,7 +823,9 @@ function renderSettingsMenu(){
     </div>
     <div class="settings-group">
       <div class="settings-label">${t('theme')}</div>
-      <div class="settings-options">${themeButtons}</div>
+      <select class="settings-select" onchange="setUiSetting('theme', this.value)">
+        ${themeOptions}
+      </select>
     </div>
     <div class="settings-group">
       <div class="settings-label">${t('language')}</div>
