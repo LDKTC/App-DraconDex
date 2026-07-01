@@ -63,7 +63,7 @@ const L = {
     edit:'Edit', delete:'Delete', add:'Add', remove:'Remove', save:'Save', name:'Name', memo:'Memo', color:'Color', title:'Title', content:'Content',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'Choose a module to get started.',
     navigator:'Navigator', world:'World', worldNew:'New World', worldChars:'Characters', worldCats:'Categories',
-    worldMaps:'Maps', worldMapTimelines:'Map Timelines', worldTimeline:'Timeline', worldOverview:'Overview', worldLinkedNovels:'Linked Novels',
+    worldMaps:'Maps', worldMapTimelines:'Map Timelines', worldTimeline:'Timeline', worldOverview:'Overview', worldOrig:'Original', worldLinkedNovels:'Linked Novels', worldOrigCats:'Original Categories', worldDetails:'World Details',
     worldTags:'Tags', worldCharNew:'New Character', worldCatNew:'New Category', worldMapNew:'New Map',
     worldMaptlNew:'New Timeline', worldEventNew:'New Event', worldObjNew:'New Object',
     worldCharLink:'Link to Novel Object', worldCatLink:'Link to Novel Category', worldMapLink:'Link to Novel Map',
@@ -98,7 +98,7 @@ const L = {
     edit:'編集', delete:'削除', add:'追加', remove:'削除', save:'保存', name:'名前', memo:'メモ', color:'色', title:'タイトル', content:'内容',
     nexus:'Nexus', director:'ディレクター', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'モジュールを選択してください。',
     navigator:'ナビゲーター', world:'ワールド', worldNew:'新規ワールド', worldChars:'キャラクター', worldCats:'カテゴリー',
-    worldMaps:'マップ', worldMapTimelines:'マップタイムライン', worldTimeline:'タイムライン', worldOverview:'概要', worldLinkedNovels:'リンク済み小説',
+    worldMaps:'マップ', worldMapTimelines:'マップタイムライン', worldTimeline:'タイムライン', worldOverview:'概要', worldOrig:'オリジナル', worldLinkedNovels:'リンク済み小説', worldOrigCats:'オリジナルカテゴリー', worldDetails:'ワールド詳細',
     worldTags:'タグ', worldCharNew:'新規キャラクター', worldCatNew:'新規カテゴリー', worldMapNew:'新規マップ',
     worldMaptlNew:'新規タイムライン', worldEventNew:'新規イベント', worldObjNew:'新規オブジェクト',
     worldCharLink:'小説オブジェクトにリンク', worldCatLink:'小説カテゴリーにリンク', worldMapLink:'小説マップにリンク',
@@ -133,7 +133,7 @@ const L = {
     edit:'수정', delete:'삭제', add:'추가', remove:'제거', save:'저장', name:'이름', memo:'메모', color:'색상', title:'제목', content:'내용',
     nexus:'Nexus', director:'디렉터', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'모듈을 선택하세요.',
     navigator:'네비게이터', world:'세계', worldNew:'새 세계', worldChars:'캐릭터', worldCats:'카테고리',
-    worldMaps:'맵', worldMapTimelines:'맵 타임라인', worldTimeline:'타임라인', worldOverview:'개요', worldLinkedNovels:'연결된 소설',
+    worldMaps:'맵', worldMapTimelines:'맵 타임라인', worldTimeline:'타임라인', worldOverview:'개요', worldOrig:'오리지널', worldLinkedNovels:'연결된 소설', worldOrigCats:'오리지널 카테고리', worldDetails:'세계 상세',
     worldTags:'태그', worldCharNew:'새 캐릭터', worldCatNew:'새 카테고리', worldMapNew:'새 맵',
     worldMaptlNew:'새 타임라인', worldEventNew:'새 이벤트', worldObjNew:'새 오브젝트',
     worldCharLink:'소설 오브젝트에 연결', worldCatLink:'소설 카테고리에 연결', worldMapLink:'소설 맵에 연결',
@@ -168,7 +168,7 @@ const L = {
     edit:'แก้ไข', delete:'ลบ', add:'เพิ่ม', remove:'นำออก', save:'บันทึก', name:'ชื่อ', memo:'บันทึกย่อ', color:'สี', title:'หัวข้อ', content:'เนื้อหา',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'เลือกโมดูลที่ต้องการใช้งาน',
     navigator:'Navigator', world:'โลก', worldNew:'สร้างโลกใหม่', worldChars:'ตัวละคร', worldCats:'หมวดหมู่',
-    worldMaps:'แผนที่', worldMapTimelines:'ไทม์ไลน์แผนที่', worldTimeline:'ไทม์ไลน์', worldOverview:'ภาพรวม', worldLinkedNovels:'นิยายที่เชื่อมต่อ',
+    worldMaps:'แผนที่', worldMapTimelines:'ไทม์ไลน์แผนที่', worldTimeline:'ไทม์ไลน์', worldOverview:'ภาพรวม', worldOrig:'หมวดหมู่ของโลก', worldLinkedNovels:'นิยายที่เชื่อมต่อ', worldOrigCats:'หมวดหมู่ของโลก', worldDetails:'รายละเอียดโลก',
     worldTags:'แท็ก', worldCharNew:'เพิ่มตัวละคร', worldCatNew:'เพิ่มหมวดหมู่', worldMapNew:'เพิ่มแผนที่',
     worldMaptlNew:'เพิ่มไทม์ไลน์', worldEventNew:'เพิ่มเหตุการณ์', worldObjNew:'เพิ่มรายการ',
     worldCharLink:'เชื่อมกับตัวละครในนิยาย', worldCatLink:'เชื่อมกับหมวดหมู่ในนิยาย', worldMapLink:'เชื่อมกับแผนที่ในนิยาย',
@@ -203,7 +203,7 @@ const L = {
     edit:'编辑', delete:'删除', add:'添加', remove:'移除', save:'保存', name:'名称', memo:'备注', color:'颜色', title:'标题', content:'内容',
     nexus:'Nexus', director:'Director', nexusWelcomeTitle:'DraconDex', nexusWelcomeText:'选择一个模块以开始。',
     navigator:'Navigator', world:'世界', worldNew:'新建世界', worldChars:'角色', worldCats:'类别',
-    worldMaps:'地图', worldMapTimelines:'地图时间线', worldTimeline:'时间线', worldOverview:'概览', worldLinkedNovels:'关联小说',
+    worldMaps:'地图', worldMapTimelines:'地图时间线', worldTimeline:'时间线', worldOverview:'概览', worldOrig:'原创', worldLinkedNovels:'关联小说', worldOrigCats:'原创类别', worldDetails:'世界详情',
     worldTags:'标签', worldCharNew:'新建角色', worldCatNew:'新建类别', worldMapNew:'新建地图',
     worldMaptlNew:'新建时间线', worldEventNew:'新建事件', worldObjNew:'新建对象',
     worldCharLink:'链接到小说对象', worldCatLink:'链接到小说类别', worldMapLink:'链接到小说地图',
@@ -309,7 +309,8 @@ const S = {
   relListHeight:null,
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
   // Navigator module state
-  world:null, worldTab:'overview', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null,
+  world:null, worldTab:'original', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null,
+  worldOrigCat:null, worldOrigObject:null, worldOrigCatView:'list', worldNovelOpen:new Set(),
   worldCharCatFilter:{}, worldCatOpen:new Set(),
   // Hero module state
   game:null, gameTab:'overview',
@@ -583,7 +584,7 @@ function bindWindowChrome(){
 // mirroring Director's project-only icons (Timeline / Relation / Map / Tags).
 const MODULE_SUBNAV = {
   navigator: { setter:'setWorldTab', items:[
-    ['overview','list','worldOverview'], ['characters','person','worldChars'],
+    ['original','star','worldOrig'], ['characters','person','worldChars'],
     ['categories','layer','worldCats'], ['maps','map','worldMaps'],
     ['timeline','timeline','worldTimeline'] ] },
   hero: { setter:'setGameTab', items:[
@@ -767,8 +768,10 @@ async function switchEntityTab(key) {
   S.activeEntityTabKey = key;
   if (tab.type === 'world') {
     S.world = await api.world.get(tab.id);
-    S.worldTab = S.worldTab || 'overview';
+    S.worldTab = S.worldTab || 'original';
     S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
+    const ocats = await api.world.origCat.getAll(tab.id);
+    S.worldOrigCat = ocats[0] || null; S.worldOrigObject = null;
     await renderNavigatorView();
   } else if (tab.type === 'game') {
     S.game = await api.game.get(tab.id);
