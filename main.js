@@ -3,8 +3,23 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./database');
 
-// Ensure only one instance runs. The SQLite layer recovers from a stale lock dir
-// by deleting it on open, which is only safe if no other instance is using the DB.
+// Keep app data next to the executable for portable builds. In dev,
+// DRACONDEX_DATA_DIR overrides the location so automated drivers can run
+// against scratch data instead of tmp-user-data.
+const isPackaged = app.isPackaged;
+const portableRoot = process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(app.getPath('exe'));
+const tempDataPath = isPackaged
+  ? path.join(portableRoot, 'novel-manager-data')
+  : (process.env.DRACONDEX_DATA_DIR || path.join(__dirname, 'tmp-user-data'));
+if (!fs.existsSync(tempDataPath)) fs.mkdirSync(tempDataPath, { recursive: true });
+const electronUserDataPath = path.join(tempDataPath, 'electron-user-data');
+app.setPath('userData', electronUserDataPath);
+app.commandLine.appendSwitch('no-sandbox');
+
+// Ensure only one instance runs per data dir. The SQLite layer recovers from a
+// stale lock dir by deleting it on open, which is only safe if no other
+// instance is using the same DB. userData is set above so the lock is keyed to
+// the active data dir, letting an isolated test instance run alongside dev.
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 }
@@ -12,17 +27,6 @@ app.on('second-instance', () => {
   const win = BrowserWindow.getAllWindows()[0];
   if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
 });
-
-// Keep app data next to the executable for portable builds.
-const isPackaged = app.isPackaged;
-const portableRoot = process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(app.getPath('exe'));
-const tempDataPath = isPackaged
-  ? path.join(portableRoot, 'novel-manager-data')
-  : path.join(__dirname, 'tmp-user-data');
-if (!fs.existsSync(tempDataPath)) fs.mkdirSync(tempDataPath, { recursive: true });
-const electronUserDataPath = path.join(tempDataPath, 'electron-user-data');
-app.setPath('userData', electronUserDataPath);
-app.commandLine.appendSwitch('no-sandbox');
 
 
 function createWindow() {
