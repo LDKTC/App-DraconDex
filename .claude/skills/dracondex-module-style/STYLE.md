@@ -6,17 +6,20 @@ relative to the repo root.
 
 ## Files that matter (and one that doesn't)
 
+- `src/renderer/i18n.js` — i18n data: locale dict `const L` (13 languages),
+  `LANGUAGE_LABELS`, `COMMON_UI_TEXT`. Loaded before core.js.
 - `src/renderer/core.js` — app shell: nexus home, `selectModule()`, sidebar,
-  i18n dict `const L`, `t()`, `toast()`, `confirmBox()`, `openModal()`, icon
+  `t()`, `toast()`, `confirmBox()`, `openModal()`, icon
   dict `I`, escape helper `x()`, `loadModule()`.
 - `src/renderer/<module>.js` — one file per module (director, navigator, hero,
   writer, sage) + shared panels (modals, timeline, map, relation, hashtag, search).
 - `src/db/<module>.js` → spread into `database.js` → IPC in `main.js`
   (`h('group:method', fn)`) → exposed in `preload.js` (`inv('group:method')`)
   → called as `api.group.method()` in renderer.
-- **`renderer.js` at repo root is legacy and NOT loaded** — `index.html` loads
-  `src/renderer/core.js` + `director.js` + `modals.js` + `search.js`; other
-  modules lazy-load via `loadModule()`. Never edit root `renderer.js`.
+- `index.html` loads `src/renderer/i18n.js` + `core.js` + `director.js` +
+  `modals.js` + `search.js`; other modules lazy-load via `loadModule()`.
+  (The legacy root `renderer.js` was removed — all renderer code lives in
+  `src/renderer/`.)
 
 ## Design tokens — never hardcode colors
 

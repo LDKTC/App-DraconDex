@@ -67,8 +67,8 @@ What to compare (the shared chrome every module must have):
 
 ## Gotchas
 
-- **Root `renderer.js` is dead code** — not loaded by `index.html`. Style-fixing
-  it changes nothing; edit `src/renderer/*.js`.
+- All renderer code lives in `src/renderer/*.js` (the legacy root `renderer.js`
+  was removed in the architecture cleanup).
 - `t()` falls back to the raw key, so a key missing from `const L` renders
   literally (this exact bug shipped in writer.js — `t('cancel')` showed
   "cancel" until 2026-07-02). The checker catches it.
@@ -87,5 +87,5 @@ What to compare (the shared chrome every module must have):
   parser missed; check `preload.js` group braces are one-per-line (house
   format). All 276 current channels parse clean.
 - `locale 'xx' missing N key(s) vs en` warnings after you add keys → you added
-  to `en` only. Every locale block in `const L` (src/renderer/core.js) needs
+  to `en` only. Every locale block in `const L` (src/renderer/i18n.js) needs
   the key.

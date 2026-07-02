@@ -34,6 +34,7 @@ for (let i = 0; i < argv.length; i++) {
 }
 
 const coreSrc = read('src/renderer/core.js');
+const i18nSrc = read('src/renderer/i18n.js');
 const preloadSrc = read('preload.js');
 const mainSrc = read('main.js');
 const indexSrc = read('index.html');
@@ -73,7 +74,7 @@ const mainChannels = new Set();
 for (const m of mainSrc.matchAll(/\bh\('([^']+)'/g)) mainChannels.add(m[1]);
 for (const m of mainSrc.matchAll(/ipcMain\.(?:handle|on)\('([^']+)'/g)) mainChannels.add(m[1]);
 
-// --- parse i18n dict L in core.js ---
+// --- parse i18n dict L in src/renderer/i18n.js ---
 function parseLocales(src) {
   const start = src.indexOf('const L = {');
   const locales = {}; // name -> Set(keys)
@@ -92,7 +93,7 @@ function parseLocales(src) {
   }
   return locales;
 }
-const locales = parseLocales(coreSrc);
+const locales = parseLocales(i18nSrc);
 const localeNames = Object.keys(locales);
 
 // --- CSS classes defined in style.css ---
@@ -180,7 +181,7 @@ for (const file of targets) {
   // Thai literals = untranslated UI strings
   const thai = [];
   lines.forEach((l, i) => { if (/[฀-๿]/.test(l)) thai.push(i + 1); });
-  if (thai.length) warn(`${thai.length} line(s) with hardcoded Thai text (use t() + add key to all locales in core.js): L${thai.slice(0, 8).join(' L')}${thai.length > 8 ? ' …' : ''}`);
+  if (thai.length) warn(`${thai.length} line(s) with hardcoded Thai text (use t() + add key to all locales in src/renderer/i18n.js): L${thai.slice(0, 8).join(' L')}${thai.length > 8 ? ' …' : ''}`);
 
   // CSS classes used but not defined in style.css
   const unknown = new Set();

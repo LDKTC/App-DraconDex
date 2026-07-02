@@ -96,7 +96,7 @@ npm run build:portable   # electron-builder → DraconDexPortable/DraconDex <ver
 ## Finding selectors
 
 `index.html` is mostly empty shells — the renderer builds all UI at runtime.
-Grep `renderer.js` and `src/renderer/*.js` for `onclick=` to find handlers;
+Grep `src/renderer/*.js` for `onclick=` to find handlers;
 attribute selectors like `button[onclick='openProjectModal()']` are the most
 robust click targets. Modal input ids are short (`#pn` project name, `#fn`
 folder name, `#cn` category, `#on` object — see `src/renderer/modals.js`).

@@ -2,7 +2,7 @@
 
 ## Repo shape
 - **Not a React design-system repo.** DraconDex is an Electron desktop app written
-  in vanilla JS (`renderer.js`, `src/renderer/*.js`). UI is built by string-
+  in vanilla JS (`src/renderer/*.js`). UI is built by string-
   templating HTML in JS; styled by one global `style.css` + inline SVG icons.
 - No `dist/` of components, no `.d.ts`, no esbuild-able component exports, no
   Storybook. The converter (`package-build.mjs`) cannot run here.

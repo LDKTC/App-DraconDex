@@ -11,7 +11,6 @@ Step 1: After you download program of this file in your device
         ,package.json
         ,package-lock.json
         ,preload.js
-        ,renderer.js
         ,start.js
         ,Style.css
 

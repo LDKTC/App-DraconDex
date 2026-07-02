@@ -28,7 +28,6 @@
       "index.html",
       "main.js",
       "preload.js",
-      "renderer.js",
       "style.css",
       "database.js",
       "package.json",
