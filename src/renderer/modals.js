@@ -23,20 +23,23 @@ async function openProjectModal(id=null){
     <div class="fg"><label>สี</label>${await colorPicker(p?.project_color)}</div>
     ${await hashtagSelector('proj', pTags)}
     <div class="mfoot">${p?`<button class="btn btn-d" onclick="delProject(${id})">ลบโปรเจกต์</button>`:''}<button class="btn btn-s" onclick="closeModal()">ยกเลิก</button><button class="btn btn-p" onclick="${p?'saveProject('+id+')':'createProject()'}">${p?'บันทึก':'สร้าง'}</button></div>`);
-  setTimeout(()=>q('#pn').focus(),60);
+  setTimeout(()=>{
+    q('#pn').focus();
+    renderModalTagSuggestions('proj');
+  },60);
 }
 async function createProject(){
   const n=q('#pn').value.trim(); if(!n) return;
   const r=await api.project.create({name:n,codename:q('#pc').value.trim()||null,memo:q('#pm').value.trim(),folderId:q('#pf').value||null,colorId:q('#sel-color').value||null});
   // set tags
-  const tags = Array.from(document.querySelectorAll('[id^="proj-tag-"]:checked')).map(i=>parseInt(i.value,10));
+  const tags = getModalTagIds('proj');
   if(r?.lastInsertRowid) await api.project.setTags(r.lastInsertRowid,tags);
   closeModal(); await reloadSidebar(); await selectProject(r.lastInsertRowid); toast('สร้างโปรเจกต์แล้ว','ok');
 }
 async function saveProject(id){
   const n=q('#pn').value.trim(); if(!n) return;
   await api.project.update(id,{name:n,codename:q('#pc').value.trim()||null,memo:q('#pm').value.trim(),folderId:q('#pf').value||null,colorId:q('#sel-color').value||null});
-  const tags = Array.from(document.querySelectorAll('[id^="proj-tag-"]:checked')).map(i=>parseInt(i.value,10));
+  const tags = getModalTagIds('proj');
   await api.project.setTags(id,tags);
   closeModal();
   const updated = await api.project.get(id);
@@ -215,7 +218,10 @@ async function openEventModal(tlid,evId=null){
     ${await hashtagSelector('ev', evTags)}
     ${evId ? '<div id="ev-tl-links-wrap"></div>' : ''}
     <div class="mfoot">${ev?`<button class="btn btn-d" onclick="delEvent(${evId},${tlid})">ลบ</button>`:''}<button class="btn btn-s" onclick="closeModal()">ยกเลิก</button><button class="btn btn-p" onclick="${ev?`saveEvent(${evId},${tlid})`:`createTimelineEvent(${tlid})`}">${ev?'บันทึก':'สร้าง'}</button></div>`);
-  setTimeout(()=>q('#ev-n').focus(),60);
+  setTimeout(()=>{
+    q('#ev-n').focus();
+    renderModalTagSuggestions('ev');
+  },60);
   if(evId) refreshEventLinksSection(evId, tlid);
 }
 
@@ -294,7 +300,7 @@ async function createTimelineEvent(tlid){
     const eid=await getDateFromInputs('ev-e');
     const story=q('#ev-story')?.value.trim()||'';
     const r = await api.timeline.createEvent(tlid,n,sid,eid,q('#sel-color').value||null,story);
-    const tags = Array.from(document.querySelectorAll('[id^="ev-tag-"]:checked')).map(i=>parseInt(i.value,10));
+    const tags = getModalTagIds('ev');
     if(r?.lastInsertRowid) await api.timeline.setEventTags(r.lastInsertRowid,tags);
     closeModal(); await renderTimelineDetail(tlid); toast('เพิ่มเหตุการณ์แล้ว','ok');
   }catch(e){ toast(e.message,'err'); console.error(e); }
@@ -307,7 +313,7 @@ async function saveEvent(evId,tlid){
     const eid=await getDateFromInputs('ev-e');
     const story=q('#ev-story')?.value.trim()||'';
     await api.timeline.updateEvent(evId,n,sid,eid,q('#sel-color').value||null,story);
-    const tags = Array.from(document.querySelectorAll('[id^="ev-tag-"]:checked')).map(i=>parseInt(i.value,10));
+    const tags = getModalTagIds('ev');
     await api.timeline.setEventTags(evId,tags);
     closeModal(); await renderTimelineDetail(tlid); toast('บันทึกเรียบร้อยแล้ว','ok');
   }catch(e){ toast(e.message,'err'); console.error(e); }

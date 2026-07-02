@@ -163,6 +163,13 @@ contextBridge.exposeInMainWorld('api', {
       delete:  (id)     => inv('world:delDesc', id),
     },
 
+    getTags:                 (wid)           => inv('world:getTags', wid),
+    setTags:                 (wid,tags)      => inv('world:setTags', wid,tags),
+    getCharTags:             (cid)           => inv('world:getCharTags', cid),
+    setCharTags:             (cid,tags)      => inv('world:setCharTags', cid,tags),
+    getAllUsedTags:          (wid)           => inv('world:getAllUsedTags', wid),
+    getCharactersByTag:      (tid,wid)       => inv('world:getCharactersByTag', tid,wid),
+
     getCharacters:           (wid)           => inv('world:getCharacters', wid),
     createCharacter:         (wid,n,sym,c)   => inv('world:createCharacter', wid,n,sym,c),
     updateCharacter:         (id,n,sym,c)    => inv('world:updateCharacter', id,n,sym,c),

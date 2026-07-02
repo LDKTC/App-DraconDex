@@ -5,7 +5,7 @@
 // index.html (data-worldtab="original"|"chars-cats"|"maps-timeline"). 'chars-cats' and
 // 'maps-timeline' each fold two of the old 5 tabs together (see setWorldCharCatSub /
 // the map-timeline board below).
-const WORLD_TABS = ['original', 'chars-cats', 'maps-timeline'];
+const WORLD_TABS = ['original', 'chars-cats', 'maps-timeline', 'tags'];
 
 // When a world is active the navigator mirrors the Director project view:
 // a rich left sidebar + a main "cat pack" work area. When no world is active
@@ -54,6 +54,7 @@ async function selectWorld(id) {
   S.worldMapOpen = S.worldMapOpen || new Set();
   S.worldActiveTimelineId = null;
   S.worldActiveEventId = null;
+  S.worldHashtagId = null;
   if (S.world) {
     const ocats = await api.world.origCat.getAll(S.world.id);
     S.worldOrigCat = ocats[0] || null;
@@ -98,7 +99,22 @@ async function renderWorldSidebar(world) {
     ${w.codename ? `<div class="project-side-code">${x(w.codename)}</div>` : ''}
   </div>`;
 
-  if (S.worldTab === 'chars-cats') {
+  if (S.worldTab === 'tags') {
+    // ── Used tags (mirror of Director's project-hashtag sidebar) ──
+    const tags = await api.world.getAllUsedTags(w.id);
+    h += `<div class="ph compact"><h4>${t('worldTags')}</h4></div>`;
+    if (tags.length) {
+      h += tags.map(tg => {
+        const tc = tg.color_code || '#6366f1';
+        const act = S.worldHashtagId === tg.id;
+        return `<div class="li ${act ? 'active' : ''}" onclick="selectWorldHashtag(${tg.id})">
+          <span class="hn" style="color:${tc};font-weight:700">#${x(tg.tag_name)}</span>
+        </div>`;
+      }).join('');
+    } else {
+      h += `<div class="empty project-side-empty"><p>No tags used in this world yet</p></div>`;
+    }
+  } else if (S.worldTab === 'chars-cats') {
     const novels = await api.world.getNovels(w.id);
     // ── Linked Novels (folders → novel categories, with a per-novel char-cat fav) ──
     h += `<div class="ph compact"><h4>${t('worldLinkedNovels')}</h4>
@@ -250,8 +266,60 @@ async function renderWorldMain() {
       q('#world-tab-body').innerHTML = `<div class="empty"><div class="ei">${I.map}</div><h3>Select a timeline</h3>
         <p style="color:var(--t3)">Pick a map from the left panel, then one of its timelines.</p></div>`;
     }
+  } else if (S.worldTab === 'tags') {
+    // ── World Tags detail (mirror of Director's renderProjectHashtagView) ──
+    const tags = await api.world.getAllUsedTags(w.id);
+    if (S.worldHashtagId && !tags.find(tg => tg.id === S.worldHashtagId)) S.worldHashtagId = null;
+    if (!S.worldHashtagId) {
+      h += `<div class="empty"><div class="ei">${I.hashtag}</div><h3>${t('worldTags')}</h3>
+        <p style="color:var(--t3)">Select a tag to see what uses it in this world.</p></div>`;
+    } else {
+      const tag = tags.find(tg => tg.id === S.worldHashtagId);
+      const [chars, worldTags] = await Promise.all([
+        api.world.getCharactersByTag(S.worldHashtagId, w.id),
+        api.world.getTags(w.id),
+      ]);
+      const tc = tag?.color_code || '#6366f1';
+      const onWorld = worldTags.some(tg => tg.id === S.worldHashtagId);
+      const total = chars.length + (onWorld ? 1 : 0);
+      h += `<div class="ch"><span class="hn" style="color:${tc};font-size:1.4em;font-weight:700">#${x(tag?.tag_name || '')}</span>
+        <span style="font-size:12px;color:var(--t3);margin-left:8px">${total} items</span>
+      </div>`;
+      if (!total) {
+        h += `<div class="empty"><div class="ei">${I.hashtag}</div><h3>Nothing uses this tag yet</h3></div>`;
+      } else {
+        const secHead = (label) => `<div style="padding:4px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${label}</div>`;
+        if (onWorld) {
+          h += secHead(`${t('world')} (1)`);
+          h += `<div class="objlist"><div class="objrow" onclick="openWorldModal(${w.id})">
+            <div class="odot" style="background:${col}"></div>
+            <div style="flex:1;min-width:0"><div class="oname">${x(w.name)}</div>
+            ${w.codename ? `<div style="font-size:12px;color:var(--t3);margin-top:2px">${x(w.codename)}</div>` : ''}</div>
+          </div></div>`;
+        }
+        if (chars.length) {
+          h += secHead(`${t('worldChars')} (${chars.length})`);
+          h += `<div class="objlist">`;
+          for (const c of chars) {
+            const cc = c.color_code || '#6366f1';
+            h += `<div class="objrow" onclick="openWorldCharModal(${w.id},${c.id})">
+              <div class="odot" style="background:${cc}"></div>
+              <div style="flex:1;min-width:0"><div class="oname">${c.symbol ? `${x(c.symbol)} ` : ''}${x(c.name)}</div></div>
+            </div>`;
+          }
+          h += `</div>`;
+        }
+      }
+    }
+    q('#main-inner').innerHTML = h;
   }
   updateTopNavButton();
+}
+
+async function selectWorldHashtag(tagId) {
+  S.worldHashtagId = tagId;
+  await renderWorldMain();
+  await renderWorldSidebar(S.world);
 }
 
 async function setWorldCharCatSub(sub) {
@@ -268,7 +336,7 @@ async function setWorldCharCatTab(sub) {
 
 function worldTabLabel(tab) {
   const map = {
-    original: t('worldOrig'), 'chars-cats': t('worldCharsCats'), 'maps-timeline': t('worldMapTimelines'),
+    original: t('worldOrig'), 'chars-cats': t('worldCharsCats'), 'maps-timeline': t('worldMapTimelines'), tags: t('worldTags'),
   };
   return map[tab] || tab;
 }
@@ -291,17 +359,20 @@ async function selectWorldOrigCat(id) {
 async function openWorldModal(id) {
   const isEdit = !!id;
   const w = isEdit ? (await api.world.get(id)) : null;
+  const wTags = isEdit ? await api.world.getTags(id) : [];
   const picker = await colorPicker(w?.color || null);
   openModal(isEdit ? 'Edit World' : 'New World', `
     <div class="form-row"><label>Codename</label><input id="wm-code" value="${x(w?.codename || '')}" placeholder="e.g. AAA"></div>
     <div class="form-row"><label>Name *</label><input id="wm-name" value="${x(w?.name || '')}" placeholder="World name"></div>
     <div class="form-row"><label>Memo</label><textarea id="wm-memo" rows="3" style="width:100%;resize:vertical">${x(w?.memo || '')}</textarea></div>
     <div class="form-row"><label>Color</label>${picker}</div>
+    ${await hashtagSelector('world', wTags)}
     ${isEdit ? `<button class="btn btn-danger" style="margin-top:8px" onclick="deleteWorld(${id})">Delete World</button>` : ''}
     <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
       <button class="btn btn-p" onclick="saveWorld(${id || 'null'})">${isEdit ? 'Save' : 'Create'}</button>
     </div>`);
+  setTimeout(() => renderModalTagSuggestions('world'), 60);
 }
 
 async function saveWorld(id) {
@@ -310,12 +381,17 @@ async function saveWorld(id) {
   const code = q('#wm-code')?.value?.trim() || null;
   const memo = q('#wm-memo')?.value?.trim() || null;
   const color = q('#sel-color')?.value || null;
+  const tags = getModalTagIds('world');
   if (id) {
     await api.world.update(id, code, name, memo, color);
+    await api.world.setTags(id, tags);
     S.world = await api.world.get(id);
   } else {
     const newId = await api.world.create(code, name, memo, color);
-    if (newId) S.world = await api.world.get(newId);
+    if (newId) {
+      await api.world.setTags(newId, tags);
+      S.world = await api.world.get(newId);
+    }
   }
   closeModal();
   await renderNavigatorView();
@@ -780,15 +856,18 @@ async function openWorldCharModal(worldId, id) {
   const isEdit = !!id;
   let c = null;
   if (isEdit) { const chars = await api.world.getCharacters(worldId); c = chars.find(ch => ch.id === id); }
+  const cTags = isEdit ? await api.world.getCharTags(id) : [];
   const picker = await colorPicker(c?.color || null);
   openModal(isEdit ? 'Edit Character' : 'New Character', `
     <div class="form-row"><label>Name *</label><input id="wcm-name" value="${x(c?.name || '')}"></div>
     <div class="form-row"><label>Symbol</label><input id="wcm-sym" value="${x(c?.symbol || '')}" placeholder="e.g. ⚔️"></div>
     <div class="form-row"><label>Color</label>${picker}</div>
+    ${await hashtagSelector('wchar', cTags)}
     <div class="mfoot">
       <button class="btn btn-g" onclick="closeModal()">Cancel</button>
       <button class="btn btn-p" onclick="saveWorldChar(${worldId},${id || 'null'})">${isEdit ? 'Save' : 'Create'}</button>
     </div>`);
+  setTimeout(() => renderModalTagSuggestions('wchar'), 60);
 }
 
 async function saveWorldChar(worldId, id) {
@@ -796,10 +875,18 @@ async function saveWorldChar(worldId, id) {
   if (!name) return toast('Name required', 'err');
   const sym = q('#wcm-sym')?.value?.trim() || null;
   const color = q('#sel-color')?.value || null;
-  if (id) await api.world.updateCharacter(id, name, sym, color);
-  else await api.world.createCharacter(worldId, name, sym, color);
+  const tags = getModalTagIds('wchar');
+  if (id) {
+    await api.world.updateCharacter(id, name, sym, color);
+    await api.world.setCharTags(id, tags);
+  } else {
+    const newId = await api.world.createCharacter(worldId, name, sym, color);
+    if (newId) await api.world.setCharTags(newId, tags);
+  }
   closeModal();
-  await setWorldCharCatTab('characters');
+  // Editing straight from the Tags tab stays there instead of jumping to chars-cats.
+  if (S.worldTab === 'tags') { await renderWorldMain(); await renderWorldSidebar(S.world); }
+  else await setWorldCharCatTab('characters');
 }
 
 async function deleteWorldChar(worldId, id) {

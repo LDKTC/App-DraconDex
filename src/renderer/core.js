@@ -966,7 +966,7 @@ const S = {
   relListHeight:null,
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
   // Navigator module state
-  world:null, worldTab:'original', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null,
+  world:null, worldTab:'original', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null, worldHashtagId:null,
   worldOrigCat:null, worldOrigObject:null, worldOrigCatView:'list', worldNovelOpen:new Set(),
   worldCharCatFilter:{}, worldCatOpen:new Set(), worldMapTool:null,
   // Hero module state
@@ -1222,7 +1222,7 @@ function translateStaticChrome(){
   q('#win-max')?.setAttribute('title', t('maximize'));
   q('#win-close')?.setAttribute('title', t('close'));
   q('#search-input')?.setAttribute('placeholder', t('search'));
-  const worldTabTitleKeys = { 'original':'navigator', 'chars-cats':'worldCharsCats', 'maps-timeline':'worldMapTimelines' };
+  const worldTabTitleKeys = { 'original':'navigator', 'chars-cats':'worldCharsCats', 'maps-timeline':'worldMapTimelines', 'tags':'worldTags' };
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn => {
     if(btn.dataset.worldtab){
       btn.setAttribute('title', t(worldTabTitleKeys[btn.dataset.worldtab] || 'navigator'));

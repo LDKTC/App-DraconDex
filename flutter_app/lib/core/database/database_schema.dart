@@ -355,6 +355,22 @@ CREATE TABLE IF NOT EXISTS world_timeline_object (
   UNIQUE(event_ref, point_ref)
 )''';
 
+// Navigator tags (v2.5.7) — mirror of Director's project_hashtag/object_hashtag,
+// sharing the same global hashtag table.
+const String createWorldTag = '''
+CREATE TABLE IF NOT EXISTS world_tag (
+  world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+  hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+  UNIQUE(world_ref, hashtag_id)
+)''';
+
+const String createWorldCharactorTag = '''
+CREATE TABLE IF NOT EXISTS world_charactor_tag (
+  character_ref INTEGER NOT NULL REFERENCES world_character(id) ON DELETE CASCADE,
+  hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+  UNIQUE(character_ref, hashtag_id)
+)''';
+
 const List<String> worldCreateStatements = [
   createWorldProject,
   createWorldNovel,
@@ -371,6 +387,8 @@ const List<String> worldCreateStatements = [
   createWorldTimelineEvent,
   createWorldTimelinePoint,
   createWorldTimelineObject,
+  createWorldTag,
+  createWorldCharactorTag,
 ];
 
 const List<String> defaultColors = [

@@ -7,16 +7,16 @@ v2.5.7 plan
 
 done Add world_tag + world_charactor_tag tables to SQLite schema (Electron + Flutter parity)
 
-Add tag DB functions to src/db/navigator.js
+done Add tag DB functions to src/db/navigator.js
 
-Wire IPC handlers (main.js) and API (preload.js)
+done Wire IPC handlers (main.js) and API (preload.js)
 
-Add nav-rail Tags button for Navigator (index.html + core.js title map)
+done Add nav-rail Tags button for Navigator (index.html + core.js title map)
 
-Implement world Tags tab (sidebar + main view) in renderer/navigator.js
+done Implement world Tags tab (sidebar + main view) in renderer/navigator.js
 
-Add tag selectors to World and Character modals
+done Add tag selectors to World and Character modals
 
-Fix stale checkbox tag readers in modals.js (project/event save wipes tags)
+done Fix stale checkbox tag readers in modals.js (project/event save wipes tags)
 
-Bump version to 2.5.7 and verify app runs
+done Bump version to 2.5.7 and verify app runs
