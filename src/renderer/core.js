@@ -52,6 +52,9 @@ const UI_SIZE_STEP = 5;
 const L = {
   en: {
     settings:'Settings', theme:'Theme', language:'Language', uiSize:'UI Size', cancel:'Cancel',
+    gameCollections:'Collections', gameCollectionNew:'New Collection', gameElementNew:'New Element',
+    gameConversations:'Conversations', gameConvNew:'Add Conversation', gameAddEdge:'Link Dialogue',
+    gameSelectNovel:'Select Novel', gameImportObj:'Add to game', gameFields:'Fields', gameLevel:'Level',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -89,6 +92,9 @@ const L = {
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
+    gameCollections:'コレクション', gameCollectionNew:'新規コレクション', gameElementNew:'新規エレメント',
+    gameConversations:'会話', gameConvNew:'会話を追加', gameAddEdge:'ダイアログを接続',
+    gameSelectNovel:'小説を選択', gameImportObj:'ゲームに追加', gameFields:'フィールド', gameLevel:'レベル',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -126,6 +132,9 @@ const L = {
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
+    gameCollections:'컬렉션', gameCollectionNew:'새 컬렉션', gameElementNew:'새 엘리먼트',
+    gameConversations:'대화', gameConvNew:'대화 추가', gameAddEdge:'다이얼로그 연결',
+    gameSelectNovel:'소설 선택', gameImportObj:'게임에 추가', gameFields:'필드', gameLevel:'레벨',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -163,6 +172,9 @@ const L = {
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
+    gameCollections:'คอลเลกชัน', gameCollectionNew:'คอลเลกชันใหม่', gameElementNew:'เพิ่ม Element',
+    gameConversations:'บทสนทนา', gameConvNew:'เพิ่มบทสนทนา', gameAddEdge:'เชื่อม Dialogue',
+    gameSelectNovel:'เลือกนิยาย', gameImportObj:'เพิ่มเข้าเกม', gameFields:'Fields', gameLevel:'เลเวล',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -200,6 +212,9 @@ const L = {
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
+    gameCollections:'收藏集', gameCollectionNew:'新建收藏集', gameElementNew:'新建元素',
+    gameConversations:'对话', gameConvNew:'添加对话', gameAddEdge:'连接对话节点',
+    gameSelectNovel:'选择小说', gameImportObj:'添加到游戏', gameFields:'字段', gameLevel:'等级',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -237,6 +252,9 @@ const L = {
   },
   vi: {
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
+    gameCollections:'Bộ sưu tập', gameCollectionNew:'Bộ sưu tập mới', gameElementNew:'Element mới',
+    gameConversations:'Hội thoại', gameConvNew:'Thêm hội thoại', gameAddEdge:'Nối Dialogue',
+    gameSelectNovel:'Chọn tiểu thuyết', gameImportObj:'Thêm vào game', gameFields:'Trường', gameLevel:'Cấp độ',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -274,6 +292,9 @@ const L = {
   },
   id: {
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
+    gameCollections:'Koleksi', gameCollectionNew:'Koleksi Baru', gameElementNew:'Elemen Baru',
+    gameConversations:'Percakapan', gameConvNew:'Tambah Percakapan', gameAddEdge:'Hubungkan Dialog',
+    gameSelectNovel:'Pilih Novel', gameImportObj:'Tambah ke game', gameFields:'Bidang', gameLevel:'Level',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -311,6 +332,9 @@ const L = {
   },
   es: {
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
+    gameCollections:'Colecciones', gameCollectionNew:'Nueva colección', gameElementNew:'Nuevo elemento',
+    gameConversations:'Conversaciones', gameConvNew:'Añadir conversación', gameAddEdge:'Enlazar diálogo',
+    gameSelectNovel:'Elegir novela', gameImportObj:'Añadir al juego', gameFields:'Campos', gameLevel:'Nivel',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -348,6 +372,9 @@ const L = {
   },
   pt: {
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
+    gameCollections:'Coleções', gameCollectionNew:'Nova coleção', gameElementNew:'Novo elemento',
+    gameConversations:'Conversas', gameConvNew:'Adicionar conversa', gameAddEdge:'Ligar diálogo',
+    gameSelectNovel:'Escolher romance', gameImportObj:'Adicionar ao jogo', gameFields:'Campos', gameLevel:'Nível',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -385,6 +412,9 @@ const L = {
   },
   fr: {
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
+    gameCollections:'Collections', gameCollectionNew:'Nouvelle collection', gameElementNew:'Nouvel élément',
+    gameConversations:'Conversations', gameConvNew:'Ajouter une conversation', gameAddEdge:'Lier le dialogue',
+    gameSelectNovel:'Choisir un roman', gameImportObj:'Ajouter au jeu', gameFields:'Champs', gameLevel:'Niveau',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -422,6 +452,9 @@ const L = {
   },
   de: {
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
+    gameCollections:'Sammlungen', gameCollectionNew:'Neue Sammlung', gameElementNew:'Neues Element',
+    gameConversations:'Gespräche', gameConvNew:'Gespräch hinzufügen', gameAddEdge:'Dialog verbinden',
+    gameSelectNovel:'Roman wählen', gameImportObj:'Zum Spiel hinzufügen', gameFields:'Felder', gameLevel:'Stufe',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -459,6 +492,9 @@ const L = {
   },
   ru: {
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
+    gameCollections:'Коллекции', gameCollectionNew:'Новая коллекция', gameElementNew:'Новый элемент',
+    gameConversations:'Разговоры', gameConvNew:'Добавить разговор', gameAddEdge:'Связать диалог',
+    gameSelectNovel:'Выбрать роман', gameImportObj:'Добавить в игру', gameFields:'Поля', gameLevel:'Уровень',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -496,6 +532,9 @@ const L = {
   },
   qd: {
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
+    gameCollections:'Kolvexa', gameCollectionNew:'Kolvexa Nyr', gameElementNew:'Elym Nyr',
+    gameConversations:'Vorlakks', gameConvNew:'Vorlakk Zenn', gameAddEdge:'Dialyth Vynk',
+    gameSelectNovel:'Novyth Choozz', gameImportObj:'Zenn ta Gamyth', gameFields:'Feldyra', gameLevel:'Skaalyth',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -970,7 +1009,7 @@ const S = {
   worldOrigCat:null, worldOrigObject:null, worldOrigCatView:'list', worldNovelOpen:new Set(),
   worldCharCatFilter:{}, worldCatOpen:new Set(), worldMapTool:null,
   // Hero module state
-  game:null, gameTab:'overview',
+  game:null, gameTab:'project',
   // Writer module state
   library:null, libraryTab:'overview', librarySeries:null, librarySeriesTab:'docs', libraryDoc:null,
   // Sage module state
@@ -1315,9 +1354,8 @@ function bindWindowChrome(){
 // are only 3 of them and the first one doubles as the module's main nav-rail button.
 const MODULE_SUBNAV = {
   hero: { setter:'setGameTab', items:[
-    ['overview','list','gameOverview'], ['characters','person','gameChars'],
-    ['items','item','gameItems'], ['story','story','gameStory'],
-    ['functions','func','gameFunctions'], ['tags','hashtag','gameTags'] ] },
+    ['novel','relation','gameNovelLink'], ['story','story','gameStory'],
+    ['tags','hashtag','gameTags'] ] },
   writer: { setter:'setLibraryTab', items:[
     ['overview','list','libraryOverview'], ['series','series','librarySeries'],
     ['tags','hashtag','libraryTags'] ] },
@@ -1385,6 +1423,9 @@ function updateTopNavButton(){
   });
   document.querySelectorAll('.nav-btn.hero-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'hero') ? '' : 'none';
+    // With a game active the Hero rail button doubles as the "project"
+    // submodule (characters + collections), mirroring Navigator's first tab.
+    btn.classList.toggle('active', S.activeModule === 'hero' && !!S.game && S.gameTab === 'project');
   });
   document.querySelectorAll('.nav-btn.writer-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'writer') ? '' : 'none';
@@ -1504,7 +1545,7 @@ async function switchEntityTab(key) {
     await renderNavigatorView();
   } else if (tab.type === 'game') {
     S.game = await api.game.get(tab.id);
-    S.gameTab = S.gameTab || 'overview';
+    S.gameTab = S.gameTab || 'project';
     await renderHeroView();
   } else if (tab.type === 'library') {
     S.library = tab.id;
@@ -1851,6 +1892,7 @@ function bindNav() {
   q('#nav-logo-btn')?.addEventListener('click', () => {
     if(S.project) returnToProjectList();
     else if(S.world) goToNavigatorList();
+    else if(S.game && S.activeModule === 'hero' && typeof goToGameList === 'function') goToGameList();
     else if(S.activeModule) returnToNexus();
   });
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn=>{
@@ -1987,7 +2029,7 @@ function selectModule(name) {
     loadModule('src/renderer/navigator.js').then(() => renderNavigatorView());
   } else if (name === 'hero') {
     S.view = 'hero';
-    S.game = null; S.gameTab = 'overview';
+    S.game = null; S.gameTab = 'project';
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
     q('.nav-btn[data-panel="hero"]')?.classList.add('active');
     updateTopNavButton();
@@ -2014,7 +2056,7 @@ function returnToNexus() {
   S.timeline = null; S.map = null; S.mapAreaId = null;
   S.activeProjectTabId = null; S.projectHashtagId = null;
   S.world = null; S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
-  S.game = null; S.gameTab = 'overview';
+  S.game = null; S.gameTab = 'project';
   S.library = null; S.libraryTab = 'overview'; S.librarySeries = null; S.librarySeriesTab = 'docs'; S.libraryDoc = null;
   S.view = 'nexus';
   renderProjectTabs();

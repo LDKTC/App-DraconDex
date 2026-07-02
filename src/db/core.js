@@ -540,20 +540,13 @@ function initDB() {
       UNIQUE(character_ref,hashtag_id)
     );
 
-    -- Hero (v2.3) --
+    -- Hero (v2.6) --
     CREATE TABLE IF NOT EXISTS game_project (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codename TEXT,
       name TEXT NOT NULL,
       memo TEXT,
       color_ref INTEGER REFERENCES use_color(id),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS game_description (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
-      title TEXT,
-      content TEXT,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -565,82 +558,92 @@ function initDB() {
       UNIQUE(game_ref)
     );
 
+    CREATE TABLE IF NOT EXISTS game_category (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      category_ref INTEGER NOT NULL REFERENCES object_category(id) ON DELETE CASCADE,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(game_ref,category_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_cat_object (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      gamecat_ref INTEGER NOT NULL REFERENCES game_category(id) ON DELETE CASCADE,
+      object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(gamecat_ref,object_ref)
+    );
+
     CREATE TABLE IF NOT EXISTS game_character (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      object_link INTEGER REFERENCES game_cat_object(id) ON DELETE SET NULL,
       name TEXT NOT NULL,
       memo TEXT,
+      color_ref INTEGER REFERENCES use_color(id),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS game_char_link (
+    CREATE TABLE IF NOT EXISTS game_char_template (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      char_ref INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
-      project_ref INTEGER REFERENCES project(id) ON DELETE SET NULL,
-      category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL,
-      object_ref INTEGER REFERENCES object(id) ON DELETE SET NULL,
-      UNIQUE(char_ref)
-    );
-
-    CREATE TABLE IF NOT EXISTS game_stat_template (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      char_ref INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
-      stat_name TEXT NOT NULL,
-      stat_type TEXT DEFAULT 'number',
+      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
+      attribute_name TEXT NOT NULL,
+      attribute_type TEXT NOT NULL DEFAULT 'text',
+      levelable INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS game_stat_levelup (
+    CREATE TABLE IF NOT EXISTS game_char_attribute (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       char_ref INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
-      template_ref INTEGER NOT NULL REFERENCES game_stat_template(id) ON DELETE CASCADE,
-      level INTEGER NOT NULL DEFAULT 1,
-      value TEXT,
+      template_ref INTEGER NOT NULL REFERENCES game_char_template(id) ON DELETE CASCADE,
+      attribute_text TEXT,
+      level INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(char_ref,template_ref,level)
     );
 
-    CREATE TABLE IF NOT EXISTS game_char_hashtag (
-      char_id INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
-      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
-      UNIQUE(char_id,hashtag_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS game_item_category (
+    CREATE TABLE IF NOT EXISTS game_collection (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
-      memo TEXT,
+      color_ref INTEGER REFERENCES use_color(id),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS game_item_template (
+    CREATE TABLE IF NOT EXISTS game_col_template (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      item_cat_ref INTEGER NOT NULL REFERENCES game_item_category(id) ON DELETE CASCADE,
-      attr_name TEXT NOT NULL,
-      attr_type TEXT DEFAULT 'text',
+      collection_ref INTEGER NOT NULL REFERENCES game_collection(id) ON DELETE CASCADE,
+      attribute_name TEXT NOT NULL,
+      attribute_type TEXT NOT NULL DEFAULT 'text',
+      levelable INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS game_item (
+    CREATE TABLE IF NOT EXISTS game_col_element (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      item_cat_ref INTEGER NOT NULL REFERENCES game_item_category(id) ON DELETE CASCADE,
+      collection_ref INTEGER NOT NULL REFERENCES game_collection(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
-      symbol TEXT,
+      color_ref INTEGER REFERENCES use_color(id),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS game_item_attr (
+    CREATE TABLE IF NOT EXISTS game_col_attribute (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      item_ref INTEGER NOT NULL REFERENCES game_item(id) ON DELETE CASCADE,
-      template_ref INTEGER NOT NULL REFERENCES game_item_template(id) ON DELETE CASCADE,
-      value TEXT,
-      UNIQUE(item_ref,template_ref)
+      element_ref INTEGER NOT NULL REFERENCES game_col_element(id) ON DELETE CASCADE,
+      template_ref INTEGER NOT NULL REFERENCES game_col_template(id) ON DELETE CASCADE,
+      attribute_text TEXT,
+      level INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(element_ref,template_ref,level)
     );
 
-    CREATE TABLE IF NOT EXISTS game_item_hashtag (
-      item_id INTEGER NOT NULL REFERENCES game_item(id) ON DELETE CASCADE,
-      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
-      UNIQUE(item_id,hashtag_id)
+    CREATE TABLE IF NOT EXISTS game_char_element (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      char_ref INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
+      element_ref INTEGER NOT NULL REFERENCES game_col_element(id) ON DELETE CASCADE,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(char_ref,element_ref)
     );
 
     CREATE TABLE IF NOT EXISTS game_story (
@@ -648,6 +651,7 @@ function initDB() {
       game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       memo TEXT,
+      color_ref INTEGER REFERENCES use_color(id),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -656,51 +660,48 @@ function initDB() {
       story_ref INTEGER NOT NULL REFERENCES game_story(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       memo TEXT,
+      color_ref INTEGER REFERENCES use_color(id),
       pos_x REAL DEFAULT 0,
       pos_y REAL DEFAULT 0,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS game_dial_next (
+    CREATE TABLE IF NOT EXISTS game_conversation (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dialogue_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
+      char_ref INTEGER REFERENCES game_character(id) ON DELETE SET NULL,
+      talk_sentence TEXT,
+      talk_order INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(dialogue_ref,talk_order)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_storyline (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      story_ref INTEGER NOT NULL REFERENCES game_story(id) ON DELETE CASCADE,
       from_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
       to_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
-      condition TEXT,
+      color_ref INTEGER REFERENCES use_color(id),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(from_ref,to_ref)
-    );
-
-    CREATE TABLE IF NOT EXISTS game_dial_line (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      dial_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
-      speaker_ref INTEGER REFERENCES game_character(id) ON DELETE SET NULL,
-      text TEXT,
-      order_index INTEGER NOT NULL DEFAULT 0,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS game_func_category (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      game_ref INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      function_type TEXT DEFAULT 'general',
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS game_function (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      func_cat_ref INTEGER NOT NULL REFERENCES game_func_category(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      function_template TEXT,
-      conditions_json TEXT,
-      effects_json TEXT,
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS game_project_hashtag (
       game_id INTEGER NOT NULL REFERENCES game_project(id) ON DELETE CASCADE,
       hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
       UNIQUE(game_id,hashtag_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_char_hashtag (
+      char_id INTEGER NOT NULL REFERENCES game_character(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(char_id,hashtag_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS game_element_hashtag (
+      element_id INTEGER NOT NULL REFERENCES game_col_element(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(element_id,hashtag_id)
     );
 
     CREATE TABLE IF NOT EXISTS library_project (
@@ -810,6 +811,59 @@ function initDB() {
   if (!hasStory) db.prepare(`ALTER TABLE timeline_event ADD COLUMN story TEXT`).run();
   const hasNote = db.prepare(`PRAGMA table_info(object)`).all().some(c => c.name === 'note');
   if (!hasNote) { try { db.prepare(`ALTER TABLE object ADD COLUMN note TEXT`).run(); } catch (_) {} }
+  migrateHeroV26(db);
+}
+
+// v2.6 replaced the entire Hero module schema. Reshape the surviving tables
+// (created by an older build with the v2.3 columns), copy what maps cleanly
+// (items -> collections, dial lines -> conversations, dial edges -> storyline),
+// and drop the v2.3-only tables. Old stat/function/link data has no v2.6
+// equivalent and is dropped with them.
+function migrateHeroV26(db) {
+  try {
+    if (!hasColumn(db, 'game_project', 'codename')) {
+      try { db.prepare(`ALTER TABLE game_project ADD COLUMN codename TEXT`).run(); } catch (_) {}
+    }
+    if (!hasColumn(db, 'game_character', 'object_link')) {
+      try { db.prepare(`ALTER TABLE game_character ADD COLUMN object_link INTEGER REFERENCES game_cat_object(id) ON DELETE SET NULL`).run(); } catch (_) {}
+    }
+    if (!hasColumn(db, 'game_character', 'color_ref')) {
+      try { db.prepare(`ALTER TABLE game_character ADD COLUMN color_ref INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
+    }
+    if (!hasColumn(db, 'game_story', 'color_ref')) {
+      try { db.prepare(`ALTER TABLE game_story ADD COLUMN color_ref INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
+    }
+    if (!hasColumn(db, 'game_dialogue', 'color_ref')) {
+      try { db.prepare(`ALTER TABLE game_dialogue ADD COLUMN color_ref INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
+    }
+    // Plan v2.6: a novel can belong to at most one game. Skipped silently if
+    // existing data already violates it.
+    try { db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_game_novel_link_project ON game_novel_link(project_ref)`).run(); } catch (_) {}
+
+    if (hasTable(db, 'game_item_category')) {
+      db.prepare(`INSERT OR IGNORE INTO game_collection (id,game_ref,name) SELECT id,game_ref,name FROM game_item_category`).run();
+      db.prepare(`INSERT OR IGNORE INTO game_col_template (id,collection_ref,attribute_name,attribute_type) SELECT id,item_cat_ref,attr_name,CASE WHEN attr_type='number' THEN 'num' ELSE 'text' END FROM game_item_template`).run();
+      db.prepare(`INSERT OR IGNORE INTO game_col_element (id,collection_ref,name) SELECT id,item_cat_ref,name FROM game_item`).run();
+      db.prepare(`INSERT OR IGNORE INTO game_col_attribute (element_ref,template_ref,attribute_text,level) SELECT item_ref,template_ref,value,0 FROM game_item_attr`).run();
+      db.prepare(`INSERT OR IGNORE INTO game_element_hashtag (element_id,hashtag_id) SELECT item_id,hashtag_id FROM game_item_hashtag`).run();
+    }
+    if (hasTable(db, 'game_dial_line')) {
+      db.prepare(`INSERT OR IGNORE INTO game_conversation (dialogue_ref,char_ref,talk_sentence,talk_order)
+        SELECT dial_ref, speaker_ref, text, ROW_NUMBER() OVER (PARTITION BY dial_ref ORDER BY order_index, id)-1 FROM game_dial_line`).run();
+    }
+    if (hasTable(db, 'game_dial_next')) {
+      db.prepare(`INSERT OR IGNORE INTO game_storyline (story_ref,from_ref,to_ref)
+        SELECT gd.story_ref, gdn.from_ref, gdn.to_ref FROM game_dial_next gdn JOIN game_dialogue gd ON gd.id=gdn.from_ref`).run();
+    }
+    // Children first so FK references never dangle mid-drop.
+    for (const t of ['game_dial_line','game_dial_next','game_item_attr','game_item_hashtag','game_item','game_item_template',
+                     'game_item_category','game_stat_levelup','game_stat_template','game_char_link',
+                     'game_function','game_func_category','game_description']) {
+      if (hasTable(db, t)) { try { db.prepare(`DROP TABLE ${t}`).run(); } catch (_) {} }
+    }
+  } catch (e) {
+    console.error('Hero v2.6 migration error:', e);
+  }
 }
 
 const getDatabasePath = () => path.join(path.dirname(app.getPath('userData')), 'novel-manager.db');

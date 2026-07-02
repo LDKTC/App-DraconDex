@@ -69,10 +69,10 @@ async function renderSageObjectAmount(container) {
     { label:'Hero', color:'#f59e0b', items:[
       { key:'games', label:'Games' },
       { key:'gameChars', label:'Game Characters' },
-      { key:'gameItems', label:'Game Items' },
+      { key:'gameElements', label:'Game Elements' },
       { key:'dialogueNodes', label:'Dialogue Nodes' },
-      { key:'dialogueEdges', label:'Dialogue Edges' },
-      { key:'gameFunctions', label:'Game Functions' },
+      { key:'dialogueEdges', label:'Storyline Edges' },
+      { key:'conversations', label:'Conversations' },
     ]},
     { label:'Writer', color:'#8b5cf6', items:[
       { key:'libraries', label:'Libraries' },
