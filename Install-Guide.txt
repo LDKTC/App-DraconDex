@@ -36,7 +36,19 @@ Step 4: Build Program for Real use
         npm run build:portable
 
     -this builds a portable app FOLDER (around 200-220Mb)
-    -(optional) npm run build:exe builds the old single-file .exe instead
+
+    -Other build options:
+
+        npm run build:installer
+
+    -builds a Windows installer (DraconDexPortable/DraconDex-Setup-<version>.exe)
+    -run it to install the app like a normal program (choose install folder,
+     desktop + start-menu shortcuts). Installed data is kept in your user
+     AppData folder, so it survives uninstall/update.
+
+        npm run build:exe
+
+    -builds the old single-file portable .exe instead
 
 Step 5: Check your App
 

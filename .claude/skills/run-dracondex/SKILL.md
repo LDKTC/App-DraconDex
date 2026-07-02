@@ -91,6 +91,7 @@ DRACONDEX_DATA_DIR="$PWD/tmp-driver-data" npm start
 
 ```bash
 npm run build:portable   # electron-builder dir target → app folder DraconDexPortable/DraconDex-<ver>/ (run DraconDex.exe inside; ~200MB)
+npm run build:installer  # NSIS installer → DraconDexPortable/DraconDex-Setup-<ver>.exe (installed builds keep data in appData, not next to exe)
 npm run build:exe        # old single-file portable exe (unpacks to %TEMP% on each launch)
 ```
 
