@@ -180,7 +180,7 @@ async function renderCatBody(catId){
       <button class="btn btn-g ${S.catView==='list'?'active':''}" style="padding:4px 10px;font-size:12px;border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setCatView('list')">${I.list} List</button>
       <button class="btn btn-g ${S.catView==='table'?'active':''}" style="padding:4px 10px;font-size:12px;border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setCatView('table')">${I.table} Table</button>
     </div>
-    <span style="font-size:11px;color:var(--t3);flex:1">${objs.length} รายการ</span>
+    <span style="font-size:11px;color:var(--t3);flex:1">${objs.length} <span>รายการ</span></span>
     <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openObjectModal(${catId})">${I.plus} เพิ่ม</button>
     <button class="btn btn-s btn-i" onclick="openTemplateModal(${catId})" title="จัดการ Fields">${I.fields}</button>
   </div>`;

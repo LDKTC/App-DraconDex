@@ -12,7 +12,7 @@ function bindSearch() {
 
 function renderSearchResults(res,query){
   const el=q('#left-panel-inner'); if(!el) return;
-  let h=`<div class="ph"><h4>ผลการค้นหา "${x(query)}"</h4></div>`;
+  let h=`<div class="ph"><h4>ผลการค้นหา <span class="search-query">"${x(query)}"</span></h4></div>`;
   if(res.projects?.length){
     h+=`<div class="search-sec"><div class="search-sec-hd">📁 โปรเจกต์</div>`;
     for(const p of res.projects){ const col=p.color_code||'#6366f1'; h+=`<div class="li search-res-item" onclick="selectSearchProject(${p.id})"><div class="dot" style="background:${col}"></div><span class="name">${x(p.name)} ${p.codename?`<span class="tag" style="margin-left:4px">${x(p.codename)}</span>`:''}</span></div>`; }
