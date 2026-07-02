@@ -13,7 +13,6 @@ async function renderProjectSidebar(){
       <span class="dot" style="background:${col}"></span>
       <span class="name">${x(p.name)}</span>
       <button class="btn btn-g btn-i" onclick="openProjectModal(${p.id})" title="Edit project">${I.edit}</button>
-      <button class="btn btn-g btn-i" onclick="openFolderModal()" title="${t('newFolder')}">${I.folder}</button>
       <button class="btn btn-g btn-i" onclick="openProjectModal()" title="${t('newProject')}">${I.plus}</button>
     </div>
     ${p.codename ? `<div class="project-side-code">${x(p.codename)}</div>` : ''}
@@ -182,7 +181,7 @@ async function renderCatBody(catId){
     </div>
     <span style="font-size:11px;color:var(--t3);flex:1">${objs.length} <span>รายการ</span></span>
     <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openObjectModal(${catId})">${I.plus} เพิ่ม</button>
-    <button class="btn btn-s btn-i" onclick="openTemplateModal(${catId})" title="จัดการ Fields">${I.fields}</button>
+    <button class="btn btn-s" style="display:flex;align-items:center;gap:4px" onclick="openTemplateModal(${catId})" title="ใช้เพิ่มช่องการเก็บข้อมูลให้กับ Object ในหมวดหมู่นี้">${I.fields} Fields <span style="color:var(--t3);font-weight:400">· info</span></button>
   </div>`;
 
   if(S.catView === 'table'){
@@ -242,8 +241,13 @@ async function renderCatBody(catId){
     } else {
       for(const o of objs){
         const col=o.color_code||'#6366f1', act=S.object?.id===o.id;
-        h += `<div class="objrow ${act?'active':''}" id="row-${o.id}" onclick="selectObject(${o.id})">
-          <div class="odot" style="background:${col}"></div><span class="oname">${x(o.name)}</span>
+        const oTags = await api.object.getTags(o.id);
+        h += `<div class="objrow ${act?'active':''}" id="row-${o.id}" style="flex-direction:column;align-items:flex-start;gap:2px" onclick="selectObject(${o.id})">
+          <div style="display:flex;align-items:center;width:100%;gap:8px">
+            <div class="odot" style="background:${col}"></div><span class="oname" style="flex:1">${x(o.name)}</span>
+            <button class="btn btn-g btn-i" style="width:22px;height:22px;padding:2px" title="Tags" onclick="event.stopPropagation();openObjectTagsModal(${o.id})">${I.hashtag}</button>
+          </div>
+          ${oTags.length ? `<div class="obj-tag-row">${oTags.map(t=>`<span class="hn" style="color:${t.color_code||'#6366f1'}">#${x(t.tag_name)}</span>`).join('')}</div>` : ''}
         </div>`;
       }
     }
@@ -555,6 +559,28 @@ async function addObjectTag(oid, tagId){
 async function removeObjectTag(oid, tagId){
   await api.object.removeTag(oid, tagId);
   await renderDetail(oid);
+}
+
+// Quick tag editor reachable straight from the object list row, without
+// opening the full detail panel first.
+async function openObjectTagsModal(oid){
+  const obj = await api.object.get(oid);
+  const oTags = await api.object.getTags(oid);
+  openModal(`ป้ายกำกับ — ${x(obj?.name || '')}`, `
+    ${await hashtagSelector('objtag', oTags)}
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-p" onclick="saveObjectTagsModal(${oid})">บันทึก</button>
+    </div>`);
+  setTimeout(() => renderModalTagSuggestions('objtag'), 60);
+}
+
+async function saveObjectTagsModal(oid){
+  await api.object.setTags(oid, getModalTagIds('objtag'));
+  closeModal();
+  toast('บันทึกสำเร็จ', 'ok');
+  if (S.category) await renderCatBody(S.category.id);
+  if (S.object?.id === oid) await renderDetail(oid);
 }
 
 async function saveAttrs(oid){

@@ -69,6 +69,7 @@ const deleteRelationOBOB = (id) => {
 const getRelationsOBTL = (pid) =>
   getDB().prepare(`
     SELECT ro.id, r.id rel_id, rt.relation_name, rtc.color_code AS color_code, r.relation_type, r.color,
+      ro.object_from AS object_id, ro.timeline_to AS event_id,
       o.name from_name, oc.category_name from_cat, te.event_name to_name, t.line_name to_tl,
       s.day s_day, s.month s_month, s.years s_years
     FROM relation_obtl ro JOIN relation r ON ro.relation_id=r.id

@@ -495,11 +495,21 @@ body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 
 /* Navigator: per-novel "character category" fav toggle (person emoji) */
 .char-fav{
-	background:none;border:none;cursor:pointer;padding:0 1px;line-height:1;
-	font-size:13px;color:var(--t3);transition:color var(--ease);
+	background:transparent;border:none;cursor:pointer;padding:2px 4px;line-height:1;
+	font-size:13px;color:var(--t3);transition:background var(--ease),color var(--ease);
+	border-radius:var(--rs);
 }
-.char-fav:hover{color:var(--t1)}
-.char-fav.active{color:#6366f1}
+.char-fav:hover{background:var(--hover);color:var(--t1)}
+.char-fav.active{color:var(--accent);background:color-mix(in srgb, var(--accent) 15%, transparent)}
+
+/* Floating name tooltip for canvas (Konva) nodes — the map board's placed
+   objects/characters have no native DOM element to attach a title= to. */
+.konva-tooltip{
+	position:absolute;pointer-events:none;z-index:5;
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);
+	padding:3px 7px;font-size:11.5px;color:var(--t1);white-space:nowrap;
+	box-shadow:0 2px 8px rgba(0,0,0,.25);transform:translate(-50%,-100%);
+}
 
 /* PROJECT CONTEXT SIDEBAR */
 .project-side-head{
@@ -745,6 +755,7 @@ body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .objrow .acts{display:none;gap:4px}
 .objrow:hover .acts{display:flex}.dark-table tbody tr.objrow{display:table-row}.odot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .objrow-story{margin:8px 0 16px;padding:0 14px}
+.obj-tag-row{display:flex;flex-wrap:wrap;gap:6px;padding-left:18px;font-size:11.5px;font-weight:700}
 .tl-story{width:100%;min-height:40px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);color:var(--t1);padding:10px 12px;font-size:13px;font-family:inherit;resize:none;overflow:hidden;outline:none;}
 .tl-story:focus{border-color:var(--accent)}
 .oname{flex:1;font-size:13.5px;font-weight:500}
@@ -883,6 +894,18 @@ body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .rel-card.active{border-color:var(--accent);background:var(--raised)}
 .rel-card-content{flex:1;min-width:0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .relation-main .rel-card{align-items:flex-start}
+
+/* Small floating note shown on a relation-graph object node click — a
+   lighter-weight alternative to opening the full edit modal directly. */
+.rel-node-note{
+	position:fixed;z-index:50;min-width:160px;max-width:240px;
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+	padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.35);
+}
+.rel-node-note-close{position:absolute;top:4px;right:4px;width:22px;height:22px;padding:2px}
+.rel-node-note-name{font-size:13.5px;font-weight:700;color:var(--t1);padding-right:22px}
+.rel-node-note-cat{font-size:11.5px;color:var(--t3);margin-top:2px}
+.rel-node-note-edit{margin-top:8px;width:100%;justify-content:center;padding:5px 0;font-size:12px}
 .relation-main .rel-card-content{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.4}
 .rel-card-actions{display:flex;gap:6px;flex-shrink:0}
 .rel-type-badge{font-size:11px;font-weight:600;padding:2px 9px;border-radius:12px;border:1px solid;white-space:nowrap;flex-shrink:0}

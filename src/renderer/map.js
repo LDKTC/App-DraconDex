@@ -11,6 +11,18 @@ function ensureKonva(){
   });
 }
 
+// These three were previously (and incorrectly) only defined in relation.js —
+// map.js's own markup calls them, so opening Map without having first
+// visited Relation left them undefined (ReferenceError on click).
+async function selectMap(id){
+  const maps = await api.map.getAll(S.project.id);
+  S.map = maps.find(m => m.id === id) || null;
+  S.mapAreaId = null;
+  await renderMapView();
+}
+function selectMapArea(id){ S.mapAreaId=id; renderMapView(); }
+function setMapTool(tool){ S.mapTool=tool; renderMapView(); }
+
 function renderAreaList(areas){
   if(!areas.length){
     return `<div class="empty" style="padding:18px 10px"><p>ยังไม่มี Area</p></div>`;

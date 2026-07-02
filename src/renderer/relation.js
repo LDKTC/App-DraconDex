@@ -111,12 +111,46 @@ async function renderForceGraphWithD3(graphData, opts={}){
     window.d3.select(this).attr('stroke-width', 1.2);
     label.filter(l=>l.id === d.id).style('opacity', 0);
   });
-  node.on('click', (event,d)=>{ if(opts.onNodeClick) opts.onNodeClick(d); });
+  node.on('click', (event,d)=>{ if(opts.onNodeClick) opts.onNodeClick(d, event); });
 
   el.appendChild(svg.node());
 }
 
+// Small floating note (not a modal) shown on object-node click — name,
+// category, and an Edit button that opens the real object modal.
+function closeRelNodeNote(){
+  const el = q('#rel-node-note');
+  if(el) el.remove();
+  document.removeEventListener('mousedown', relNodeNoteOutsideHandler, true);
+}
+function relNodeNoteOutsideHandler(e){
+  const el = q('#rel-node-note');
+  if(el && !el.contains(e.target)) closeRelNodeNote();
+}
+function showRelationNodeNote(event, node){
+  closeRelNodeNote();
+  const el = document.createElement('div');
+  el.id = 'rel-node-note';
+  el.className = 'rel-node-note';
+  el.innerHTML = `
+    <button class="btn btn-g btn-i rel-node-note-close" onclick="closeRelNodeNote()">${I.close}</button>
+    <div class="rel-node-note-name">${x(node.name)}</div>
+    ${node.category ? `<div class="rel-node-note-cat">${x(node.category)}</div>` : ''}
+    <button class="btn btn-p rel-node-note-edit" onclick="closeRelNodeNote();openObjectModal(null,${node.origId})">${I.edit} แก้ไข</button>`;
+  document.body.appendChild(el);
+  const pad = 10;
+  el.style.left = `${event.clientX + pad}px`;
+  el.style.top = `${event.clientY + pad}px`;
+  requestAnimationFrame(() => {
+    const rect = el.getBoundingClientRect();
+    if(rect.right > window.innerWidth) el.style.left = `${Math.max(pad, window.innerWidth - rect.width - pad)}px`;
+    if(rect.bottom > window.innerHeight) el.style.top = `${Math.max(pad, window.innerHeight - rect.height - pad)}px`;
+  });
+  setTimeout(() => document.addEventListener('mousedown', relNodeNoteOutsideHandler, true), 0);
+}
+
 async function renderRelationView(){
+  closeRelNodeNote();
   q('#main-inner')?.classList.add('relation-main');
   if(!S.project){
     q('#left-panel-inner').innerHTML=`<div class="empty" style="padding:40px 10px"><div class="ei">${I.relation}</div><p style="text-align:center">เลือกโปรเจกต์ก่อน</p></div>`;
@@ -262,7 +296,8 @@ async function renderCategoryWhiteboard(catId){
   const radius=150, cx=300, cy=200, anglePerNode=Math.PI*2/Math.max(objs.length,1);
   objs.forEach((o,i)=>{ if(!positions[o.id]) positions[o.id]={x:cx+Math.cos(i*anglePerNode)*radius, y:cy+Math.sin(i*anglePerNode)*radius}; });
   // Build graph data for React Force Graph
-  const nodes = objs.map(o=>({ id: `obj-${o.id}`, origId:o.id, name: x(o.name), color: o.color_code||o.category_color_code||'#6366f1' }));
+  const catRow = (await api.category.getAll(S.project.id)).find(c=>c.id===selectedCatId);
+  const nodes = objs.map(o=>({ id: `obj-${o.id}`, origId:o.id, name: x(o.name), category: catRow?.category_name||'', color: o.color_code||o.category_color_code||'#6366f1' }));
   const nodeIdSet = new Set(nodes.map(n=>n.id));
   const links = [];
   for(const rel of rels){
@@ -272,7 +307,7 @@ async function renderCategoryWhiteboard(catId){
     if(!nodeIdSet.has(src) || !nodeIdSet.has(dst)) continue;
     links.push({ source: src, target: dst, name: rel.relation_name||'', color: rel.color_code||'#999' });
   }
-  await renderForceGraph({ nodes, links }, { onNodeClick: n => openObjectModal(null, n.origId) });
+  await renderForceGraph({ nodes, links }, { onNodeClick: (n,event) => { if(n.origId) showRelationNodeNote(event, n); } });
   renderRelList(rels.filter(rel=>{
     const fromId=byKey.get(`${rel.from_cat}::${rel.from_name}`);
     const toId=byKey.get(`${rel.to_cat}::${rel.to_name}`);
@@ -312,8 +347,8 @@ async function renderObjectWhiteboard(objId){
   // Build graph data for React Force Graph (center node + peers + timeline nodes)
   const nodes = [];
   const centerId = `obj-${selectedObjId}`;
-  nodes.push({ id: centerId, origId: selectedObjId, name: x(selObj?.name||''), color: selObj?.category_color_code||'#6366f1', size: 12 });
-  for(const o of relObjs){ nodes.push({ id: `obj-${o.id}`, origId:o.id, name: x(o.name), color: o.category_color_code||'#6366f1', size:8 }); }
+  nodes.push({ id: centerId, origId: selectedObjId, name: x(selObj?.name||''), category: selObj?.category_name||'', color: selObj?.category_color_code||'#6366f1', size: 12 });
+  for(const o of relObjs){ nodes.push({ id: `obj-${o.id}`, origId:o.id, name: x(o.name), category: o.category_name||'', color: o.category_color_code||'#6366f1', size:8 }); }
   for(const t of tlNodes){ nodes.push({ id: t.id, origId:null, name: t.name, color: t.color_code||'#06b6d4', size:8 }); }
   const nodeIdSet = new Set(nodes.map(n=>n.id));
   const links = [];
@@ -328,7 +363,7 @@ async function renderObjectWhiteboard(objId){
     const dst = tlNode.id; if(!nodeIdSet.has(dst)) continue;
     links.push({ source: centerId, target: dst, name: r.relation_name||'', color: r.color_code||'#06b6d4', dashed:true });
   }
-  await renderForceGraph({ nodes, links }, { onNodeClick: n => { if(n.origId) openObjectModal(null, n.origId); } });
+  await renderForceGraph({ nodes, links }, { onNodeClick: (n,event) => { if(n.origId) showRelationNodeNote(event, n); } });
   renderRelList([
     ...connected.map(r=>({ ...r, kind:'obob' })),
     ...myTlRels.map(r=>({ ...r, kind:'obtl' }))
@@ -349,7 +384,7 @@ async function renderProjectWhiteboard(projectId){
     if(!positions[o.id]) positions[o.id]={ x:cx+Math.cos(i*anglePerNode)*radius, y:cy+Math.sin(i*anglePerNode)*radius };
   });
   // Build graph data for project view
-  const nodes = allObjs.map(o=>({ id:`obj-${o.id}`, origId:o.id, name:x(o.name), color:o.category_color_code||'#6366f1' }));
+  const nodes = allObjs.map(o=>({ id:`obj-${o.id}`, origId:o.id, name:x(o.name), category:o.category_name||'', color:o.category_color_code||'#6366f1' }));
   const nodeIdSet = new Set(nodes.map(n=>n.id));
   const links = [];
   for(const r of rels){
@@ -359,7 +394,7 @@ async function renderProjectWhiteboard(projectId){
     const src=`obj-${from.id}`, dst=`obj-${to.id}`; if(!nodeIdSet.has(src) || !nodeIdSet.has(dst)) continue;
     links.push({ source: src, target: dst, name: r.relation_name||'', color: r.color_code||'#999' });
   }
-  await renderForceGraph({ nodes, links }, { onNodeClick: n => openObjectModal(null, n.origId) });
+  await renderForceGraph({ nodes, links }, { onNodeClick: (n,event) => { if(n.origId) showRelationNodeNote(event, n); } });
   renderRelList(rels.map(r=>({ ...r, kind:'obob' })));
   ensureWbViewState('proj', projectId);
   bindWhiteboardInteractions('proj', projectId);
@@ -551,15 +586,6 @@ document.addEventListener('mouseup',function(){
   }
   dragState=null;
 });
-
-async function selectMap(id){
-  const maps = await api.map.getAll(S.project.id);
-  S.map = maps.find(m => m.id === id) || null;
-  S.mapAreaId = null;
-  await renderMapView();
-}
-function selectMapArea(id){ S.mapAreaId=id; renderMapView(); }
-function setMapTool(tool){ S.mapTool=tool; renderMapView(); }
 
 function ensureKonva(){
   if(window.Konva) return Promise.resolve();

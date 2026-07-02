@@ -57,7 +57,7 @@ async function renderTimelineDetail(tlid){
     h += `<div class="empty"><div class="ei">${I.timeline}</div><h3>ยังไม่มีเหตุการณ์</h3>
       <button class="btn btn-p" onclick="openEventModal(${tlid})">${I.plus} เพิ่มเหตุการณ์</button></div>`;
   } else {
-    const MARGIN=80, LINE_Y=180, CARD_W=96, SVG_H=400;
+    const MARGIN=80, LINE_Y=180, CARD_W=120, SVG_H=400;
     const n=evs.length;
     const hostW=q('#main-inner')?.offsetWidth||900;
     const trackW=Math.max(hostW, 900);
@@ -92,7 +92,7 @@ async function renderTimelineDetail(tlid){
       const ev=evs[i], ec=ev.color_code||col, xi=xs[i];
       const up=i%2===0, defaultBy=up?(LINE_Y-120):(LINE_Y+120);
       const by=Math.max(36, Math.min(SVG_H-36, graphState.yOffsets[ev.id] ?? defaultBy));
-      const cardY=up?(by-62):(by+8);
+      const cardY=up?(by-68):(by+10);
       const sTxt=fmtDate(ev.s_day,ev.s_month,ev.s_years,ev.s_hour,ev.s_minute);
       const hasEnd=!!(ev.e_day&&ev.e_month&&ev.e_years);
       const eTxt=hasEnd?fmtDate(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute):'';
@@ -108,18 +108,19 @@ async function renderTimelineDetail(tlid){
       svg += `
         ${rangeSvg}
         <line data-event-stem="${ev.id}" data-start-ts="${startTs[i]||''}" x1="${xi}" y1="${LINE_Y}" x2="${xi}" y2="${by}" stroke="${ec}" stroke-width="2"/>
-        <circle data-event-dot="${ev.id}" data-start-ts="${startTs[i]||''}" cx="${xi}" cy="${LINE_Y}" r="5" fill="${ec}"/>
-        <circle data-event-node="${ev.id}" data-start-ts="${startTs[i]||''}" data-card-up="${up?'1':'0'}" cx="${xi}" cy="${by}" r="8" fill="${ec}" style="cursor:ns-resize"/>
-        <foreignObject data-event-card="${ev.id}" data-start-ts="${startTs[i]||''}" x="${xi-(CARD_W/2)}" y="${cardY}" width="${CARD_W}" height="58" style="cursor:pointer" onclick="openEventModal(${tlid},${ev.id})">
-          <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${ec};border-radius:8px;padding:4px 6px;font-size:10px;line-height:1.25;overflow:hidden">
+        <circle data-event-dot="${ev.id}" data-start-ts="${startTs[i]||''}" cx="${xi}" cy="${LINE_Y}" r="6.5" fill="${ec}"/>
+        <circle data-event-node="${ev.id}" data-start-ts="${startTs[i]||''}" data-card-up="${up?'1':'0'}" cx="${xi}" cy="${by}" r="11" fill="${ec}" style="cursor:ns-resize"/>
+        <foreignObject data-event-card="${ev.id}" data-start-ts="${startTs[i]||''}" x="${xi-(CARD_W/2)}" y="${cardY}" width="${CARD_W}" height="64" style="cursor:pointer" onclick="openEventModal(${tlid},${ev.id})">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${ec};border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.3;overflow:hidden">
             <div style="font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(ev.event_name||'ไม่มีชื่อ')}</div>
-            <div style="color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
+            <div style="color:var(--t3);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
           </div>
         </foreignObject>`;
     }
     svg += `</g></svg>`;
     h += `<div class="timeline-graph-board" id="timeline-graph-board">${svg}<div id="timeline-axis-tip" class="timeline-axis-tip hidden"></div></div>`;
 
+    const evtObtl = await api.relation.getOBTL(S.project.id);
     h += `<div style="margin-top:24px">
       <div class="ph"><h4>เหตุการณ์ทั้งหมด</h4><button class="btn btn-p" style="padding:6px 12px;font-size:12.5px" onclick="openEventModal(${tlid})">${I.plus} เพิ่มเหตุการณ์</button></div>
       <div class="objlist">`;
@@ -129,6 +130,7 @@ async function renderTimelineDetail(tlid){
       const hasEnd=!!(ev.e_day&&ev.e_month&&ev.e_years);
       const eTxt=hasEnd?fmtDate(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute):'';
       const dateTxt=hasEnd?`${sTxt} - ${eTxt}`:sTxt;
+      const evRels = evtObtl.filter(r=>r.event_id===ev.id);
       h += `<div class="objrow" onclick="openEventModal(${tlid},${ev.id})">
         <div class="odot" style="background:${ec}"></div>
         <div style="flex:1;min-width:0">
@@ -142,6 +144,19 @@ async function renderTimelineDetail(tlid){
       </div>
       <div class="objrow-story">
         <textarea id="ev-story-${ev.id}" class="tl-story" placeholder="เขียนสตอรี่ที่เกิดขึ้นในเหตุการณ์นี้..." onclick="event.stopPropagation()" oninput="autoExpand(this)" onchange="saveEventStory(${ev.id})">${x(ev.story||'')}</textarea>
+        <div style="margin-top:8px">
+          <div class="tags-head" style="flex-direction:row;justify-content:space-between;align-items:center">
+            <span>Object ที่เกี่ยวข้องกับเหตุการณ์นี้</span>
+            <button class="btn btn-g btn-i" title="เพิ่มความสัมพันธ์ Object ↔ Event" onclick="event.stopPropagation();openEventRelModal(${tlid},${ev.id})">${I.plus}</button>
+          </div>
+          <div class="relation-mini-list">${evRels.length ? evRels.map(r=>`<div class="mini-rel-item">
+            <span class="mini-rel-dot" style="background:${x(r.color_code||'#8b9')}"></span>
+            <span class="mini-rel-kind">Object</span>
+            <span class="mini-rel-rel">${x(r.relation_name||'สัมพันธ์')}</span>
+            <span class="mini-rel-to">${x(r.from_cat)} / ${x(r.from_name)}</span>
+            <button class="btn btn-g btn-i" onclick="event.stopPropagation();delEventRel(${r.id},${tlid})" style="color:var(--danger)">${I.close}</button>
+          </div>`).join('') : `<div class="empty" style="padding:8px 0;font-size:12px">ยังไม่มี Relation</div>`}</div>
+        </div>
       </div>`;
     }
     h += `</div></div>`;

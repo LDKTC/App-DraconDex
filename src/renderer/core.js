@@ -1,6 +1,7 @@
 'use strict';
 
 const I = {
+  info: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
   book: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
   projects: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
   return: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>`,
@@ -1437,6 +1438,7 @@ function updateTopNavButton(){
 }
 
 function returnToProjectList(){
+  if (typeof closeRelNodeNote === 'function') closeRelNodeNote();
   S.project = null; S.category = null; S.object = null; S.timeline = null; S.map = null; S.mapAreaId = null;
   S.activeProjectTabId = null; S.projectHashtagId = null;
   S.view = 'projects';
@@ -1949,6 +1951,7 @@ function loadModule(src) {
 }
 
 async function switchView(v) {
+  if (typeof closeRelNodeNote === 'function') closeRelNodeNote();
   if (konvaStage) {
     try { konvaStage.destroy(); } catch(e){}
     konvaStage = null;
@@ -2051,6 +2054,7 @@ function selectModule(name) {
 }
 
 function returnToNexus() {
+  if (typeof closeRelNodeNote === 'function') closeRelNodeNote();
   S.activeModule = null;
   S.project = null; S.category = null; S.object = null;
   S.timeline = null; S.map = null; S.mapAreaId = null;

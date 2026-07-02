@@ -31,7 +31,7 @@ function deleteLibraryDescription(id) {
 
 // World Links
 function getLibraryWorldLinks(libraryId) {
-  return getDB().prepare(`SELECT lwl.*, wp.name AS world_name, uc.color_code FROM library_world_link lwl JOIN world_project wp ON wp.id=lwl.world_ref LEFT JOIN use_color uc ON uc.id=wp.color_ref WHERE lwl.library_ref=? ORDER BY wp.name`).all(libraryId);
+  return getDB().prepare(`SELECT lwl.*, wp.name AS world_name, uc.color_code FROM library_world_link lwl JOIN world_project wp ON wp.id=lwl.world_ref LEFT JOIN use_color uc ON uc.id=wp.color WHERE lwl.library_ref=? ORDER BY wp.name`).all(libraryId);
 }
 function addLibraryWorldLink(libraryId, worldId) {
   try { getDB().prepare(`INSERT OR IGNORE INTO library_world_link (library_ref,world_ref,updated_at) VALUES (?,?,?)`).run(libraryId, worldId, now()); } catch (_) {}

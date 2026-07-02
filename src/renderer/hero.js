@@ -113,7 +113,7 @@ async function renderCharsPage() {
   let h = `<div class="ch">
     <h2 style="display:flex;align-items:center;gap:8px">${I.person} ${t('gameChars')}</h2>
     <div style="display:flex;gap:6px">
-      <button class="btn btn-s btn-i" onclick="openCharTemplatesModal()" title="${t('gameFields')}">${I.fields}</button>
+      <button class="btn btn-s" style="padding:5px 11px;font-size:12.5px" title="Add or edit the data fields characters in this game can have (e.g. HP, Attack)" onclick="openCharTemplatesModal()">${I.fields} ${t('gameStats')}</button>
       <button class="btn btn-p" style="padding:5px 11px;font-size:12.5px" onclick="openCharModal()">${I.plus} ${t('gameCharNew')}</button>
     </div>
   </div>`;
@@ -153,7 +153,8 @@ async function renderCharDetail(charId) {
   const c = chars.find(ch => ch.id === charId);
   if (!c) return;
   const col = c.color_code || '#6366f1';
-  let h = `<div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+  let h = `<div style="padding:16px">
+  <div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:10px;display:flex;align-items:center;gap:6px">
     <h2 style="margin:0;font-size:1.05em;flex:1">${x(c.name)}</h2>
     <button class="btn btn-g btn-i" onclick="openCharModal(${c.id})" title="${t('edit')}">${I.edit}</button>
     <button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteGameChar(${c.id})" title="${t('delete')}">${I.delete}</button>
@@ -172,6 +173,7 @@ async function renderCharDetail(charId) {
     h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px">${tags.map(tg => `<span class="hn" style="color:${tg.color_code || '#6366f1'};font-weight:700;font-size:12px">#${x(tg.tag_name)}</span>`).join('')}</div>`;
   }
   h += renderAttrEditor('char', c.id, templates, attrs);
+  h += `</div>`;
   q('#detail-panel').innerHTML = h;
 }
 
@@ -274,7 +276,8 @@ async function renderElementDetail(elemId) {
   const e = elems.find(el => el.id === elemId);
   if (!e) return;
   const col = e.color_code || '#6366f1';
-  let h = `<div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+  let h = `<div style="padding:16px">
+  <div class="detail-head" style="border-left:4px solid ${col};padding-left:12px;margin-bottom:10px;display:flex;align-items:center;gap:6px">
     <h2 style="margin:0;font-size:1.05em;flex:1">${x(e.name)}</h2>
     <button class="btn btn-g btn-i" onclick="openElementModal(${S.gameColId},${e.id})" title="${t('edit')}">${I.edit}</button>
     <button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteHeroElement(${e.id})" title="${t('delete')}">${I.delete}</button>
@@ -283,6 +286,7 @@ async function renderElementDetail(elemId) {
     h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px">${tags.map(tg => `<span class="hn" style="color:${tg.color_code || '#6366f1'};font-weight:700;font-size:12px">#${x(tg.tag_name)}</span>`).join('')}</div>`;
   }
   h += renderAttrEditor('elem', e.id, templates, attrs);
+  h += `</div>`;
   q('#detail-panel').innerHTML = h;
 }
 
@@ -746,24 +750,32 @@ async function saveCharElements(charId) {
 
 // Attribute-template manager, shared by characters (per game) and
 // collections (per collection).
+// Same visual pattern as Director's category field modal (openTemplateModal
+// in modals.js: hint paragraph + .tlist/.titem rows + inline add-row) with
+// one addition Director's fields don't have: the per-level ("levelable")
+// toggle, shown as an extra badge/checkbox inside the row.
 async function openHeroTemplatesModal(kind, ownerId) {
   const tpls = kind === 'char' ? await api.game.getCharTemplates(ownerId) : await api.game.getColTemplates(ownerId);
   const typeOpts = (sel) => ['text', 'num', 'textarea'].map(tp => `<option value="${tp}" ${sel === tp ? 'selected' : ''}>${tp}</option>`).join('');
-  let rows = tpls.map(tp => `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-      <input style="flex:1" value="${x(tp.attribute_name)}" onchange="saveHeroTemplate('${kind}',${tp.id},this.value,null,null)">
-      <select style="width:92px" onchange="saveHeroTemplate('${kind}',${tp.id},null,this.value,null)">${typeOpts(tp.attribute_type)}</select>
-      <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--t3)">
+  const hintText = kind === 'char'
+    ? 'Fields ใช้กับตัวละครทุกตัวในเกมนี้'
+    : 'Fields ใช้กับ Element ทุกตัวในคอลเลกชันนี้';
+  const rowHtml = (tp) => `<div class="titem" id="hero-tpl-${tp.id}">
+      <input class="tname" style="background:transparent;border:none;color:inherit;font-size:13px" value="${x(tp.attribute_name)}" onchange="saveHeroTemplate('${kind}',${tp.id},this.value,null,null)">
+      <select class="ttype" style="border:none" onchange="saveHeroTemplate('${kind}',${tp.id},null,this.value,null)">${typeOpts(tp.attribute_type)}</select>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--t3)">
         <input type="checkbox" ${tp.levelable ? 'checked' : ''} onchange="saveHeroTemplate('${kind}',${tp.id},null,null,this.checked)">${t('gameLevel')}
       </label>
-      <button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteHeroTemplate('${kind}',${ownerId},${tp.id})">${I.delete}</button>
-    </div>`).join('');
+      <button class="btn btn-g btn-i" onclick="deleteHeroTemplate('${kind}',${ownerId},${tp.id})" style="color:var(--danger)">${I.delete}</button>
+    </div>`;
   openModal(t('gameFields'), `
-    <div id="hero-tpl-list">${rows || `<p style="color:var(--t3);font-size:12.5px">-</p>`}</div>
-    <div style="display:flex;align-items:flex-end;gap:6px;margin-top:8px">
+    <p style="font-size:11.5px;color:var(--t3);margin-bottom:10px">${hintText}</p>
+    <div class="tlist" id="hero-tpl-list">${tpls.map(rowHtml).join('') || `<p style="color:var(--t3);text-align:center;padding:18px;font-size:12px">-</p>`}</div>
+    <div class="div"></div>
+    <div style="display:flex;align-items:flex-end;gap:8px">
       <div class="fg" style="flex:1;margin:0"><label>${t('name')}</label><input id="htpl-name"></div>
-      <select id="htpl-type" style="width:92px">${typeOpts('text')}</select>
-      <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--t3)"><input type="checkbox" id="htpl-lv">${t('gameLevel')}</label>
+      <div class="fg" style="margin:0"><label>ประเภท</label><select id="htpl-type">${typeOpts('text')}</select></div>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--t3);padding-bottom:9px"><input type="checkbox" id="htpl-lv">${t('gameLevel')}</label>
       <button class="btn btn-p" onclick="addHeroTemplate('${kind}',${ownerId})">${I.plus}</button>
     </div>
     <div class="mfoot"><button class="btn btn-p" onclick="closeHeroTemplatesModal('${kind}')">${t('close')}</button></div>`);

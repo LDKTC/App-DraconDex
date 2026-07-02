@@ -109,7 +109,7 @@ async function openTemplateModal(catId){
   if(!safeCatId){ toast('Category ไม่ถูกต้อง','err'); return; }
   const tmpls=await api.template.getAll(safeCatId);
   openModal('🧩 จัดการ Fields',`
-    <p style="font-size:11.5px;color:var(--t3);margin-bottom:10px">Fields ใช้กับทุก Object ใน Category นี้</p>
+    <p style="font-size:11.5px;color:var(--t3);margin-bottom:10px">ใช้เพิ่มช่องการเก็บข้อมูลให้กับ Object ในหมวดหมู่นี้ — Field ที่เพิ่มจะใช้ร่วมกันทุก Object ใน Category นี้</p>
     <div class="tlist" id="tlist">${tmpls.map(t=>`<div class="titem" id="tmpl-${t.id}"><span class="tname">${x(t.description)}</span><span class="ttype">${t.attribute_type}</span><button class="btn btn-g btn-i" onclick="delTemplate(${t.id},${safeCatId})" style="color:var(--danger)">❌</button></div>`).join('')||'<p style="color:var(--t3);text-align:center;padding:18px;font-size:12px">ยังไม่มี Field</p>'}</div>
     <div class="div"></div>
     <div style="display:flex;gap:8px;align-items:flex-end">
@@ -329,6 +329,42 @@ async function saveEventStory(evId){
 }
 
 async function delEvent(evId,tlid){ if(!await uiConfirm('ลบเหตุการณ์นี้?')) return; await api.timeline.deleteEvent(evId); closeModal(); await renderTimelineDetail(tlid); toast('ลบเรียบร้อยแล้ว'); }
+
+// Scoped Object↔Event relation creator reachable straight from the timeline
+// event list (the event side is fixed to `eventId`; only the object and
+// relation type are picked) — reuses openRelModal's object picker/coloredSelect
+// but, unlike openRelModal(1), refreshes the Timeline detail in place instead
+// of jumping to the Relation panel.
+async function openEventRelModal(tlid, eventId){
+  if(!S.project) return;
+  const types = await api.relation.getTypes();
+  const typeOpts = `<option value="">-- ไม่ระบุ --</option>${types.map(t=>`<option value="${t.id}" style="${t.color_code?`color:${t.color_code}`:''}">${t.color_code?'● ':''}${x(t.relation_name)}</option>`).join('')}`;
+  const oo = objOptions(await api.relation.getProjectObjects(S.project.id));
+  openModal('🔗 เพิ่ม Object ที่เกี่ยวข้อง', `
+    <div class="fg"><label>ประเภทความสัมพันธ์</label><select id="rel-type">${typeOpts}</select></div>
+    ${coloredSelect('Object','rel-from',oo)}
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-p" onclick="createEventRel(${tlid},${eventId})">สร้าง</button>
+    </div>`);
+  initColoredSelects('rel-from');
+}
+
+async function createEventRel(tlid, eventId){
+  try{
+    await api.relation.createOBTL(S.project.id, q('#rel-type').value||null, null, parseInt(q('#rel-from').value), eventId);
+    closeModal();
+    await renderTimelineDetail(tlid);
+    toast('เพิ่มความสัมพันธ์แล้ว','ok');
+  }catch(e){ toast(e.message,'err'); console.error(e); }
+}
+
+async function delEventRel(id, tlid){
+  if(!await uiConfirm('ลบความสัมพันธ์?')) return;
+  await api.relation.deleteOBTL(id);
+  await renderTimelineDetail(tlid);
+  toast('ลบเรียบร้อยแล้ว');
+}
 
 // ═══ MODALS: RELATION TYPE ═════════════════════════════
 async function openRelTypeModal(id=null){

@@ -51,10 +51,10 @@ async function selectWorld(id) {
   S.worldNovelOpen = S.worldNovelOpen || new Set();
   S.worldOrigCatView = S.worldOrigCatView || 'list';
   S.worldCharCatSub = S.worldCharCatSub || 'characters';
-  S.worldMapOpen = S.worldMapOpen || new Set();
   S.worldActiveTimelineId = null;
   S.worldActiveEventId = null;
   S.worldHashtagId = null;
+  S.worldMapSelectedId = null;
   if (S.world) {
     const ocats = await api.world.origCat.getAll(S.world.id);
     S.worldOrigCat = ocats[0] || null;
@@ -69,7 +69,6 @@ async function renderWorldActive(world) {
   S.worldCatOpen = S.worldCatOpen || new Set();
   S.worldOrigCatView = S.worldOrigCatView || 'list';
   S.worldCharCatSub = S.worldCharCatSub || 'characters';
-  S.worldMapOpen = S.worldMapOpen || new Set();
   if (!WORLD_TABS.includes(S.worldTab)) S.worldTab = 'original';
   // Render main first so it can resolve the default selected original category,
   // then render the sidebar so its highlight matches.
@@ -248,11 +247,15 @@ async function renderWorldMain() {
   } else if (S.worldTab === 'chars-cats') {
     const sub = S.worldCharCatSub === 'categories' ? 'categories' : 'characters';
     const body = sub === 'characters' ? await renderWorldChars(w.id) : await renderWorldCats(w.id);
+    const hint = sub === 'characters'
+      ? 'World characters are separate from novel objects — create one here, then use the link button to connect it to a character from a linked novel.'
+      : 'These categories mirror the object categories of your linked novels. Add one from the left panel to browse its objects here.';
     h += `<div id="world-tab-body">
       <div class="detail-tabs" style="margin-bottom:10px">
         <button class="tab-btn ${sub === 'characters' ? 'active' : ''}" onclick="setWorldCharCatSub('characters')">${t('worldChars')}</button>
         <button class="tab-btn ${sub === 'categories' ? 'active' : ''}" onclick="setWorldCharCatSub('categories')">${t('worldCats')}</button>
       </div>
+      <div class="modal-hint">${I.info}<span>${hint}</span></div>
       ${body}
     </div>`;
     q('#main-inner').innerHTML = h;
@@ -815,7 +818,7 @@ async function renderWorldChars(worldId) {
               <span>${x(lk.category_name || '?')} / ${x(lk.name || '?')}</span>
               <button class="btn btn-g btn-i" title="Remove" onclick="removeCharLink(${worldId},${lk.id})">×</button>
             </div>`).join('')}</div>
-          <button class="char-link-expand" id="cle-${c.id}" title="Show all" onclick="expandCharLinks(${c.id})">▾</button>
+          <button class="char-link-expand" id="cle-${c.id}" title="Show all" onclick="toggleCharLinks(${c.id})">▾</button>
         </div>`
       : '';
     html += `<div class="li" style="flex-direction:column;align-items:flex-start;padding:8px 10px;gap:4px">
@@ -823,7 +826,8 @@ async function renderWorldChars(worldId) {
         <div class="dot" style="background:${c.color_code || '#6366f1'}"></div>
         <button class="btn btn-g btn-i char-sym-btn" style="padding:1px 5px;font-size:11px" title="Choose symbol" data-symbol="${x(c.symbol || '')}" onclick="event.stopPropagation();openCharSymbolModal(${worldId},${c.id},this.dataset.symbol)">${c.symbol ? x(c.symbol) : I.plus}</button>
         <span class="name" style="flex:1;font-weight:500">${x(c.name)}</span>
-        <button class="btn btn-g btn-i" title="Link object" onclick="openCharLinksModal(${worldId},${c.id})">${I.layer}</button>
+        <button class="btn btn-g btn-i" title="Link this character to a novel object" onclick="openCharLinksModal(${worldId},${c.id})">${I.layer}</button>
+        <button class="btn btn-g btn-i" title="Tags" onclick="openWorldCharTagsModal(${worldId},${c.id})">${I.hashtag}</button>
         <button class="btn btn-g btn-i" onclick="openWorldCharModal(${worldId},${c.id})">${I.edit}</button>
         <button class="btn btn-g btn-i" onclick="deleteWorldChar(${worldId},${c.id})">${I.delete}</button>
       </div>
@@ -845,11 +849,20 @@ function refreshCharLinkOverflow() {
   });
 }
 
-function expandCharLinks(charId) {
+function toggleCharLinks(charId) {
   const row = q(`#clr-${charId}`);
   const btn = q(`#cle-${charId}`);
-  if (row) row.classList.add('char-link-expanded');
-  if (btn) btn.classList.remove('show');
+  if (!row) return;
+  const expanding = !row.classList.contains('char-link-expanded');
+  row.classList.toggle('char-link-expanded', expanding);
+  if (btn) {
+    btn.textContent = expanding ? '▴' : '▾';
+    btn.title = expanding ? 'Show less' : 'Show all';
+    // Collapsed rows re-run the overflow check to decide whether the
+    // button should still be visible at the row's original clamp height.
+    if (!expanding) btn.classList.toggle('show', row.scrollHeight > row.clientHeight + 2);
+    else btn.classList.add('show');
+  }
 }
 
 async function openWorldCharModal(worldId, id) {
@@ -930,14 +943,38 @@ async function saveCharSymbol(worldId, charId) {
 async function openCharLinksModal(worldId, charId) {
   const available = await api.world.getLinkableCharObjects(worldId, charId);
   const availHtml = available.length
-    ? `<div class="form-row"><label>Object</label>${buildObjectPickerHtml('wclm-obj', available)}</div>
+    ? `<div class="modal-hint">${I.info}<span>Connect this world character to an object from one of your linked novels, so they stay in sync.</span></div>
+      <div class="form-row"><label>Object</label>${buildObjectPickerHtml('wclm-obj', available)}</div>
       <div class="mfoot">
         <button class="btn btn-s" onclick="closeModal()">Cancel</button>
         <button class="btn btn-p" onclick="addCharLink(${worldId},${charId})">Link</button>
       </div>`
     : `<div class="modal-hint">${I.layer}<span>No objects available. Set a category as the character category for a linked novel (${I.person} button in the sidebar).</span></div>
       <div class="mfoot"><button class="btn btn-s" onclick="closeModal()">Close</button></div>`;
-  openModal('Link Object', availHtml);
+  openModal('Link Character to Novel Object', availHtml);
+}
+
+// Quick tag editor for a world character — same search+add tag UI as the
+// full character modal (hashtagSelector), without the rest of the form.
+async function openWorldCharTagsModal(worldId, charId) {
+  const chars = await api.world.getCharacters(worldId);
+  const c = chars.find(ch => ch.id === charId);
+  const cTags = await api.world.getCharTags(charId);
+  openModal(`Tags — ${c ? x(c.name) : ''}`, `
+    ${await hashtagSelector('wchartag', cTags)}
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-p" onclick="saveWorldCharTags(${worldId},${charId})">Save</button>
+    </div>`);
+  setTimeout(() => renderModalTagSuggestions('wchartag'), 60);
+}
+
+async function saveWorldCharTags(worldId, charId) {
+  await api.world.setCharTags(charId, getModalTagIds('wchartag'));
+  closeModal();
+  toast('Saved', 'ok');
+  if (S.worldTab === 'tags') { await renderWorldMain(); await renderWorldSidebar(S.world); }
+  else await setWorldCharCatTab('characters');
 }
 
 // Category→object picker — same visual style as the novel picker (.np-*),
@@ -1125,48 +1162,48 @@ async function renderWorldMapsSidebar(w) {
       <span class="name">${x(w.name)}</span>
     </div>
   </div>`;
-  h += `<div class="ph compact"><h4>${t('worldMapTimelines')}</h4>
-    <button class="btn btn-g btn-i" onclick="openAddMapModal(${w.id})" title="Add map">${I.plus}</button>
-  </div>`;
-
   if (!maps.length) {
-    h += `<div class="empty project-side-empty"><p>No maps yet. Link novels, then add their maps.</p></div>`;
-  } else {
-    h += `<div class="world-maps-list">` + maps.map(m => {
-      const open = S.worldMapOpen.has(m.id);
-      const tls = timelines.filter(tl => tl.world_map_ref === m.id);
-      let tlsHtml = '';
-      if (open) {
-        tlsHtml = tls.length
-          ? `<div class="fchildren">` + tls.map(tl => {
-              const active = S.worldActiveTimelineId === tl.id;
-              return `<div class="li ${active ? 'active' : ''}" style="display:flex;align-items:center;gap:6px" onclick="selectWorldTimeline(${w.id},${tl.id})">
-                <span class="name" style="flex:1">${x(tl.name)}</span>
-                <button class="btn btn-g btn-i" title="Edit" onclick="event.stopPropagation();openWorldTimelineModal(${w.id},${tl.id})">${I.edit}</button>
-                <button class="btn btn-g btn-i" title="Delete" onclick="event.stopPropagation();deleteWorldTimeline(${w.id},${tl.id})">${I.delete}</button>
-              </div>`;
-            }).join('') + `</div>`
-          : `<div class="fchildren"><div class="empty project-side-empty"><p>No timelines yet.</p></div></div>`;
-      }
-      return `<div class="folder-sec" style="background:var(--bg2);border-radius:6px;padding:6px 10px;margin-bottom:6px">
-        <div class="fhead" style="gap:8px;padding:0;text-transform:none;font-weight:400;color:inherit" onclick="toggleWorldMapOpen(${m.id})">
-          <svg class="ftgl ${open ? 'open' : ''}" style="width:8px;height:8px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          <span style="font-size:.9em;flex:1">${x(m.map_name || '(untitled map)')} <span style="color:var(--t3);font-size:.85em">${x(m.project_name || '')}</span></span>
-          <button class="btn btn-g btn-i" title="New timeline" onclick="event.stopPropagation();openWorldTimelineModal(${w.id},null,${m.id})">${I.plus}</button>
-          <button class="btn btn-g btn-i" title="Remove map" onclick="event.stopPropagation();removeWorldMap(${w.id},${m.id})">${I.delete}</button>
-        </div>
-        ${tlsHtml}
-      </div>`;
-    }).join('') + `</div>`;
+    h += `<div class="ph compact"><h4>${t('worldMapTimelines')}</h4></div>
+      <div class="empty project-side-empty"><p>No maps yet. Link novels, then <a href="#" onclick="event.preventDefault();openAddMapModal(${w.id})">add one of their maps</a>.</p></div>`;
+    q('#left-panel-inner').innerHTML = h;
+    return;
   }
+
+  if (!S.worldMapSelectedId || !maps.find(m => m.id === S.worldMapSelectedId)) {
+    // Default to the selected timeline's own map so switching timelines from
+    // elsewhere keeps this dropdown in sync; else just the first map.
+    const activeTl = S.worldActiveTimelineId ? timelines.find(tl => tl.id === S.worldActiveTimelineId) : null;
+    S.worldMapSelectedId = activeTl?.world_map_ref || maps[0].id;
+  }
+  const selMap = maps.find(m => m.id === S.worldMapSelectedId) || maps[0];
+
+  h += `<div class="ph compact"><h4>${t('worldMapTimelines')}</h4>
+    <button class="btn btn-g btn-i" title="New timeline on this map" onclick="openWorldTimelineModal(${w.id},null,${selMap.id})">${I.plus}</button>
+  </div>
+  <div class="fg" style="padding:0 10px;margin:0 0 8px">
+    <select onchange="selectWorldMapDropdown(${w.id},this.value)">
+      ${maps.map(m => `<option value="${m.id}" ${m.id === selMap.id ? 'selected' : ''}>${x(m.map_name || '(untitled map)')} · ${x(m.project_name || '')}</option>`).join('')}
+    </select>
+  </div>
+  <div style="padding:0 10px 6px"><button class="btn btn-g" style="font-size:11.5px;padding:3px 8px" title="Remove this map from the world" onclick="removeWorldMap(${w.id},${selMap.id})">${I.delete} Remove map</button></div>`;
+
+  const tls = timelines.filter(tl => tl.world_map_ref === selMap.id);
+  h += tls.length
+    ? tls.map(tl => {
+        const active = S.worldActiveTimelineId === tl.id;
+        return `<div class="li ${active ? 'active' : ''}" style="display:flex;align-items:center;gap:6px" onclick="selectWorldTimeline(${w.id},${tl.id})">
+          <span class="name" style="flex:1">${x(tl.name)}</span>
+          <button class="btn btn-g btn-i" title="Edit" onclick="event.stopPropagation();openWorldTimelineModal(${w.id},${tl.id})">${I.edit}</button>
+          <button class="btn btn-g btn-i" title="Delete" onclick="event.stopPropagation();deleteWorldTimeline(${w.id},${tl.id})">${I.delete}</button>
+        </div>`;
+      }).join('')
+    : `<div class="empty project-side-empty"><p>No timelines yet on this map.</p></div>`;
 
   q('#left-panel-inner').innerHTML = h;
 }
 
-async function toggleWorldMapOpen(mapId) {
-  S.worldMapOpen = S.worldMapOpen || new Set();
-  if (S.worldMapOpen.has(mapId)) S.worldMapOpen.delete(mapId);
-  else S.worldMapOpen.add(mapId);
+async function selectWorldMapDropdown(worldId, mapId) {
+  S.worldMapSelectedId = Number(mapId);
   await renderWorldSidebar(S.world);
 }
 
@@ -1246,7 +1283,7 @@ async function saveWorldTimeline(worldId, id) {
   if (id) await api.world.updateTimeline(id, name, wmref);
   else await api.world.createTimeline(worldId, name, wmref);
   closeModal();
-  if (wmref) { S.worldMapOpen = S.worldMapOpen || new Set(); S.worldMapOpen.add(wmref); }
+  if (wmref) S.worldMapSelectedId = wmref;
   await refreshWorldMapsTimeline(worldId);
 }
 
@@ -1443,8 +1480,9 @@ async function renderWorldMapTimelineBoard(worldId, timelineId) {
   <div id="wmtl-graphs" style="display:flex;flex-direction:column;gap:8px;min-height:0">
     ${renderWorldTimelineGraphSvg(worldId, timelineId, events)}
     ${renderWorldMapToolbarHtml()}
-    <div id="map-board" class="map-whiteboard" style="flex:8 1 0;min-height:0;height:auto">
+    <div id="map-board" class="map-whiteboard" style="flex:8 1 0;min-height:0;height:auto;position:relative"
       <div id="world-map-konva-container" style="width:100%;height:100%;"></div>
+      <div id="world-map-obj-tip" class="konva-tooltip" style="display:none"></div>
     </div>
   </div>`;
 
@@ -1593,9 +1631,29 @@ async function paintEventObjectsOnBoard(eventId, scale) {
       const pos = label.position();
       api.world.updateEventObjectPoint(o.id, pos.x, pos.y);
     });
+    label.on('mouseenter', () => { document.body.style.cursor = S.worldMapTool === 'move' ? 'grab' : 'pointer'; showWorldMapObjTip(o.label, label); });
+    label.on('mousemove', () => showWorldMapObjTip(o.label, label));
+    label.on('dragmove', () => showWorldMapObjTip(o.label, label));
+    label.on('mouseleave', () => { document.body.style.cursor = 'default'; hideWorldMapObjTip(); });
     worldKonvaObjLayer.add(label);
   }
   worldKonvaObjLayer.batchDraw();
+}
+
+// Placed objects/characters live on a Konva canvas, which has no DOM element
+// per node to attach a native title= to — this floating div stands in.
+function showWorldMapObjTip(label, node) {
+  const tip = q('#world-map-obj-tip');
+  if (!tip || !node) return;
+  const pos = node.getAbsolutePosition();
+  tip.textContent = label || '';
+  tip.style.left = `${pos.x}px`;
+  tip.style.top = `${pos.y - 10}px`;
+  tip.style.display = 'block';
+}
+function hideWorldMapObjTip() {
+  const tip = q('#world-map-obj-tip');
+  if (tip) tip.style.display = 'none';
 }
 
 function renderWorldTimelineGraphSvg(worldId, tlid, events) {
