@@ -398,7 +398,7 @@ h('library:deleteDoc',            (id)                       => db.deleteDocumen
 h('library:getDocTags',           (did)                      => db.getDocumentHashtags(did));
 h('library:toggleDocTag',         (did,hid)                  => db.toggleDocumentHashtag(did,hid));
 
-h('library:exportPdf', async (_e, htmlContent, defaultName) => {
+h('library:exportPdf', async (htmlContent, defaultName) => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     defaultPath: defaultName || 'document.pdf',
     filters: [{ name: 'PDF', extensions: ['pdf'] }],
@@ -418,7 +418,7 @@ h('sage:getObjectAmounts', () => db.getObjectAmounts());
 h('sage:getLinkerList',  () => db.getLinkerList());
 h('sage:getLinkerGraph', () => db.getLinkerGraph());
 
-h('library:exportDocx', async (_e, blocks, defaultName) => {
+h('library:exportDocx', async (blocks, defaultName) => {
   const { canceled, filePath } = await dialog.showSaveDialog({
     defaultPath: defaultName || 'document.docx',
     filters: [{ name: 'Word Document', extensions: ['docx'] }],
