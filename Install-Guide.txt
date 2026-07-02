@@ -11,7 +11,6 @@ Step 1: After you download program of this file in your device
         ,package.json
         ,package-lock.json
         ,preload.js
-        ,renderer.js
         ,start.js
         ,Style.css
 
@@ -36,24 +35,23 @@ Step 4: Build Program for Real use
 
         npm run build:portable
 
-    -this should start building portable app
-    -App size is Around 500Mb for all module
+    -this builds a portable app FOLDER (around 200-220Mb)
+    -(optional) npm run build:exe builds the old single-file .exe instead
 
 Step 5: Check your App
 
-    -App that had builded should be in folder
+    -The built app folder should be in
 
-        dist/
+        DraconDexPortable/DraconDex-<version>/
 
-    -you will found a App Name
+    -Open DraconDex.exe inside it to check that the App was builded Correctly
 
-        Novel Manager 1.x.0.exe
+Step last: Carry it on a flash drive
 
-    -Open the app to check that App was builded Correctly
-
-Step last: And done
-
-    -You can move the folder Dist/ into The folder you want and changed into name you want.
+    -Copy the whole DraconDex-<version> folder to your flash drive.
+    -On any Windows PC, open the folder and run DraconDex.exe — no install needed.
+    -Your data is saved in "novel-manager-data" next to the exe,
+     so your novels travel with the folder.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

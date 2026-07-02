@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node ./start.js",
     "postinstall": "node ./ensure-electron.js",
-    "build:portable": "electron-builder --win portable"
+    "build:portable": "electron-builder --win dir && node scripts/finish-portable.mjs",
+    "build:exe": "electron-builder --win portable"
   },
   "dependencies": {
     "docx": "^9.7.1",
@@ -28,19 +29,24 @@
       "index.html",
       "main.js",
       "preload.js",
-      "renderer.js",
       "style.css",
       "database.js",
       "package.json",
       "src/**/*",
       "Image/**/*",
-      "node_modules/**/*"
+      "!node_modules/docx/dist/index.mjs",
+      "!node_modules/docx/dist/index.iife.js",
+      "!node_modules/docx/dist/index.umd.cjs"
+    ],
+    "electronLanguages": [
+      "en-US",
+      "th"
     ],
     "win": {
       "signAndEditExecutable": false,
       "target": [
         {
-          "target": "portable",
+          "target": "dir",
           "arch": [
             "x64"
           ]

@@ -812,6 +812,105 @@ function initDB() {
   const hasNote = db.prepare(`PRAGMA table_info(object)`).all().some(c => c.name === 'note');
   if (!hasNote) { try { db.prepare(`ALTER TABLE object ADD COLUMN note TEXT`).run(); } catch (_) {} }
   migrateHeroV26(db);
+  ensureIndexes(db);
+}
+
+// Foreign keys are ON with CASCADE deletes throughout, but SQLite does not
+// index the child side of a FK automatically — every parent DELETE and every
+// `WHERE <fk> = ?` list query was a full scan. Indexes are only created for FK
+// columns not already covered as the leading column of a UNIQUE constraint.
+// Runs after migrations so reshaped tables (Hero v2.6 etc.) are final.
+function ensureIndexes(db) {
+  db.exec(`
+    -- Director
+    CREATE INDEX IF NOT EXISTS idx_project_folder            ON project(folder_id);
+    CREATE INDEX IF NOT EXISTS idx_project_description_proj  ON project_description(project_id);
+    CREATE INDEX IF NOT EXISTS idx_object_category_project   ON object_category(project_id);
+    CREATE INDEX IF NOT EXISTS idx_object_template_category  ON object_template(category_id);
+    CREATE INDEX IF NOT EXISTS idx_object_project            ON object(project_id);
+    CREATE INDEX IF NOT EXISTS idx_object_category           ON object(category_id);
+    CREATE INDEX IF NOT EXISTS idx_object_attribute_template ON object_attribute(template_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_project          ON timeline(project_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_event_timeline   ON timeline_event(timeline_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_event_start      ON timeline_event(start_at);
+    CREATE INDEX IF NOT EXISTS idx_timeline_event_end        ON timeline_event(end_at);
+    CREATE INDEX IF NOT EXISTS idx_map_project               ON map(project_id);
+    CREATE INDEX IF NOT EXISTS idx_map_area_map              ON map_area(map_id);
+    CREATE INDEX IF NOT EXISTS idx_map_point_area            ON map_point(area_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_project          ON relation(project_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_type_ref         ON relation(relation_type);
+    CREATE INDEX IF NOT EXISTS idx_relation_obob_relation    ON relation_obob(relation_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_obob_from        ON relation_obob(object_from);
+    CREATE INDEX IF NOT EXISTS idx_relation_obob_to          ON relation_obob(object_to);
+    CREATE INDEX IF NOT EXISTS idx_relation_obtl_relation    ON relation_obtl(relation_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_obtl_from        ON relation_obtl(object_from);
+    CREATE INDEX IF NOT EXISTS idx_relation_obtl_to          ON relation_obtl(timeline_to);
+    CREATE INDEX IF NOT EXISTS idx_relation_tltl_relation    ON relation_tltl(relation_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_tltl_from        ON relation_tltl(timeline_from);
+    CREATE INDEX IF NOT EXISTS idx_relation_tltl_to          ON relation_tltl(timeline_to);
+    CREATE INDEX IF NOT EXISTS idx_project_hashtag_tag       ON project_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_object_hashtag_tag        ON object_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_event_hashtag_tag         ON event_hashtag(hashtag_id);
+
+    -- Navigator (World)
+    CREATE INDEX IF NOT EXISTS idx_world_novel_project       ON world_novel(project_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_character_world     ON world_character(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_char_cat_category   ON world_character_category(category_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_char_link_object    ON world_character_link(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_category_category   ON world_category(category_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_object_object       ON world_object(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_object_symbol       ON world_object(symbol_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_map_map             ON world_map(map_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_map_area_area       ON world_map_area(area_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_map_point_point     ON world_map_point(point_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_timeline_world      ON world_timeline(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_timeline_map        ON world_timeline(world_map_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tl_event_date       ON world_timeline_event(date_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tl_object_object    ON world_timeline_object(world_object_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tl_object_char      ON world_timeline_object(world_character_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tl_object_point     ON world_timeline_object(point_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_cat_world      ON world_orig_category(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_tmpl_category  ON world_orig_template(category_id);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_obj_world      ON world_orig_object(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_obj_category   ON world_orig_object(category_id);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_attr_template  ON world_orig_attribute(template_id);
+    CREATE INDEX IF NOT EXISTS idx_world_description_world   ON world_description(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tag_tag             ON world_tag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_world_char_tag_tag        ON world_charactor_tag(hashtag_id);
+
+    -- Hero (Game)
+    CREATE INDEX IF NOT EXISTS idx_game_category_category    ON game_category(category_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_cat_object_object    ON game_cat_object(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_character_game       ON game_character(game_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_character_objlink    ON game_character(object_link);
+    CREATE INDEX IF NOT EXISTS idx_game_char_template_game   ON game_char_template(game_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_char_attr_template   ON game_char_attribute(template_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_collection_game      ON game_collection(game_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_col_template_col     ON game_col_template(collection_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_col_element_col      ON game_col_element(collection_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_col_attr_template    ON game_col_attribute(template_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_char_element_element ON game_char_element(element_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_story_game           ON game_story(game_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_dialogue_story       ON game_dialogue(story_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_conversation_char    ON game_conversation(char_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_storyline_story      ON game_storyline(story_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_storyline_to         ON game_storyline(to_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_project_hashtag_tag  ON game_project_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_game_char_hashtag_tag     ON game_char_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_game_element_hashtag_tag  ON game_element_hashtag(hashtag_id);
+
+    -- Writer (Library)
+    CREATE INDEX IF NOT EXISTS idx_library_desc_library      ON library_description(library_ref);
+    CREATE INDEX IF NOT EXISTS idx_library_world_link_world  ON library_world_link(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_library_series_library    ON library_series(library_ref);
+    CREATE INDEX IF NOT EXISTS idx_series_desc_series        ON series_description(series_ref);
+    CREATE INDEX IF NOT EXISTS idx_series_novel_link_project ON series_novel_link(project_ref);
+    CREATE INDEX IF NOT EXISTS idx_series_char_link_object   ON series_char_link(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_series_object_link_object ON series_object_link(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_series_hashtag_tag        ON series_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_library_document_series   ON library_document(series_ref);
+    CREATE INDEX IF NOT EXISTS idx_document_hashtag_tag      ON document_hashtag(hashtag_id);
+  `);
 }
 
 // v2.6 replaced the entire Hero module schema. Reshape the surviving tables

@@ -90,13 +90,14 @@ DRACONDEX_DATA_DIR="$PWD/tmp-driver-data" npm start
 ## Build (portable exe)
 
 ```bash
-npm run build:portable   # electron-builder → DraconDexPortable/DraconDex <ver>.exe (~1-2 min)
+npm run build:portable   # electron-builder dir target → app folder DraconDexPortable/DraconDex-<ver>/ (run DraconDex.exe inside; ~200MB)
+npm run build:exe        # old single-file portable exe (unpacks to %TEMP% on each launch)
 ```
 
 ## Finding selectors
 
 `index.html` is mostly empty shells — the renderer builds all UI at runtime.
-Grep `renderer.js` and `src/renderer/*.js` for `onclick=` to find handlers;
+Grep `src/renderer/*.js` for `onclick=` to find handlers;
 attribute selectors like `button[onclick='openProjectModal()']` are the most
 robust click targets. Modal input ids are short (`#pn` project name, `#fn`
 folder name, `#cn` category, `#on` object — see `src/renderer/modals.js`).
