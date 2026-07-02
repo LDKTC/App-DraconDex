@@ -526,6 +526,20 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Navigator tags (v2.5.7) — mirror of Director's project_hashtag/object_hashtag,
+    -- sharing the same global hashtag table. --
+    CREATE TABLE IF NOT EXISTS world_tag (
+      world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(world_ref,hashtag_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS world_charactor_tag (
+      character_ref INTEGER NOT NULL REFERENCES world_character(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(character_ref,hashtag_id)
+    );
+
     -- Hero (v2.3) --
     CREATE TABLE IF NOT EXISTS game_project (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
