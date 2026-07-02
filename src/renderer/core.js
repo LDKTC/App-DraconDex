@@ -51,7 +51,7 @@ const UI_SIZE_MAX = 200;
 const UI_SIZE_STEP = 5;
 const L = {
   en: {
-    settings:'Settings', theme:'Theme', language:'Language', uiSize:'UI Size',
+    settings:'Settings', theme:'Theme', language:'Language', uiSize:'UI Size', cancel:'Cancel',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -88,7 +88,7 @@ const L = {
     sageModule:'Module', sageFrom:'From', sageTo:'To', sageType:'Type'
   },
   ja: {
-    settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ',
+    settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -125,7 +125,7 @@ const L = {
     sageModule:'モジュール', sageFrom:'元', sageTo:'先', sageType:'種類'
   },
   ko: {
-    settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기',
+    settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -162,7 +162,7 @@ const L = {
     sageModule:'모듈', sageFrom:'출처', sageTo:'대상', sageType:'유형'
   },
   th: {
-    settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI',
+    settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -199,7 +199,7 @@ const L = {
     sageModule:'โมดูล', sageFrom:'แหล่ง', sageTo:'ปลายทาง', sageType:'ประเภท'
   },
   zh: {
-    settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小',
+    settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -236,7 +236,7 @@ const L = {
     sageModule:'模块', sageFrom:'来源', sageTo:'目标', sageType:'类型'
   },
   vi: {
-    settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI',
+    settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -273,7 +273,7 @@ const L = {
     sageModule:'Module', sageFrom:'Từ', sageTo:'Đến', sageType:'Loại'
   },
   id: {
-    settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI',
+    settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -310,7 +310,7 @@ const L = {
     sageModule:'Modul', sageFrom:'Dari', sageTo:'Ke', sageType:'Jenis'
   },
   es: {
-    settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz',
+    settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -347,7 +347,7 @@ const L = {
     sageModule:'Módulo', sageFrom:'Desde', sageTo:'Hasta', sageType:'Tipo'
   },
   pt: {
-    settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface',
+    settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -384,7 +384,7 @@ const L = {
     sageModule:'Módulo', sageFrom:'De', sageTo:'Para', sageType:'Tipo'
   },
   fr: {
-    settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface',
+    settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -421,7 +421,7 @@ const L = {
     sageModule:'Module', sageFrom:'De', sageTo:'À', sageType:'Type'
   },
   de: {
-    settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe',
+    settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -458,7 +458,7 @@ const L = {
     sageModule:'Modul', sageFrom:'Von', sageTo:'Zu', sageType:'Typ'
   },
   ru: {
-    settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса',
+    settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
@@ -495,7 +495,7 @@ const L = {
     sageModule:'Модуль', sageFrom:'Из', sageTo:'В', sageType:'Тип'
   },
   qd: {
-    settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav',
+    settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
     daylight:'Daylight', moonlight:'Moonlight', midnight:'Midnight',
     redEclipse:'RedEclipse', clearSky:'ClearSky', clearStar:'ClearStar', afterRain:'AfterRain', rainbow:'Rainbow',
     atDawn:'AtDawn', atDusk:'AtDusk', atDay:'AtDay', blueEclipse:'BlueEclipse',
