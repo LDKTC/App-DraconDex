@@ -20,6 +20,14 @@ if (!fs.existsSync(unpacked)) {
 fs.rmSync(target, { recursive: true, force: true });
 fs.renameSync(unpacked, target);
 
+// Marker read by main.js at startup: with it, data lives in
+// novel-manager-data next to the exe (travels with the folder); without it
+// (installed build), data goes to the per-user appData dir instead.
+fs.writeFileSync(
+  path.join(target, 'portable.flag'),
+  'Portable marker for DraconDex. Keep this file next to DraconDex.exe so your data stays in this folder.\n'
+);
+
 function dirSize(dir) {
   let total = 0;
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

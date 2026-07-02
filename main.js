@@ -3,13 +3,24 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./database');
 
-// Keep app data next to the executable for portable builds. In dev,
-// DRACONDEX_DATA_DIR overrides the location so automated drivers can run
-// against scratch data instead of tmp-user-data.
+// Data location per build flavor:
+// - portable exe (build:exe): PORTABLE_EXECUTABLE_DIR is set by the launcher
+// - portable folder (build:portable): finish-portable.mjs drops portable.flag
+//   next to the exe
+// Both keep data in novel-manager-data beside the exe so it travels with the
+// app. An installed build (build:installer) has neither marker, so data goes
+// to the per-user appData dir — the install dir is deleted on uninstall/update
+// and (for per-machine installs) may not be writable.
+// In dev, DRACONDEX_DATA_DIR overrides the location so automated drivers can
+// run against scratch data instead of tmp-user-data.
 const isPackaged = app.isPackaged;
-const portableRoot = process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(app.getPath('exe'));
+const exeDir = path.dirname(app.getPath('exe'));
+const portableRoot = process.env.PORTABLE_EXECUTABLE_DIR ||
+  (fs.existsSync(path.join(exeDir, 'portable.flag')) ? exeDir : null);
 const tempDataPath = isPackaged
-  ? path.join(portableRoot, 'novel-manager-data')
+  ? (portableRoot
+      ? path.join(portableRoot, 'novel-manager-data')
+      : path.join(app.getPath('appData'), 'DraconDex', 'novel-manager-data'))
   : (process.env.DRACONDEX_DATA_DIR || path.join(__dirname, 'tmp-user-data'));
 if (!fs.existsSync(tempDataPath)) fs.mkdirSync(tempDataPath, { recursive: true });
 const electronUserDataPath = path.join(tempDataPath, 'electron-user-data');

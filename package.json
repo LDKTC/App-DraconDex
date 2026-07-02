@@ -7,7 +7,8 @@
     "start": "node ./start.js",
     "postinstall": "node ./ensure-electron.js",
     "build:portable": "electron-builder --win dir && node scripts/finish-portable.mjs",
-    "build:exe": "electron-builder --win portable"
+    "build:exe": "electron-builder --win portable",
+    "build:installer": "electron-builder --win nsis"
   },
   "dependencies": {
     "docx": "^9.7.1",
@@ -44,6 +45,7 @@
     ],
     "win": {
       "signAndEditExecutable": false,
+      "icon": "Image/DraconDex-IconApp.png",
       "target": [
         {
           "target": "dir",
@@ -52,6 +54,13 @@
           ]
         }
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "DraconDex-Setup-${version}.${ext}"
     }
   }
 }

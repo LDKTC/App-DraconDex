@@ -6,6 +6,9 @@ command inuse
     to build the app (portable folder -> DraconDexPortable/DraconDex-<version>/).
     - npm run build:portable
 
+    to build a windows installer (DraconDexPortable/DraconDex-Setup-<version>.exe).
+    - npm run build:installer
+
     to build the old single-file exe.
     - npm run build:exe
 
