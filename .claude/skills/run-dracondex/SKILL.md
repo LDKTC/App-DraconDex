@@ -90,7 +90,8 @@ DRACONDEX_DATA_DIR="$PWD/tmp-driver-data" npm start
 ## Build (portable exe)
 
 ```bash
-npm run build:portable   # electron-builder → DraconDexPortable/DraconDex <ver>.exe (~1-2 min)
+npm run build:portable   # electron-builder dir target → app folder DraconDexPortable/DraconDex-<ver>/ (run DraconDex.exe inside; ~200MB)
+npm run build:exe        # old single-file portable exe (unpacks to %TEMP% on each launch)
 ```
 
 ## Finding selectors

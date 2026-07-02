@@ -3,8 +3,11 @@ command inuse
     To test the app.
     - npm start 
     
-    to build the app.
+    to build the app (portable folder -> DraconDexPortable/DraconDex-<version>/).
     - npm run build:portable
+
+    to build the old single-file exe.
+    - npm run build:exe
 
     To install package modules.
     - npm install
