@@ -366,6 +366,50 @@ const upsertOrigAttr = (objectId, templateId, value) =>
     ON CONFLICT(object_id, template_id) DO UPDATE SET attribute_value=excluded.attribute_value, update_at=datetime('now')
   `).run(objectId, templateId, value);
 
+// ---- Tags (v2.5.7) — mirror of Director's project/object hashtag mappings,
+// sharing the same global hashtag table (see src/db/hashtag.js). ------------
+const getWorldTags = (worldId) =>
+  getDB().prepare(`SELECT h.*, uc.color_code FROM hashtag h LEFT JOIN use_color uc ON h.tag_color=uc.id JOIN world_tag wt ON h.id=wt.hashtag_id WHERE wt.world_ref=? ORDER BY h.tag_name`).all(worldId);
+const setWorldTags = (worldId, tags) => {
+  const d = getDB();
+  d.prepare(`DELETE FROM world_tag WHERE world_ref=?`).run(worldId);
+  const ins = d.prepare(`INSERT INTO world_tag (world_ref,hashtag_id) VALUES (?,?)`);
+  for (const t of (tags || [])) ins.run(worldId, t);
+  return true;
+};
+
+const getWorldCharTags = (characterId) =>
+  getDB().prepare(`SELECT h.*, uc.color_code FROM hashtag h LEFT JOIN use_color uc ON h.tag_color=uc.id JOIN world_charactor_tag wct ON h.id=wct.hashtag_id WHERE wct.character_ref=? ORDER BY h.tag_name`).all(characterId);
+const setWorldCharTags = (characterId, tags) => {
+  const d = getDB();
+  d.prepare(`DELETE FROM world_charactor_tag WHERE character_ref=?`).run(characterId);
+  const ins = d.prepare(`INSERT INTO world_charactor_tag (character_ref,hashtag_id) VALUES (?,?)`);
+  for (const t of (tags || [])) ins.run(characterId, t);
+  return true;
+};
+
+// Every tag used anywhere in the world (on the world itself or on its
+// characters) — feeds the world Tags tab sidebar, like getAllProjectUsedTags.
+const getAllWorldUsedTags = (worldId) =>
+  getDB().prepare(`
+    SELECT DISTINCT h.id, h.tag_name, h.tag_color, h.update_at, uc.color_code
+    FROM hashtag h LEFT JOIN use_color uc ON h.tag_color = uc.id
+    WHERE h.id IN (
+      SELECT hashtag_id FROM world_tag WHERE world_ref = ?
+      UNION
+      SELECT wct.hashtag_id FROM world_charactor_tag wct JOIN world_character wc ON wct.character_ref = wc.id WHERE wc.world_ref = ?
+    ) ORDER BY h.tag_name
+  `).all(worldId, worldId);
+
+const getWorldCharactersByTag = (tagId, worldId) =>
+  getDB().prepare(`
+    SELECT c.*, uc.color_code
+    FROM world_character c
+    JOIN world_charactor_tag wct ON wct.character_ref = c.id
+    LEFT JOIN use_color uc ON c.color = uc.id
+    WHERE wct.hashtag_id = ? AND c.world_ref = ? ORDER BY c.name
+  `).all(tagId, worldId);
+
 // ---- World description -----------------------------------------------------
 const getWorldDesc = (worldId) =>
   getDB().prepare(`SELECT * FROM world_description WHERE world_ref=? ORDER BY id`).all(worldId);
@@ -383,6 +427,8 @@ module.exports = {
   getOrigTemplates, createOrigTemplate, updateOrigTemplate, deleteOrigTemplate,
   getOrigObjects, getOrigObject, createOrigObject, updateOrigObject, updateOrigObjectNote, deleteOrigObject,
   getOrigObjectAttrs, upsertOrigAttr,
+  getWorldTags, setWorldTags, getWorldCharTags, setWorldCharTags,
+  getAllWorldUsedTags, getWorldCharactersByTag,
   getWorldDesc, addWorldDesc, updateWorldDesc, deleteWorldDesc,
   getWorldCharacters, createWorldCharacter, updateWorldCharacter, deleteWorldCharacter,
   getCharacterLinks, getLinkableCharacterObjects, addCharacterLink, removeCharacterLink,

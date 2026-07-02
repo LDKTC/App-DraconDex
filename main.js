@@ -243,6 +243,14 @@ h('world:addDesc',          (wid,n,t)                 => db.addWorldDesc(wid,n,t
 h('world:updDesc',          (id,n,t)                  => db.updateWorldDesc(id,n,t));
 h('world:delDesc',          (id)                      => db.deleteWorldDesc(id));
 
+// World / world-character tags (v2.5.7) — mirror of project/object hashtags
+h('world:getTags',          (wid)                     => db.getWorldTags(wid));
+h('world:setTags',          (wid,tags)                => db.setWorldTags(wid,tags));
+h('world:getCharTags',      (cid)                     => db.getWorldCharTags(cid));
+h('world:setCharTags',      (cid,tags)                => db.setWorldCharTags(cid,tags));
+h('world:getAllUsedTags',   (wid)                     => db.getAllWorldUsedTags(wid));
+h('world:getCharactersByTag',(tid,wid)                => db.getWorldCharactersByTag(tid,wid));
+
 h('world:getCharacters',    (wid)                     => db.getWorldCharacters(wid));
 h('world:createCharacter',  (wid,n,sym,c)             => db.createWorldCharacter(wid,n,sym,c));
 h('world:updateCharacter',  (id,n,sym,c)              => db.updateWorldCharacter(id,n,sym,c));
