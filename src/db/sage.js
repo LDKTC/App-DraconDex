@@ -96,73 +96,103 @@ function getLinkerList() {
   return links;
 }
 
+// Whole-app "Obsidian-style" graph: every object/category/character/etc. is its
+// own node (not just project-level), tagged with `module` (director/navigator/
+// hero/writer/global) so the UI can filter by module with checkboxes.
 function getLinkerGraph() {
   const db = getDB();
-  const nodes = new Map(); // key => {id, label, type}
+  const nodes = new Map(); // key => {id, label, type, module}
+  const edgeSet = new Set();
   const edges = [];
   let nodeId = 0;
 
-  function ensureNode(key, label, type) {
-    if (!nodes.has(key)) nodes.set(key, { id: nodeId++, label, type });
+  function ensureNode(key, label, type, module) {
+    if (!nodes.has(key)) nodes.set(key, { id: nodeId++, label, type, module });
     return nodes.get(key).id;
   }
+  function nodeIdOf(key) { return nodes.get(key)?.id; }
+  function addEdge(sourceKey, targetKey) {
+    const s = nodeIdOf(sourceKey), t = nodeIdOf(targetKey);
+    if (s == null || t == null || s === t) return;
+    const dedupeKey = s < t ? `${s}-${t}` : `${t}-${s}`;
+    if (edgeSet.has(dedupeKey)) return;
+    edgeSet.add(dedupeKey);
+    edges.push({ source: s, target: t });
+  }
+  function run(sql, fn) {
+    try { db.prepare(sql).all().forEach(fn); } catch (_) {}
+  }
 
-  // Projects
-  try {
-    db.prepare(`SELECT id, name FROM project`).all().forEach(r => ensureNode(`proj_${r.id}`, r.name, 'project'));
-  } catch(_){}
+  // ── Nodes ──────────────────────────────────────────────
+  run(`SELECT id, name FROM project`, r => ensureNode(`proj_${r.id}`, r.name, 'project', 'director'));
+  run(`SELECT id, category_name FROM object_category`, r => ensureNode(`cat_${r.id}`, r.category_name, 'category', 'director'));
+  run(`SELECT id, name FROM object`, r => ensureNode(`obj_${r.id}`, r.name, 'object', 'director'));
+  run(`SELECT id, event_name FROM timeline_event`, r => ensureNode(`evt_${r.id}`, r.event_name || '(event)', 'event', 'director'));
+  run(`SELECT id, tag_name FROM hashtag`, r => ensureNode(`tag_${r.id}`, r.tag_name, 'hashtag', 'global'));
 
-  // Hashtags
-  try {
-    db.prepare(`SELECT id, tag_name FROM hashtag`).all().forEach(r => ensureNode(`tag_${r.id}`, r.tag_name, 'hashtag'));
-  } catch(_){}
+  run(`SELECT id, name FROM world_project`, r => ensureNode(`world_${r.id}`, r.name, 'project', 'navigator'));
+  run(`SELECT id, name FROM world_character`, r => ensureNode(`wchar_${r.id}`, r.name, 'character', 'navigator'));
+  run(`SELECT id, category_name FROM world_orig_category`, r => ensureNode(`wcat_${r.id}`, r.category_name, 'category', 'navigator'));
+  run(`SELECT id, name FROM world_orig_object`, r => ensureNode(`wobj_${r.id}`, r.name, 'object', 'navigator'));
 
-  // Worlds
-  try {
-    db.prepare(`SELECT id, name FROM world_project`).all().forEach(r => ensureNode(`world_${r.id}`, r.name, 'world'));
-  } catch(_){}
+  run(`SELECT id, name FROM game_project`, r => ensureNode(`game_${r.id}`, r.name, 'project', 'hero'));
+  run(`SELECT id, name FROM game_character`, r => ensureNode(`gchar_${r.id}`, r.name, 'character', 'hero'));
+  run(`SELECT id, name FROM game_collection`, r => ensureNode(`gcol_${r.id}`, r.name, 'category', 'hero'));
+  run(`SELECT id, name FROM game_col_element`, r => ensureNode(`gel_${r.id}`, r.name, 'object', 'hero'));
 
-  // Games
-  try {
-    db.prepare(`SELECT id, name FROM game_project`).all().forEach(r => ensureNode(`game_${r.id}`, r.name, 'game'));
-  } catch(_){}
+  run(`SELECT id, project_name FROM write_project`, r => ensureNode(`write_${r.id}`, r.project_name, 'project', 'writer'));
+  run(`SELECT id, name FROM write_series`, r => ensureNode(`wser_${r.id}`, r.name, 'category', 'writer'));
+  run(`SELECT id, name FROM write_book`, r => ensureNode(`wbook_${r.id}`, r.name, 'category', 'writer'));
+  run(`SELECT id, name FROM write_chapter`, r => ensureNode(`wchp_${r.id}`, r.name, 'object', 'writer'));
+  run(`SELECT id, notename FROM write_note`, r => ensureNode(`wnote_${r.id}`, r.notename, 'object', 'writer'));
 
-  // Write projects
-  try {
-    db.prepare(`SELECT id, project_name FROM write_project`).all().forEach(r => ensureNode(`write_${r.id}`, r.project_name, 'write'));
-  } catch(_){}
+  // ── Edges: Director ────────────────────────────────────
+  run(`SELECT id, project_id FROM object_category`, r => addEdge(`cat_${r.id}`, `proj_${r.project_id}`));
+  run(`SELECT id, category_id FROM object`, r => addEdge(`obj_${r.id}`, `cat_${r.category_id}`));
+  run(`SELECT object_from, object_to FROM relation_obob`, r => addEdge(`obj_${r.object_from}`, `obj_${r.object_to}`));
+  run(`SELECT object_from, timeline_to FROM relation_obtl`, r => addEdge(`obj_${r.object_from}`, `evt_${r.timeline_to}`));
+  run(`SELECT timeline_from, timeline_to FROM relation_tltl`, r => addEdge(`evt_${r.timeline_from}`, `evt_${r.timeline_to}`));
+  run(`SELECT project_id, hashtag_id FROM project_hashtag`, r => addEdge(`proj_${r.project_id}`, `tag_${r.hashtag_id}`));
+  run(`SELECT object_id, hashtag_id FROM object_hashtag`, r => addEdge(`obj_${r.object_id}`, `tag_${r.hashtag_id}`));
+  run(`SELECT event_id, hashtag_id FROM event_hashtag`, r => addEdge(`evt_${r.event_id}`, `tag_${r.hashtag_id}`));
 
-  // Edges: project hashtags
-  try {
-    db.prepare(`SELECT project_id, hashtag_id FROM project_hashtag`).all().forEach(r => {
-      const s = nodes.get(`proj_${r.project_id}`)?.id, t = nodes.get(`tag_${r.hashtag_id}`)?.id;
-      if (s != null && t != null) edges.push({ source: s, target: t });
-    });
-  } catch(_){}
+  // ── Edges: Navigator ───────────────────────────────────
+  run(`SELECT world_ref, project_ref FROM world_novel`, r => addEdge(`world_${r.world_ref}`, `proj_${r.project_ref}`));
+  run(`SELECT id, world_ref FROM world_character`, r => addEdge(`wchar_${r.id}`, `world_${r.world_ref}`));
+  run(`SELECT character_ref, object_ref FROM world_character_link`, r => addEdge(`wchar_${r.character_ref}`, `obj_${r.object_ref}`));
+  run(`SELECT id, world_ref FROM world_orig_category`, r => addEdge(`wcat_${r.id}`, `world_${r.world_ref}`));
+  run(`SELECT id, category_id FROM world_orig_object`, r => addEdge(`wobj_${r.id}`, `wcat_${r.category_id}`));
+  run(`SELECT world_ref, hashtag_id FROM world_tag`, r => addEdge(`world_${r.world_ref}`, `tag_${r.hashtag_id}`));
+  run(`SELECT character_ref, hashtag_id FROM world_charactor_tag`, r => addEdge(`wchar_${r.character_ref}`, `tag_${r.hashtag_id}`));
+  // Borrowed Director categories a world draws characters/categories from.
+  run(`SELECT world_ref, category_ref FROM world_character_category`, r => addEdge(`world_${r.world_ref}`, `cat_${r.category_ref}`));
+  run(`SELECT world_ref, category_ref FROM world_category`, r => addEdge(`world_${r.world_ref}`, `cat_${r.category_ref}`));
 
-  // Edges: world → project
-  try {
-    db.prepare(`SELECT world_ref, project_ref FROM world_novel_link`).all().forEach(r => {
-      const s = nodes.get(`world_${r.world_ref}`)?.id, t = nodes.get(`proj_${r.project_ref}`)?.id;
-      if (s != null && t != null) edges.push({ source: s, target: t });
-    });
-  } catch(_){}
+  // ── Edges: Hero ────────────────────────────────────────
+  run(`SELECT game_ref, project_ref FROM game_novel_link`, r => addEdge(`game_${r.game_ref}`, `proj_${r.project_ref}`));
+  run(`SELECT id, game_ref FROM game_character`, r => addEdge(`gchar_${r.id}`, `game_${r.game_ref}`));
+  run(`SELECT id, game_ref FROM game_collection`, r => addEdge(`gcol_${r.id}`, `game_${r.game_ref}`));
+  run(`SELECT id, collection_ref FROM game_col_element`, r => addEdge(`gel_${r.id}`, `gcol_${r.collection_ref}`));
+  run(`SELECT char_ref, element_ref FROM game_char_element`, r => addEdge(`gchar_${r.char_ref}`, `gel_${r.element_ref}`));
+  run(`SELECT game_id, hashtag_id FROM game_project_hashtag`, r => addEdge(`game_${r.game_id}`, `tag_${r.hashtag_id}`));
+  run(`SELECT char_id, hashtag_id FROM game_char_hashtag`, r => addEdge(`gchar_${r.char_id}`, `tag_${r.hashtag_id}`));
+  run(`SELECT element_id, hashtag_id FROM game_element_hashtag`, r => addEdge(`gel_${r.element_id}`, `tag_${r.hashtag_id}`));
+  // Borrowed Director category the game draws characters from, and the object
+  // a game character is linked to (game_character.object_link -> game_cat_object -> object).
+  run(`SELECT game_ref, category_ref FROM game_category`, r => addEdge(`game_${r.game_ref}`, `cat_${r.category_ref}`));
+  run(`SELECT gco.object_ref AS object_ref, gc.id AS char_id
+       FROM game_character gc
+       JOIN game_cat_object gco ON gco.id = gc.object_link`,
+    r => addEdge(`gchar_${r.char_id}`, `obj_${r.object_ref}`));
 
-  // Edges: game → project
-  try {
-    db.prepare(`SELECT game_ref, project_ref FROM game_novel_link`).all().forEach(r => {
-      const s = nodes.get(`game_${r.game_ref}`)?.id, t = nodes.get(`proj_${r.project_ref}`)?.id;
-      if (s != null && t != null) edges.push({ source: s, target: t });
-    });
-  } catch(_){}
-
-  // Edges: write project → novel (through its series' novel links)
-  try {
-    db.prepare(`SELECT ws.project_id, wnl.novel_id FROM write_novel_link wnl JOIN write_series ws ON ws.id=wnl.series_id`).all().forEach(r => {
-      const s = nodes.get(`write_${r.project_id}`)?.id, t = nodes.get(`proj_${r.novel_id}`)?.id;
-      if (s != null && t != null) edges.push({ source: s, target: t });
-    });
-  } catch(_){}
+  // ── Edges: Writer ──────────────────────────────────────
+  run(`SELECT id, project_id FROM write_series`, r => addEdge(`wser_${r.id}`, `write_${r.project_id}`));
+  run(`SELECT id, series_id FROM write_book`, r => addEdge(`wbook_${r.id}`, `wser_${r.series_id}`));
+  run(`SELECT id, book_id FROM write_chapter`, r => addEdge(`wchp_${r.id}`, `wbook_${r.book_id}`));
+  run(`SELECT id, project_id FROM write_note`, r => addEdge(`wnote_${r.id}`, `write_${r.project_id}`));
+  run(`SELECT series_id, novel_id FROM write_novel_link`, r => addEdge(`wser_${r.series_id}`, `proj_${r.novel_id}`));
+  run(`SELECT chapter_id, object_id FROM write_wiki_link WHERE object_id IS NOT NULL`,
+    r => addEdge(`wchp_${r.chapter_id}`, `obj_${r.object_id}`));
 
   return { nodes: Array.from(nodes.values()), edges };
 }
