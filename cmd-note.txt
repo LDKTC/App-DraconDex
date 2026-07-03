@@ -24,3 +24,27 @@ command inuse
 
     to run app build from terminal.
     - "app name.exe"
+
+command inuse (flutter_app / Android APK)
+
+    to download flutter packages (run inside flutter_app).
+    - flutter pub get
+
+    to check code problems.
+    - flutter analyze
+
+    to run tests.
+    - flutter test
+
+    to test on a phone/emulator.
+    - flutter run
+
+    to build the APK (result in flutter_app/build/app/outputs/flutter-apk/).
+    - flutter build apk --release --split-per-abi
+    - flutter build apk --release
+
+    to install on a phone over USB.
+    - adb install build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+    no PC setup: GitHub -> Actions -> "Build Flutter APK" -> Run workflow
+    -> download "release-apks" artifact.
