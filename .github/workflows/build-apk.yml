@@ -3,7 +3,11 @@ name: Build Flutter APK
 on:
   push:
     branches:
-      - claude/flutter-apk-development-9c8p1k
+      - main
+      - claude/apk-run-prep-q0ct2l
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
 jobs:
@@ -34,6 +38,10 @@ jobs:
         working-directory: flutter_app
         run: flutter analyze --no-fatal-infos
 
+      - name: Test
+        working-directory: flutter_app
+        run: flutter test
+
       - name: Build release APK (split per ABI)
         working-directory: flutter_app
         run: flutter build apk --release --split-per-abi
@@ -47,6 +55,6 @@ jobs:
         with:
           name: release-apks
           path: |
-            flutter_app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            flutter_app/build/app/outputs/flutter-apk/app-*-release.apk
             flutter_app/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30

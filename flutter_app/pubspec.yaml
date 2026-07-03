@@ -46,9 +46,11 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
 
+# generate is off because the custom "qd" (Draconic) locale is rejected by
+# newer gen-l10n validation; the generated files in lib/core/i18n are committed.
 flutter:
   uses-material-design: true
-  generate: true
+  generate: false
 
   assets:
     - assets/images/

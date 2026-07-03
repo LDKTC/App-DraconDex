@@ -107,6 +107,13 @@ Step 5: Build the APK file
 
         flutter build apk --release
 
+    Option C - No PC setup needed (GitHub Actions):
+
+        - Go to the repo page on GitHub -> Actions tab
+        - Open the "Build Flutter APK" workflow -> Run workflow
+        - When it finishes, download the "release-apks" artifact
+          (a zip that contains the APK files from Step 6)
+
 Step 6: Find your APK
 
     - APK files will be in this folder:
