@@ -316,6 +316,12 @@ contextBridge.exposeInMainWorld('api', {
     updateChat:           (id,txt)        => inv('write:updateChat', id,txt),
     deleteChat:           (id)            => inv('write:deleteChat', id),
   },
+  artisan: {
+    createNovel: (base,spec) => inv('artisan:createNovel', base,spec),
+    createWorld: (base,spec) => inv('artisan:createWorld', base,spec),
+    createGame:  (base,spec) => inv('artisan:createGame', base,spec),
+    createWrite: (base,spec) => inv('artisan:createWrite', base,spec),
+  },
   sage: {
     getDataSize:     () => inv('sage:getDataSize'),
     getObjectAmounts:() => inv('sage:getObjectAmounts'),

@@ -418,6 +418,12 @@ h('write:createChat',       (nid,txt)        => db.createWriteChat(nid,txt));
 h('write:updateChat',       (id,txt)         => db.updateWriteChat(id,txt));
 h('write:deleteChat',       (id)             => db.deleteWriteChat(id));
 
+// Artisan (v2.8) — create-from-template scaffolding
+h('artisan:createNovel', (base,spec) => db.artisanCreateNovel(base,spec));
+h('artisan:createWorld', (base,spec) => db.artisanCreateWorld(base,spec));
+h('artisan:createGame',  (base,spec) => db.artisanCreateGame(base,spec));
+h('artisan:createWrite', (base,spec) => db.artisanCreateWrite(base,spec));
+
 // Sage / Analytics
 h('sage:getDataSize',    () => db.getDataSize());
 h('sage:getObjectAmounts', () => db.getObjectAmounts());
