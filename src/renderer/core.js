@@ -87,7 +87,8 @@ const S = {
   // Hero module state
   game:null, gameTab:'project',
   // Writer module state
-  library:null, libraryTab:'overview', librarySeries:null, librarySeriesTab:'docs', libraryDoc:null,
+  write:null, writeTab:'project', writeSeries:null, writeBook:null, writeChapter:null,
+  writeWikiChapter:null, writeNote:null, writeOpenProjects:new Set(),
   // Sage module state
   sageTab:'dataSize',
 };
@@ -432,9 +433,8 @@ const MODULE_SUBNAV = {
   hero: { setter:'setGameTab', items:[
     ['novel','relation','gameNovelLink'], ['story','story','gameStory'],
     ['tags','hashtag','gameTags'] ] },
-  writer: { setter:'setLibraryTab', items:[
-    ['overview','list','libraryOverview'], ['series','series','librarySeries'],
-    ['tags','hashtag','libraryTags'] ] },
+  writer: { setter:'setWriteTab', items:[
+    ['novel','relation','writeNovelLink'], ['note','story','writeChatnote'] ] },
   sage: { setter:'setSageTab', items:[
     ['dataSize','layer','sageDataSize'], ['objectAmount','table','sageObjectAmount'],
     ['linkerList','list','sageLinkerList'], ['linkerGraph','relation','sageLinkerGraph'] ] },
@@ -457,10 +457,10 @@ function buildModuleSubNav(){
 function updateModuleSubNav(){
   const show = {
     hero:      S.activeModule === 'hero'      && !!S.game,
-    writer:    S.activeModule === 'writer'    && !!S.library,
+    writer:    S.activeModule === 'writer'    && !!S.write,
     sage:      S.activeModule === 'sage',
   };
-  const cur = { hero:S.gameTab, writer:S.libraryTab, sage:S.sageTab };
+  const cur = { hero:S.gameTab, writer:S.writeTab, sage:S.sageTab };
   for(const mod of Object.keys(MODULE_SUBNAV)){
     document.querySelectorAll(`.nav-btn.${mod}-sub`).forEach(btn => {
       btn.style.display = show[mod] ? '' : 'none';
@@ -505,6 +505,9 @@ function updateTopNavButton(){
   });
   document.querySelectorAll('.nav-btn.writer-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'writer') ? '' : 'none';
+    // With a project active the Writer rail button doubles as the "project"
+    // submodule (series → books → chapters), mirroring Hero's rail button.
+    btn.classList.toggle('active', S.activeModule === 'writer' && !!S.write && S.writeTab === 'project');
   });
   document.querySelectorAll('.nav-btn.sage-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'sage') ? '' : 'none';
@@ -583,7 +586,7 @@ function renderProjectTabs(){
       </button>
     `).join('');
   } else {
-    const typeMap = { navigator:'world', hero:'game', writer:'library' };
+    const typeMap = { navigator:'world', hero:'game', writer:'write' };
     const type = typeMap[S.activeModule];
     const tabs = type ? S.entityTabs.filter(t => t.type === type) : [];
     html = tabs.map(tab => `
@@ -600,7 +603,7 @@ function renderProjectTabs(){
 
 function upsertEntityTab(entity, type, module) {
   const key = `${type}-${entity.id}`;
-  const moduleColors = { world:'#22c55e', game:'#f59e0b', library:'#8b5cf6' };
+  const moduleColors = { world:'#22c55e', game:'#f59e0b', write:'#8b5cf6' };
   const tab = { key, id:entity.id, type, module, name:entity.name, color: entity.color_code || moduleColors[type] || '#6366f1' };
   const idx = S.entityTabs.findIndex(t => t.key === key);
   if (idx >= 0) S.entityTabs[idx] = tab;
@@ -624,9 +627,10 @@ async function switchEntityTab(key) {
     S.game = await api.game.get(tab.id);
     S.gameTab = S.gameTab || 'project';
     await renderHeroView();
-  } else if (tab.type === 'library') {
-    S.library = tab.id;
-    S.libraryTab = 'overview'; S.librarySeries = null; S.libraryDoc = null;
+  } else if (tab.type === 'write') {
+    S.write = await api.write.getProject(tab.id);
+    S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null; S.writeChapter = null;
+    S.writeWikiChapter = null; S.writeNote = null;
     await renderWriterView();
   } else {
     renderProjectTabs();
@@ -648,7 +652,7 @@ async function closeEntityTab(key) {
   S.activeEntityTabKey = null;
   if (closing.type === 'world') { S.world = null; if (S.activeModule==='navigator') await renderNavigatorView(); }
   else if (closing.type === 'game') { S.game = null; if (S.activeModule==='hero') await renderHeroView(); }
-  else if (closing.type === 'library') { S.library = null; if (S.activeModule==='writer') await renderWriterView(); }
+  else if (closing.type === 'write') { S.write = null; if (S.activeModule==='writer') await renderWriterView(); }
   renderProjectTabs();
 }
 
@@ -970,6 +974,7 @@ function bindNav() {
     if(S.project) returnToProjectList();
     else if(S.world) goToNavigatorList();
     else if(S.game && S.activeModule === 'hero' && typeof goToGameList === 'function') goToGameList();
+    else if(S.write && S.activeModule === 'writer' && typeof goToWriteList === 'function') goToWriteList();
     else if(S.activeModule) returnToNexus();
   });
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn=>{
@@ -1114,7 +1119,8 @@ function selectModule(name) {
     loadModule('src/renderer/hero.js').then(() => renderHeroView());
   } else if (name === 'writer') {
     S.view = 'writer';
-    S.library = null; S.libraryTab = 'overview'; S.librarySeries = null; S.librarySeriesTab = 'docs'; S.libraryDoc = null;
+    S.write = null; S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null;
+    S.writeChapter = null; S.writeWikiChapter = null; S.writeNote = null;
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
     q('.nav-btn[data-panel="writer"]')?.classList.add('active');
     updateTopNavButton();
@@ -1136,7 +1142,8 @@ function returnToNexus() {
   S.activeProjectTabId = null; S.projectHashtagId = null;
   S.world = null; S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
   S.game = null; S.gameTab = 'project';
-  S.library = null; S.libraryTab = 'overview'; S.librarySeries = null; S.librarySeriesTab = 'docs'; S.libraryDoc = null;
+  S.write = null; S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null;
+  S.writeChapter = null; S.writeWikiChapter = null; S.writeNote = null;
   S.view = 'nexus';
   renderProjectTabs();
   renderNexusHome();

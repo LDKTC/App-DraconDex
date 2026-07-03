@@ -704,76 +704,74 @@ function initDB() {
       UNIQUE(element_id,hashtag_id)
     );
 
-    CREATE TABLE IF NOT EXISTS library_project (
+    -- Writer (v2.7) --
+    CREATE TABLE IF NOT EXISTS write_project (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_name TEXT NOT NULL,
+      codename TEXT,
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(codename)
+    );
+    CREATE TABLE IF NOT EXISTS write_series (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL REFERENCES write_project(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
-      memo TEXT,
-      color_ref INTEGER REFERENCES use_color(id),
-      updated_at TEXT DEFAULT (datetime('now'))
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
-    CREATE TABLE IF NOT EXISTS library_description (
+    CREATE TABLE IF NOT EXISTS write_book (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      library_ref INTEGER NOT NULL REFERENCES library_project(id) ON DELETE CASCADE,
-      title TEXT,
-      content TEXT,
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS library_world_link (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      library_ref INTEGER NOT NULL REFERENCES library_project(id) ON DELETE CASCADE,
-      world_ref INTEGER NOT NULL REFERENCES world_project(id) ON DELETE CASCADE,
-      updated_at TEXT DEFAULT (datetime('now')),
-      UNIQUE(library_ref,world_ref)
-    );
-    CREATE TABLE IF NOT EXISTS library_series (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      library_ref INTEGER NOT NULL REFERENCES library_project(id) ON DELETE CASCADE,
+      series_id INTEGER NOT NULL REFERENCES write_series(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
-      memo TEXT,
-      updated_at TEXT DEFAULT (datetime('now'))
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
-    CREATE TABLE IF NOT EXISTS series_description (
+    CREATE TABLE IF NOT EXISTS write_chapter (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
-      title TEXT,
-      content TEXT,
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS series_novel_link (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
-      project_ref INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
-      updated_at TEXT DEFAULT (datetime('now')),
-      UNIQUE(series_ref,project_ref)
-    );
-    CREATE TABLE IF NOT EXISTS series_char_link (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
-      object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
-      UNIQUE(series_ref,object_ref)
-    );
-    CREATE TABLE IF NOT EXISTS series_object_link (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
-      object_ref INTEGER NOT NULL REFERENCES object(id) ON DELETE CASCADE,
-      UNIQUE(series_ref,object_ref)
-    );
-    CREATE TABLE IF NOT EXISTS series_hashtag (
-      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
-      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
-      UNIQUE(series_ref,hashtag_id)
-    );
-    CREATE TABLE IF NOT EXISTS library_document (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      series_ref INTEGER NOT NULL REFERENCES library_series(id) ON DELETE CASCADE,
+      book_id INTEGER NOT NULL REFERENCES write_book(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
-      content_json TEXT DEFAULT '[]',
-      updated_at TEXT DEFAULT (datetime('now'))
+      chapter_order INTEGER NOT NULL DEFAULT 0,
+      color INTEGER REFERENCES use_color(id),
+      chapter_content TEXT,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(book_id,chapter_order)
     );
-    CREATE TABLE IF NOT EXISTS document_hashtag (
-      document_ref INTEGER NOT NULL REFERENCES library_document(id) ON DELETE CASCADE,
-      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
-      UNIQUE(document_ref,hashtag_id)
+    CREATE TABLE IF NOT EXISTS write_novel_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      series_id INTEGER NOT NULL REFERENCES write_series(id) ON DELETE CASCADE,
+      novel_id INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(series_id,novel_id),
+      UNIQUE(series_id)
+    );
+    CREATE TABLE IF NOT EXISTS write_wiki_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chapter_id INTEGER NOT NULL REFERENCES write_chapter(id) ON DELETE CASCADE,
+      object_id INTEGER REFERENCES object(id) ON DELETE CASCADE,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(chapter_id,object_id)
+    );
+    CREATE TABLE IF NOT EXISTS write_word_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      wiki_id INTEGER NOT NULL REFERENCES write_wiki_link(id) ON DELETE CASCADE,
+      text_link TEXT NOT NULL,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS write_note (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL REFERENCES write_project(id) ON DELETE CASCADE,
+      notename TEXT NOT NULL,
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS write_chat (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      note_id INTEGER NOT NULL REFERENCES write_note(id) ON DELETE CASCADE,
+      chat TEXT NOT NULL,
+      chat_order INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(note_id,chat_order)
     );
   `);
 
@@ -812,7 +810,32 @@ function initDB() {
   const hasNote = db.prepare(`PRAGMA table_info(object)`).all().some(c => c.name === 'note');
   if (!hasNote) { try { db.prepare(`ALTER TABLE object ADD COLUMN note TEXT`).run(); } catch (_) {} }
   migrateHeroV26(db);
+  migrateWriterV27(db);
   ensureIndexes(db);
+}
+
+// v2.7 replaced the entire Writer module schema (library/series/document) with
+// the write_* tables. The old library data has no v2.7 equivalent and is
+// dropped; the new tables are created by the CREATE IF NOT EXISTS block above.
+function migrateWriterV27(db) {
+  try {
+    if (!hasTable(db, 'library_project')) return;
+    db.exec(`PRAGMA foreign_keys = OFF`);
+    db.exec(`
+      DROP TABLE IF EXISTS document_hashtag;
+      DROP TABLE IF EXISTS library_document;
+      DROP TABLE IF EXISTS series_hashtag;
+      DROP TABLE IF EXISTS series_object_link;
+      DROP TABLE IF EXISTS series_char_link;
+      DROP TABLE IF EXISTS series_novel_link;
+      DROP TABLE IF EXISTS series_description;
+      DROP TABLE IF EXISTS library_series;
+      DROP TABLE IF EXISTS library_world_link;
+      DROP TABLE IF EXISTS library_description;
+      DROP TABLE IF EXISTS library_project;
+    `);
+    db.exec(`PRAGMA foreign_keys = ON`);
+  } catch (_) {}
 }
 
 // Foreign keys are ON with CASCADE deletes throughout, but SQLite does not
@@ -899,17 +922,13 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_game_char_hashtag_tag     ON game_char_hashtag(hashtag_id);
     CREATE INDEX IF NOT EXISTS idx_game_element_hashtag_tag  ON game_element_hashtag(hashtag_id);
 
-    -- Writer (Library)
-    CREATE INDEX IF NOT EXISTS idx_library_desc_library      ON library_description(library_ref);
-    CREATE INDEX IF NOT EXISTS idx_library_world_link_world  ON library_world_link(world_ref);
-    CREATE INDEX IF NOT EXISTS idx_library_series_library    ON library_series(library_ref);
-    CREATE INDEX IF NOT EXISTS idx_series_desc_series        ON series_description(series_ref);
-    CREATE INDEX IF NOT EXISTS idx_series_novel_link_project ON series_novel_link(project_ref);
-    CREATE INDEX IF NOT EXISTS idx_series_char_link_object   ON series_char_link(object_ref);
-    CREATE INDEX IF NOT EXISTS idx_series_object_link_object ON series_object_link(object_ref);
-    CREATE INDEX IF NOT EXISTS idx_series_hashtag_tag        ON series_hashtag(hashtag_id);
-    CREATE INDEX IF NOT EXISTS idx_library_document_series   ON library_document(series_ref);
-    CREATE INDEX IF NOT EXISTS idx_document_hashtag_tag      ON document_hashtag(hashtag_id);
+    -- Writer (v2.7)
+    CREATE INDEX IF NOT EXISTS idx_write_series_project      ON write_series(project_id);
+    CREATE INDEX IF NOT EXISTS idx_write_book_series         ON write_book(series_id);
+    CREATE INDEX IF NOT EXISTS idx_write_novel_link_novel    ON write_novel_link(novel_id);
+    CREATE INDEX IF NOT EXISTS idx_write_wiki_link_object    ON write_wiki_link(object_id);
+    CREATE INDEX IF NOT EXISTS idx_write_word_link_wiki      ON write_word_link(wiki_id);
+    CREATE INDEX IF NOT EXISTS idx_write_note_project        ON write_note(project_id);
   `);
 }
 

@@ -75,9 +75,11 @@ async function renderSageObjectAmount(container) {
       { key:'conversations', label:'Conversations' },
     ]},
     { label:'Writer', color:'#8b5cf6', items:[
-      { key:'libraries', label:'Libraries' },
+      { key:'writeProjects', label:'Writing Projects' },
       { key:'series', label:'Series' },
-      { key:'documents', label:'Documents' },
+      { key:'books', label:'Books' },
+      { key:'chapters', label:'Chapters' },
+      { key:'notes', label:'Notes' },
     ]},
     { label:'Global', color:'var(--t3)', items:[
       { key:'hashtags', label:'Hashtags' },
@@ -102,7 +104,7 @@ async function renderSageObjectAmount(container) {
 
 async function renderSageLinkerList(container) {
   const links = await api.sage.getLinkerList();
-  const typeColors = { project:'var(--accent)', hashtag:'#d97706', world:'#22c55e', game:'#f59e0b', library:'#8b5cf6', series:'#6366f1', object:'#ec4899', world_char:'#14b8a6' };
+  const typeColors = { project:'var(--accent)', hashtag:'#d97706', world:'#22c55e', game:'#f59e0b', write:'#8b5cf6', series:'#6366f1', object:'#ec4899', world_char:'#14b8a6' };
   container.innerHTML = `
     <div style="padding:24px">
       <h3 style="color:var(--t1);margin-bottom:4px">${t('sageLinkerList')}</h3>
@@ -138,7 +140,7 @@ async function renderSageLinkerGraph(container) {
   await loadModule('src/renderer/relation.js');
   const wrap = q('#sage-graph-wrap');
   const W = wrap.clientWidth || 800, H = wrap.clientHeight || 500;
-  const typeColors = { project:'#6366f1', hashtag:'#d97706', world:'#22c55e', game:'#f59e0b', library:'#8b5cf6', series:'#6366f1' };
+  const typeColors = { project:'#6366f1', hashtag:'#d97706', world:'#22c55e', game:'#f59e0b', write:'#8b5cf6', series:'#6366f1' };
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('width','100%');
