@@ -1,155 +1,196 @@
 const { getDB } = require('./core');
 const now = () => new Date().toISOString().replace('T',' ').slice(0,19);
 
-// Library Projects
-function getLibraryProjects() {
-  return getDB().prepare(`SELECT lp.*, uc.color_code FROM library_project lp LEFT JOIN use_color uc ON uc.id=lp.color_ref ORDER BY lp.name`).all();
+// Write Projects
+function getWriteProjects() {
+  return getDB().prepare(`SELECT wp.*, uc.color_code FROM write_project wp LEFT JOIN use_color uc ON uc.id=wp.color ORDER BY wp.project_name`).all();
 }
-function createLibraryProject(name, memo, colorRef) {
-  return getDB().prepare(`INSERT INTO library_project (name,memo,color_ref,updated_at) VALUES (?,?,?,?)`).run(name, memo||null, colorRef||null, now()).lastInsertRowid;
+function getWriteProject(id) {
+  return getDB().prepare(`SELECT wp.*, uc.color_code FROM write_project wp LEFT JOIN use_color uc ON uc.id=wp.color WHERE wp.id=?`).get(id);
 }
-function updateLibraryProject(id, name, memo, colorRef) {
-  getDB().prepare(`UPDATE library_project SET name=?,memo=?,color_ref=?,updated_at=? WHERE id=?`).run(name, memo||null, colorRef||null, now(), id);
+function createWriteProject(name, codename, color) {
+  return getDB().prepare(`INSERT INTO write_project (project_name,codename,color,update_at) VALUES (?,?,?,?)`).run(name, codename||null, color||null, now()).lastInsertRowid;
 }
-function deleteLibraryProject(id) {
-  getDB().prepare(`DELETE FROM library_project WHERE id=?`).run(id);
+function updateWriteProject(id, name, codename, color) {
+  getDB().prepare(`UPDATE write_project SET project_name=?,codename=?,color=?,update_at=? WHERE id=?`).run(name, codename||null, color||null, now(), id);
 }
-
-// Library Descriptions
-function getLibraryDescriptions(libraryId) {
-  return getDB().prepare(`SELECT * FROM library_description WHERE library_ref=? ORDER BY id`).all(libraryId);
-}
-function createLibraryDescription(libraryId, title, content) {
-  return getDB().prepare(`INSERT INTO library_description (library_ref,title,content,updated_at) VALUES (?,?,?,?)`).run(libraryId, title||null, content||null, now()).lastInsertRowid;
-}
-function updateLibraryDescription(id, title, content) {
-  getDB().prepare(`UPDATE library_description SET title=?,content=?,updated_at=? WHERE id=?`).run(title||null, content||null, now(), id);
-}
-function deleteLibraryDescription(id) {
-  getDB().prepare(`DELETE FROM library_description WHERE id=?`).run(id);
-}
-
-// World Links
-function getLibraryWorldLinks(libraryId) {
-  return getDB().prepare(`SELECT lwl.*, wp.name AS world_name, uc.color_code FROM library_world_link lwl JOIN world_project wp ON wp.id=lwl.world_ref LEFT JOIN use_color uc ON uc.id=wp.color WHERE lwl.library_ref=? ORDER BY wp.name`).all(libraryId);
-}
-function addLibraryWorldLink(libraryId, worldId) {
-  try { getDB().prepare(`INSERT OR IGNORE INTO library_world_link (library_ref,world_ref,updated_at) VALUES (?,?,?)`).run(libraryId, worldId, now()); } catch (_) {}
-}
-function removeLibraryWorldLink(id) {
-  getDB().prepare(`DELETE FROM library_world_link WHERE id=?`).run(id);
+function deleteWriteProject(id) {
+  getDB().prepare(`DELETE FROM write_project WHERE id=?`).run(id);
 }
 
 // Series
-function getLibrarySeries(libraryId) {
-  return getDB().prepare(`SELECT * FROM library_series WHERE library_ref=? ORDER BY name`).all(libraryId);
+function getWriteSeries(projectId) {
+  return getDB().prepare(`SELECT ws.*, uc.color_code FROM write_series ws LEFT JOIN use_color uc ON uc.id=ws.color WHERE ws.project_id=? ORDER BY ws.name`).all(projectId);
 }
-function createLibrarySeries(libraryId, name, memo) {
-  return getDB().prepare(`INSERT INTO library_series (library_ref,name,memo,updated_at) VALUES (?,?,?,?)`).run(libraryId, name, memo||null, now()).lastInsertRowid;
+function createWriteSeries(projectId, name, color) {
+  return getDB().prepare(`INSERT INTO write_series (project_id,name,color,update_at) VALUES (?,?,?,?)`).run(projectId, name, color||null, now()).lastInsertRowid;
 }
-function updateLibrarySeries(id, name, memo) {
-  getDB().prepare(`UPDATE library_series SET name=?,memo=?,updated_at=? WHERE id=?`).run(name, memo||null, now(), id);
+function updateWriteSeries(id, name, color) {
+  getDB().prepare(`UPDATE write_series SET name=?,color=?,update_at=? WHERE id=?`).run(name, color||null, now(), id);
 }
-function deleteLibrarySeries(id) {
-  getDB().prepare(`DELETE FROM library_series WHERE id=?`).run(id);
-}
-
-// Series Descriptions
-function getSeriesDescriptions(seriesId) {
-  return getDB().prepare(`SELECT * FROM series_description WHERE series_ref=? ORDER BY id`).all(seriesId);
-}
-function createSeriesDescription(seriesId, title, content) {
-  return getDB().prepare(`INSERT INTO series_description (series_ref,title,content,updated_at) VALUES (?,?,?,?)`).run(seriesId, title||null, content||null, now()).lastInsertRowid;
-}
-function updateSeriesDescription(id, title, content) {
-  getDB().prepare(`UPDATE series_description SET title=?,content=?,updated_at=? WHERE id=?`).run(title||null, content||null, now(), id);
-}
-function deleteSeriesDescription(id) {
-  getDB().prepare(`DELETE FROM series_description WHERE id=?`).run(id);
+function deleteWriteSeries(id) {
+  getDB().prepare(`DELETE FROM write_series WHERE id=?`).run(id);
 }
 
-// Series Novel Links
-function getSeriesNovelLinks(seriesId) {
-  return getDB().prepare(`SELECT snl.*, p.name AS project_name, uc.color_code FROM series_novel_link snl JOIN project p ON p.id=snl.project_ref LEFT JOIN use_color uc ON uc.id=p.color WHERE snl.series_ref=? ORDER BY p.name`).all(seriesId);
+// Books
+function getWriteBooks(seriesId) {
+  return getDB().prepare(`SELECT wb.*, uc.color_code, (SELECT COUNT(*) FROM write_chapter wc WHERE wc.book_id=wb.id) AS chapter_count FROM write_book wb LEFT JOIN use_color uc ON uc.id=wb.color WHERE wb.series_id=? ORDER BY wb.name`).all(seriesId);
 }
-function addSeriesNovelLink(seriesId, projectId) {
-  try { getDB().prepare(`INSERT OR IGNORE INTO series_novel_link (series_ref,project_ref,updated_at) VALUES (?,?,?)`).run(seriesId, projectId, now()); } catch (_) {}
+function createWriteBook(seriesId, name, color) {
+  return getDB().prepare(`INSERT INTO write_book (series_id,name,color,update_at) VALUES (?,?,?,?)`).run(seriesId, name, color||null, now()).lastInsertRowid;
 }
-function removeSeriesNovelLink(id) {
-  getDB().prepare(`DELETE FROM series_novel_link WHERE id=?`).run(id);
+function updateWriteBook(id, name, color) {
+  getDB().prepare(`UPDATE write_book SET name=?,color=?,update_at=? WHERE id=?`).run(name, color||null, now(), id);
 }
-
-// Series Char Links
-function getSeriesCharLinks(seriesId) {
-  return getDB().prepare(`SELECT scl.id, scl.object_ref, o.name AS object_name, oc.category_name, p.name AS project_name FROM series_char_link scl JOIN object o ON o.id=scl.object_ref JOIN object_category oc ON oc.id=o.category_id JOIN project p ON p.id=o.project_id WHERE scl.series_ref=? ORDER BY p.name, o.name`).all(seriesId);
-}
-function addSeriesCharLink(seriesId, objectId) {
-  try { getDB().prepare(`INSERT OR IGNORE INTO series_char_link (series_ref,object_ref) VALUES (?,?)`).run(seriesId, objectId); } catch (_) {}
-}
-function removeSeriesCharLink(id) {
-  getDB().prepare(`DELETE FROM series_char_link WHERE id=?`).run(id);
+function deleteWriteBook(id) {
+  getDB().prepare(`DELETE FROM write_book WHERE id=?`).run(id);
 }
 
-// Series Object Links
-function getSeriesObjectLinks(seriesId) {
-  return getDB().prepare(`SELECT sol.id, sol.object_ref, o.name AS object_name, oc.category_name, p.name AS project_name FROM series_object_link sol JOIN object o ON o.id=sol.object_ref JOIN object_category oc ON oc.id=o.category_id JOIN project p ON p.id=o.project_id WHERE sol.series_ref=? ORDER BY p.name, o.name`).all(seriesId);
+// Chapters (list omits chapter_content; fetch one for the editor)
+function getWriteChapters(bookId) {
+  return getDB().prepare(`SELECT wc.id, wc.book_id, wc.name, wc.chapter_order, wc.color, wc.update_at, uc.color_code FROM write_chapter wc LEFT JOIN use_color uc ON uc.id=wc.color WHERE wc.book_id=? ORDER BY wc.chapter_order`).all(bookId);
 }
-function addSeriesObjectLink(seriesId, objectId) {
-  try { getDB().prepare(`INSERT OR IGNORE INTO series_object_link (series_ref,object_ref) VALUES (?,?)`).run(seriesId, objectId); } catch (_) {}
+function getWriteChapter(id) {
+  return getDB().prepare(`SELECT wc.*, uc.color_code FROM write_chapter wc LEFT JOIN use_color uc ON uc.id=wc.color WHERE wc.id=?`).get(id);
 }
-function removeSeriesObjectLink(id) {
-  getDB().prepare(`DELETE FROM series_object_link WHERE id=?`).run(id);
-}
-
-// Series Hashtags
-function getSeriesHashtags(seriesId) {
-  return getDB().prepare(`SELECT h.id, h.tag_name FROM series_hashtag sh JOIN hashtag h ON h.id=sh.hashtag_id WHERE sh.series_ref=?`).all(seriesId);
-}
-function toggleSeriesHashtag(seriesId, hashtagId) {
+function createWriteChapter(bookId, name, color) {
   const db = getDB();
-  const ex = db.prepare(`SELECT 1 FROM series_hashtag WHERE series_ref=? AND hashtag_id=?`).get(seriesId, hashtagId);
-  if (ex) db.prepare(`DELETE FROM series_hashtag WHERE series_ref=? AND hashtag_id=?`).run(seriesId, hashtagId);
-  else db.prepare(`INSERT INTO series_hashtag (series_ref,hashtag_id) VALUES (?,?)`).run(seriesId, hashtagId);
+  const next = (db.prepare(`SELECT COALESCE(MAX(chapter_order),0) AS mx FROM write_chapter WHERE book_id=?`).get(bookId)?.mx || 0) + 1;
+  return db.prepare(`INSERT INTO write_chapter (book_id,name,chapter_order,color,chapter_content,update_at) VALUES (?,?,?,?,'',?)`).run(bookId, name, next, color||null, now()).lastInsertRowid;
 }
-
-// Documents
-function getSeriesDocuments(seriesId) {
-  return getDB().prepare(`SELECT id, series_ref, name, updated_at FROM library_document WHERE series_ref=? ORDER BY name`).all(seriesId);
+function updateWriteChapter(id, name, color) {
+  getDB().prepare(`UPDATE write_chapter SET name=?,color=?,update_at=? WHERE id=?`).run(name, color||null, now(), id);
 }
-function createDocument(seriesId, name) {
-  return getDB().prepare(`INSERT INTO library_document (series_ref,name,content_json,updated_at) VALUES (?,?,'[]',?)`).run(seriesId, name, now()).lastInsertRowid;
+function updateWriteChapterContent(id, content) {
+  getDB().prepare(`UPDATE write_chapter SET chapter_content=?,update_at=? WHERE id=?`).run(content||'', now(), id);
 }
-function getDocument(id) {
-  return getDB().prepare(`SELECT * FROM library_document WHERE id=?`).get(id);
-}
-function updateDocument(id, name, contentJson) {
-  getDB().prepare(`UPDATE library_document SET name=?,content_json=?,updated_at=? WHERE id=?`).run(name, contentJson, now(), id);
-}
-function deleteDocument(id) {
-  getDB().prepare(`DELETE FROM library_document WHERE id=?`).run(id);
-}
-
-// Document Hashtags
-function getDocumentHashtags(docId) {
-  return getDB().prepare(`SELECT h.id, h.tag_name FROM document_hashtag dh JOIN hashtag h ON h.id=dh.hashtag_id WHERE dh.document_ref=?`).all(docId);
-}
-function toggleDocumentHashtag(docId, hashtagId) {
+function moveWriteChapter(id, dir) {
   const db = getDB();
-  const ex = db.prepare(`SELECT 1 FROM document_hashtag WHERE document_ref=? AND hashtag_id=?`).get(docId, hashtagId);
-  if (ex) db.prepare(`DELETE FROM document_hashtag WHERE document_ref=? AND hashtag_id=?`).run(docId, hashtagId);
-  else db.prepare(`INSERT INTO document_hashtag (document_ref,hashtag_id) VALUES (?,?)`).run(docId, hashtagId);
+  const cur = db.prepare(`SELECT id, book_id, chapter_order FROM write_chapter WHERE id=?`).get(id);
+  if (!cur) return;
+  const other = db.prepare(
+    dir < 0
+      ? `SELECT id, chapter_order FROM write_chapter WHERE book_id=? AND chapter_order<? ORDER BY chapter_order DESC LIMIT 1`
+      : `SELECT id, chapter_order FROM write_chapter WHERE book_id=? AND chapter_order>? ORDER BY chapter_order ASC LIMIT 1`
+  ).get(cur.book_id, cur.chapter_order);
+  if (!other) return;
+  // Swap through a temp slot to dodge the UNIQUE(book_id,chapter_order) constraint.
+  db.transaction(() => {
+    db.prepare(`UPDATE write_chapter SET chapter_order=-1 WHERE id=?`).run(cur.id);
+    db.prepare(`UPDATE write_chapter SET chapter_order=? WHERE id=?`).run(cur.chapter_order, other.id);
+    db.prepare(`UPDATE write_chapter SET chapter_order=?, update_at=? WHERE id=?`).run(other.chapter_order, now(), cur.id);
+  })();
+}
+function deleteWriteChapter(id) {
+  getDB().prepare(`DELETE FROM write_chapter WHERE id=?`).run(id);
+}
+
+// Novel link — at most 1 novel per series (UNIQUE(series_id))
+function getWriteNovelLink(seriesId) {
+  return getDB().prepare(`SELECT wnl.*, p.name AS novel_name, uc.color_code FROM write_novel_link wnl JOIN project p ON p.id=wnl.novel_id LEFT JOIN use_color uc ON uc.id=p.project_color WHERE wnl.series_id=?`).get(seriesId);
+}
+function setWriteNovelLink(seriesId, novelId) {
+  const db = getDB();
+  db.prepare(`DELETE FROM write_novel_link WHERE series_id=?`).run(seriesId);
+  if (novelId) db.prepare(`INSERT INTO write_novel_link (series_id,novel_id,update_at) VALUES (?,?,?)`).run(seriesId, novelId, now());
+}
+
+// Wiki links — one row per (chapter, object); an object_id NULL row marks a
+// chapter registered in the wiki before any word has been linked.
+function getWriteWikiChapters(seriesId) {
+  return getDB().prepare(`
+    SELECT wc.id AS chapter_id, wc.name AS chapter_name, wb.name AS book_name,
+           COUNT(wwl.id) AS word_count
+    FROM write_wiki_link wl
+    JOIN write_chapter wc ON wc.id=wl.chapter_id
+    JOIN write_book wb ON wb.id=wc.book_id
+    LEFT JOIN write_word_link wwl ON wwl.wiki_id=wl.id
+    WHERE wb.series_id=?
+    GROUP BY wc.id
+    ORDER BY wb.name, wc.chapter_order`).all(seriesId);
+}
+function createWriteWiki(chapterId) {
+  const db = getDB();
+  const ex = db.prepare(`SELECT 1 FROM write_wiki_link WHERE chapter_id=? LIMIT 1`).get(chapterId);
+  if (!ex) db.prepare(`INSERT INTO write_wiki_link (chapter_id,object_id,update_at) VALUES (?,NULL,?)`).run(chapterId, now());
+}
+function deleteWriteWiki(chapterId) {
+  getDB().prepare(`DELETE FROM write_wiki_link WHERE chapter_id=?`).run(chapterId);
+}
+function ensureWriteWikiLink(chapterId, objectId) {
+  const db = getDB();
+  const ex = db.prepare(`SELECT id FROM write_wiki_link WHERE chapter_id=? AND object_id=?`).get(chapterId, objectId);
+  if (ex) return ex.id;
+  return db.prepare(`INSERT INTO write_wiki_link (chapter_id,object_id,update_at) VALUES (?,?,?)`).run(chapterId, objectId, now()).lastInsertRowid;
+}
+function getWriteWordLinks(chapterId) {
+  return getDB().prepare(`
+    SELECT wwl.id, wwl.wiki_id, wwl.text_link, wl.object_id,
+           o.name AS object_name, oc.category_name, uc.color_code
+    FROM write_word_link wwl
+    JOIN write_wiki_link wl ON wl.id=wwl.wiki_id
+    LEFT JOIN object o ON o.id=wl.object_id
+    LEFT JOIN object_category oc ON oc.id=o.category_id
+    LEFT JOIN use_color uc ON uc.id=o.color
+    WHERE wl.chapter_id=?
+    ORDER BY o.name, wwl.text_link`).all(chapterId);
+}
+function createWriteWordLink(chapterId, objectId, textLink) {
+  const db = getDB();
+  const wikiId = ensureWriteWikiLink(chapterId, objectId);
+  return db.prepare(`INSERT INTO write_word_link (wiki_id,text_link,update_at) VALUES (?,?,?)`).run(wikiId, textLink, now()).lastInsertRowid;
+}
+function deleteWriteWordLink(id) {
+  const db = getDB();
+  const row = db.prepare(`SELECT wiki_id FROM write_word_link WHERE id=?`).get(id);
+  db.prepare(`DELETE FROM write_word_link WHERE id=?`).run(id);
+  // Drop the wiki row when its last word link is gone (NULL-object placeholder rows stay).
+  if (row) {
+    const left = db.prepare(`SELECT COUNT(*) AS cnt FROM write_word_link WHERE wiki_id=?`).get(row.wiki_id)?.cnt || 0;
+    const wiki = db.prepare(`SELECT object_id FROM write_wiki_link WHERE id=?`).get(row.wiki_id);
+    if (!left && wiki?.object_id != null) db.prepare(`DELETE FROM write_wiki_link WHERE id=?`).run(row.wiki_id);
+  }
+}
+
+// Notes
+function getWriteNotes(projectId) {
+  return getDB().prepare(`SELECT wn.*, uc.color_code, (SELECT COUNT(*) FROM write_chat wc WHERE wc.note_id=wn.id) AS chat_count FROM write_note wn LEFT JOIN use_color uc ON uc.id=wn.color WHERE wn.project_id=? ORDER BY wn.notename`).all(projectId);
+}
+function createWriteNote(projectId, name, color) {
+  return getDB().prepare(`INSERT INTO write_note (project_id,notename,color,update_at) VALUES (?,?,?,?)`).run(projectId, name, color||null, now()).lastInsertRowid;
+}
+function updateWriteNote(id, name, color) {
+  getDB().prepare(`UPDATE write_note SET notename=?,color=?,update_at=? WHERE id=?`).run(name, color||null, now(), id);
+}
+function deleteWriteNote(id) {
+  getDB().prepare(`DELETE FROM write_note WHERE id=?`).run(id);
+}
+
+// Chats
+function getWriteChats(noteId) {
+  return getDB().prepare(`SELECT * FROM write_chat WHERE note_id=? ORDER BY chat_order`).all(noteId);
+}
+function createWriteChat(noteId, text) {
+  const db = getDB();
+  const next = (db.prepare(`SELECT COALESCE(MAX(chat_order),0) AS mx FROM write_chat WHERE note_id=?`).get(noteId)?.mx || 0) + 1;
+  return db.prepare(`INSERT INTO write_chat (note_id,chat,chat_order,update_at) VALUES (?,?,?,?)`).run(noteId, text, next, now()).lastInsertRowid;
+}
+function updateWriteChat(id, text) {
+  getDB().prepare(`UPDATE write_chat SET chat=?,update_at=? WHERE id=?`).run(text, now(), id);
+}
+function deleteWriteChat(id) {
+  getDB().prepare(`DELETE FROM write_chat WHERE id=?`).run(id);
 }
 
 module.exports = {
-  getLibraryProjects, createLibraryProject, updateLibraryProject, deleteLibraryProject,
-  getLibraryDescriptions, createLibraryDescription, updateLibraryDescription, deleteLibraryDescription,
-  getLibraryWorldLinks, addLibraryWorldLink, removeLibraryWorldLink,
-  getLibrarySeries, createLibrarySeries, updateLibrarySeries, deleteLibrarySeries,
-  getSeriesDescriptions, createSeriesDescription, updateSeriesDescription, deleteSeriesDescription,
-  getSeriesNovelLinks, addSeriesNovelLink, removeSeriesNovelLink,
-  getSeriesCharLinks, addSeriesCharLink, removeSeriesCharLink,
-  getSeriesObjectLinks, addSeriesObjectLink, removeSeriesObjectLink,
-  getSeriesHashtags, toggleSeriesHashtag,
-  getSeriesDocuments, createDocument, getDocument, updateDocument, deleteDocument,
-  getDocumentHashtags, toggleDocumentHashtag,
+  getWriteProjects, getWriteProject, createWriteProject, updateWriteProject, deleteWriteProject,
+  getWriteSeries, createWriteSeries, updateWriteSeries, deleteWriteSeries,
+  getWriteBooks, createWriteBook, updateWriteBook, deleteWriteBook,
+  getWriteChapters, getWriteChapter, createWriteChapter, updateWriteChapter,
+  updateWriteChapterContent, moveWriteChapter, deleteWriteChapter,
+  getWriteNovelLink, setWriteNovelLink,
+  getWriteWikiChapters, createWriteWiki, deleteWriteWiki,
+  getWriteWordLinks, createWriteWordLink, deleteWriteWordLink,
+  getWriteNotes, createWriteNote, updateWriteNote, deleteWriteNote,
+  getWriteChats, createWriteChat, updateWriteChat, deleteWriteChat,
 };

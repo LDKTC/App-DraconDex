@@ -6,7 +6,7 @@ function getDataSize() {
     { name:'director', tables:['project','object_category','object','object_attribute','timeline','timeline_event','relation','relation_type','map','map_area','map_point'] },
     { name:'navigator', tables:['world_project','world_description','world_character','world_category','world_cat_object','world_map','world_map_timeline','world_maptl_event'] },
     { name:'hero', tables:['game_project','game_category','game_cat_object','game_character','game_char_template','game_char_attribute','game_collection','game_col_template','game_col_element','game_col_attribute','game_char_element','game_story','game_dialogue','game_storyline','game_conversation'] },
-    { name:'writer', tables:['library_project','library_series','library_document','series_description'] },
+    { name:'writer', tables:['write_project','write_series','write_book','write_chapter','write_novel_link','write_wiki_link','write_word_link','write_note','write_chat'] },
   ];
   return modules.map(m => {
     let rows = 0, size = 0;
@@ -39,9 +39,11 @@ function getObjectAmounts() {
     { key:'dialogueNodes', sql:`SELECT COUNT(*) AS cnt FROM game_dialogue` },
     { key:'dialogueEdges', sql:`SELECT COUNT(*) AS cnt FROM game_storyline` },
     { key:'conversations', sql:`SELECT COUNT(*) AS cnt FROM game_conversation` },
-    { key:'libraries',     sql:`SELECT COUNT(*) AS cnt FROM library_project` },
-    { key:'series',        sql:`SELECT COUNT(*) AS cnt FROM library_series` },
-    { key:'documents',     sql:`SELECT COUNT(*) AS cnt FROM library_document` },
+    { key:'writeProjects', sql:`SELECT COUNT(*) AS cnt FROM write_project` },
+    { key:'series',        sql:`SELECT COUNT(*) AS cnt FROM write_series` },
+    { key:'books',         sql:`SELECT COUNT(*) AS cnt FROM write_book` },
+    { key:'chapters',      sql:`SELECT COUNT(*) AS cnt FROM write_chapter` },
+    { key:'notes',         sql:`SELECT COUNT(*) AS cnt FROM write_note` },
     { key:'hashtags',      sql:`SELECT COUNT(*) AS cnt FROM hashtag` },
   ];
   const result = {};
@@ -79,15 +81,9 @@ function getLinkerList() {
       .forEach(r => links.push(r));
   } catch(_){}
 
-  // Library world links
+  // Write series novel links
   try {
-    db.prepare(`SELECT lp.name AS from_name, wp.name AS to_name, 'library' AS from_type, 'world' AS to_type FROM library_world_link lwl JOIN library_project lp ON lp.id=lwl.library_ref JOIN world_project wp ON wp.id=lwl.world_ref`).all()
-      .forEach(r => links.push(r));
-  } catch(_){}
-
-  // Series novel links
-  try {
-    db.prepare(`SELECT ls.name AS from_name, p.name AS to_name, 'series' AS from_type, 'project' AS to_type FROM series_novel_link snl JOIN library_series ls ON ls.id=snl.series_ref JOIN project p ON p.id=snl.project_ref`).all()
+    db.prepare(`SELECT ws.name AS from_name, p.name AS to_name, 'series' AS from_type, 'project' AS to_type FROM write_novel_link wnl JOIN write_series ws ON ws.id=wnl.series_id JOIN project p ON p.id=wnl.novel_id`).all()
       .forEach(r => links.push(r));
   } catch(_){}
 
@@ -131,9 +127,9 @@ function getLinkerGraph() {
     db.prepare(`SELECT id, name FROM game_project`).all().forEach(r => ensureNode(`game_${r.id}`, r.name, 'game'));
   } catch(_){}
 
-  // Libraries
+  // Write projects
   try {
-    db.prepare(`SELECT id, name FROM library_project`).all().forEach(r => ensureNode(`lib_${r.id}`, r.name, 'library'));
+    db.prepare(`SELECT id, project_name FROM write_project`).all().forEach(r => ensureNode(`write_${r.id}`, r.project_name, 'write'));
   } catch(_){}
 
   // Edges: project hashtags
@@ -160,10 +156,10 @@ function getLinkerGraph() {
     });
   } catch(_){}
 
-  // Edges: library → world
+  // Edges: write project → novel (through its series' novel links)
   try {
-    db.prepare(`SELECT library_ref, world_ref FROM library_world_link`).all().forEach(r => {
-      const s = nodes.get(`lib_${r.library_ref}`)?.id, t = nodes.get(`world_${r.world_ref}`)?.id;
+    db.prepare(`SELECT ws.project_id, wnl.novel_id FROM write_novel_link wnl JOIN write_series ws ON ws.id=wnl.series_id`).all().forEach(r => {
+      const s = nodes.get(`write_${r.project_id}`)?.id, t = nodes.get(`proj_${r.novel_id}`)?.id;
       if (s != null && t != null) edges.push({ source: s, target: t });
     });
   } catch(_){}

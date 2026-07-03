@@ -381,86 +381,49 @@ h('game:getUsedTags',       (gid)                     => db.getGameUsedTags(gid)
 h('game:getCharsByTag',     (tid,gid)                 => db.getGameCharsByTag(tid,gid));
 h('game:getElementsByTag',  (tid,gid)                 => db.getGameElementsByTag(tid,gid));
 
-// Writer / Library
-h('library:getProjects',          ()                         => db.getLibraryProjects());
-h('library:createProject',        (n,m,c)                    => db.createLibraryProject(n,m,c));
-h('library:updateProject',        (id,n,m,c)                 => db.updateLibraryProject(id,n,m,c));
-h('library:deleteProject',        (id)                       => db.deleteLibraryProject(id));
-h('library:getDescriptions',      (lid)                      => db.getLibraryDescriptions(lid));
-h('library:createDescription',    (lid,t,c)                  => db.createLibraryDescription(lid,t,c));
-h('library:updateDescription',    (id,t,c)                   => db.updateLibraryDescription(id,t,c));
-h('library:deleteDescription',    (id)                       => db.deleteLibraryDescription(id));
-h('library:getWorldLinks',        (lid)                      => db.getLibraryWorldLinks(lid));
-h('library:addWorldLink',         (lid,wid)                  => db.addLibraryWorldLink(lid,wid));
-h('library:removeWorldLink',      (id)                       => db.removeLibraryWorldLink(id));
-h('library:getSeries',            (lid)                      => db.getLibrarySeries(lid));
-h('library:createSeries',         (lid,n,m)                  => db.createLibrarySeries(lid,n,m));
-h('library:updateSeries',         (id,n,m)                   => db.updateLibrarySeries(id,n,m));
-h('library:deleteSeries',         (id)                       => db.deleteLibrarySeries(id));
-h('library:getSeriesDescs',       (sid)                      => db.getSeriesDescriptions(sid));
-h('library:createSeriesDesc',     (sid,t,c)                  => db.createSeriesDescription(sid,t,c));
-h('library:updateSeriesDesc',     (id,t,c)                   => db.updateSeriesDescription(id,t,c));
-h('library:deleteSeriesDesc',     (id)                       => db.deleteSeriesDescription(id));
-h('library:getSeriesNovels',      (sid)                      => db.getSeriesNovelLinks(sid));
-h('library:addSeriesNovel',       (sid,pid)                  => db.addSeriesNovelLink(sid,pid));
-h('library:removeSeriesNovel',    (id)                       => db.removeSeriesNovelLink(id));
-h('library:getSeriesChars',       (sid)                      => db.getSeriesCharLinks(sid));
-h('library:addSeriesChar',        (sid,oid)                  => db.addSeriesCharLink(sid,oid));
-h('library:removeSeriesChar',     (id)                       => db.removeSeriesCharLink(id));
-h('library:getSeriesObjects',     (sid)                      => db.getSeriesObjectLinks(sid));
-h('library:addSeriesObject',      (sid,oid)                  => db.addSeriesObjectLink(sid,oid));
-h('library:removeSeriesObject',   (id)                       => db.removeSeriesObjectLink(id));
-h('library:getSeriesTags',        (sid)                      => db.getSeriesHashtags(sid));
-h('library:toggleSeriesTag',      (sid,hid)                  => db.toggleSeriesHashtag(sid,hid));
-h('library:getDocs',              (sid)                      => db.getSeriesDocuments(sid));
-h('library:createDoc',            (sid,n)                    => db.createDocument(sid,n));
-h('library:getDoc',               (id)                       => db.getDocument(id));
-h('library:updateDoc',            (id,n,cj)                  => db.updateDocument(id,n,cj));
-h('library:deleteDoc',            (id)                       => db.deleteDocument(id));
-h('library:getDocTags',           (did)                      => db.getDocumentHashtags(did));
-h('library:toggleDocTag',         (did,hid)                  => db.toggleDocumentHashtag(did,hid));
-
-h('library:exportPdf', async (htmlContent, defaultName) => {
-  const { canceled, filePath } = await dialog.showSaveDialog({
-    defaultPath: defaultName || 'document.pdf',
-    filters: [{ name: 'PDF', extensions: ['pdf'] }],
-  });
-  if (canceled || !filePath) return { canceled: true };
-  const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false } });
-  await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent));
-  const pdfBuffer = await win.webContents.printToPDF({ printBackground: true });
-  win.close();
-  fs.writeFileSync(filePath, pdfBuffer);
-  return { filePath };
-});
+// Writer (v2.7)
+h('write:getProjects',      ()               => db.getWriteProjects());
+h('write:getProject',       (id)             => db.getWriteProject(id));
+h('write:createProject',    (n,cn,c)         => db.createWriteProject(n,cn,c));
+h('write:updateProject',    (id,n,cn,c)      => db.updateWriteProject(id,n,cn,c));
+h('write:deleteProject',    (id)             => db.deleteWriteProject(id));
+h('write:getSeries',        (pid)            => db.getWriteSeries(pid));
+h('write:createSeries',     (pid,n,c)        => db.createWriteSeries(pid,n,c));
+h('write:updateSeries',     (id,n,c)         => db.updateWriteSeries(id,n,c));
+h('write:deleteSeries',     (id)             => db.deleteWriteSeries(id));
+h('write:getBooks',         (sid)            => db.getWriteBooks(sid));
+h('write:createBook',       (sid,n,c)        => db.createWriteBook(sid,n,c));
+h('write:updateBook',       (id,n,c)         => db.updateWriteBook(id,n,c));
+h('write:deleteBook',       (id)             => db.deleteWriteBook(id));
+h('write:getChapters',      (bid)            => db.getWriteChapters(bid));
+h('write:getChapter',       (id)             => db.getWriteChapter(id));
+h('write:createChapter',    (bid,n,c)        => db.createWriteChapter(bid,n,c));
+h('write:updateChapter',    (id,n,c)         => db.updateWriteChapter(id,n,c));
+h('write:updateChapterContent', (id,txt)     => db.updateWriteChapterContent(id,txt));
+h('write:moveChapter',      (id,dir)         => db.moveWriteChapter(id,dir));
+h('write:deleteChapter',    (id)             => db.deleteWriteChapter(id));
+h('write:getNovelLink',     (sid)            => db.getWriteNovelLink(sid));
+h('write:setNovelLink',     (sid,nid)        => db.setWriteNovelLink(sid,nid));
+h('write:getWikiChapters',  (sid)            => db.getWriteWikiChapters(sid));
+h('write:createWiki',       (cid)            => db.createWriteWiki(cid));
+h('write:deleteWiki',       (cid)            => db.deleteWriteWiki(cid));
+h('write:getWordLinks',     (cid)            => db.getWriteWordLinks(cid));
+h('write:createWordLink',   (cid,oid,txt)    => db.createWriteWordLink(cid,oid,txt));
+h('write:deleteWordLink',   (id)             => db.deleteWriteWordLink(id));
+h('write:getNotes',         (pid)            => db.getWriteNotes(pid));
+h('write:createNote',       (pid,n,c)        => db.createWriteNote(pid,n,c));
+h('write:updateNote',       (id,n,c)         => db.updateWriteNote(id,n,c));
+h('write:deleteNote',       (id)             => db.deleteWriteNote(id));
+h('write:getChats',         (nid)            => db.getWriteChats(nid));
+h('write:createChat',       (nid,txt)        => db.createWriteChat(nid,txt));
+h('write:updateChat',       (id,txt)         => db.updateWriteChat(id,txt));
+h('write:deleteChat',       (id)             => db.deleteWriteChat(id));
 
 // Sage / Analytics
 h('sage:getDataSize',    () => db.getDataSize());
 h('sage:getObjectAmounts', () => db.getObjectAmounts());
 h('sage:getLinkerList',  () => db.getLinkerList());
 h('sage:getLinkerGraph', () => db.getLinkerGraph());
-
-h('library:exportDocx', async (blocks, defaultName) => {
-  const { canceled, filePath } = await dialog.showSaveDialog({
-    defaultPath: defaultName || 'document.docx',
-    filters: [{ name: 'Word Document', extensions: ['docx'] }],
-  });
-  if (canceled || !filePath) return { canceled: true };
-  const { Document, Paragraph, TextRun, Packer } = require('docx');
-  const paragraphs = (blocks || []).map(block => {
-    const runs = (block.nodes || []).map(n => {
-      if (n.type === 'mention') return new TextRun({ text: n.label, bold: true });
-      return new TextRun({ text: n.text || '' });
-    });
-    if (block.type === 'heading1') return new Paragraph({ text: '', children: runs, heading: 'Heading1' });
-    if (block.type === 'heading2') return new Paragraph({ text: '', children: runs, heading: 'Heading2' });
-    return new Paragraph({ children: runs });
-  });
-  const doc = new Document({ sections: [{ children: paragraphs }] });
-  const buffer = await Packer.toBuffer(doc);
-  fs.writeFileSync(filePath, buffer);
-  return { filePath };
-});
 
 // Window controls for the custom title/tab bar.
 h('window:minimize', () => {
