@@ -165,32 +165,34 @@ const getSymbolCollection = () =>
   getDB().prepare(`SELECT id, glyph, label FROM symbol_collection ORDER BY id`).all();
 
 // ---- Maps ----------------------------------------------------------------
-const getWorldMaps = (worldId) =>
-  getDB().prepare(`
-    SELECT wm.id, wm.world_ref, wm.map_ref, m.map_name, p.name AS project_name, uc.color_code
+// Mirrors syncWorldCategoryObjects/syncWorldMapAreas — a world's maps are a
+// live reflection of every map belonging to its linked novels, no manual
+// add/remove step needed.
+const syncWorldMaps = (worldId) => {
+  const db = getDB();
+  const maps = db.prepare(`
+    SELECT m.id FROM map m
+    WHERE m.project_id IN (SELECT project_ref FROM world_novel WHERE world_ref=?)
+  `).all(worldId);
+  const validIds = new Set(maps.map(m => m.id));
+  const insMap = db.prepare(`INSERT OR IGNORE INTO world_map (world_ref,map_ref) VALUES (?,?)`);
+  for (const m of maps) insMap.run(worldId, m.id);
+  const existing = db.prepare(`SELECT id, map_ref FROM world_map WHERE world_ref=?`).all(worldId);
+  const del = db.prepare(`DELETE FROM world_map WHERE id=?`);
+  for (const row of existing) if (!validIds.has(row.map_ref)) del.run(row.id);
+};
+
+const getWorldMaps = (worldId) => {
+  syncWorldMaps(worldId);
+  return getDB().prepare(`
+    SELECT wm.id, wm.world_ref, wm.map_ref, m.map_name, p.name AS project_name, p.folder_id, uc.color_code
     FROM world_map wm
     JOIN map m ON wm.map_ref=m.id
     JOIN project p ON m.project_id=p.id
     LEFT JOIN use_color uc ON m.color=uc.id
     WHERE wm.world_ref=? ORDER BY p.name, m.map_name
   `).all(worldId);
-
-const getLinkableMaps = (worldId) =>
-  getDB().prepare(`
-    SELECT m.id, m.map_name, p.name AS project_name, uc.color_code
-    FROM map m
-    JOIN project p ON m.project_id=p.id
-    LEFT JOIN use_color uc ON m.color=uc.id
-    WHERE m.project_id IN (SELECT project_ref FROM world_novel WHERE world_ref=?)
-      AND m.id NOT IN (SELECT map_ref FROM world_map WHERE world_ref=?)
-    ORDER BY p.name, m.map_name
-  `).all(worldId, worldId);
-
-const addWorldMap = (worldId, mapRef) =>
-  getDB().prepare(`INSERT OR IGNORE INTO world_map (world_ref,map_ref) VALUES (?,?)`).run(worldId, mapRef);
-
-const removeWorldMap = (id) =>
-  getDB().prepare(`DELETE FROM world_map WHERE id=?`).run(id);
+};
 
 // Mirrors syncWorldCategoryObjects — keeps world_map_area in sync with the
 // source map's current areas so the world view is a live reflection, no
@@ -435,7 +437,7 @@ module.exports = {
   getWorldCategories, getLinkableCategories, addWorldCategory, removeWorldCategory,
   getWorldObjects, updateWorldObjectSymbol,
   getSymbolCollection,
-  getWorldMaps, getLinkableMaps, addWorldMap, removeWorldMap, getWorldMapAreas,
+  getWorldMaps, getWorldMapAreas,
   getWorldTimelines, createWorldTimeline, updateWorldTimeline, deleteWorldTimeline,
   getTimelineEvents, createTimelineEvent, deleteTimelineEvent,
   getEventObjects, getPlaceableObjects, getPlaceableCharacters,

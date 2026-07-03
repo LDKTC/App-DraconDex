@@ -1149,12 +1149,17 @@ async function saveObjectSymbol(worldId, objectId) {
 // Sidebar: a list of linked maps, each a collapsible folder listing the
 // timelines anchored to it (world_timeline.world_map_ref). Selecting a
 // timeline renders the 2-graph board (map + timeline) into #main-inner.
+// Maps come solely from the world's linked novels (api.world.getMaps keeps
+// world_map synced to world_novel server-side) — no manual add/remove step.
+let _worldMapPickerMaps = [];
+
 async function renderWorldMapsSidebar(w) {
   const col = w.color_code || '#6366f1';
   const [maps, timelines] = await Promise.all([
     api.world.getMaps(w.id),
     api.world.getTimelines(w.id),
   ]);
+  _worldMapPickerMaps = maps;
 
   let h = `<div class="project-side-head">
     <div class="project-side-title">
@@ -1164,7 +1169,7 @@ async function renderWorldMapsSidebar(w) {
   </div>`;
   if (!maps.length) {
     h += `<div class="ph compact"><h4>${t('worldMapTimelines')}</h4></div>
-      <div class="empty project-side-empty"><p>No maps yet. Link novels, then <a href="#" onclick="event.preventDefault();openAddMapModal(${w.id})">add one of their maps</a>.</p></div>`;
+      <div class="empty project-side-empty"><p>No maps yet. Link a novel with a map to this world first.</p></div>`;
     q('#left-panel-inner').innerHTML = h;
     return;
   }
@@ -1181,11 +1186,8 @@ async function renderWorldMapsSidebar(w) {
     <button class="btn btn-g btn-i" title="New timeline on this map" onclick="openWorldTimelineModal(${w.id},null,${selMap.id})">${I.plus}</button>
   </div>
   <div class="fg" style="padding:0 10px;margin:0 0 8px">
-    <select onchange="selectWorldMapDropdown(${w.id},this.value)">
-      ${maps.map(m => `<option value="${m.id}" ${m.id === selMap.id ? 'selected' : ''}>${x(m.map_name || '(untitled map)')} · ${x(m.project_name || '')}</option>`).join('')}
-    </select>
-  </div>
-  <div style="padding:0 10px 6px"><button class="btn btn-g" style="font-size:11.5px;padding:3px 8px" title="Remove this map from the world" onclick="removeWorldMap(${w.id},${selMap.id})">${I.delete} Remove map</button></div>`;
+    ${buildWorldMapPickerHtml(w.id, maps, selMap)}
+  </div>`;
 
   const tls = timelines.filter(tl => tl.world_map_ref === selMap.id);
   h += tls.length
@@ -1193,8 +1195,8 @@ async function renderWorldMapsSidebar(w) {
         const active = S.worldActiveTimelineId === tl.id;
         return `<div class="li ${active ? 'active' : ''}" style="display:flex;align-items:center;gap:6px" onclick="selectWorldTimeline(${w.id},${tl.id})">
           <span class="name" style="flex:1">${x(tl.name)}</span>
-          <button class="btn btn-g btn-i" title="Edit" onclick="event.stopPropagation();openWorldTimelineModal(${w.id},${tl.id})">${I.edit}</button>
-          <button class="btn btn-g btn-i" title="Delete" onclick="event.stopPropagation();deleteWorldTimeline(${w.id},${tl.id})">${I.delete}</button>
+          <button class="btn btn-g btn-i btn-i-sm" title="Edit" onclick="event.stopPropagation();openWorldTimelineModal(${w.id},${tl.id})">${I.edit}</button>
+          <button class="btn btn-g btn-i btn-i-sm" title="Delete" onclick="event.stopPropagation();deleteWorldTimeline(${w.id},${tl.id})">${I.delete}</button>
         </div>`;
       }).join('')
     : `<div class="empty project-side-empty"><p>No timelines yet on this map.</p></div>`;
@@ -1202,7 +1204,55 @@ async function renderWorldMapsSidebar(w) {
   q('#left-panel-inner').innerHTML = h;
 }
 
-async function selectWorldMapDropdown(worldId, mapId) {
+// Folder-grouped dropdown for picking among the world's linked maps, matching
+// the novel-picker's .novel-picker/.np-* look (buildNpTree) instead of a flat
+// native <select> that gave no sense of which novel/folder a map belonged to.
+function buildWorldMapPickerHtml(worldId, maps, selMap) {
+  const pickId = 'wm-map';
+  const label = selMap ? `${selMap.map_name || '(untitled map)'} · ${selMap.project_name || ''}` : '— select map —';
+  const mapRow = (m) => `<div class="np-item" onclick="event.stopPropagation();selectWorldMapFromPicker(${worldId},${m.id})">${x(m.map_name || '(untitled map)')} <span style="color:var(--t3);font-size:.85em">· ${x(m.project_name || '')}</span></div>`;
+  let html = '';
+  for (const f of (S.folders || [])) {
+    const fps = maps.filter(m => m.folder_id === f.id);
+    if (!fps.length) continue;
+    const open = S.npOpenFolders.has(f.id);
+    const fcol = f.color_code || '#6366f1';
+    html += `<div class="np-folder">
+      <div class="np-folder-head" onclick="event.stopPropagation();toggleWorldMapPickerFolder(${f.id})">
+        <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${open ? 90 : 0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="color:${fcol};line-height:1;display:flex;align-items:center">${I.folder}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(f.name)}</span>
+        <span style="color:var(--t3);font-size:11px">${fps.length}</span>
+      </div>
+      ${open ? fps.map(mapRow).join('') : ''}
+    </div>`;
+  }
+  const unfiled = maps.filter(m => !m.folder_id);
+  if (unfiled.length) {
+    if ((S.folders || []).length && html) html += `<div style="border-top:1px solid var(--border);margin:4px 0"></div>`;
+    html += unfiled.map(mapRow).join('');
+  }
+  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No maps available</div>`;
+  return `<div class="novel-picker" id="np-wrap-${pickId}" style="width:100%">
+    <button class="np-btn" onclick="event.stopPropagation();toggleNovelPicker('${pickId}')" type="button" style="width:100%;min-width:0">
+      <span id="np-label-${pickId}" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(label)}</span>
+      <svg style="width:10px;height:10px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="np-dropdown" id="np-drop-${pickId}" style="display:none">${html}</div>
+  </div>`;
+}
+
+function toggleWorldMapPickerFolder(folderId) {
+  if (S.npOpenFolders.has(folderId)) S.npOpenFolders.delete(folderId);
+  else S.npOpenFolders.add(folderId);
+  const drop = q('#np-drop-wm-map');
+  if (!drop) return;
+  const selMap = _worldMapPickerMaps.find(m => m.id === S.worldMapSelectedId) || _worldMapPickerMaps[0];
+  drop.innerHTML = buildWorldMapPickerHtml(S.world.id, _worldMapPickerMaps, selMap);
+  drop.style.display = '';
+}
+
+async function selectWorldMapFromPicker(worldId, mapId) {
   S.worldMapSelectedId = Number(mapId);
   await renderWorldSidebar(S.world);
 }
@@ -1226,35 +1276,6 @@ async function refreshWorldMapsTimeline(worldId) {
   }
   await renderWorldSidebar(S.world);
   await renderWorldMain();
-}
-
-async function openAddMapModal(worldId) {
-  const linkable = await api.world.getLinkableMaps(worldId);
-  if (!linkable.length) return toast('No maps available from linked novels', 'err');
-  openModal('Add Map', `
-    <div class="form-row"><label>Map</label>
-      <select id="wam-map" style="width:100%">
-        ${linkable.map(m => `<option value="${m.id}">${x(m.map_name || '(untitled map)')} · ${x(m.project_name || '')}</option>`).join('')}
-      </select>
-    </div>
-    <div class="mfoot">
-      <button class="btn btn-g" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-p" onclick="addWorldMap(${worldId})">Add</button>
-    </div>`);
-}
-
-async function addWorldMap(worldId) {
-  const mref = Number(q('#wam-map')?.value);
-  if (!mref) return;
-  await api.world.addMap(worldId, mref);
-  closeModal();
-  await refreshWorldMapsTimeline(worldId);
-}
-
-async function removeWorldMap(worldId, id) {
-  if (!await uiConfirm('Remove this map from the world?')) return;
-  await api.world.removeMap(id);
-  await refreshWorldMapsTimeline(worldId);
 }
 
 async function openWorldTimelineModal(worldId, id, presetMapId) {
@@ -1432,8 +1453,28 @@ const worldMapBoardState = {};
 const worldTimelineGraphState = {};
 
 function getWorldMapBoardState(mapId) {
-  if (!worldMapBoardState[mapId]) worldMapBoardState[mapId] = { scale: 1, tx: 0, ty: 0 };
+  if (!worldMapBoardState[mapId]) worldMapBoardState[mapId] = { scale: 1, tx: 0, ty: 0, fitted: false };
   return worldMapBoardState[mapId];
+}
+
+// Runs once per map (until the user pans/zooms) so the board opens showing
+// every area instead of defaulting to identity scale/position, which could
+// leave areas drawn off-screen depending on how the map's points were placed.
+function fitWorldMapBoardView(state, pointsByArea, width, height) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const pts of Object.values(pointsByArea)) {
+    for (const p of (pts || [])) {
+      if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+    }
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return;
+  const boundsW = Math.max(1, maxX - minX), boundsH = Math.max(1, maxY - minY);
+  const padding = 0.85;
+  const scale = Math.max(0.3, Math.min(4, Math.min((width / boundsW) * padding, (height / boundsH) * padding, 1)));
+  state.scale = scale;
+  state.tx = (width - boundsW * scale) / 2 - minX * scale;
+  state.ty = (height - boundsH * scale) / 2 - minY * scale;
 }
 
 // Toolbar for the active event's placed objects — mirrors map.js's
@@ -1480,7 +1521,7 @@ async function renderWorldMapTimelineBoard(worldId, timelineId) {
   <div id="wmtl-graphs" style="display:flex;flex-direction:column;gap:8px;min-height:0">
     ${renderWorldTimelineGraphSvg(worldId, timelineId, events)}
     ${renderWorldMapToolbarHtml()}
-    <div id="map-board" class="map-whiteboard" style="flex:8 1 0;min-height:0;height:auto;position:relative"
+    <div id="map-board" class="map-whiteboard" style="flex:8 1 0;min-height:0;height:auto;position:relative">
       <div id="world-map-konva-container" style="width:100%;height:100%;"></div>
       <div id="world-map-obj-tip" class="konva-tooltip" style="display:none"></div>
     </div>
@@ -1525,6 +1566,7 @@ async function renderWorldMapBoard(worldMapId) {
   const width = container.clientWidth || 800;
   const height = container.clientHeight || 460;
   const v = getWorldMapBoardState(worldMapId);
+  if (!v.fitted) { fitWorldMapBoardView(v, pointsByArea, width, height); v.fitted = true; }
 
   if (worldKonvaStage) { try { worldKonvaStage.destroy(); } catch (e) {} }
   worldKonvaStage = new Konva.Stage({ container: 'world-map-konva-container', width, height });

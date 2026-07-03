@@ -189,9 +189,6 @@ contextBridge.exposeInMainWorld('api', {
     getSymbolCollection:     ()              => inv('world:getSymbolCollection'),
 
     getMaps:                 (wid)           => inv('world:getMaps', wid),
-    getLinkableMaps:         (wid)           => inv('world:getLinkableMaps', wid),
-    addMap:                  (wid,mref)      => inv('world:addMap', wid,mref),
-    removeMap:               (id)            => inv('world:removeMap', id),
     getMapAreas:             (wmid)          => inv('world:getMapAreas', wmid),
 
     getTimelines:            (wid)           => inv('world:getTimelines', wid),
@@ -268,6 +265,7 @@ contextBridge.exposeInMainWorld('api', {
     deleteDialogue:     (id)              => inv('game:deleteDialogue', id),
     getStorylines:      (sid)             => inv('game:getStorylines', sid),
     createStoryline:    (sid,fid,tid,c)   => inv('game:createStoryline', sid,fid,tid,c),
+    updateStorylineSymbol: (id,sym,custom) => inv('game:updateStorylineSymbol', id,sym,custom),
     deleteStoryline:    (id)              => inv('game:deleteStoryline', id),
     getConversations:   (did)             => inv('game:getConversations', did),
     createConversation: (did,cid,txt)     => inv('game:createConversation', did,cid,txt),

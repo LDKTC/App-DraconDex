@@ -493,9 +493,14 @@ body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .ftgl.open{transform:rotate(90deg)}
 .fchildren{padding-left:10px}
 
+/* Hero attribute editor — collapsible header for a levelable attribute's
+   level-stat rows (see toggleHeroLevelGroup in hero.js). */
+.lv-acc-head{display:flex;align-items:center;cursor:pointer;padding:4px 2px;border-radius:var(--rs)}
+.lv-acc-head:hover{background:var(--raised)}
+
 /* Navigator: per-novel "character category" fav toggle (person emoji) */
 .char-fav{
-	background:transparent;border:none;cursor:pointer;padding:2px 4px;line-height:1;
+	background:var(--raised);border:none;cursor:pointer;padding:2px 4px;line-height:1;
 	font-size:13px;color:var(--t3);transition:background var(--ease),color var(--ease);
 	border-radius:var(--rs);
 }
@@ -603,6 +608,8 @@ body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .btn-g{background:transparent;color:var(--t2)}
 .btn-g:hover{background:var(--hover);color:var(--t1)}
 .btn-i{padding:4px;width:28px;height:28px;justify-content:center;border-radius:var(--rs);font-size:14px}
+.btn-i.btn-i-sm{width:20px;height:20px;padding:2px}
+.btn-i.btn-i-sm .icon{width:11px;height:11px}
 
 /* FORMS */
 .fg{margin-bottom:14px}
@@ -635,6 +642,18 @@ body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 }
 .symswatch:hover{transform:translateY(-1px);background:var(--hover);border-color:var(--t3)}
 .symswatch.sel{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 0 1px rgba(99,102,241,.25)}
+
+/* Char-elements picker (modal-in-modal) — clickable "insert boxes" that
+   toggle selected state, replacing a native checkbox list so multi-select
+   reads visually instead of relying on tiny checkbox hit-targets. */
+.elem-pick-grid{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.elem-pick{
+	display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;
+	background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);
+	color:var(--t2);transition:background var(--ease),border-color var(--ease),color var(--ease);
+}
+.elem-pick:hover{border-color:var(--t3)}
+.elem-pick.sel{background:color-mix(in srgb, var(--accent) 15%, var(--bg));border-color:var(--accent);color:var(--t1)}
 
 #modal-body .form-row .cgrid .symswatch,
 #modal-body .form-row .cgrid .symswatch:nth-child(n){
@@ -749,6 +768,17 @@ body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 /* OBJECT LIST + DETAIL */
 .objlist{display:flex;flex-direction:column;gap:6px;overflow-y:auto;min-height:0}
 #detail-panel{display:flex;flex-direction:column;overflow-y:auto;min-height:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+/* Hero char/collection attribute editor fields — previously unstyled, so
+   each "insert box" had no background of its own and blended into the
+   detail panel behind it. --bg reads as a clearly separate well against
+   #detail-panel's --surface tone. */
+.table-inline-input{
+	background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);
+	color:var(--t1);padding:6px 9px;font-size:13px;font-family:inherit;outline:none;
+	transition:border-color var(--ease),background var(--ease);
+}
+.table-inline-input:focus{border-color:var(--accent)}
+textarea.table-inline-input{resize:vertical}
 .odetail{display:flex;flex-direction:column;height:100%;min-height:0}
 .objrow{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all var(--ease)}
 .objrow:hover{background:var(--raised)} .objrow.active{border-color:var(--accent);background:var(--raised)}
@@ -916,6 +946,9 @@ body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 /* MAP */
 .map-whiteboard{position:relative;width:100%;height:540px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:crosshair}
 .map-whiteboard.is-panning{cursor:grabbing}
+#story-graph-wrap.is-panning{cursor:grabbing}
+.hero-edge-handle:hover{filter:brightness(1.25)}
+.hero-dial-node.edge-drop-hint{outline:2px dashed var(--accent);outline-offset:2px}
 .map-svg{position:absolute;width:100%;height:100%;left:0;top:0}
 .map-points{position:absolute;width:100%;height:100%;left:0;top:0}
 .map-point{position:absolute;width:12px;height:12px;border:2px solid var(--accent);border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 1px rgba(0,0,0,.25)}

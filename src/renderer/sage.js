@@ -237,6 +237,11 @@ function buildSageGraph(data, hiddenModules) {
     const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
     txt.setAttribute('text-anchor','middle'); txt.setAttribute('y', n.r + 12);
     txt.setAttribute('fill','var(--t2)'); txt.setAttribute('font-size','10'); txt.setAttribute('pointer-events','none');
+    // Labels are hidden by default and only revealed for the hovered node and
+    // its neighbors (see highlightNode) — with every label always drawn they
+    // overlapped and collided into an unreadable mess.
+    txt.style.opacity = '0';
+    txt.style.transition = 'opacity .12s';
     txt.textContent = n.label.length > 14 ? n.label.slice(0,13)+'…' : n.label;
     g.appendChild(c); g.appendChild(txt);
     gNodes.appendChild(g);
@@ -263,13 +268,15 @@ function buildSageGraph(data, hiddenModules) {
 
   function highlightNode(id) {
     if (id == null) {
-      circles.forEach(({el}) => el.style.opacity = '');
+      circles.forEach(({el, text}) => { el.style.opacity = ''; text.style.opacity = '0'; });
       lines.forEach(({el}) => { el.style.opacity = ''; el.setAttribute('stroke-width','1.25'); });
       return;
     }
     const neigh = neighbors.get(id) || new Set();
-    circles.forEach(({el, node}) => {
-      el.style.opacity = (node.id === id || neigh.has(node.id)) ? '1' : '0.15';
+    circles.forEach(({el, text, node}) => {
+      const on = node.id === id || neigh.has(node.id);
+      el.style.opacity = on ? '1' : '0.15';
+      text.style.opacity = on ? '1' : '0';
     });
     lines.forEach(({el, source, target}) => {
       const active = source === id || target === id;
@@ -320,9 +327,15 @@ function buildSageGraph(data, hiddenModules) {
       const f=(d-120)*k;
       s.vx+=f*dx/d; s.vy+=f*dy/d; tg.vx-=f*dx/d; tg.vy-=f*dy/d;
     }
+    // Gentle gravity toward the viewport center keeps the graph on-screen
+    // without hard walls. The old clamp to [20,W-20]x[20,H-20] acted as a box
+    // the repulsion pressed nodes against, so they piled up in the corners.
+    const cx = W/2, cy = H/2;
     for (const n of active) {
-      n.x = Math.max(20,Math.min(W-20,n.x+(n.vx||0)));
-      n.y = Math.max(20,Math.min(H-20,n.y+(n.vy||0)));
+      n.vx += (cx - n.x) * 0.003;
+      n.vy += (cy - n.y) * 0.003;
+      n.x += (n.vx||0);
+      n.y += (n.vy||0);
     }
     updatePositions();
   }

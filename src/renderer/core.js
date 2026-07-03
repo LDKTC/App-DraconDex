@@ -85,7 +85,7 @@ const S = {
   worldOrigCat:null, worldOrigObject:null, worldOrigCatView:'list', worldNovelOpen:new Set(),
   worldCharCatFilter:{}, worldCatOpen:new Set(), worldMapTool:null,
   // Hero module state
-  game:null, gameTab:'project',
+  game:null, gameTab:'project', heroLevelOpen:new Set(),
   // Writer module state
   write:null, writeTab:'project', writeSeries:null, writeBook:null, writeChapter:null,
   writeWikiChapter:null, writeNote:null, writeOpenProjects:new Set(),
@@ -573,31 +573,28 @@ function upsertProjectTab(project){
   renderProjectTabs();
 }
 
+// Tabs stay visible across every module — closing one module's window on a
+// tab used to hide the tabs of every other module, so an open project/world/
+// game/write tab appeared to vanish the moment you switched modules even
+// though its state (S.projectTabs / S.entityTabs) was never cleared.
 function renderProjectTabs(){
   const el = q('#project-tabs');
   if(!el) return;
-  let html = '';
-  if (S.activeModule === 'director') {
-    html = S.projectTabs.map(tab => `
-      <button class="project-tab ${S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
-        <span class="tab-dot" style="background:${tab.color}"></span>
-        <span class="tab-name">${x(tab.name)}</span>
-        <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
-      </button>
-    `).join('');
-  } else {
-    const typeMap = { navigator:'world', hero:'game', writer:'write' };
-    const type = typeMap[S.activeModule];
-    const tabs = type ? S.entityTabs.filter(t => t.type === type) : [];
-    html = tabs.map(tab => `
-      <button class="project-tab ${S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab('${tab.key}')" title="${x(tab.name)}">
-        <span class="tab-dot" style="background:${tab.color}"></span>
-        <span class="tab-name">${x(tab.name)}</span>
-        <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
-      </button>
-    `).join('');
-  }
-  el.innerHTML = html;
+  const dirTabs = S.projectTabs.map(tab => `
+    <button class="project-tab ${S.activeModule==='director' && S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
+      <span class="tab-dot" style="background:${tab.color}"></span>
+      <span class="tab-name">${x(tab.name)}</span>
+      <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
+    </button>
+  `).join('');
+  const entTabs = S.entityTabs.map(tab => `
+    <button class="project-tab ${S.activeModule===tab.module && S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab('${tab.key}')" title="${x(tab.name)}">
+      <span class="tab-dot" style="background:${tab.color}"></span>
+      <span class="tab-name">${x(tab.name)}</span>
+      <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
+    </button>
+  `).join('');
+  el.innerHTML = dirTabs + entTabs;
   document.title = S.project ? `${S.project.name} - DraconDex` : 'DraconDex';
 }
 
@@ -641,7 +638,7 @@ async function closeEntityTab(key) {
   const idx = S.entityTabs.findIndex(t => t.key === key);
   if (idx < 0) return;
   const closing = S.entityTabs[idx];
-  const wasActive = S.activeEntityTabKey === key;
+  const wasActive = S.activeModule === closing.module && S.activeEntityTabKey === key;
   S.entityTabs.splice(idx, 1);
   if (!wasActive) { renderProjectTabs(); return; }
   const sameMod = S.entityTabs.filter(t => t.module === closing.module);
@@ -777,7 +774,7 @@ async function switchProjectTab(id){
 async function closeProjectTab(id){
   const idx = S.projectTabs.findIndex(t => t.id === id);
   if(idx < 0) return;
-  const wasActive = S.activeProjectTabId === id;
+  const wasActive = S.activeModule === 'director' && S.activeProjectTabId === id;
   S.projectTabs.splice(idx, 1);
   if(!wasActive){
     renderProjectTabs();

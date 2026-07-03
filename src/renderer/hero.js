@@ -187,30 +187,53 @@ function renderAttrEditor(kind, ownerId, templates, attrs) {
     if (!byTpl.has(a.template_ref)) byTpl.set(a.template_ref, new Map());
     byTpl.get(a.template_ref).set(a.level, a);
   }
+  const rowHtml = (tpl, lv, vals) => {
+    const v = vals.get(lv)?.attribute_text || '';
+    const inp = tpl.attribute_type === 'textarea'
+      ? `<textarea class="table-inline-input" style="flex:1;min-height:48px" onchange="saveHeroAttr('${kind}',${ownerId},${tpl.id},${lv},this.value)">${x(v)}</textarea>`
+      : `<input class="table-inline-input" style="flex:1" type="${tpl.attribute_type === 'num' ? 'number' : 'text'}" value="${x(v)}" onchange="saveHeroAttr('${kind}',${ownerId},${tpl.id},${lv},this.value)">`;
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+      ${tpl.levelable ? `<span class="cs-count" style="min-width:34px;text-align:center">Lv ${lv}</span>` : ''}
+      ${inp}
+      ${tpl.levelable && lv > 0 ? `<button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteHeroAttrLevel('${kind}',${ownerId},${tpl.id},${lv})" title="${t('delete')}">${I.delete}</button>` : ''}
+    </div>`;
+  };
   let h = '';
   for (const tpl of templates) {
     const vals = byTpl.get(tpl.id) || new Map();
-    h += `<div style="margin-bottom:10px">
-      <div style="font-size:11.5px;color:var(--t3);font-weight:600;margin-bottom:3px">${x(tpl.attribute_name)}${tpl.levelable ? ` <span style="color:var(--accent)">· ${t('gameLevel')}</span>` : ''}</div>`;
     const levels = tpl.levelable ? [...new Set([0, ...vals.keys()])].sort((a, b) => a - b) : [0];
-    for (const lv of levels) {
-      const v = vals.get(lv)?.attribute_text || '';
-      const inp = tpl.attribute_type === 'textarea'
-        ? `<textarea class="table-inline-input" style="flex:1;min-height:48px" onchange="saveHeroAttr('${kind}',${ownerId},${tpl.id},${lv},this.value)">${x(v)}</textarea>`
-        : `<input class="table-inline-input" style="flex:1" type="${tpl.attribute_type === 'num' ? 'number' : 'text'}" value="${x(v)}" onchange="saveHeroAttr('${kind}',${ownerId},${tpl.id},${lv},this.value)">`;
-      h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-        ${tpl.levelable ? `<span class="cs-count" style="min-width:34px;text-align:center">Lv ${lv}</span>` : ''}
-        ${inp}
-        ${tpl.levelable && lv > 0 ? `<button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteHeroAttrLevel('${kind}',${ownerId},${tpl.id},${lv})" title="${t('delete')}">${I.delete}</button>` : ''}
+    if (!tpl.levelable) {
+      h += `<div style="margin-bottom:10px">
+        <div style="font-size:11.5px;color:var(--t3);font-weight:600;margin-bottom:3px">${x(tpl.attribute_name)}</div>
+        ${rowHtml(tpl, 0, vals)}
       </div>`;
+      continue;
     }
-    if (tpl.levelable) {
-      const next = Math.max(...levels) + 1;
-      h += `<button class="btn btn-g" style="padding:2px 10px;font-size:11.5px" onclick="addHeroAttrLevel('${kind}',${ownerId},${tpl.id},${next})">${I.plus} ${t('gameLevel')} ${next}</button>`;
-    }
-    h += `</div>`;
+    // Levelable attributes can accumulate many level rows — collapse them
+    // behind a dropdown header instead of always showing every level flat.
+    const openKey = `${kind}-${ownerId}-${tpl.id}`;
+    const open = S.heroLevelOpen.has(openKey);
+    const next = Math.max(...levels) + 1;
+    h += `<div style="margin-bottom:10px">
+      <div class="lv-acc-head" onclick="toggleHeroLevelGroup('${kind}',${ownerId},${tpl.id})">
+        <svg class="ftgl ${open ? 'open' : ''}" style="width:8px;height:8px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="flex:1;font-size:11.5px;color:var(--t3);font-weight:600">${x(tpl.attribute_name)} <span style="color:var(--accent)">· ${t('gameLevel')} (${levels.length})</span></span>
+      </div>
+      ${open ? `<div style="padding-left:14px">
+        ${levels.map(lv => rowHtml(tpl, lv, vals)).join('')}
+        <button class="btn btn-g" style="padding:2px 10px;font-size:11.5px" onclick="addHeroAttrLevel('${kind}',${ownerId},${tpl.id},${next})">${I.plus} ${t('gameLevel')} ${next}</button>
+      </div>` : ''}
+    </div>`;
   }
   return h;
+}
+
+function toggleHeroLevelGroup(kind, ownerId, tplId) {
+  const key = `${kind}-${ownerId}-${tplId}`;
+  if (S.heroLevelOpen.has(key)) S.heroLevelOpen.delete(key);
+  else S.heroLevelOpen.add(key);
+  if (kind === 'char') renderCharDetail(ownerId);
+  else renderElementDetail(ownerId);
 }
 
 async function saveHeroAttr(kind, ownerId, tplId, level, value) {
@@ -454,15 +477,121 @@ function drawHeroEdges() {
     const x1 = fn.offsetLeft + fn.offsetWidth / 2, y1 = fn.offsetTop + fn.offsetHeight / 2;
     const x2 = tn.offsetLeft + tn.offsetWidth / 2, y2 = tn.offsetTop + tn.offsetHeight / 2;
     const col = e.color_code || 'var(--t3)';
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    // "+" drag handle sits 3/4 of the way toward the target (the storyline's
+    // right/leading edge) — grabbing and dropping it on another dialogue
+    // creates a new storyline sharing this one's origin.
+    const hx = x1 + (x2 - x1) * 0.75, hy = y1 + (y2 - y1) * 0.75;
     body += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="1.6" marker-end="url(#hero-arrow)"/>
-      <circle cx="${(x1 + x2) / 2}" cy="${(y1 + y2) / 2}" r="6" fill="var(--surface)" stroke="${col}" stroke-width="1.4" style="pointer-events:auto;cursor:pointer" onclick="deleteStorylineEdge(${e.id})"><title>${t('delete')}</title></circle>`;
+      <circle cx="${mx}" cy="${my}" r="8" fill="var(--surface)" stroke="${col}" stroke-width="1.4" style="pointer-events:auto;cursor:pointer" onclick="openStorylineIconModal(${e.id})"><title>${t('edit')}</title></circle>
+      ${e.symbol_glyph ? `<text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="central" font-size="10.5" style="pointer-events:none">${x(e.symbol_glyph)}</text>` : ''}
+      <circle class="hero-edge-handle" data-edge="${e.id}" data-from="${e.from_ref}" cx="${hx}" cy="${hy}" r="7" fill="${col}" style="pointer-events:auto;cursor:grab"><title>${t('gameAddEdge')}</title></circle>
+      <line x1="${hx - 3}" y1="${hy}" x2="${hx + 3}" y2="${hy}" stroke="#fff" stroke-width="1.6" style="pointer-events:none"/>
+      <line x1="${hx}" y1="${hy - 3}" x2="${hx}" y2="${hy + 3}" stroke="#fff" stroke-width="1.6" style="pointer-events:none"/>`;
   }
   svg.innerHTML = defs + body;
+}
+
+async function openStorylineIconModal(edgeId) {
+  const edge = _heroEdges.find(e => e.id === edgeId);
+  if (!edge) return;
+  const picker = await symbolPicker('hsl-sym-ref', edge.symbol_ref || null, 'hsl-sym-preview', 'hsl-sym-custom');
+  openModal('Choose Symbol', `
+    <div class="symsel-box">
+      <span class="symsel-preview" id="hsl-sym-preview">${x(edge.symbol_glyph || '+')}</span>
+      <input type="text" class="symsel-input" id="hsl-sym-custom" placeholder="Type a custom symbol..." maxlength="4" value="${edge.symbol_ref ? '' : x(edge.symbol_glyph || '')}" oninput="onSymbolCustomInput('hsl-sym-ref','hsl-sym-preview',this.value)">
+    </div>
+    <div class="form-row"><label>Symbol</label>${picker}</div>
+    <div class="mfoot">
+      <button class="btn btn-d" style="margin-right:auto" onclick="deleteStorylineEdge(${edgeId})">${t('delete')}</button>
+      <button class="btn btn-g" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveStorylineIcon(${edgeId})">${t('save')}</button>
+    </div>`);
+}
+
+async function saveStorylineIcon(edgeId) {
+  const symRef = Number(q('#hsl-sym-ref')?.value) || null;
+  const customText = (q('#hsl-sym-custom')?.value || '').trim();
+  await api.game.updateStorylineSymbol(edgeId, symRef, symRef ? null : (customText || null));
+  closeModal();
+  await renderHeroStory();
+}
+
+let heroGraphPanCleanup = null;
+
+// Right-click + drag pans #story-graph-wrap, matching the same gesture used
+// on the Navigator map board (Konva stage) — the story graph is a plain
+// scrollable div, so panning just adjusts scrollLeft/scrollTop directly.
+function initHeroGraphPan() {
+  const wrap = q('#story-graph-wrap');
+  if (!wrap) return;
+  if (heroGraphPanCleanup) heroGraphPanCleanup();
+  const controller = new AbortController();
+  heroGraphPanCleanup = () => controller.abort();
+  const { signal } = controller;
+  wrap.addEventListener('contextmenu', (e) => e.preventDefault(), { signal });
+  let panning = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+  wrap.addEventListener('mousedown', (e) => {
+    if (e.button !== 2) return;
+    panning = true;
+    startX = e.clientX; startY = e.clientY;
+    startLeft = wrap.scrollLeft; startTop = wrap.scrollTop;
+    wrap.classList.add('is-panning');
+  }, { signal });
+  window.addEventListener('mousemove', (e) => {
+    if (!panning) return;
+    wrap.scrollLeft = startLeft - (e.clientX - startX);
+    wrap.scrollTop = startTop - (e.clientY - startY);
+  }, { signal });
+  window.addEventListener('mouseup', () => {
+    panning = false;
+    wrap.classList.remove('is-panning');
+  }, { signal });
+}
+
+// The "+" handle on each storyline (drawHeroEdges) is grabbed and dropped on
+// a different dialogue node to spawn a new storyline sharing the dragged
+// edge's origin — a shortcut to branching without reaching for the node's
+// own "start edge" button. Bound once on the svg itself (not per-handle)
+// since drawHeroEdges rewrites the handles' markup on every node drag.
+function initHeroEdgeHandles(storyId) {
+  const svg = q('#story-edges');
+  if (!svg) return;
+  svg.addEventListener('pointerdown', (ev) => {
+    const handle = ev.target.closest('.hero-edge-handle');
+    if (!handle) return;
+    ev.stopPropagation();
+    const fromRef = Number(handle.dataset.from);
+    let dropTarget = null;
+    const onMove = (e) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const node = el?.closest('.hero-dial-node');
+      document.querySelectorAll('.hero-dial-node.edge-drop-hint').forEach(n => n.classList.remove('edge-drop-hint'));
+      dropTarget = null;
+      if (node && Number(node.dataset.dial) !== fromRef) {
+        node.classList.add('edge-drop-hint');
+        dropTarget = Number(node.dataset.dial);
+      }
+    };
+    const onUp = async () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.querySelectorAll('.hero-dial-node.edge-drop-hint').forEach(n => n.classList.remove('edge-drop-hint'));
+      if (dropTarget) {
+        await api.game.createStoryline(storyId, fromRef, dropTarget, null);
+        await renderHeroStory();
+      }
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
 }
 
 function initHeroGraphInteractions(storyId) {
   const graph = q('#story-graph');
   if (!graph) return;
+  initHeroGraphPan();
+  initHeroEdgeHandles(storyId);
   graph.querySelectorAll('.hero-dial-node').forEach(node => {
     const id = Number(node.dataset.dial);
     let dragMoved = false;
@@ -514,6 +643,7 @@ function startHeroEdge(dialId) {
 async function deleteStorylineEdge(id) {
   if (!await uiConfirm(`${t('delete')}?`)) return;
   await api.game.deleteStoryline(id);
+  closeModal();
   await renderHeroStory();
 }
 
@@ -727,10 +857,9 @@ async function openCharElementsModal(charId) {
     const elems = await api.game.getColElements(c.id);
     if (!elems.length) continue;
     body += `<div style="font-size:11.5px;color:var(--t3);font-weight:600;margin:6px 0 3px">${x(c.name)}</div>`;
-    body += elems.map(e => `<label style="display:flex;align-items:center;gap:8px;padding:3px 2px;cursor:pointer">
-      <input type="checkbox" class="char-elem-check" value="${e.id}" ${linkedIds.has(e.id) ? 'checked' : ''}>
-      <span class="dot" style="background:${e.color_code || '#6366f1'}"></span>${x(e.name)}
-    </label>`).join('');
+    body += `<div class="elem-pick-grid">` + elems.map(e => `<div class="elem-pick ${linkedIds.has(e.id) ? 'sel' : ''}" data-elem-id="${e.id}" onclick="this.classList.toggle('sel')">
+      <span class="dot" style="background:${e.color_code || '#6366f1'}"></span><span style="flex:1">${x(e.name)}</span>
+    </div>`).join('') + `</div>`;
   }
   openModal(t('gameCollections'), `
     ${body || `<p style="color:var(--t3);font-size:12.5px">${t('gameCollectionNew')}</p>`}
@@ -741,7 +870,7 @@ async function openCharElementsModal(charId) {
 }
 
 async function saveCharElements(charId) {
-  const ids = [...document.querySelectorAll('.char-elem-check:checked')].map(cb => Number(cb.value));
+  const ids = [...document.querySelectorAll('.elem-pick.sel')].map(el => Number(el.dataset.elemId));
   await api.game.setCharElements(charId, ids);
   closeModal();
   toast(t('saved'), 'ok');

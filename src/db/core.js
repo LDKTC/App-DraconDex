@@ -682,6 +682,8 @@ function initDB() {
       from_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
       to_ref INTEGER NOT NULL REFERENCES game_dialogue(id) ON DELETE CASCADE,
       color_ref INTEGER REFERENCES use_color(id),
+      symbol_ref INTEGER REFERENCES symbol_collection(id) ON DELETE SET NULL,
+      symbol TEXT,
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(from_ref,to_ref)
     );
@@ -953,6 +955,12 @@ function migrateHeroV26(db) {
     }
     if (!hasColumn(db, 'game_dialogue', 'color_ref')) {
       try { db.prepare(`ALTER TABLE game_dialogue ADD COLUMN color_ref INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
+    }
+    if (!hasColumn(db, 'game_storyline', 'symbol_ref')) {
+      try { db.prepare(`ALTER TABLE game_storyline ADD COLUMN symbol_ref INTEGER REFERENCES symbol_collection(id) ON DELETE SET NULL`).run(); } catch (_) {}
+    }
+    if (!hasColumn(db, 'game_storyline', 'symbol')) {
+      try { db.prepare(`ALTER TABLE game_storyline ADD COLUMN symbol TEXT`).run(); } catch (_) {}
     }
     // Plan v2.6: a novel can belong to at most one game. Skipped silently if
     // existing data already violates it.

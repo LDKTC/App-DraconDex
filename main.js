@@ -54,16 +54,17 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
-  win.webContents.on('before-input-event', (event, input) => {
-    if (input.key === 'I' && input.control && input.shift) {
-      win.webContents.toggleDevTools();
-    }
-  });
   win.loadFile('index.html');
 }
 
 app.whenReady().then(() => {
-  Menu.setApplicationMenu(null);
+  // Frameless window means no menu bar is ever visible, but keeping a real
+  // application menu (rather than setApplicationMenu(null)) preserves its
+  // accelerators — in particular Ctrl+Shift+I for DevTools, which the old
+  // before-input-event handler reimplemented but double-fired on keyUp.
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { role: 'viewMenu' },
+  ]));
   createWindow();
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
@@ -285,9 +286,6 @@ h('world:updateObjectSymbol',(id,sym,custom)          => db.updateWorldObjectSym
 h('world:getSymbolCollection',()                      => db.getSymbolCollection());
 
 h('world:getMaps',          (wid)                     => db.getWorldMaps(wid));
-h('world:getLinkableMaps',  (wid)                     => db.getLinkableMaps(wid));
-h('world:addMap',           (wid,mref)                => db.addWorldMap(wid,mref));
-h('world:removeMap',        (id)                      => db.removeWorldMap(id));
 h('world:getMapAreas',      (wmid)                    => db.getWorldMapAreas(wmid));
 
 h('world:getTimelines',     (wid)                     => db.getWorldTimelines(wid));
@@ -368,6 +366,7 @@ h('game:updateDialoguePos', (id,x,y)                  => db.updateGameDialoguePo
 h('game:deleteDialogue',    (id)                      => db.deleteGameDialogue(id));
 h('game:getStorylines',     (sid)                     => db.getGameStorylines(sid));
 h('game:createStoryline',   (sid,fid,tid,c)           => db.createGameStoryline(sid,fid,tid,c));
+h('game:updateStorylineSymbol', (id,sym,custom)       => db.updateGameStorylineSymbol(id,sym,custom));
 h('game:deleteStoryline',   (id)                      => db.deleteGameStoryline(id));
 h('game:getConversations',  (did)                     => db.getGameConversations(did));
 h('game:createConversation',(did,cid,txt)             => db.createGameConversation(did,cid,txt));

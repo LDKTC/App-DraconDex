@@ -236,10 +236,22 @@ const deleteGameDialogue = (id) =>
   getDB().prepare(`DELETE FROM game_dialogue WHERE id=?`).run(id);
 
 const getGameStorylines = (storyId) =>
-  getDB().prepare(`SELECT sl.*, uc.color_code FROM game_storyline sl LEFT JOIN use_color uc ON sl.color_ref=uc.id WHERE sl.story_ref=?`).all(storyId);
+  getDB().prepare(`
+    SELECT sl.*, uc.color_code, COALESCE(sc.glyph, sl.symbol) AS symbol_glyph
+    FROM game_storyline sl
+    LEFT JOIN use_color uc ON sl.color_ref=uc.id
+    LEFT JOIN symbol_collection sc ON sl.symbol_ref=sc.id
+    WHERE sl.story_ref=?
+  `).all(storyId);
 
 const createGameStoryline = (storyId, fromId, toId, colorRef) =>
   getDB().prepare(`INSERT OR IGNORE INTO game_storyline (story_ref,from_ref,to_ref,color_ref) VALUES (?,?,?,?)`).run(storyId, fromId, toId, colorRef||null);
+
+// symbolRef selects a shared symbol_collection glyph; customText stores a
+// one-off glyph directly on the row — the two are mutually exclusive.
+const updateGameStorylineSymbol = (id, symbolRef, customText) =>
+  getDB().prepare(`UPDATE game_storyline SET symbol_ref=?,symbol=?,updated_at=datetime('now') WHERE id=?`)
+    .run(symbolRef || null, symbolRef ? null : (customText || null), id);
 
 const deleteGameStoryline = (id) =>
   getDB().prepare(`DELETE FROM game_storyline WHERE id=?`).run(id);
@@ -367,7 +379,7 @@ module.exports = {
   getGameElementAttrs, upsertGameElementAttr, deleteGameElementAttr,
   getGameStories, createGameStory, updateGameStory, deleteGameStory,
   getGameDialogues, createGameDialogue, updateGameDialogue, updateGameDialoguePos, deleteGameDialogue,
-  getGameStorylines, createGameStoryline, deleteGameStoryline,
+  getGameStorylines, createGameStoryline, updateGameStorylineSymbol, deleteGameStoryline,
   getGameConversations, createGameConversation, updateGameConversation, deleteGameConversation, moveGameConversation,
   getGameTags, setGameTags,
   getGameCharTags, setGameCharTags,
