@@ -230,7 +230,7 @@ body[data-theme="blueEclipse"] .btn-p,
 body[data-theme="blueEclipse"] .modal-actions button{color:#1a1a26}
 /* Priority order (main -> minor): aurora teal > magenta ribbon > deep night > black.
    A polar-night theme — near-black teal canvas lit by teal/magenta aurora. */
-body[data-theme="aurora"]{
+body[data-theme="clearAurora"]{
 	--bg:#071a17;
 	--surface:#0c2621;
 	--raised:#123430;
@@ -246,7 +246,7 @@ body[data-theme="aurora"]{
 }
 /* Priority order (main -> minor): violet > indigo > deep dusk > black.
    A soft twilight theme — dark indigo canvas with a violet glow. */
-body[data-theme="twilight"]{
+body[data-theme="atTwilight"]{
 	--bg:#13111f;
 	--surface:#1c1930;
 	--raised:#272040;
@@ -262,7 +262,7 @@ body[data-theme="twilight"]{
 }
 /* Priority order (main -> minor): rose > amber > warm plum > black.
    A warm sunset theme — dark plum canvas with rose/amber horizon accents. */
-body[data-theme="sunset"]{
+body[data-theme="atSunset"]{
 	--bg:#1f1013;
 	--surface:#2c161b;
 	--raised:#3a1e24;
@@ -279,7 +279,7 @@ body[data-theme="sunset"]{
 }
 /* Priority order (main -> minor): emerald > jade > deep forest > black.
    A forest theme — dark green canvas with a bright emerald accent. */
-body[data-theme="emerald"]{
+body[data-theme="clearComet"]{
 	--bg:#08130d;
 	--surface:#0e2016;
 	--raised:#152d1f;
@@ -295,7 +295,7 @@ body[data-theme="emerald"]{
 }
 /* Priority order (main -> minor): cyan > ice blue > frost white > cloud.
    A crisp winter theme — light icy surfaces with a cool cyan accent. */
-body[data-theme="frost"]{
+body[data-theme="atDaybreak"]{
 	--bg:#eef7fb;
 	--surface:#ffffff;
 	--raised:#e0f0f7;
@@ -311,7 +311,7 @@ body[data-theme="frost"]{
 }
 /* Priority order (main -> minor): ember orange > amber > charcoal > black.
    A hearth theme — dark charcoal canvas with a glowing ember accent. */
-body[data-theme="ember"]{
+body[data-theme="afterSunset"]{
 	--bg:#121110;
 	--surface:#1c1a18;
 	--raised:#272422;
@@ -327,7 +327,7 @@ body[data-theme="ember"]{
 }
 /* Priority order (main -> minor): blossom pink > rose > cream > white.
    A cherry-blossom theme — light pink surfaces with a soft blossom accent. */
-body[data-theme="sakura"]{
+body[data-theme="atSunrise"]{
 	--bg:#fdf0f4;
 	--surface:#ffffff;
 	--raised:#ffe4ec;
@@ -344,7 +344,7 @@ body[data-theme="sakura"]{
 }
 /* Priority order (main -> minor): deep blue > cyan > abyss teal > black.
    An abyssal-ocean theme — dark teal canvas with bright sea-blue accents. */
-body[data-theme="deepSea"]{
+body[data-theme="atNight"]{
 	--bg:#04141c;
 	--surface:#08202b;
 	--raised:#0c2c3a;
@@ -360,7 +360,7 @@ body[data-theme="deepSea"]{
 }
 /* Priority order (main -> minor): terracotta > amber sand > dune > cream.
    A warm-sand theme — light desert surfaces with a terracotta accent. */
-body[data-theme="desert"]{
+body[data-theme="atNoon"]{
 	--bg:#faf3e6;
 	--surface:#fffdf8;
 	--raised:#f3e6cf;
@@ -375,9 +375,9 @@ body[data-theme="desert"]{
 	--danger:#dc2626;
 	--success:#15803d;
 }
-/* Priority order (main -> minor): lavender > violet > lilac mist > white.
-   A soft lavender theme — light lilac surfaces with a gentle violet accent. */
-body[data-theme="lavender"]{
+/* Priority order (main -> minor): lilac > violet > lilac mist > white.
+   A soft dusk theme — light lilac surfaces with a gentle violet accent. */
+body[data-theme="clearDusk"]{
 	--bg:#f5f0fc;
 	--surface:#ffffff;
 	--raised:#ede4fb;
@@ -390,6 +390,170 @@ body[data-theme="lavender"]{
 	--accentH:#a78bfa;
 	--danger:#dc2626;
 	--success:#16a34a;
+}
+/* Priority order (main -> minor): steel blue > deep night > black.
+   The deepest hour — near-black canvas with a cool steel-blue accent. */
+body[data-theme="atMidnight"]{
+	--bg:#050608;
+	--surface:#0c0e14;
+	--raised:#12151e;
+	--hover:#191d29;
+	--border:#232838;
+	--t1:#e6ebf5;
+	--t2:#8b93a8;
+	--t3:#525a70;
+	--accent:#4f7cc4;
+	--accentH:#6f9ce4;
+	--danger:#ef4444;
+	--success:#22c55e;
+}
+/* Priority order (main -> minor): silver > slate blue > moonlit grey > black.
+   A moonlit night — cool slate surfaces washed in silvery periwinkle. */
+body[data-theme="clearMoon"]{
+	--bg:#141821;
+	--surface:#1d222e;
+	--raised:#262d3b;
+	--hover:#313947;
+	--border:#3c4556;
+	--t1:#eef1f7;
+	--t2:#aeb6c6;
+	--t3:#6f7789;
+	--accent:#5b6b94;
+	--accentH:#8996c0;
+	--danger:#f87171;
+	--success:#34d399;
+}
+/* Priority order (main -> minor): violet > pink starlight > deep cosmos > black.
+   A galaxy theme — dark violet canvas with violet/pink star accents. */
+body[data-theme="clearGalaxy"]{
+	--bg:#0d0a1f;
+	--surface:#161233;
+	--raised:#1f1a45;
+	--hover:#292158;
+	--border:#342a6b;
+	--t1:#f0ebff;
+	--t2:#b3a8d9;
+	--t3:#726699;
+	--accent:#9d5cf6;
+	--accentH:#f472b6;
+	--danger:#f87171;
+	--success:#34d399;
+}
+/* Priority order (main -> minor): magenta > cyan glow > deep purple > black.
+   A nebula theme — dark purple canvas lit by magenta and cyan gas clouds. */
+body[data-theme="clearNebula"]{
+	--bg:#12081a;
+	--surface:#1e0f2c;
+	--raised:#2a163d;
+	--hover:#361e4e;
+	--border:#452763;
+	--t1:#fbeaff;
+	--t2:#cba3d9;
+	--t3:#8a6699;
+	--accent:#c026d3;
+	--accentH:#22d3ee;
+	--danger:#fb7185;
+	--success:#2dd4bf;
+}
+/* Priority order (main -> minor): electric cyan > slate storm > grey-blue > black.
+   A storm-clearing theme — dark slate sky with an electric cyan accent. */
+body[data-theme="afterStorm"]{
+	--bg:#0e1418;
+	--surface:#161e24;
+	--raised:#1f2a31;
+	--hover:#28353e;
+	--border:#33434d;
+	--t1:#e7eef2;
+	--t2:#9fb0bb;
+	--t3:#647581;
+	--accent:#38bdf8;
+	--accentH:#7dd3fc;
+	--button:#0284c7;
+	--danger:#f87171;
+	--success:#34d399;
+}
+/* Priority order (main -> minor): steel blue > pale sky > snow white > cloud.
+   A fresh-snow theme — light icy surfaces with a cool steel-blue accent. */
+body[data-theme="afterSnow"]{
+	--bg:#eef4f8;
+	--surface:#ffffff;
+	--raised:#e4edf3;
+	--hover:#d5e3ec;
+	--border:#bcd0dd;
+	--t1:#1f3038;
+	--t2:#4c5f6b;
+	--t3:#83969f;
+	--accent:#2f7095;
+	--accentH:#4a8bb0;
+	--danger:#dc2626;
+	--success:#059669;
+}
+/* Priority order (main -> minor): coral > peach > cream > white.
+   A warm-morning theme — light peach surfaces with a fresh coral accent. */
+body[data-theme="atMorning"]{
+	--bg:#fff5ee;
+	--surface:#ffffff;
+	--raised:#ffe8db;
+	--hover:#ffd9c4;
+	--border:#f6c3a8;
+	--t1:#5c3524;
+	--t2:#8f5e45;
+	--t3:#c0977f;
+	--accent:#f97316;
+	--accentH:#fb923c;
+	--button:#ea580c;
+	--danger:#dc2626;
+	--success:#16a34a;
+}
+/* Priority order (main -> minor): golden sun > sky blue > cloud > white.
+   A clear-day theme — bright sky-blue surfaces with a golden sun accent. */
+body[data-theme="clearSun"]{
+	--bg:#eaf6ff;
+	--surface:#ffffff;
+	--raised:#d8eeff;
+	--hover:#c2e3ff;
+	--border:#a5d0f0;
+	--t1:#173a52;
+	--t2:#436078;
+	--t3:#8098ab;
+	--accent:#f5a623;
+	--accentH:#ffc244;
+	--button:#d97706;
+	--danger:#dc2626;
+	--success:#059669;
+}
+/* Priority order (main -> minor): amber > violet dusk > deep evening > black.
+   A warm-evening theme — dusky violet canvas with an amber/purple horizon. */
+body[data-theme="atEvening"]{
+	--bg:#1c1524;
+	--surface:#271b32;
+	--raised:#332442;
+	--hover:#402d52;
+	--border:#4d3763;
+	--t1:#f6ecff;
+	--t2:#c7abd0;
+	--t3:#8b7195;
+	--accent:#f97316;
+	--accentH:#a855f7;
+	--danger:#fb7185;
+	--success:#22c55e;
+}
+/* Priority order (main -> minor): gold meteor > night sky > deep navy > black.
+   A meteor-shower theme — dark night sky streaked with a bright gold accent. */
+body[data-theme="clearMeteor"]{
+	--bg:#0a0e1a;
+	--surface:#111726;
+	--raised:#182032;
+	--hover:#212b40;
+	--border:#2c374f;
+	--t1:#eef2fb;
+	--t2:#9aa6be;
+	--t3:#5f6b83;
+	--accent:#fbbf24;
+	--accentH:#fde68a;
+	--button:#d97706;
+	--danger:#f87171;
+	--success:#34d399;
 }
 
 body{
@@ -495,6 +659,25 @@ body{
 }
 .settings-select:focus{border-color:var(--accent)}
 .settings-select option{background:var(--surface);color:var(--t1)}
+.theme-list{
+	display:flex;flex-direction:column;gap:5px;
+	max-height:262px;overflow-y:auto;padding-right:3px;
+}
+.theme-item{
+	display:flex;align-items:center;gap:9px;width:100%;
+	padding:6px 8px;border:1px solid var(--border);border-radius:var(--rs);
+	background:var(--bg);color:var(--t2);cursor:pointer;font-family:inherit;
+	font-size:12px;font-weight:600;text-align:left;transition:background var(--ease),border-color var(--ease);
+}
+.theme-item:hover{background:var(--hover);color:var(--t1)}
+.theme-item.active{border-color:var(--accent);color:var(--t1)}
+.theme-swatches{
+	display:inline-flex;flex-shrink:0;border-radius:4px;overflow:hidden;
+	border:1px solid var(--border);
+}
+.theme-swatches i{width:13px;height:19px;display:block}
+.theme-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.theme-check{flex-shrink:0;color:var(--accent);font-weight:700;font-size:13px}
 .settings-slider{width:100%;accent-color:var(--accent);cursor:pointer}
 .settings-slider-scale{
 	display:flex;justify-content:space-between;margin-top:5px;color:var(--t3);
@@ -545,16 +728,26 @@ body[data-theme="atDawn"] .brand-img{content:url('Image/DraconDex-SymbolBlack.pn
 body[data-theme="atDusk"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
 body[data-theme="atDay"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
 body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="aurora"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="twilight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="sunset"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="emerald"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="frost"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="ember"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="sakura"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="deepSea"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="desert"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="lavender"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="clearAurora"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="atTwilight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="atSunset"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="clearComet"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="atDaybreak"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="afterSunset"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="atSunrise"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="atNight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="atNoon"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="clearDusk"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="atMidnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="clearMoon"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="clearGalaxy"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="clearNebula"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="afterStorm"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="afterSnow"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="atMorning"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="clearSun"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="atEvening"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
 .nav-btn{
 	width:40px;height:40px;border:none;
 	background:transparent; border-radius:var(--r);

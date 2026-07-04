@@ -46,7 +46,7 @@ const I = {
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
-const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse','aurora','twilight','sunset','emerald','frost','ember','sakura','deepSea','desert','lavender'];
+const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse','clearAurora','atTwilight','atSunset','clearComet','atDaybreak','afterSunset','atSunrise','atNight','atNoon','clearDusk','atMidnight','clearMoon','clearGalaxy','clearNebula','afterStorm','afterSnow','atMorning','clearSun','atEvening','clearMeteor'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','de','ru','qd'];
 const UI_SIZE_MIN = 50;
 const UI_SIZE_MAX = 200;
@@ -287,12 +287,42 @@ function updateUiSizeLabel(value){
   if(valueEl) valueEl.textContent = `${size}%`;
 }
 
+// Read each theme's live palette straight from the CSS variables so the
+// settings picker never drifts from style.css. We briefly swap body's
+// data-theme to sample the computed vars, then restore it — all synchronous,
+// so the browser never paints an intermediate theme. Result is cached.
+let THEME_PALETTE_CACHE = null;
+const THEME_SWATCH_VARS = ['--bg','--raised','--accent','--accentH','--t1'];
+function getThemePalettes(){
+  if(THEME_PALETTE_CACHE) return THEME_PALETTE_CACHE;
+  const body = document.body;
+  const prev = body.dataset.theme;
+  const cache = {};
+  for(const theme of UI_THEME_OPTIONS){
+    body.dataset.theme = theme;
+    const cs = getComputedStyle(body);
+    cache[theme] = THEME_SWATCH_VARS.map(v => cs.getPropertyValue(v).trim());
+  }
+  if(prev === undefined) delete body.dataset.theme; else body.dataset.theme = prev;
+  THEME_PALETTE_CACHE = cache;
+  return cache;
+}
+
 function renderSettingsMenu(){
   const menu = q('#settings-menu');
   if(!menu) return;
-  const themeOptions = UI_THEME_OPTIONS.map(theme =>
-    `<option value="${theme}" ${S.settings.theme===theme?'selected':''}>${t(theme)}</option>`
-  ).join('');
+  const palettes = getThemePalettes();
+  const themeOptions = UI_THEME_OPTIONS.map(theme => {
+    const active = S.settings.theme === theme;
+    const swatches = (palettes[theme] || []).map(c =>
+      `<i style="background:${c}"></i>`
+    ).join('');
+    return `<button type="button" class="theme-item${active?' active':''}" onclick="setUiSetting('theme','${theme}')" title="${t(theme)}">
+        <span class="theme-swatches">${swatches}</span>
+        <span class="theme-name">${t(theme)}</span>
+        ${active?'<span class="theme-check">✓</span>':''}
+      </button>`;
+  }).join('');
   const languageOptions = UI_LANGUAGE_OPTIONS.map(lang =>
     `<option value="${lang}" ${S.settings.language===lang?'selected':''}>${LANGUAGE_LABELS[lang]}</option>`
   ).join('');
@@ -303,9 +333,9 @@ function renderSettingsMenu(){
     </div>
     <div class="settings-group">
       <div class="settings-label">${t('theme')}</div>
-      <select class="settings-select" onchange="setUiSetting('theme', this.value)">
+      <div class="theme-list">
         ${themeOptions}
-      </select>
+      </div>
     </div>
     <div class="settings-group">
       <div class="settings-label">${t('language')}</div>
