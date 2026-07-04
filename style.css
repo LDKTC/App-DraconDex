@@ -228,6 +228,169 @@ body[data-theme="blueEclipse"]{
 }
 body[data-theme="blueEclipse"] .btn-p,
 body[data-theme="blueEclipse"] .modal-actions button{color:#1a1a26}
+/* Priority order (main -> minor): aurora teal > magenta ribbon > deep night > black.
+   A polar-night theme — near-black teal canvas lit by teal/magenta aurora. */
+body[data-theme="aurora"]{
+	--bg:#071a17;
+	--surface:#0c2621;
+	--raised:#123430;
+	--hover:#18423c;
+	--border:#1f524a;
+	--t1:#e6fff6;
+	--t2:#8fc7ba;
+	--t3:#557a72;
+	--accent:#2dd4bf;
+	--accentH:#e879f9;
+	--danger:#f87171;
+	--success:#4ade80;
+}
+/* Priority order (main -> minor): violet > indigo > deep dusk > black.
+   A soft twilight theme — dark indigo canvas with a violet glow. */
+body[data-theme="twilight"]{
+	--bg:#13111f;
+	--surface:#1c1930;
+	--raised:#272040;
+	--hover:#332a52;
+	--border:#3d3363;
+	--t1:#ece8ff;
+	--t2:#a9a0cc;
+	--t3:#6b6390;
+	--accent:#8b5cf6;
+	--accentH:#a78bfa;
+	--danger:#f87171;
+	--success:#34d399;
+}
+/* Priority order (main -> minor): rose > amber > warm plum > black.
+   A warm sunset theme — dark plum canvas with rose/amber horizon accents. */
+body[data-theme="sunset"]{
+	--bg:#1f1013;
+	--surface:#2c161b;
+	--raised:#3a1e24;
+	--hover:#48262e;
+	--border:#5a2f38;
+	--t1:#ffe9e3;
+	--t2:#d5a396;
+	--t3:#996a60;
+	--accent:#fb7185;
+	--accentH:#f59e0b;
+	--button:#f97316;
+	--danger:#ef4444;
+	--success:#22c55e;
+}
+/* Priority order (main -> minor): emerald > jade > deep forest > black.
+   A forest theme — dark green canvas with a bright emerald accent. */
+body[data-theme="emerald"]{
+	--bg:#08130d;
+	--surface:#0e2016;
+	--raised:#152d1f;
+	--hover:#1d3b28;
+	--border:#264a33;
+	--t1:#e6f9ec;
+	--t2:#98c4a6;
+	--t3:#5c7d67;
+	--accent:#10b981;
+	--accentH:#34d399;
+	--danger:#f87171;
+	--success:#22c55e;
+}
+/* Priority order (main -> minor): cyan > ice blue > frost white > cloud.
+   A crisp winter theme — light icy surfaces with a cool cyan accent. */
+body[data-theme="frost"]{
+	--bg:#eef7fb;
+	--surface:#ffffff;
+	--raised:#e0f0f7;
+	--hover:#cfe7f1;
+	--border:#b3d5e4;
+	--t1:#123040;
+	--t2:#3f5f70;
+	--t3:#7a97a6;
+	--accent:#0891b2;
+	--accentH:#06b6d4;
+	--danger:#dc2626;
+	--success:#059669;
+}
+/* Priority order (main -> minor): ember orange > amber > charcoal > black.
+   A hearth theme — dark charcoal canvas with a glowing ember accent. */
+body[data-theme="ember"]{
+	--bg:#121110;
+	--surface:#1c1a18;
+	--raised:#272422;
+	--hover:#332f2c;
+	--border:#403a35;
+	--t1:#f7f0e9;
+	--t2:#c2b2a3;
+	--t3:#82766a;
+	--accent:#f97316;
+	--accentH:#fbbf24;
+	--danger:#ef4444;
+	--success:#22c55e;
+}
+/* Priority order (main -> minor): blossom pink > rose > cream > white.
+   A cherry-blossom theme — light pink surfaces with a soft blossom accent. */
+body[data-theme="sakura"]{
+	--bg:#fdf0f4;
+	--surface:#ffffff;
+	--raised:#ffe4ec;
+	--hover:#ffd3e0;
+	--border:#f6bccf;
+	--t1:#5a2740;
+	--t2:#8f5570;
+	--t3:#c091a5;
+	--accent:#ec4899;
+	--accentH:#f9a8d4;
+	--button:#fb7185;
+	--danger:#dc2626;
+	--success:#16a34a;
+}
+/* Priority order (main -> minor): deep blue > cyan > abyss teal > black.
+   An abyssal-ocean theme — dark teal canvas with bright sea-blue accents. */
+body[data-theme="deepSea"]{
+	--bg:#04141c;
+	--surface:#08202b;
+	--raised:#0c2c3a;
+	--hover:#113a4b;
+	--border:#17495d;
+	--t1:#e0f7ff;
+	--t2:#8bbccb;
+	--t3:#527481;
+	--accent:#0ea5e9;
+	--accentH:#22d3ee;
+	--danger:#f87171;
+	--success:#2dd4bf;
+}
+/* Priority order (main -> minor): terracotta > amber sand > dune > cream.
+   A warm-sand theme — light desert surfaces with a terracotta accent. */
+body[data-theme="desert"]{
+	--bg:#faf3e6;
+	--surface:#fffdf8;
+	--raised:#f3e6cf;
+	--hover:#ecd9b8;
+	--border:#dcc59a;
+	--t1:#4a3520;
+	--t2:#7c6242;
+	--t3:#ab9068;
+	--accent:#c2703d;
+	--accentH:#e0913f;
+	--button:#b45309;
+	--danger:#dc2626;
+	--success:#15803d;
+}
+/* Priority order (main -> minor): lavender > violet > lilac mist > white.
+   A soft lavender theme — light lilac surfaces with a gentle violet accent. */
+body[data-theme="lavender"]{
+	--bg:#f5f0fc;
+	--surface:#ffffff;
+	--raised:#ede4fb;
+	--hover:#e0d2f6;
+	--border:#cdb8ec;
+	--t1:#3a2c52;
+	--t2:#6b5a86;
+	--t3:#9d8cb8;
+	--accent:#8b5cf6;
+	--accentH:#a78bfa;
+	--danger:#dc2626;
+	--success:#16a34a;
+}
 
 body{
 	font-family:'Segoe UI Emoji','Segoe UI Symbol','Segoe UI',system-ui,-apple-system,sans-serif;
@@ -382,6 +545,16 @@ body[data-theme="atDawn"] .brand-img{content:url('Image/DraconDex-SymbolBlack.pn
 body[data-theme="atDusk"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
 body[data-theme="atDay"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
 body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="aurora"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="twilight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="sunset"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="emerald"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="frost"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="ember"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="sakura"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="deepSea"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+body[data-theme="desert"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
+body[data-theme="lavender"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
 .nav-btn{
 	width:40px;height:40px;border:none;
 	background:transparent; border-radius:var(--r);
