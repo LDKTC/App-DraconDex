@@ -10,6 +10,7 @@ const navigator = require('./src/db/navigator');
 const hero      = require('./src/db/hero');
 const writer    = require('./src/db/writer');
 const sage      = require('./src/db/sage');
+const artisan   = require('./src/db/artisan');
 
 module.exports = {
   ...core,
@@ -23,4 +24,5 @@ module.exports = {
   ...hero,
   ...writer,
   ...sage,
+  ...artisan,
 };

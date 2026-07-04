@@ -40,7 +40,8 @@ const I = {
   series: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
   document: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
   chart: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
-  sage: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`
+  sage: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
+  artisan: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
@@ -91,6 +92,8 @@ const S = {
   writeWikiChapter:null, writeNote:null, writeOpenProjects:new Set(),
   // Sage module state
   sageTab:'dataSize',
+  // Artisan module state
+  artisanTarget:null,
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -443,14 +446,16 @@ const MODULE_SUBNAV = {
 function buildModuleSubNav(){
   const rail = q('#nav-sidebar');
   if(!rail) return;
-  const spacer = rail.querySelector('div[style*="flex:1"]');
+  // Insert before the Artisan shortcut (bottom of the module cluster) so the
+  // create-from-template button always sits under a module's subnav icons.
+  const anchor = rail.querySelector('#artisan-module-shortcut') || rail.querySelector('div[style*="flex:1"]');
   let html = '';
   for(const [mod, cfg] of Object.entries(MODULE_SUBNAV)){
     for(const [tab, icon, key] of cfg.items){
       html += `<button class="nav-btn ${mod}-sub" data-subtab="${tab}" data-i18n="${key}" style="display:none" onclick="${cfg.setter}('${tab}')">${I[icon]}</button>`;
     }
   }
-  if(spacer) spacer.insertAdjacentHTML('beforebegin', html);
+  if(anchor) anchor.insertAdjacentHTML('beforebegin', html);
   else rail.insertAdjacentHTML('beforeend', html);
 }
 
@@ -511,6 +516,16 @@ function updateTopNavButton(){
   });
   document.querySelectorAll('.nav-btn.sage-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'sage') ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-btn.artisan-only').forEach(btn => {
+    btn.style.display = (S.activeModule === 'artisan') ? '' : 'none';
+    btn.classList.toggle('active', S.activeModule === 'artisan');
+  });
+  // Create-from-template shortcut shown inside every project module's rail.
+  const artisanFrom = ['director','navigator','hero','writer'].includes(S.activeModule);
+  document.querySelectorAll('.nav-btn.artisan-shortcut').forEach(btn => {
+    btn.style.display = artisanFrom ? '' : 'none';
+    btn.setAttribute('title', t('artisan'));
   });
   updateModuleSubNav();
 }
@@ -1047,6 +1062,7 @@ async function switchView(v) {
   else if (v==='hero')            { await loadModule('src/renderer/hero.js'); renderHeroView(); }
   else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
   else if (v==='sage')            { await loadModule('src/renderer/sage.js'); renderSageView(); }
+  else if (v==='artisan')         { await loadModule('src/renderer/artisan.js'); renderArtisanView(); }
 }
 
 // ═══ NEXUS HUB ═════════════════════════════════════════
@@ -1081,6 +1097,11 @@ function renderNexusHome() {
     <div class="module-item" onclick="selectModule('sage')">
       <span class="module-icon">${I.sage}</span>
       <span class="module-name">${t('sage')}</span>
+      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="module-item" onclick="selectModule('artisan')">
+      <span class="module-icon">${I.artisan}</span>
+      <span class="module-name">${t('artisan')}</span>
       <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
   q('#main-inner')?.classList.remove('relation-main');
@@ -1128,7 +1149,22 @@ function selectModule(name) {
     q('.nav-btn[data-panel="sage"]')?.classList.add('active');
     updateTopNavButton();
     loadModule('src/renderer/sage.js').then(() => renderSageView());
+  } else if (name === 'artisan') {
+    S.view = 'artisan';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="artisan"]')?.classList.add('active');
+    updateTopNavButton();
+    loadModule('src/renderer/artisan.js').then(() => renderArtisanView());
   }
+}
+
+// Rail shortcut inside each project module: open Artisan with that module's
+// templates preselected, so a templated project is one click away.
+function openArtisanFromModule(){
+  if(['director','navigator','hero','writer'].includes(S.activeModule)){
+    S.artisanTarget = S.activeModule;
+  }
+  selectModule('artisan');
 }
 
 function returnToNexus() {
@@ -1141,6 +1177,7 @@ function returnToNexus() {
   S.game = null; S.gameTab = 'project';
   S.write = null; S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null;
   S.writeChapter = null; S.writeWikiChapter = null; S.writeNote = null;
+  S.artisanTarget = null;
   S.view = 'nexus';
   renderProjectTabs();
   renderNexusHome();
