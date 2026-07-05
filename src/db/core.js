@@ -784,6 +784,27 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(note_id,chat_order)
     );
+
+    -- Scribe (v2.8): markdown notes per nexus --
+    CREATE TABLE IF NOT EXISTS note_folder (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      parent_ref INTEGER REFERENCES note_folder(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS note (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      folder_ref INTEGER REFERENCES note_folder(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      color INTEGER REFERENCES use_color(id),
+      pinned INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(nexus_ref,title)
+    );
   `);
 
   if (!hasColumn(db, 'relation_type', 'color')) {
@@ -973,6 +994,12 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_write_wiki_link_object    ON write_wiki_link(object_id);
     CREATE INDEX IF NOT EXISTS idx_write_word_link_wiki      ON write_word_link(wiki_id);
     CREATE INDEX IF NOT EXISTS idx_write_note_project        ON write_note(project_id);
+
+    -- Scribe (v2.8)
+    CREATE INDEX IF NOT EXISTS idx_note_nexus                ON note(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_ref           ON note(folder_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_nexus         ON note_folder(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_parent        ON note_folder(parent_ref);
   `);
 }
 

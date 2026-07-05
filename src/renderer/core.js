@@ -41,7 +41,8 @@ const I = {
   document: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
   chart: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
   sage: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
-  artisan: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg>`
+  artisan: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg>`,
+  scribe: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m10.5 12.5 3 3L9 20l-3 1 1-3z"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
@@ -96,6 +97,8 @@ const S = {
   sageTab:'dataSize',
   // Artisan module state
   artisanTarget:null,
+  // Scribe module state
+  scribeNote:null, scribeFolders:[], scribeNotes:[], scribeOpenFolders:new Set(),
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -552,6 +555,10 @@ function updateTopNavButton(){
   document.querySelectorAll('.nav-btn.sage-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'sage') ? '' : 'none';
   });
+  document.querySelectorAll('.nav-btn.scribe-only').forEach(btn => {
+    btn.style.display = (S.activeModule === 'scribe') ? '' : 'none';
+    btn.classList.toggle('active', S.activeModule === 'scribe');
+  });
   document.querySelectorAll('.nav-btn.artisan-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'artisan') ? '' : 'none';
     btn.classList.toggle('active', S.activeModule === 'artisan');
@@ -650,7 +657,7 @@ function renderProjectTabs(){
 
 function upsertEntityTab(entity, type, module) {
   const key = `${type}-${entity.id}`;
-  const moduleColors = { world:'#22c55e', game:'#f59e0b', write:'#8b5cf6' };
+  const moduleColors = { world:'#22c55e', game:'#f59e0b', write:'#8b5cf6', note:'#0ea5e9' };
   const tab = { key, id:entity.id, type, module, name:entity.name, color: entity.color_code || moduleColors[type] || '#6366f1' };
   const idx = S.entityTabs.findIndex(t => t.key === key);
   if (idx >= 0) S.entityTabs[idx] = tab;
@@ -679,6 +686,15 @@ async function switchEntityTab(key) {
     S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null; S.writeChapter = null;
     S.writeWikiChapter = null; S.writeNote = null;
     await renderWriterView();
+  } else if (tab.type === 'note') {
+    S.activeModule = 'scribe';
+    S.view = 'scribe';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="scribe"]')?.classList.add('active');
+    updateTopNavButton();
+    await loadModule('src/renderer/scribe.js');
+    S.scribeNote = await api.note.get(tab.id);
+    await renderScribeView();
   } else {
     renderProjectTabs();
   }
@@ -700,6 +716,7 @@ async function closeEntityTab(key) {
   if (closing.type === 'world') { S.world = null; if (S.activeModule==='navigator') await renderNavigatorView(); }
   else if (closing.type === 'game') { S.game = null; if (S.activeModule==='hero') await renderHeroView(); }
   else if (closing.type === 'write') { S.write = null; if (S.activeModule==='writer') await renderWriterView(); }
+  else if (closing.type === 'note') { S.scribeNote = null; if (S.activeModule==='scribe') await renderScribeView(); }
   renderProjectTabs();
 }
 
@@ -1098,6 +1115,7 @@ async function switchView(v) {
   else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
   else if (v==='sage')            { await loadModule('src/renderer/sage.js'); renderSageView(); }
   else if (v==='artisan')         { await loadModule('src/renderer/artisan.js'); renderArtisanView(); }
+  else if (v==='scribe')          { await loadModule('src/renderer/scribe.js'); renderScribeView(); }
 }
 
 // ═══ NEXUS HUB ═════════════════════════════════════════
@@ -1122,7 +1140,7 @@ function renderNexusHome() {
       <h4><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
       <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
     </div>
-    ${['director','navigator','hero','writer','sage','artisan'].map(moduleCard).join('')}`;
+    ${['director','navigator','hero','writer','scribe','sage','artisan'].map(moduleCard).join('')}`;
   q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
     <h3>${x(S.nexus.name)}</h3>
@@ -1162,6 +1180,7 @@ function clearWorkspaceTabs() {
   S.project = null; S.category = null; S.object = null;
   S.timeline = null; S.map = null; S.mapAreaId = null;
   S.world = null; S.game = null; S.write = null;
+  S.scribeNote = null; S.scribeOpenFolders = new Set();
   renderProjectTabs();
 }
 
@@ -1274,6 +1293,13 @@ function selectModule(name) {
     q('.nav-btn[data-panel="artisan"]')?.classList.add('active');
     updateTopNavButton();
     loadModule('src/renderer/artisan.js').then(() => renderArtisanView());
+  } else if (name === 'scribe') {
+    S.view = 'scribe';
+    S.scribeNote = null;
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="scribe"]')?.classList.add('active');
+    updateTopNavButton();
+    loadModule('src/renderer/scribe.js').then(() => renderScribeView());
   }
 }
 

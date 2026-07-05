@@ -110,6 +110,18 @@ h('nexus:create', (n,m,c)        => db.createNexus(n,m,c));
 h('nexus:update', (id,n,m,c)     => db.updateNexus(id,n,m,c));
 h('nexus:delete', (id)           => db.deleteNexus(id));
 
+// Scribe (markdown notes)
+h('note:getFolders',   (nx)            => db.getNoteFolders(nx));
+h('note:createFolder', (nx,n,p,c)      => db.createNoteFolder(nx,n,p,c));
+h('note:updateFolder', (id,n,p,c)      => db.updateNoteFolder(id,n,p,c));
+h('note:deleteFolder', (id)            => db.deleteNoteFolder(id));
+h('note:getAll',       (nx)            => db.getNotes(nx));
+h('note:get',          (id)            => db.getNote(id));
+h('note:create',       (nx,t,f,c)      => db.createNote(nx,t,f,c));
+h('note:update',       (id,t,f,c,p)    => db.updateNote(id,t,f,c,p));
+h('note:updateContent',(id,content)    => db.updateNoteContent(id,content));
+h('note:delete',       (id)            => db.deleteNote(id));
+
 // Folder
 h('folder:getAll',  ()           => db.getFolders());
 h('folder:create',  (n,m,c)      => db.createFolder(n,m,c));

@@ -13,6 +13,18 @@ contextBridge.exposeInMainWorld('api', {
     update:  (id,n,m,c)    => inv('nexus:update', id,n,m,c),
     delete:  (id)          => inv('nexus:delete', id),
   },
+  note: {
+    getFolders:    (nx)           => inv('note:getFolders', nx),
+    createFolder:  (nx,n,p,c)     => inv('note:createFolder', nx,n,p,c),
+    updateFolder:  (id,n,p,c)     => inv('note:updateFolder', id,n,p,c),
+    deleteFolder:  (id)           => inv('note:deleteFolder', id),
+    getAll:        (nx)           => inv('note:getAll', nx),
+    get:           (id)           => inv('note:get', id),
+    create:        (nx,t,f,c)     => inv('note:create', nx,t,f,c),
+    update:        (id,t,f,c,p)   => inv('note:update', id,t,f,c,p),
+    updateContent: (id,content)   => inv('note:updateContent', id,content),
+    delete:        (id)           => inv('note:delete', id),
+  },
   folder: {
     getAll:  ()            => inv('folder:getAll'),
     create:  (n,m,c)       => inv('folder:create', n,m,c),
