@@ -101,6 +101,9 @@ const S = {
   scribeNote:null, scribeFolders:[], scribeNotes:[], scribeOpenFolders:new Set(),
   // Wiki navigation state
   recentEntities:[],
+  // Explorer state
+  explorerOpen:new Set(['sec_scribe','sec_director','sec_navigator','sec_hero','sec_writer']),
+  explorerTree:null,
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -128,6 +131,8 @@ async function init() {
   renderNexusHome();
   bindNav();
   bindWikilinkClicks();
+  bindGlobalShortcuts();
+  updateStatusBar();
   document.addEventListener('click', () => {
     document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
   });
@@ -561,6 +566,10 @@ function updateTopNavButton(){
   document.querySelectorAll('.nav-btn.scribe-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'scribe') ? '' : 'none';
     btn.classList.toggle('active', S.activeModule === 'scribe');
+  });
+  // Explorer is available whenever a vault is open, regardless of module.
+  document.querySelectorAll('.nav-btn.explorer-btn').forEach(btn => {
+    btn.style.display = S.nexus ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.artisan-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'artisan') ? '' : 'none';
@@ -1195,6 +1204,7 @@ async function selectNexus(id) {
   clearWorkspaceTabs();
   S.projects = await api.project.getAll(null, S.nexus.id);
   renderNexusHome();
+  updateStatusBar({ item: null, words: null, saveState: null });
 }
 
 function closeNexus() {
@@ -1202,6 +1212,7 @@ function closeNexus() {
   localStorage.removeItem(NEXUS_ACTIVE_KEY);
   clearWorkspaceTabs();
   renderNexusHome();
+  updateStatusBar({ item: null, words: null, saveState: null });
 }
 
 async function openNexusModal(id = null) {
@@ -1374,6 +1385,80 @@ function bindWikilinkClicks() {
     if (!await uiConfirm(t('createNoteFromLink') + ` "${name}"?`, { danger: false })) return;
     const newId = await api.note.create(S.nexus.id, name, null, null);
     await openEntityByKey(`note_${newId}`);
+  });
+}
+
+async function openExplorer() {
+  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
+  await loadModule('src/renderer/explorer.js');
+  await openExplorerPanel();
+}
+
+// ═══ STATUS BAR ═══════════════════════════════════════════
+// IDE-style footer: active vault · open item · word count · save state.
+const _statusState = {};
+function updateStatusBar(patch = {}) {
+  Object.assign(_statusState, patch);
+  const el = q('#status-bar');
+  if (!el) return;
+  const parts = [];
+  if (S.nexus) parts.push(`<span class="sb-item sb-nexus" onclick="renderNexusHome()"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</span>`);
+  if (_statusState.item) parts.push(`<span class="sb-item">${x(_statusState.item)}</span>`);
+  const right = [];
+  if (_statusState.words != null) right.push(`<span class="sb-item">${_statusState.words} ${t('words')}</span>`);
+  if (_statusState.saveState) right.push(`<span class="sb-item sb-save">${x(_statusState.saveState)}</span>`);
+  el.innerHTML = `<div class="sb-left">${parts.join('')}</div><div class="sb-right">${right.join('')}</div>`;
+}
+
+// ═══ GLOBAL SHORTCUTS ═════════════════════════════════════
+function bindGlobalShortcuts() {
+  document.addEventListener('keydown', async (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod) return;
+    const key = e.key.toLowerCase();
+    const modalOpen = !q('#modal-overlay')?.classList.contains('hidden') || q('#confirm-overlay');
+    const inInput = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+    if (key === 'p') { // quick switcher — always available
+      e.preventDefault();
+      try {
+        if (typeof openQuickSwitcher !== 'function') await loadModule('src/renderer/quickswitch.js');
+        openQuickSwitcher();
+      } catch (_) {}
+      return;
+    }
+    if (modalOpen) return;
+    if (key === 'w') { // close active tab
+      e.preventDefault();
+      if (S.activeEntityTabKey) await closeEntityTab(S.activeEntityTabKey);
+      else if (S.activeProjectTabId != null && S.activeModule === 'director') await closeProjectTab(S.activeProjectTabId);
+      return;
+    }
+    if (key === 'tab') { // cycle tabs (project tabs then entity tabs)
+      e.preventDefault();
+      const ring = [
+        ...S.projectTabs.map(tb => ({ kind: 'proj', id: tb.id })),
+        ...S.entityTabs.map(tb => ({ kind: 'ent', key: tb.key })),
+      ];
+      if (!ring.length) return;
+      const cur = ring.findIndex(r => (r.kind === 'proj' && S.activeModule === 'director' && r.id === S.activeProjectTabId) ||
+                                      (r.kind === 'ent' && r.key === S.activeEntityTabKey));
+      const next = ring[(cur + (e.shiftKey ? -1 : 1) + ring.length) % ring.length];
+      if (next.kind === 'proj') await switchProjectTab(next.id);
+      else await switchEntityTab(next.key);
+      return;
+    }
+    if (inInput && !['e', 'n'].includes(key)) return;
+    if (key === 'n' && S.activeModule === 'scribe' && S.nexus) { // new note
+      e.preventDefault();
+      openNoteModal();
+      return;
+    }
+    // Ctrl+E is handled by the focused editor itself (mdeditor.js); this is
+    // the fallback when focus is outside it.
+    if (key === 'e' && typeof _mdActive?.toggleMode === 'function' && !inInput) {
+      e.preventDefault();
+      _mdActive.toggleMode();
+    }
   });
 }
 

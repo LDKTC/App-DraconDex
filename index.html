@@ -34,6 +34,11 @@
     <button class="nav-logo-btn" id="nav-logo-btn" title="DraconDex">
       <img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex">
     </button>
+    <button class="nav-btn explorer-btn" data-panel="explorer" title="Explorer" style="display:none" onclick="openExplorer()">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/>
+      </svg>
+    </button>
     <button class="nav-btn director-only" id="director-project-shortcut" title="Projects" aria-label="Projects" style="display:none" onclick="openDirectorProjectShortcut()">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -231,6 +236,7 @@
   <button id="left-panel-peek" class="left-panel-peek" title="Open panel">+</button>
   <main id="main-area"><div id="main-inner"></div></main>
 </div>
+<footer id="status-bar"></footer>
 </div>
 <div id="modal-overlay" class="hidden">
   <div id="modal">

@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('api', {
     quickIndex: (nx)       => inv('wiki:quickIndex', nx),
     entityPath: (key)      => inv('wiki:entityPath', key),
     rebuild:    ()         => inv('wiki:rebuild'),
+    explorerTree: (nx)     => inv('wiki:explorerTree', nx),
   },
   folder: {
     getAll:  ()            => inv('folder:getAll'),

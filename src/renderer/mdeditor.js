@@ -63,14 +63,26 @@ function createMarkdownEditor(container, opts) {
   const linksBtn = container.querySelector('.mded-links-toggle');
   const linksPanel = container.querySelector('.mded-linkspanel');
 
+  const wordCount = () => {
+    const s = st.content.trim();
+    return s ? s.split(/\s+/).length : 0;
+  };
+  const reportStatus = (saveTxt) => {
+    if (typeof updateStatusBar === 'function') {
+      updateStatusBar({ item: opts.title || null, words: wordCount(), saveState: saveTxt });
+    }
+  };
+
   const doSave = async () => {
     if (!opts.save) return;
     await opts.save(st.content);
     if (saveState) saveState.textContent = t('saved');
+    reportStatus(t('saved'));
   };
 
   const scheduleSave = () => {
     saveState.textContent = '…';
+    reportStatus('…');
     clearTimeout(st.saveTimer);
     st.saveTimer = setTimeout(doSave, 800);
   };
@@ -241,6 +253,7 @@ function createMarkdownEditor(container, opts) {
   // warm the name cache for autocomplete and the first preview
   refreshWikiCache().then(() => { if (st.mode === 'preview') renderMode(); });
   renderMode();
+  reportStatus('');
 
   const editor = {
     srcKey: st.srcKey,

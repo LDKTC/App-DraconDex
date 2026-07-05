@@ -822,6 +822,63 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .md-preview .wikilink-unresolved{opacity:.6;border-bottom-style:dashed}
 .md-preview .md-link{color:var(--accent);text-decoration:underline;cursor:default}
 
+/* ═══ QUICK SWITCHER (Ctrl+P) ═══ */
+#qs-overlay{
+  position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.45);
+  display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;
+}
+#qs-box{
+  width:min(560px,90vw);background:var(--raised);border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:0 16px 48px rgba(0,0,0,.5);overflow:hidden;
+  display:flex;flex-direction:column;max-height:60vh;
+}
+#qs-input{
+  border:none;outline:none;background:var(--surface);color:var(--t1);
+  padding:13px 16px;font-size:14.5px;border-bottom:1px solid var(--border);
+}
+#qs-list{overflow-y:auto;padding:4px}
+.qs-item{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:var(--rs);cursor:pointer;font-size:13px;color:var(--t1)}
+.qs-item.active,.qs-item:hover{background:var(--hover)}
+.qs-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qs-item .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.qs-icon{display:flex;align-items:center;color:var(--accent);flex-shrink:0}
+.qs-icon .icon{width:14px;height:14px}
+.qs-type{font-size:10.5px;color:var(--t3);flex-shrink:0}
+.qs-empty{padding:18px;text-align:center;color:var(--t3);font-size:13px}
+
+/* ═══ IDE SHELL: status bar + explorer ═══ */
+#status-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  height:24px;padding:0 12px;flex-shrink:0;
+  background:var(--surface);border-top:1px solid var(--border);
+  font-size:11px;color:var(--t3);user-select:none;
+}
+#status-bar .sb-left,#status-bar .sb-right{display:flex;align-items:center;gap:14px;min-width:0}
+#status-bar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#status-bar .sb-nexus{cursor:pointer;color:var(--t2)}
+#status-bar .sb-nexus:hover{color:var(--accent)}
+#status-bar .nexus-vault-dot{width:7px;height:7px}
+
+.xp-section{margin-bottom:2px}
+.xp-section-head{
+  display:flex;align-items:center;gap:7px;padding:7px 8px;cursor:pointer;
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t2);
+  border-radius:var(--rs);
+}
+.xp-section-head:hover{background:var(--hover)}
+.xp-section-icon{display:flex;align-items:center;color:var(--accent)}
+.xp-section-icon .icon{width:14px;height:14px}
+.xp-chev{width:8px;height:8px;flex-shrink:0;transition:transform .15s}
+.xp-row{display:flex;align-items:center;gap:7px;font-size:12.5px}
+.xp-row .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xp-row .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.xp-count{font-size:10px;color:var(--t3);flex-shrink:0}
+.xp-empty{padding:4px 20px;font-size:12px;color:var(--t3)}
+.xp-open{opacity:0;border:none;background:none;color:var(--t3);cursor:pointer;padding:2px;border-radius:var(--rs);display:flex;align-items:center}
+.xp-row:hover .xp-open{opacity:1}
+.xp-open:hover{color:var(--t1);background:var(--hover)}
+.xp-open .icon{width:12px;height:12px}
+
 /* Editor columns + backlinks panel */
 .mded-cols{flex:1;min-height:0;display:flex;gap:10px}
 .mded-cols .mded-body{flex:1;min-width:0}

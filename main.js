@@ -129,6 +129,7 @@ h('wiki:outgoing',     (key)       => db.getOutgoingLinks(key));
 h('wiki:quickIndex',   (nx)        => db.quickIndex(nx));
 h('wiki:entityPath',   (key)       => db.getEntityPath(key));
 h('wiki:rebuild',      ()          => db.rebuildWikiIndex());
+h('wiki:explorerTree', (nx)        => db.explorerTree(nx));
 
 // Folder
 h('folder:getAll',  ()           => db.getFolders());
