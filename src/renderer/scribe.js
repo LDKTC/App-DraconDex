@@ -91,7 +91,6 @@ async function renderScribeMain() {
     content: n.content || '',
     srcKey: `note_${n.id}`,
     save: (content) => api.note.updateContent(n.id, content),
-    resolveLink: window.resolveWikiNameCached || null,
   });
 }
 

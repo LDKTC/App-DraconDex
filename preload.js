@@ -25,6 +25,14 @@ contextBridge.exposeInMainWorld('api', {
     updateContent: (id,content)   => inv('note:updateContent', id,content),
     delete:        (id)           => inv('note:delete', id),
   },
+  wiki: {
+    resolve:    (name,nx)  => inv('wiki:resolve', name,nx),
+    backlinks:  (key)      => inv('wiki:backlinks', key),
+    outgoing:   (key)      => inv('wiki:outgoing', key),
+    quickIndex: (nx)       => inv('wiki:quickIndex', nx),
+    entityPath: (key)      => inv('wiki:entityPath', key),
+    rebuild:    ()         => inv('wiki:rebuild'),
+  },
   folder: {
     getAll:  ()            => inv('folder:getAll'),
     create:  (n,m,c)       => inv('folder:create', n,m,c),

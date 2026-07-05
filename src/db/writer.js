@@ -63,6 +63,8 @@ function updateWriteChapter(id, name, color) {
 }
 function updateWriteChapterContent(id, content) {
   getDB().prepare(`UPDATE write_chapter SET chapter_content=?,update_at=? WHERE id=?`).run(content||'', now(), id);
+  const wiki = require('./wiki'); // lazy: avoids module cycle
+  wiki.reindexWikiLinks(`wchp_${id}`, content, wiki.nexusOfChapter(id));
 }
 function moveWriteChapter(id, dir) {
   const db = getDB();

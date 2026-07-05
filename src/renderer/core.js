@@ -99,6 +99,8 @@ const S = {
   artisanTarget:null,
   // Scribe module state
   scribeNote:null, scribeFolders:[], scribeNotes:[], scribeOpenFolders:new Set(),
+  // Wiki navigation state
+  recentEntities:[],
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -125,6 +127,7 @@ async function init() {
   renderProjectTabs();
   renderNexusHome();
   bindNav();
+  bindWikilinkClicks();
   document.addEventListener('click', () => {
     document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
   });
@@ -1301,6 +1304,77 @@ function selectModule(name) {
     updateTopNavButton();
     loadModule('src/renderer/scribe.js').then(() => renderScribeView());
   }
+}
+
+// ═══ ENTITY NAVIGATION ════════════════════════════════════
+// Central dispatcher: open any entity from its wiki key ('note_3', 'obj_12',
+// 'wchp_9', …). Used by wikilink clicks, backlinks, quick switcher and graph.
+async function openEntityByKey(key) {
+  if (!key) return;
+  const p = await api.wiki.entityPath(key);
+  if (!p) { toast(t('unresolvedLink'), 'error'); return; }
+  if (p.kind === 'note') {
+    S.activeModule = 'scribe'; S.view = 'scribe';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="scribe"]')?.classList.add('active');
+    updateTopNavButton();
+    await loadModule('src/renderer/scribe.js');
+    await selectNote(p.noteId);
+  } else if (p.kind === 'obj' || p.kind === 'proj') {
+    S.activeModule = 'director'; S.view = 'projects';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="projects"]')?.classList.add('active');
+    updateTopNavButton();
+    await selectProject(p.projectId);
+    if (p.kind === 'obj') { await selectCategory(p.categoryId); await selectObject(p.objectId); }
+  } else if (p.kind === 'world') {
+    const tabEntity = await api.world.get(p.worldId);
+    if (!tabEntity) return;
+    upsertEntityTab(tabEntity, 'world', 'navigator');
+    S.activeModule = 'navigator';
+    await switchEntityTab(`world-${p.worldId}`);
+  } else if (p.kind === 'game') {
+    const tabEntity = await api.game.get(p.gameId);
+    if (!tabEntity) return;
+    upsertEntityTab(tabEntity, 'game', 'hero');
+    S.activeModule = 'hero';
+    await switchEntityTab(`game-${p.gameId}`);
+  } else if (p.kind === 'write' || p.kind === 'wchp') {
+    const w = await api.write.getProject(p.writeId);
+    if (!w) return;
+    upsertEntityTab({ id: w.id, name: w.project_name, color_code: w.color_code }, 'write', 'writer');
+    S.activeModule = 'writer';
+    await switchEntityTab(`write-${p.writeId}`);
+    if (p.kind === 'wchp') {
+      S.writeSeries = p.seriesId; S.writeBook = p.bookId; S.writeChapter = p.chapterId;
+      await renderWriterView();
+    }
+  }
+  trackRecentEntity(key);
+}
+
+// Recently opened entities feed the quick switcher's empty-query list.
+function trackRecentEntity(key) {
+  S.recentEntities = (S.recentEntities || []).filter(k => k !== key);
+  S.recentEntities.unshift(key);
+  if (S.recentEntities.length > 20) S.recentEntities.length = 20;
+}
+
+// Clicking a rendered [[wikilink]] anywhere in the main area navigates to the
+// target; an unresolved one offers to create a note with that name.
+function bindWikilinkClicks() {
+  q('#main-inner')?.addEventListener('click', async (e) => {
+    const a = e.target.closest('.wikilink');
+    if (!a) return;
+    e.preventDefault();
+    const key = a.dataset.key;
+    if (key) { await openEntityByKey(key); return; }
+    const name = a.dataset.name;
+    if (!name || !S.nexus) return;
+    if (!await uiConfirm(t('createNoteFromLink') + ` "${name}"?`, { danger: false })) return;
+    const newId = await api.note.create(S.nexus.id, name, null, null);
+    await openEntityByKey(`note_${newId}`);
+  });
 }
 
 // Rail shortcut inside each project module: open Artisan with that module's

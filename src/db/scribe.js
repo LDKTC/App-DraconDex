@@ -54,9 +54,13 @@ const updateNote = (id, title, folderId, colorId, pinned) =>
   getDB().prepare(`UPDATE note SET title=?,folder_ref=?,color=?,pinned=?,update_at=datetime('now') WHERE id=?`)
     .run(title, folderId || null, colorId || null, pinned ? 1 : 0, id);
 
-const updateNoteContent = (id, content) =>
-  getDB().prepare(`UPDATE note SET content=?,update_at=datetime('now') WHERE id=?`)
+const updateNoteContent = (id, content) => {
+  const r = getDB().prepare(`UPDATE note SET content=?,update_at=datetime('now') WHERE id=?`)
     .run(content ?? '', id);
+  const wiki = require('./wiki'); // lazy: avoids module cycle
+  wiki.reindexWikiLinks(`note_${id}`, content, wiki.nexusOfNote(id));
+  return r;
+};
 
 const deleteNote = (id) =>
   getDB().prepare(`DELETE FROM note WHERE id=?`).run(id);

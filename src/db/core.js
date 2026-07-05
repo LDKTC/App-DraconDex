@@ -88,6 +88,7 @@ function hasAnyMissingColumns(conn, specs) {
 }
 
 function initDB() {
+  const hadWikiLinkTable = hasTable(db, 'wiki_link');
   // One-time migration: clean-replace the legacy Navigator (v2.2) schema with
   // the new v2.5.2 "World" schema. Detected by the legacy `world_cat_object`
   // table / the old `world_project.color_ref` column (now `color`). Old
@@ -805,6 +806,17 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(nexus_ref,title)
     );
+
+    -- Wiki-link index (v2.8): [[Name]] references parsed out of markdown
+    -- content on save. Rebuildable from content (src/db/wiki.js).
+    CREATE TABLE IF NOT EXISTS wiki_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER REFERENCES nexus(id) ON DELETE CASCADE,
+      src_key TEXT NOT NULL,
+      target_key TEXT,
+      target_text TEXT NOT NULL,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   if (!hasColumn(db, 'relation_type', 'color')) {
@@ -845,6 +857,11 @@ function initDB() {
   migrateWriterV27(db);
   migrateNexusV28(db);
   ensureIndexes(db);
+  // One-time backfill: index [[wikilinks]] already sitting in old content.
+  // Lazy require avoids the core↔wiki module cycle (initDB runs after load).
+  if (!hadWikiLinkTable) {
+    try { require('./wiki').rebuildWikiIndex(); } catch (e) { console.error('wiki backfill error:', e); }
+  }
 }
 
 // v2.8 introduces the Nexus vault: every module's project root gains a
@@ -1000,6 +1017,8 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_note_folder_ref           ON note(folder_ref);
     CREATE INDEX IF NOT EXISTS idx_note_folder_nexus         ON note_folder(nexus_ref);
     CREATE INDEX IF NOT EXISTS idx_note_folder_parent        ON note_folder(parent_ref);
+    CREATE INDEX IF NOT EXISTS idx_wiki_link_src             ON wiki_link(src_key);
+    CREATE INDEX IF NOT EXISTS idx_wiki_link_target          ON wiki_link(target_key);
   `);
 }
 

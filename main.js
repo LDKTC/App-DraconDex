@@ -122,6 +122,14 @@ h('note:update',       (id,t,f,c,p)    => db.updateNote(id,t,f,c,p));
 h('note:updateContent',(id,content)    => db.updateNoteContent(id,content));
 h('note:delete',       (id)            => db.deleteNote(id));
 
+// Wiki-link index
+h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
+h('wiki:backlinks',    (key)       => db.getBacklinks(key));
+h('wiki:outgoing',     (key)       => db.getOutgoingLinks(key));
+h('wiki:quickIndex',   (nx)        => db.quickIndex(nx));
+h('wiki:entityPath',   (key)       => db.getEntityPath(key));
+h('wiki:rebuild',      ()          => db.rebuildWikiIndex());
+
 // Folder
 h('folder:getAll',  ()           => db.getFolders());
 h('folder:create',  (n,m,c)      => db.createFolder(n,m,c));

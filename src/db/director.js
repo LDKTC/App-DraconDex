@@ -85,8 +85,12 @@ const createObject = (projectId, categoryId, name, colorId) =>
   getDB().prepare(`INSERT INTO object (name,project_id,category_id,color) VALUES (?,?,?,?)`).run(name, projectId, categoryId, colorId || null);
 const updateObject = (id, name, colorId) =>
   getDB().prepare(`UPDATE object SET name=?,color=?,update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
-const updateObjectNote = (id, note) =>
-  getDB().prepare(`UPDATE object SET note=?,update_at=datetime('now') WHERE id=?`).run(note, id);
+const updateObjectNote = (id, note) => {
+  const r = getDB().prepare(`UPDATE object SET note=?,update_at=datetime('now') WHERE id=?`).run(note, id);
+  const wiki = require('./wiki'); // lazy: avoids module cycle
+  wiki.reindexWikiLinks(`obj_${id}`, note, wiki.nexusOfObject(id));
+  return r;
+};
 const deleteObject = (id) => {
   const d = getDB();
   const tx = d.transaction((objectId) => {
