@@ -5,7 +5,7 @@ function bindSearch() {
     _searchTimeout=setTimeout(async()=>{
       const val=inp.value.trim();
       if(!val) switchView(S.view);
-      else { const results=await api.search.all(val); renderSearchResults(results,val); }
+      else { const results=await api.search.all(val, S.nexus?.id ?? null); renderSearchResults(results,val); }
     },300);
   });
 }

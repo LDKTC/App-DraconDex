@@ -14,6 +14,21 @@ Git Bash.
 There is also a Flutter port in `flutter_app/` — that is a separate front-end
 and is NOT covered by this skill.
 
+## No Electron binary? Use web-driver.mjs
+
+In sandboxes where the Electron zip cannot be downloaded (GitHub releases
+blocked → `ensure-electron.js` fails with 403), use
+`.claude/skills/run-dracondex/web-driver.mjs` instead. It runs the **real**
+renderer, the **real** `preload.js` mapping, and the **real** db layer
+(`main.js` IPC handlers, in-process) inside Playwright Chromium
+(pre-installed at `/opt/pw-browsers`); only Electron's shell
+(app/BrowserWindow/Menu/dialog) is stubbed. Same command vocabulary and the
+same scratch data dir / `shots/` layout as `driver.mjs`, plus a persistent
+Chromium profile so `localStorage` (theme, language, active nexus) survives
+across invocations like the real app. Not covered: frameless-window chrome,
+native dialogs (export/import pickers return `canceled`), and true
+multi-process IPC.
+
 ## Prerequisites
 
 Node.js + npm (already on PATH). No OS packages needed on Windows.

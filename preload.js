@@ -6,6 +6,13 @@ contextBridge.exposeInMainWorld('api', {
     exportFile: ()          => inv('db:exportFile'),
     importFileMerge: ()     => inv('db:importFileMerge'),
   },
+  nexus: {
+    getAll:  ()            => inv('nexus:getAll'),
+    get:     (id)          => inv('nexus:get', id),
+    create:  (n,m,c)       => inv('nexus:create', n,m,c),
+    update:  (id,n,m,c)    => inv('nexus:update', id,n,m,c),
+    delete:  (id)          => inv('nexus:delete', id),
+  },
   folder: {
     getAll:  ()            => inv('folder:getAll'),
     create:  (n,m,c)       => inv('folder:create', n,m,c),
@@ -13,7 +20,7 @@ contextBridge.exposeInMainWorld('api', {
     delete:  (id)          => inv('folder:delete', id),
   },
   project: {
-    getAll:  (fid)         => inv('project:getAll', fid),
+    getAll:  (fid,nx)      => inv('project:getAll', fid,nx),
     get:     (id)          => inv('project:get', id),
     create:  (data)        => inv('project:create', data),
     update:  (id,data)     => inv('project:update', id, data),
@@ -118,12 +125,12 @@ contextBridge.exposeInMainWorld('api', {
     delete:  (id)          => inv('color:delete', id),
   },
   search: {
-    all:     (q)           => inv('search:all', q),
+    all:     (q,nx)        => inv('search:all', q,nx),
   },
   world: {
-    getAll:                  ()              => inv('world:getAll'),
+    getAll:                  (nx)            => inv('world:getAll', nx),
     get:                     (id)            => inv('world:get', id),
-    create:                  (code,n,m,c)    => inv('world:create', code,n,m,c),
+    create:                  (code,n,m,c,nx) => inv('world:create', code,n,m,c,nx),
     update:                  (id,code,n,m,c) => inv('world:update', id,code,n,m,c),
     delete:                  (id)            => inv('world:delete', id),
 
@@ -208,9 +215,9 @@ contextBridge.exposeInMainWorld('api', {
     removeEventObject:       (id)            => inv('world:removeEventObject', id),
   },
   game: {
-    getAll:             ()                => inv('game:getAll'),
+    getAll:             (nx)              => inv('game:getAll', nx),
     get:                (id)              => inv('game:get', id),
-    create:             (n,cn,m,c)        => inv('game:create', n,cn,m,c),
+    create:             (n,cn,m,c,nx)     => inv('game:create', n,cn,m,c,nx),
     update:             (id,n,cn,m,c)     => inv('game:update', id,n,cn,m,c),
     delete:             (id)              => inv('game:delete', id),
     getNovelLink:       (gid)             => inv('game:getNovelLink', gid),
@@ -279,9 +286,9 @@ contextBridge.exposeInMainWorld('api', {
     getElementsByTag:   (tid,gid)         => inv('game:getElementsByTag', tid,gid),
   },
   write: {
-    getProjects:          ()              => inv('write:getProjects'),
+    getProjects:          (nx)            => inv('write:getProjects', nx),
     getProject:           (id)            => inv('write:getProject', id),
-    createProject:        (n,cn,c)        => inv('write:createProject', n,cn,c),
+    createProject:        (n,cn,c,nx)     => inv('write:createProject', n,cn,c,nx),
     updateProject:        (id,n,cn,c)     => inv('write:updateProject', id,n,cn,c),
     deleteProject:        (id)            => inv('write:deleteProject', id),
     getSeries:            (pid)           => inv('write:getSeries', pid),

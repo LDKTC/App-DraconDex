@@ -1,5 +1,6 @@
 'use strict';
 const core      = require('./src/db/core');
+const nexus     = require('./src/db/nexus');
 const director  = require('./src/db/director');
 const color     = require('./src/db/color');
 const timeline  = require('./src/db/timeline');
@@ -14,6 +15,7 @@ const artisan   = require('./src/db/artisan');
 
 module.exports = {
   ...core,
+  ...nexus,
   ...director,
   ...color,
   ...timeline,

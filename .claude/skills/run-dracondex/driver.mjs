@@ -60,8 +60,9 @@ const app = await electron.launch({
 });
 const win = await app.firstWindow();
 await win.waitForLoadState('domcontentloaded');
-// Renderer builds the UI at DOMContentLoaded; nexus tiles are the ready signal.
-await win.waitForSelector('.module-item', { timeout: 15000 });
+// Renderer builds the UI at DOMContentLoaded; the vault picker (nexus items or
+// its empty state) or module tiles are the ready signal.
+await win.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph', { timeout: 15000 });
 console.log('[driver] app ready');
 
 let failed = false;

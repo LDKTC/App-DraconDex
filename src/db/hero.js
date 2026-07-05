@@ -2,14 +2,14 @@
 const { getDB } = require('./core');
 
 // ═══ Game project ═══
-const getGames = () =>
-  getDB().prepare(`SELECT g.*, uc.color_code FROM game_project g LEFT JOIN use_color uc ON g.color_ref=uc.id ORDER BY g.name`).all();
+const getGames = (nexusId) =>
+  getDB().prepare(`SELECT g.*, uc.color_code FROM game_project g LEFT JOIN use_color uc ON g.color_ref=uc.id WHERE (? IS NULL OR g.nexus_ref=?) ORDER BY g.name`).all(nexusId ?? null, nexusId ?? null);
 
 const getGame = (id) =>
   getDB().prepare(`SELECT g.*, uc.color_code FROM game_project g LEFT JOIN use_color uc ON g.color_ref=uc.id WHERE g.id=?`).get(id);
 
-const createGame = (name, codename, memo, colorRef) =>
-  getDB().prepare(`INSERT INTO game_project (name,codename,memo,color_ref) VALUES (?,?,?,?)`).run(name, codename||null, memo||null, colorRef||null);
+const createGame = (name, codename, memo, colorRef, nexusId) =>
+  getDB().prepare(`INSERT INTO game_project (name,codename,memo,color_ref,nexus_ref) VALUES (?,?,?,?,?)`).run(name, codename||null, memo||null, colorRef||null, nexusId||null);
 
 const updateGame = (id, name, codename, memo, colorRef) =>
   getDB().prepare(`UPDATE game_project SET name=?,codename=?,memo=?,color_ref=?,updated_at=datetime('now') WHERE id=?`).run(name, codename||null, memo||null, colorRef||null, id);

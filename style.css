@@ -773,6 +773,16 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .module-name{flex:1}
 .module-chevron{width:14px;height:14px;color:var(--t3);flex-shrink:0}
 
+/* NEXUS VAULT PICKER */
+.nexus-vault-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.nexus-vault-head h4{display:flex;align-items:center;gap:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nexus-vault-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--accent);display:inline-block}
+.nexus-item .btn-icon{opacity:0;border:none;background:none;color:var(--t3);cursor:pointer;padding:2px;border-radius:var(--rs);display:flex;align-items:center}
+.nexus-item:hover .btn-icon{opacity:1}
+.nexus-item .btn-icon:hover{color:var(--t1);background:var(--hover)}
+.nexus-item .btn-icon .icon{width:14px;height:14px}
+.nexus-count{font-size:11px;color:var(--t3);background:var(--hover);border-radius:10px;padding:1px 8px;flex-shrink:0}
+
 /* LEFT PANEL */
 #left-panel{
 	width:var(--sidebar); background:var(--surface);

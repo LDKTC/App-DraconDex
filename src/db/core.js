@@ -157,6 +157,15 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Nexus (v2.8): vault grouping projects from every module --
+    CREATE TABLE IF NOT EXISTS nexus (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      memo TEXT,
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS project_folder (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
@@ -813,7 +822,36 @@ function initDB() {
   if (!hasNote) { try { db.prepare(`ALTER TABLE object ADD COLUMN note TEXT`).run(); } catch (_) {} }
   migrateHeroV26(db);
   migrateWriterV27(db);
+  migrateNexusV28(db);
   ensureIndexes(db);
+}
+
+// v2.8 introduces the Nexus vault: every module's project root gains a
+// nexus_ref. Pre-existing rows are adopted into an auto-created default vault
+// so nothing disappears from the UI after upgrading.
+const NEXUS_PROJECT_TABLES = ['project', 'world_project', 'game_project', 'write_project'];
+function migrateNexusV28(db) {
+  try {
+    for (const t of NEXUS_PROJECT_TABLES) {
+      if (hasTable(db, t) && !hasColumn(db, t, 'nexus_ref')) {
+        try { db.prepare(`ALTER TABLE ${t} ADD COLUMN nexus_ref INTEGER REFERENCES nexus(id) ON DELETE SET NULL`).run(); } catch (_) {}
+      }
+    }
+    const orphan = NEXUS_PROJECT_TABLES.some(t =>
+      hasTable(db, t) && db.prepare(`SELECT 1 FROM ${t} WHERE nexus_ref IS NULL LIMIT 1`).get());
+    if (orphan) {
+      let nx = db.prepare(`SELECT id FROM nexus ORDER BY id LIMIT 1`).get();
+      if (!nx) {
+        const rid = db.prepare(`INSERT INTO nexus (name) VALUES ('Nexus')`).run().lastInsertRowid;
+        nx = { id: rid };
+      }
+      for (const t of NEXUS_PROJECT_TABLES) {
+        if (hasTable(db, t)) db.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref IS NULL`).run(nx.id);
+      }
+    }
+  } catch (e) {
+    console.error('Nexus v2.8 migration error:', e);
+  }
 }
 
 // v2.7 replaced the entire Writer module schema (library/series/document) with
@@ -848,6 +886,10 @@ function migrateWriterV27(db) {
 function ensureIndexes(db) {
   db.exec(`
     -- Director
+    CREATE INDEX IF NOT EXISTS idx_project_nexus             ON project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_project_nexus       ON world_project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_project_nexus        ON game_project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_write_project_nexus       ON write_project(nexus_ref);
     CREATE INDEX IF NOT EXISTS idx_project_folder            ON project(folder_id);
     CREATE INDEX IF NOT EXISTS idx_project_description_proj  ON project_description(project_id);
     CREATE INDEX IF NOT EXISTS idx_object_category_project   ON object_category(project_id);

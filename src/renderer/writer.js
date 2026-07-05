@@ -37,7 +37,7 @@ async function selectWriteSeries(projectId, seriesId) {
 
 // ═══ PROJECT LIST (no project active) ═════════════════
 async function renderWriteProjectList() {
-  const projects = await api.write.getProjects();
+  const projects = await api.write.getProjects(S.nexus?.id ?? null);
   let h = `<div class="ph"><h4>${t('writer')}</h4>
     <button class="btn btn-g btn-i" onclick="openWriteProjectModal()" title="${t('writeProjectNew')}">${I.plus}</button>
   </div>`;
@@ -397,7 +397,7 @@ async function renderWriteNovelLink() {
   }
   const [link, novels, wikis] = await Promise.all([
     api.write.getNovelLink(S.writeSeries),
-    api.project.getAll(null),
+    api.project.getAll(null, S.nexus?.id ?? null),
     api.write.getWikiChapters(S.writeSeries),
   ]);
   const nid = link?.novel_id || '';
@@ -627,7 +627,7 @@ async function saveWriteProject(id) {
         upsertEntityTab({ id, name: S.write.project_name, color_code: S.write.color_code }, 'write', 'writer');
       }
     } else {
-      await api.write.createProject(name, codename, color);
+      await api.write.createProject(name, codename, color, S.nexus?.id ?? null);
     }
   } catch (e) {
     toast(e.message, 'err');

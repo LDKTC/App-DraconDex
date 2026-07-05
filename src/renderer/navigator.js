@@ -18,7 +18,7 @@ async function renderNavigatorView() {
     updateTopNavButton();
     return;
   }
-  const worlds = await api.world.getAll();
+  const worlds = await api.world.getAll(S.nexus?.id ?? null);
   let h = `<div class="ph"><h4>${t('navigator')}</h4>
     <button class="btn btn-g btn-i" onclick="openWorldModal()" title="${t('worldNew')}">${I.plus}</button>
   </div>`;
@@ -390,7 +390,7 @@ async function saveWorld(id) {
     await api.world.setTags(id, tags);
     S.world = await api.world.get(id);
   } else {
-    const newId = await api.world.create(code, name, memo, color);
+    const newId = await api.world.create(code, name, memo, color, S.nexus?.id ?? null);
     if (newId) {
       await api.world.setTags(newId, tags);
       S.world = await api.world.get(newId);

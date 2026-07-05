@@ -30,7 +30,7 @@ async function openProjectModal(id=null){
 }
 async function createProject(){
   const n=q('#pn').value.trim(); if(!n) return;
-  const r=await api.project.create({name:n,codename:q('#pc').value.trim()||null,memo:q('#pm').value.trim(),folderId:q('#pf').value||null,colorId:q('#sel-color').value||null});
+  const r=await api.project.create({name:n,codename:q('#pc').value.trim()||null,memo:q('#pm').value.trim(),folderId:q('#pf').value||null,colorId:q('#sel-color').value||null,nexusId:S.nexus?.id??null});
   // set tags
   const tags = getModalTagIds('proj');
   if(r?.lastInsertRowid) await api.project.setTags(r.lastInsertRowid,tags);

@@ -46,6 +46,7 @@ const I = {
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
+const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
 const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse','clearAurora','atTwilight','atSunset','clearComet','atDaybreak','afterSunset','atSunrise','atNight','atNoon','clearDusk','atMidnight','clearMoon','clearGalaxy','clearNebula','afterStorm','afterSnow','atMorning','clearSun','atEvening','clearMeteor'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','de','ru','it','nl','pl','uk','tr','qd'];
 const UI_SIZE_MIN = 50;
@@ -64,6 +65,7 @@ function loadUiSettings(){
 }
 
 const S = {
+  nexus:null, nexuses:[],
   folders:[], projects:[], colors:[],
   recentColors:[],
   activeModule:null,
@@ -104,8 +106,11 @@ async function init() {
   applyUiSettings();
   S.colors       = await api.color.getAll();
   S.recentColors = await api.color.getRecent();
+  S.nexuses      = await api.nexus.getAll();
+  const savedNexusId = Number(localStorage.getItem(NEXUS_ACTIVE_KEY));
+  S.nexus        = S.nexuses.find(n => n.id === savedNexusId) || null;
   S.folders      = await api.folder.getAll();
-  S.projects     = await api.project.getAll();
+  S.projects     = await api.project.getAll(null, S.nexus?.id ?? null);
   bindWindowChrome();
   bindLeftPanelToggle();
   applyLeftPanelState();
@@ -1096,53 +1101,137 @@ async function switchView(v) {
 }
 
 // ═══ NEXUS HUB ═════════════════════════════════════════
+// Two-level home: no vault open → vault picker; vault open → module cards.
 function renderNexusHome() {
   S.view = 'nexus';
   S.activeModule = null;
   if (konvaStage) { try { konvaStage.destroy(); } catch(e){} konvaStage = null; }
   document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
   updateTopNavButton();
-  q('#left-panel-inner').innerHTML = `
-    <div class="ph"><h4>${t('nexus')}</h4></div>
-    <div class="module-item" onclick="selectModule('director')">
-      <span class="module-icon">${I.director}</span>
-      <span class="module-name">${t('director')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('navigator')">
-      <span class="module-icon">${I.navigator}</span>
-      <span class="module-name">${t('navigator')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('hero')">
-      <span class="module-icon">${I.hero}</span>
-      <span class="module-name">${t('hero')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('writer')">
-      <span class="module-icon">${I.writer}</span>
-      <span class="module-name">${t('writer')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('sage')">
-      <span class="module-icon">${I.sage}</span>
-      <span class="module-name">${t('sage')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('artisan')">
-      <span class="module-icon">${I.artisan}</span>
-      <span class="module-name">${t('artisan')}</span>
+  q('#main-inner')?.classList.remove('relation-main');
+  if (!S.nexus) { renderNexusPicker(); return; }
+
+  const moduleCard = (name) => `
+    <div class="module-item" onclick="selectModule('${name}')">
+      <span class="module-icon">${I[name]}</span>
+      <span class="module-name">${t(name)}</span>
       <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
-  q('#main-inner')?.classList.remove('relation-main');
+  q('#left-panel-inner').innerHTML = `
+    <div class="ph nexus-vault-head">
+      <h4><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
+      <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
+    </div>
+    ${['director','navigator','hero','writer','sage','artisan'].map(moduleCard).join('')}`;
   q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
-    <h3>${t('nexusWelcomeTitle')}</h3>
-    <p>${t('nexusWelcomeText')}</p>
+    <h3>${x(S.nexus.name)}</h3>
+    <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;
 }
 
+function renderNexusPicker() {
+  q('#left-panel-inner').innerHTML = `
+    <div class="ph"><h4>${t('nexus')}</h4>
+      <button class="btn btn-p btn-sm" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
+    </div>
+    ${S.nexuses.length ? S.nexuses.map(n => `
+      <div class="module-item nexus-item" onclick="selectNexus(${n.id})">
+        <span class="nexus-vault-dot" style="${n.color_code ? `background:${x(n.color_code)}` : ''}"></span>
+        <span class="module-name">${x(n.name)}</span>
+        <span class="nexus-count">${n.project_count}</span>
+        <button class="btn-icon" onclick="event.stopPropagation();openNexusModal(${n.id})" title="${t('edit')}">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+      </div>`).join('') : `<div class="empty"><p>${t('nexusEmpty')}</p></div>`}`;
+  q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
+    <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+    <h3>${t('nexusWelcomeTitle')}</h3>
+    <p>${t('nexusSelect')}</p>
+  </div>`;
+}
+
+async function reloadNexuses() {
+  S.nexuses = await api.nexus.getAll();
+  if (S.nexus) S.nexus = S.nexuses.find(n => n.id === S.nexus.id) || null;
+}
+
+function clearWorkspaceTabs() {
+  S.projectTabs = []; S.activeProjectTabId = null;
+  S.entityTabs = []; S.activeEntityTabKey = null;
+  S.project = null; S.category = null; S.object = null;
+  S.timeline = null; S.map = null; S.mapAreaId = null;
+  S.world = null; S.game = null; S.write = null;
+  renderProjectTabs();
+}
+
+async function selectNexus(id) {
+  await reloadNexuses();
+  S.nexus = S.nexuses.find(n => n.id === id) || null;
+  if (!S.nexus) return;
+  localStorage.setItem(NEXUS_ACTIVE_KEY, String(id));
+  clearWorkspaceTabs();
+  S.projects = await api.project.getAll(null, S.nexus.id);
+  renderNexusHome();
+}
+
+function closeNexus() {
+  S.nexus = null;
+  localStorage.removeItem(NEXUS_ACTIVE_KEY);
+  clearWorkspaceTabs();
+  renderNexusHome();
+}
+
+async function openNexusModal(id = null) {
+  await reloadNexuses();
+  const n = id ? S.nexuses.find(v => v.id === id) : null;
+  openModal(n ? `✏️ ${t('nexusEdit')}` : `🗄️ ${t('nexusNew')}`, `
+    <div class="fg"><label>${t('name')} *</label><input id="nx-name" value="${x(n?.name || '')}"></div>
+    <div class="fg"><label>${t('memo')}</label><textarea id="nx-memo">${x(n?.memo || '')}</textarea></div>
+    <div class="fg"><label>${t('color')}</label>${await colorPicker(n?.color)}</div>
+    <div class="mfoot">
+      ${n ? `<button class="btn btn-d" onclick="delNexus(${id})">${t('delete')}</button>` : ''}
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="${n ? `saveNexus(${id})` : 'createNexusSubmit()'}">${n ? t('save') : t('create')}</button>
+    </div>`);
+  setTimeout(() => q('#nx-name').focus(), 60);
+}
+
+async function createNexusSubmit() {
+  const name = q('#nx-name').value.trim(); if (!name) return;
+  try {
+    const newId = await api.nexus.create(name, q('#nx-memo').value.trim(), q('#sel-color').value || null);
+    closeModal();
+    await reloadNexuses();
+    toast(t('nexusCreated'), 'ok');
+    await selectNexus(newId);
+  } catch (e) { toast(t('nexusNameTaken'), 'error'); }
+}
+
+async function saveNexus(id) {
+  const name = q('#nx-name').value.trim(); if (!name) return;
+  try {
+    await api.nexus.update(id, name, q('#nx-memo').value.trim(), q('#sel-color').value || null);
+    closeModal();
+    await reloadNexuses();
+    toast(t('saved'), 'ok');
+    renderNexusHome();
+  } catch (e) { toast(t('nexusNameTaken'), 'error'); }
+}
+
+async function delNexus(id) {
+  if (!await uiConfirm(t('nexusDeleteConfirm'))) return;
+  const r = await api.nexus.delete(id);
+  if (r?.blocked) { toast(t('nexusDeleteBlocked'), 'error'); return; }
+  closeModal();
+  if (S.nexus?.id === id) { S.nexus = null; localStorage.removeItem(NEXUS_ACTIVE_KEY); clearWorkspaceTabs(); }
+  await reloadNexuses();
+  toast(t('deleted'), 'ok');
+  renderNexusHome();
+}
+
 function selectModule(name) {
+  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); renderNexusHome(); return; }
   S.activeModule = name;
   if (name === 'director') {
     S.view = 'projects';
@@ -1216,7 +1305,7 @@ function returnToNexus() {
 // ═══ SIDEBAR ═══════════════════════════════════════════
 async function reloadSidebar() {
   S.folders  = await api.folder.getAll();
-  S.projects = await api.project.getAll();
+  S.projects = await api.project.getAll(null, S.nexus?.id ?? null);
   const byId = new Map(S.projects.map(p => [p.id, p]));
   S.projectTabs = S.projectTabs
     .filter(t => byId.has(t.id))
