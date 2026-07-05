@@ -41,11 +41,13 @@ const I = {
   document: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
   chart: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
   sage: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
-  artisan: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg>`
+  artisan: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg>`,
+  scribe: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m10.5 12.5 3 3L9 20l-3 1 1-3z"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
+const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
 const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse','clearAurora','atTwilight','atSunset','clearComet','atDaybreak','afterSunset','atSunrise','atNight','atNoon','clearDusk','atMidnight','clearMoon','clearGalaxy','clearNebula','afterStorm','afterSnow','atMorning','clearSun','atEvening','clearMeteor'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','de','ru','it','nl','pl','uk','tr','qd'];
 const UI_SIZE_MIN = 50;
@@ -64,6 +66,7 @@ function loadUiSettings(){
 }
 
 const S = {
+  nexus:null, nexuses:[],
   folders:[], projects:[], colors:[],
   recentColors:[],
   activeModule:null,
@@ -94,6 +97,13 @@ const S = {
   sageTab:'dataSize',
   // Artisan module state
   artisanTarget:null,
+  // Scribe module state
+  scribeNote:null, scribeFolders:[], scribeNotes:[], scribeOpenFolders:new Set(), scribeTab:'notes',
+  // Wiki navigation state
+  recentEntities:[],
+  // Explorer state
+  explorerOpen:new Set(['sec_scribe','sec_director','sec_navigator','sec_hero','sec_writer']),
+  explorerTree:null,
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -104,8 +114,11 @@ async function init() {
   applyUiSettings();
   S.colors       = await api.color.getAll();
   S.recentColors = await api.color.getRecent();
+  S.nexuses      = await api.nexus.getAll();
+  const savedNexusId = Number(localStorage.getItem(NEXUS_ACTIVE_KEY));
+  S.nexus        = S.nexuses.find(n => n.id === savedNexusId) || null;
   S.folders      = await api.folder.getAll();
-  S.projects     = await api.project.getAll();
+  S.projects     = await api.project.getAll(null, S.nexus?.id ?? null);
   bindWindowChrome();
   bindLeftPanelToggle();
   applyLeftPanelState();
@@ -117,6 +130,9 @@ async function init() {
   renderProjectTabs();
   renderNexusHome();
   bindNav();
+  bindWikilinkClicks();
+  bindGlobalShortcuts();
+  updateStatusBar();
   document.addEventListener('click', () => {
     document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
   });
@@ -468,6 +484,8 @@ const MODULE_SUBNAV = {
     ['tags','hashtag','gameTags'] ] },
   writer: { setter:'setWriteTab', items:[
     ['novel','relation','writeNovelLink'], ['note','story','writeChatnote'] ] },
+  scribe: { setter:'setScribeTab', items:[
+    ['graph','relation','graphView'] ] },
   sage: { setter:'setSageTab', items:[
     ['dataSize','layer','sageDataSize'], ['objectAmount','table','sageObjectAmount'],
     ['linkerList','list','sageLinkerList'], ['linkerGraph','relation','sageLinkerGraph'] ] },
@@ -494,8 +512,9 @@ function updateModuleSubNav(){
     hero:      S.activeModule === 'hero'      && !!S.game,
     writer:    S.activeModule === 'writer'    && !!S.write,
     sage:      S.activeModule === 'sage',
+    scribe:    S.activeModule === 'scribe',
   };
-  const cur = { hero:S.gameTab, writer:S.writeTab, sage:S.sageTab };
+  const cur = { hero:S.gameTab, writer:S.writeTab, sage:S.sageTab, scribe:S.scribeTab };
   for(const mod of Object.keys(MODULE_SUBNAV)){
     document.querySelectorAll(`.nav-btn.${mod}-sub`).forEach(btn => {
       btn.style.display = show[mod] ? '' : 'none';
@@ -546,6 +565,14 @@ function updateTopNavButton(){
   });
   document.querySelectorAll('.nav-btn.sage-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'sage') ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-btn.scribe-only').forEach(btn => {
+    btn.style.display = (S.activeModule === 'scribe') ? '' : 'none';
+    btn.classList.toggle('active', S.activeModule === 'scribe');
+  });
+  // Explorer is available whenever a vault is open, regardless of module.
+  document.querySelectorAll('.nav-btn.explorer-btn').forEach(btn => {
+    btn.style.display = S.nexus ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.artisan-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'artisan') ? '' : 'none';
@@ -645,7 +672,7 @@ function renderProjectTabs(){
 
 function upsertEntityTab(entity, type, module) {
   const key = `${type}-${entity.id}`;
-  const moduleColors = { world:'#22c55e', game:'#f59e0b', write:'#8b5cf6' };
+  const moduleColors = { world:'#22c55e', game:'#f59e0b', write:'#8b5cf6', note:'#0ea5e9' };
   const tab = { key, id:entity.id, type, module, name:entity.name, color: entity.color_code || moduleColors[type] || '#6366f1' };
   const idx = S.entityTabs.findIndex(t => t.key === key);
   if (idx >= 0) S.entityTabs[idx] = tab;
@@ -674,6 +701,15 @@ async function switchEntityTab(key) {
     S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null; S.writeChapter = null;
     S.writeWikiChapter = null; S.writeNote = null;
     await renderWriterView();
+  } else if (tab.type === 'note') {
+    S.activeModule = 'scribe';
+    S.view = 'scribe';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="scribe"]')?.classList.add('active');
+    updateTopNavButton();
+    await loadModule('src/renderer/scribe.js');
+    S.scribeNote = await api.note.get(tab.id);
+    await renderScribeView();
   } else {
     renderProjectTabs();
   }
@@ -695,6 +731,7 @@ async function closeEntityTab(key) {
   if (closing.type === 'world') { S.world = null; if (S.activeModule==='navigator') await renderNavigatorView(); }
   else if (closing.type === 'game') { S.game = null; if (S.activeModule==='hero') await renderHeroView(); }
   else if (closing.type === 'write') { S.write = null; if (S.activeModule==='writer') await renderWriterView(); }
+  else if (closing.type === 'note') { S.scribeNote = null; if (S.activeModule==='scribe') await renderScribeView(); }
   renderProjectTabs();
 }
 
@@ -1093,56 +1130,144 @@ async function switchView(v) {
   else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
   else if (v==='sage')            { await loadModule('src/renderer/sage.js'); renderSageView(); }
   else if (v==='artisan')         { await loadModule('src/renderer/artisan.js'); renderArtisanView(); }
+  else if (v==='scribe')          { await loadModule('src/renderer/scribe.js'); renderScribeView(); }
 }
 
 // ═══ NEXUS HUB ═════════════════════════════════════════
+// Two-level home: no vault open → vault picker; vault open → module cards.
 function renderNexusHome() {
   S.view = 'nexus';
   S.activeModule = null;
   if (konvaStage) { try { konvaStage.destroy(); } catch(e){} konvaStage = null; }
   document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
   updateTopNavButton();
-  q('#left-panel-inner').innerHTML = `
-    <div class="ph"><h4>${t('nexus')}</h4></div>
-    <div class="module-item" onclick="selectModule('director')">
-      <span class="module-icon">${I.director}</span>
-      <span class="module-name">${t('director')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('navigator')">
-      <span class="module-icon">${I.navigator}</span>
-      <span class="module-name">${t('navigator')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('hero')">
-      <span class="module-icon">${I.hero}</span>
-      <span class="module-name">${t('hero')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('writer')">
-      <span class="module-icon">${I.writer}</span>
-      <span class="module-name">${t('writer')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('sage')">
-      <span class="module-icon">${I.sage}</span>
-      <span class="module-name">${t('sage')}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-    <div class="module-item" onclick="selectModule('artisan')">
-      <span class="module-icon">${I.artisan}</span>
-      <span class="module-name">${t('artisan')}</span>
+  q('#main-inner')?.classList.remove('relation-main');
+  if (!S.nexus) { renderNexusPicker(); return; }
+
+  const moduleCard = (name) => `
+    <div class="module-item" onclick="selectModule('${name}')">
+      <span class="module-icon">${I[name]}</span>
+      <span class="module-name">${t(name)}</span>
       <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
-  q('#main-inner')?.classList.remove('relation-main');
+  q('#left-panel-inner').innerHTML = `
+    <div class="ph nexus-vault-head">
+      <h4><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
+      <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
+    </div>
+    ${['director','navigator','hero','writer','scribe','sage','artisan'].map(moduleCard).join('')}`;
   q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
-    <h3>${t('nexusWelcomeTitle')}</h3>
-    <p>${t('nexusWelcomeText')}</p>
+    <h3>${x(S.nexus.name)}</h3>
+    <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;
 }
 
+function renderNexusPicker() {
+  q('#left-panel-inner').innerHTML = `
+    <div class="ph"><h4>${t('nexus')}</h4>
+      <button class="btn btn-p btn-sm" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
+    </div>
+    ${S.nexuses.length ? S.nexuses.map(n => `
+      <div class="module-item nexus-item" onclick="selectNexus(${n.id})">
+        <span class="nexus-vault-dot" style="${n.color_code ? `background:${x(n.color_code)}` : ''}"></span>
+        <span class="module-name">${x(n.name)}</span>
+        <span class="nexus-count">${n.project_count}</span>
+        <button class="btn-icon" onclick="event.stopPropagation();openNexusModal(${n.id})" title="${t('edit')}">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+      </div>`).join('') : `<div class="empty"><p>${t('nexusEmpty')}</p></div>`}`;
+  q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
+    <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+    <h3>${t('nexusWelcomeTitle')}</h3>
+    <p>${t('nexusSelect')}</p>
+  </div>`;
+}
+
+async function reloadNexuses() {
+  S.nexuses = await api.nexus.getAll();
+  if (S.nexus) S.nexus = S.nexuses.find(n => n.id === S.nexus.id) || null;
+}
+
+function clearWorkspaceTabs() {
+  S.projectTabs = []; S.activeProjectTabId = null;
+  S.entityTabs = []; S.activeEntityTabKey = null;
+  S.project = null; S.category = null; S.object = null;
+  S.timeline = null; S.map = null; S.mapAreaId = null;
+  S.world = null; S.game = null; S.write = null;
+  S.scribeNote = null; S.scribeOpenFolders = new Set();
+  renderProjectTabs();
+}
+
+async function selectNexus(id) {
+  await reloadNexuses();
+  S.nexus = S.nexuses.find(n => n.id === id) || null;
+  if (!S.nexus) return;
+  localStorage.setItem(NEXUS_ACTIVE_KEY, String(id));
+  clearWorkspaceTabs();
+  S.projects = await api.project.getAll(null, S.nexus.id);
+  renderNexusHome();
+  updateStatusBar({ item: null, words: null, saveState: null });
+}
+
+function closeNexus() {
+  S.nexus = null;
+  localStorage.removeItem(NEXUS_ACTIVE_KEY);
+  clearWorkspaceTabs();
+  renderNexusHome();
+  updateStatusBar({ item: null, words: null, saveState: null });
+}
+
+async function openNexusModal(id = null) {
+  await reloadNexuses();
+  const n = id ? S.nexuses.find(v => v.id === id) : null;
+  openModal(n ? `✏️ ${t('nexusEdit')}` : `🗄️ ${t('nexusNew')}`, `
+    <div class="fg"><label>${t('name')} *</label><input id="nx-name" value="${x(n?.name || '')}"></div>
+    <div class="fg"><label>${t('memo')}</label><textarea id="nx-memo">${x(n?.memo || '')}</textarea></div>
+    <div class="fg"><label>${t('color')}</label>${await colorPicker(n?.color)}</div>
+    <div class="mfoot">
+      ${n ? `<button class="btn btn-d" onclick="delNexus(${id})">${t('delete')}</button>` : ''}
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="${n ? `saveNexus(${id})` : 'createNexusSubmit()'}">${n ? t('save') : t('create')}</button>
+    </div>`);
+  setTimeout(() => q('#nx-name').focus(), 60);
+}
+
+async function createNexusSubmit() {
+  const name = q('#nx-name').value.trim(); if (!name) return;
+  try {
+    const newId = await api.nexus.create(name, q('#nx-memo').value.trim(), q('#sel-color').value || null);
+    closeModal();
+    await reloadNexuses();
+    toast(t('nexusCreated'), 'ok');
+    await selectNexus(newId);
+  } catch (e) { toast(t('nexusNameTaken'), 'error'); }
+}
+
+async function saveNexus(id) {
+  const name = q('#nx-name').value.trim(); if (!name) return;
+  try {
+    await api.nexus.update(id, name, q('#nx-memo').value.trim(), q('#sel-color').value || null);
+    closeModal();
+    await reloadNexuses();
+    toast(t('saved'), 'ok');
+    renderNexusHome();
+  } catch (e) { toast(t('nexusNameTaken'), 'error'); }
+}
+
+async function delNexus(id) {
+  if (!await uiConfirm(t('nexusDeleteConfirm'))) return;
+  const r = await api.nexus.delete(id);
+  if (r?.blocked) { toast(t('nexusDeleteBlocked'), 'error'); return; }
+  closeModal();
+  if (S.nexus?.id === id) { S.nexus = null; localStorage.removeItem(NEXUS_ACTIVE_KEY); clearWorkspaceTabs(); }
+  await reloadNexuses();
+  toast(t('deleted'), 'ok');
+  renderNexusHome();
+}
+
 function selectModule(name) {
+  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); renderNexusHome(); return; }
   S.activeModule = name;
   if (name === 'director') {
     S.view = 'projects';
@@ -1185,7 +1310,159 @@ function selectModule(name) {
     q('.nav-btn[data-panel="artisan"]')?.classList.add('active');
     updateTopNavButton();
     loadModule('src/renderer/artisan.js').then(() => renderArtisanView());
+  } else if (name === 'scribe') {
+    S.view = 'scribe';
+    S.scribeNote = null; S.scribeTab = 'notes';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="scribe"]')?.classList.add('active');
+    updateTopNavButton();
+    loadModule('src/renderer/scribe.js').then(() => renderScribeView());
   }
+}
+
+// ═══ ENTITY NAVIGATION ════════════════════════════════════
+// Central dispatcher: open any entity from its wiki key ('note_3', 'obj_12',
+// 'wchp_9', …). Used by wikilink clicks, backlinks, quick switcher and graph.
+async function openEntityByKey(key) {
+  if (!key) return;
+  const p = await api.wiki.entityPath(key);
+  if (!p) { toast(t('unresolvedLink'), 'error'); return; }
+  if (p.kind === 'note') {
+    S.activeModule = 'scribe'; S.view = 'scribe';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="scribe"]')?.classList.add('active');
+    updateTopNavButton();
+    await loadModule('src/renderer/scribe.js');
+    await selectNote(p.noteId);
+  } else if (p.kind === 'obj' || p.kind === 'proj') {
+    S.activeModule = 'director'; S.view = 'projects';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    q('.nav-btn[data-panel="projects"]')?.classList.add('active');
+    updateTopNavButton();
+    await selectProject(p.projectId);
+    if (p.kind === 'obj') { await selectCategory(p.categoryId); await selectObject(p.objectId); }
+  } else if (p.kind === 'world') {
+    const tabEntity = await api.world.get(p.worldId);
+    if (!tabEntity) return;
+    upsertEntityTab(tabEntity, 'world', 'navigator');
+    S.activeModule = 'navigator';
+    await switchEntityTab(`world-${p.worldId}`);
+  } else if (p.kind === 'game') {
+    const tabEntity = await api.game.get(p.gameId);
+    if (!tabEntity) return;
+    upsertEntityTab(tabEntity, 'game', 'hero');
+    S.activeModule = 'hero';
+    await switchEntityTab(`game-${p.gameId}`);
+  } else if (p.kind === 'write' || p.kind === 'wchp') {
+    const w = await api.write.getProject(p.writeId);
+    if (!w) return;
+    upsertEntityTab({ id: w.id, name: w.project_name, color_code: w.color_code }, 'write', 'writer');
+    S.activeModule = 'writer';
+    await switchEntityTab(`write-${p.writeId}`);
+    if (p.kind === 'wchp') {
+      S.writeSeries = p.seriesId; S.writeBook = p.bookId; S.writeChapter = p.chapterId;
+      await renderWriterView();
+    }
+  }
+  trackRecentEntity(key);
+}
+
+// Recently opened entities feed the quick switcher's empty-query list.
+function trackRecentEntity(key) {
+  S.recentEntities = (S.recentEntities || []).filter(k => k !== key);
+  S.recentEntities.unshift(key);
+  if (S.recentEntities.length > 20) S.recentEntities.length = 20;
+}
+
+// Clicking a rendered [[wikilink]] anywhere in the main area navigates to the
+// target; an unresolved one offers to create a note with that name.
+function bindWikilinkClicks() {
+  q('#main-inner')?.addEventListener('click', async (e) => {
+    const a = e.target.closest('.wikilink');
+    if (!a) return;
+    e.preventDefault();
+    const key = a.dataset.key;
+    if (key) { await openEntityByKey(key); return; }
+    const name = a.dataset.name;
+    if (!name || !S.nexus) return;
+    if (!await uiConfirm(t('createNoteFromLink') + ` "${name}"?`, { danger: false })) return;
+    const newId = await api.note.create(S.nexus.id, name, null, null);
+    await openEntityByKey(`note_${newId}`);
+  });
+}
+
+async function openExplorer() {
+  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
+  await loadModule('src/renderer/explorer.js');
+  await openExplorerPanel();
+}
+
+// ═══ STATUS BAR ═══════════════════════════════════════════
+// IDE-style footer: active vault · open item · word count · save state.
+const _statusState = {};
+function updateStatusBar(patch = {}) {
+  Object.assign(_statusState, patch);
+  const el = q('#status-bar');
+  if (!el) return;
+  const parts = [];
+  if (S.nexus) parts.push(`<span class="sb-item sb-nexus" onclick="renderNexusHome()"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</span>`);
+  if (_statusState.item) parts.push(`<span class="sb-item">${x(_statusState.item)}</span>`);
+  const right = [];
+  if (_statusState.words != null) right.push(`<span class="sb-item">${_statusState.words} ${t('words')}</span>`);
+  if (_statusState.saveState) right.push(`<span class="sb-item sb-save">${x(_statusState.saveState)}</span>`);
+  el.innerHTML = `<div class="sb-left">${parts.join('')}</div><div class="sb-right">${right.join('')}</div>`;
+}
+
+// ═══ GLOBAL SHORTCUTS ═════════════════════════════════════
+function bindGlobalShortcuts() {
+  document.addEventListener('keydown', async (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod) return;
+    const key = e.key.toLowerCase();
+    const modalOpen = !q('#modal-overlay')?.classList.contains('hidden') || q('#confirm-overlay');
+    const inInput = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+    if (key === 'p') { // quick switcher — always available
+      e.preventDefault();
+      try {
+        if (typeof openQuickSwitcher !== 'function') await loadModule('src/renderer/quickswitch.js');
+        openQuickSwitcher();
+      } catch (_) {}
+      return;
+    }
+    if (modalOpen) return;
+    if (key === 'w') { // close active tab
+      e.preventDefault();
+      if (S.activeEntityTabKey) await closeEntityTab(S.activeEntityTabKey);
+      else if (S.activeProjectTabId != null && S.activeModule === 'director') await closeProjectTab(S.activeProjectTabId);
+      return;
+    }
+    if (key === 'tab') { // cycle tabs (project tabs then entity tabs)
+      e.preventDefault();
+      const ring = [
+        ...S.projectTabs.map(tb => ({ kind: 'proj', id: tb.id })),
+        ...S.entityTabs.map(tb => ({ kind: 'ent', key: tb.key })),
+      ];
+      if (!ring.length) return;
+      const cur = ring.findIndex(r => (r.kind === 'proj' && S.activeModule === 'director' && r.id === S.activeProjectTabId) ||
+                                      (r.kind === 'ent' && r.key === S.activeEntityTabKey));
+      const next = ring[(cur + (e.shiftKey ? -1 : 1) + ring.length) % ring.length];
+      if (next.kind === 'proj') await switchProjectTab(next.id);
+      else await switchEntityTab(next.key);
+      return;
+    }
+    if (inInput && !['e', 'n'].includes(key)) return;
+    if (key === 'n' && S.activeModule === 'scribe' && S.nexus) { // new note
+      e.preventDefault();
+      openNoteModal();
+      return;
+    }
+    // Ctrl+E is handled by the focused editor itself (mdeditor.js); this is
+    // the fallback when focus is outside it.
+    if (key === 'e' && typeof _mdActive?.toggleMode === 'function' && !inInput) {
+      e.preventDefault();
+      _mdActive.toggleMode();
+    }
+  });
 }
 
 // Rail shortcut inside each project module: open Artisan with that module's
@@ -1216,7 +1493,7 @@ function returnToNexus() {
 // ═══ SIDEBAR ═══════════════════════════════════════════
 async function reloadSidebar() {
   S.folders  = await api.folder.getAll();
-  S.projects = await api.project.getAll();
+  S.projects = await api.project.getAll(null, S.nexus?.id ?? null);
   const byId = new Map(S.projects.map(p => [p.id, p]));
   S.projectTabs = S.projectTabs
     .filter(t => byId.has(t.id))

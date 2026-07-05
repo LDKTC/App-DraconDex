@@ -88,6 +88,7 @@ function hasAnyMissingColumns(conn, specs) {
 }
 
 function initDB() {
+  const hadWikiLinkTable = hasTable(db, 'wiki_link');
   // One-time migration: clean-replace the legacy Navigator (v2.2) schema with
   // the new v2.5.2 "World" schema. Detected by the legacy `world_cat_object`
   // table / the old `world_project.color_ref` column (now `color`). Old
@@ -154,6 +155,15 @@ function initDB() {
     CREATE TABLE IF NOT EXISTS use_color (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       color_code TEXT UNIQUE NOT NULL,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Nexus (v2.8): vault grouping projects from every module --
+    CREATE TABLE IF NOT EXISTS nexus (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      memo TEXT,
+      color INTEGER REFERENCES use_color(id),
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -775,6 +785,38 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(note_id,chat_order)
     );
+
+    -- Scribe (v2.8): markdown notes per nexus --
+    CREATE TABLE IF NOT EXISTS note_folder (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      parent_ref INTEGER REFERENCES note_folder(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      color INTEGER REFERENCES use_color(id),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS note (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      folder_ref INTEGER REFERENCES note_folder(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      color INTEGER REFERENCES use_color(id),
+      pinned INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(nexus_ref,title)
+    );
+
+    -- Wiki-link index (v2.8): [[Name]] references parsed out of markdown
+    -- content on save. Rebuildable from content (src/db/wiki.js).
+    CREATE TABLE IF NOT EXISTS wiki_link (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER REFERENCES nexus(id) ON DELETE CASCADE,
+      src_key TEXT NOT NULL,
+      target_key TEXT,
+      target_text TEXT NOT NULL,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   if (!hasColumn(db, 'relation_type', 'color')) {
@@ -813,7 +855,41 @@ function initDB() {
   if (!hasNote) { try { db.prepare(`ALTER TABLE object ADD COLUMN note TEXT`).run(); } catch (_) {} }
   migrateHeroV26(db);
   migrateWriterV27(db);
+  migrateNexusV28(db);
   ensureIndexes(db);
+  // One-time backfill: index [[wikilinks]] already sitting in old content.
+  // Lazy require avoids the core↔wiki module cycle (initDB runs after load).
+  if (!hadWikiLinkTable) {
+    try { require('./wiki').rebuildWikiIndex(); } catch (e) { console.error('wiki backfill error:', e); }
+  }
+}
+
+// v2.8 introduces the Nexus vault: every module's project root gains a
+// nexus_ref. Pre-existing rows are adopted into an auto-created default vault
+// so nothing disappears from the UI after upgrading.
+const NEXUS_PROJECT_TABLES = ['project', 'world_project', 'game_project', 'write_project'];
+function migrateNexusV28(db) {
+  try {
+    for (const t of NEXUS_PROJECT_TABLES) {
+      if (hasTable(db, t) && !hasColumn(db, t, 'nexus_ref')) {
+        try { db.prepare(`ALTER TABLE ${t} ADD COLUMN nexus_ref INTEGER REFERENCES nexus(id) ON DELETE SET NULL`).run(); } catch (_) {}
+      }
+    }
+    const orphan = NEXUS_PROJECT_TABLES.some(t =>
+      hasTable(db, t) && db.prepare(`SELECT 1 FROM ${t} WHERE nexus_ref IS NULL LIMIT 1`).get());
+    if (orphan) {
+      let nx = db.prepare(`SELECT id FROM nexus ORDER BY id LIMIT 1`).get();
+      if (!nx) {
+        const rid = db.prepare(`INSERT INTO nexus (name) VALUES ('Nexus')`).run().lastInsertRowid;
+        nx = { id: rid };
+      }
+      for (const t of NEXUS_PROJECT_TABLES) {
+        if (hasTable(db, t)) db.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref IS NULL`).run(nx.id);
+      }
+    }
+  } catch (e) {
+    console.error('Nexus v2.8 migration error:', e);
+  }
 }
 
 // v2.7 replaced the entire Writer module schema (library/series/document) with
@@ -848,6 +924,10 @@ function migrateWriterV27(db) {
 function ensureIndexes(db) {
   db.exec(`
     -- Director
+    CREATE INDEX IF NOT EXISTS idx_project_nexus             ON project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_project_nexus       ON world_project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_project_nexus        ON game_project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_write_project_nexus       ON write_project(nexus_ref);
     CREATE INDEX IF NOT EXISTS idx_project_folder            ON project(folder_id);
     CREATE INDEX IF NOT EXISTS idx_project_description_proj  ON project_description(project_id);
     CREATE INDEX IF NOT EXISTS idx_object_category_project   ON object_category(project_id);
@@ -931,6 +1011,14 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_write_wiki_link_object    ON write_wiki_link(object_id);
     CREATE INDEX IF NOT EXISTS idx_write_word_link_wiki      ON write_word_link(wiki_id);
     CREATE INDEX IF NOT EXISTS idx_write_note_project        ON write_note(project_id);
+
+    -- Scribe (v2.8)
+    CREATE INDEX IF NOT EXISTS idx_note_nexus                ON note(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_ref           ON note(folder_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_nexus         ON note_folder(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_parent        ON note_folder(parent_ref);
+    CREATE INDEX IF NOT EXISTS idx_wiki_link_src             ON wiki_link(src_key);
+    CREATE INDEX IF NOT EXISTS idx_wiki_link_target          ON wiki_link(target_key);
   `);
 }
 
@@ -1003,6 +1091,7 @@ function importDatabaseMerge(sourcePath) {
     colors: 0, folders: 0, projects: 0, categories: 0, templates: 0,
     objects: 0, timelines: 0, events: 0, hashtags: 0, descriptions: 0,
     relationTypes: 0, relations: 0, mappings: 0,
+    nexuses: 0, noteFolders: 0, notes: 0,
   };
 
   const tx = target.transaction(() => {
@@ -1012,6 +1101,40 @@ function importDatabaseMerge(sourcePath) {
       const rows = source.prepare(`SELECT color_code FROM use_color WHERE color_code IS NOT NULL`).all();
       const ins = target.prepare(`INSERT OR IGNORE INTO use_color (color_code) VALUES (?)`);
       for (const r of rows) summary.colors += ins.run(r.color_code).changes;
+    }
+
+    // Nexus vaults + Scribe notes (v2.8), matched by name/title.
+    if (hasTable(source, 'nexus')) {
+      const colorById = hasTable(source, 'use_color') ? source.prepare(`SELECT id, color_code FROM use_color`).all().reduce((m, r) => (m.set(r.id, r.color_code), m), new Map()) : new Map();
+      const srcNexus = source.prepare(`SELECT id, name, memo, color FROM nexus`).all();
+      for (const n of srcNexus) {
+        summary.nexuses += target.prepare(`INSERT OR IGNORE INTO nexus (name, memo, color) VALUES (?, ?, (SELECT id FROM use_color WHERE color_code=?))`)
+          .run(n.name, n.memo, colorById.get(n.color) || null).changes;
+      }
+      const targetNexusByName = target.prepare(`SELECT id, name FROM nexus`).all().reduce((m, r) => (m.set(r.name, r.id), m), new Map());
+      const srcNexusName = new Map(srcNexus.map(n => [n.id, n.name]));
+
+      if (hasTable(source, 'note_folder')) {
+        // flat match by (target nexus, name); nesting is not reconstructed
+        for (const f of source.prepare(`SELECT nexus_ref, name, color FROM note_folder`).all()) {
+          const nx = targetNexusByName.get(srcNexusName.get(f.nexus_ref));
+          if (!nx) continue;
+          const exists = target.prepare(`SELECT 1 FROM note_folder WHERE nexus_ref=? AND name=?`).get(nx, f.name);
+          if (exists) continue;
+          summary.noteFolders += target.prepare(`INSERT INTO note_folder (nexus_ref, name, color) VALUES (?, ?, (SELECT id FROM use_color WHERE color_code=?))`)
+            .run(nx, f.name, colorById.get(f.color) || null).changes;
+        }
+      }
+      if (hasTable(source, 'note')) {
+        const srcFolderName = hasTable(source, 'note_folder') ? source.prepare(`SELECT id, name FROM note_folder`).all().reduce((m, r) => (m.set(r.id, r.name), m), new Map()) : new Map();
+        for (const n of source.prepare(`SELECT nexus_ref, folder_ref, title, content, color, pinned FROM note`).all()) {
+          const nx = targetNexusByName.get(srcNexusName.get(n.nexus_ref));
+          if (!nx) continue;
+          const folder = n.folder_ref ? target.prepare(`SELECT id FROM note_folder WHERE nexus_ref=? AND name=?`).get(nx, srcFolderName.get(n.folder_ref))?.id : null;
+          summary.notes += target.prepare(`INSERT OR IGNORE INTO note (nexus_ref, folder_ref, title, content, color, pinned) VALUES (?, ?, ?, ?, (SELECT id FROM use_color WHERE color_code=?), ?)`)
+            .run(nx, folder || null, n.title, n.content || '', colorById.get(n.color) || null, n.pinned ? 1 : 0).changes;
+        }
+      }
     }
 
     if (hasTable(source, 'project_folder')) {
@@ -1229,9 +1352,21 @@ function importDatabaseMerge(sourcePath) {
       for (const r of rows) summary.relationTypes += target.prepare(`INSERT OR IGNORE INTO relation_type (relation_name, color) VALUES (?, (SELECT id FROM use_color WHERE color_code=?))`).run(r.relation_name, colorById.get(r.color) || null).changes;
     }
 
+    // Merged projects arrive without nexus_ref; adopt them like the v2.8
+    // migration does so they don't vanish from every vault until restart.
+    let nx = target.prepare(`SELECT id FROM nexus ORDER BY id LIMIT 1`).get();
+    if (!nx) {
+      nx = { id: target.prepare(`INSERT INTO nexus (name) VALUES ('Nexus')`).run().lastInsertRowid };
+    }
+    for (const t of NEXUS_PROJECT_TABLES) {
+      target.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref IS NULL`).run(nx.id);
+    }
+
     target.exec("PRAGMA foreign_keys = ON");
   });
   tx();
+  // Imported content may carry [[wikilinks]]; rebuild the whole index.
+  try { require('./wiki').rebuildWikiIndex(); } catch (e) { console.error('wiki reindex after merge:', e); }
   return summary;
 }
 

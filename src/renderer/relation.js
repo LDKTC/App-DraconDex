@@ -10,18 +10,22 @@ async function renderForceGraph(graphData, opts={}){
   await renderForceGraphWithD3(graphData, opts);
 }
 
-// D3 loader + renderer
+// D3 loader + renderer. Vendored copy first (app must work offline);
+// CDN only as a fallback for trees missing vendor/.
 function ensureD3(){
   if(window.d3) return Promise.resolve();
   if(window.__d3Loading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.d3){ clearInterval(iv); resolve(); } },50); });
   window.__d3Loading = true;
-  return new Promise((resolve,reject)=>{
+  const load = (src) => new Promise((resolve,reject)=>{
     const s = document.createElement('script');
-    s.src = 'https://unpkg.com/d3@7/dist/d3.min.js';
-    s.onload = ()=>{ window.__d3Loading = false; resolve(); };
-    s.onerror = ()=>{ window.__d3Loading = false; reject(new Error('Failed to load d3')); };
+    s.src = src;
+    s.onload = ()=>resolve();
+    s.onerror = ()=>{ s.remove(); reject(new Error('Failed to load '+src)); };
     document.head.appendChild(s);
   });
+  return load('vendor/d3.min.js')
+    .catch(()=>load('https://unpkg.com/d3@7/dist/d3.min.js'))
+    .finally(()=>{ window.__d3Loading = false; });
 }
 
 async function renderForceGraphWithD3(graphData, opts={}){
@@ -591,12 +595,16 @@ function ensureKonva(){
   if(window.Konva) return Promise.resolve();
   if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
   window.__konvaLoading = true;
-  return new Promise((resolve,reject)=>{
+  // Vendored copy first (offline app); CDN only as a fallback.
+  const load = (src) => new Promise((resolve,reject)=>{
     const s = document.createElement('script');
-    s.src = 'https://unpkg.com/konva@9/konva.min.js';
-    s.onload = ()=>{ window.__konvaLoading = false; resolve(); };
-    s.onerror = ()=>{ window.__konvaLoading = false; reject(new Error('Failed to load Konva')); };
+    s.src = src;
+    s.onload = ()=>resolve();
+    s.onerror = ()=>{ s.remove(); reject(new Error('Failed to load '+src)); };
     document.body.appendChild(s);
   });
+  return load('vendor/konva.min.js')
+    .catch(()=>load('https://unpkg.com/konva@9/konva.min.js'))
+    .finally(()=>{ window.__konvaLoading = false; });
 }
 

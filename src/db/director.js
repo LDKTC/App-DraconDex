@@ -12,16 +12,20 @@ const deleteFolder = (id) =>
   getDB().prepare(`DELETE FROM project_folder WHERE id=?`).run(id);
 
 // ── Project ─────────────────────────────────────────
-const getProjects = (folderId) => {
+const getProjects = (folderId, nexusId) => {
   const base = `SELECT p.*, uc.color_code FROM project p LEFT JOIN use_color uc ON p.project_color = uc.id`;
-  if (folderId) return getDB().prepare(`${base} WHERE p.folder_id=? ORDER BY p.name`).all(folderId);
-  return getDB().prepare(`${base} ORDER BY p.name`).all();
+  if (folderId) {
+    return getDB().prepare(`${base} WHERE p.folder_id=? AND (? IS NULL OR p.nexus_ref=?) ORDER BY p.name`)
+      .all(folderId, nexusId ?? null, nexusId ?? null);
+  }
+  return getDB().prepare(`${base} WHERE (? IS NULL OR p.nexus_ref=?) ORDER BY p.name`)
+    .all(nexusId ?? null, nexusId ?? null);
 };
 const getProject = (id) =>
   getDB().prepare(`SELECT p.*, uc.color_code FROM project p LEFT JOIN use_color uc ON p.project_color = uc.id WHERE p.id=?`).get(id);
 const createProject = (data) =>
-  getDB().prepare(`INSERT INTO project (codename,name,project_memo,folder_id,project_color) VALUES (?,?,?,?,?)`)
-    .run(data.codename || null, data.name, data.memo || null, data.folderId || null, data.colorId || null);
+  getDB().prepare(`INSERT INTO project (codename,name,project_memo,folder_id,project_color,nexus_ref) VALUES (?,?,?,?,?,?)`)
+    .run(data.codename || null, data.name, data.memo || null, data.folderId || null, data.colorId || null, data.nexusId || null);
 const updateProject = (id, data) =>
   getDB().prepare(`UPDATE project SET codename=?,name=?,project_memo=?,folder_id=?,project_color=?,update_at=datetime('now') WHERE id=?`)
     .run(data.codename || null, data.name, data.memo || null, data.folderId || null, data.colorId || null, id);
@@ -77,12 +81,24 @@ const getObjects = (categoryId) =>
   getDB().prepare(`SELECT o.*, uc.color_code FROM object o LEFT JOIN use_color uc ON o.color = uc.id WHERE o.category_id=? ORDER BY o.name`).all(categoryId);
 const getObject = (id) =>
   getDB().prepare(`SELECT o.*, uc.color_code FROM object o LEFT JOIN use_color uc ON o.color = uc.id WHERE o.id=?`).get(id);
-const createObject = (projectId, categoryId, name, colorId) =>
-  getDB().prepare(`INSERT INTO object (name,project_id,category_id,color) VALUES (?,?,?,?)`).run(name, projectId, categoryId, colorId || null);
-const updateObject = (id, name, colorId) =>
-  getDB().prepare(`UPDATE object SET name=?,color=?,update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
-const updateObjectNote = (id, note) =>
-  getDB().prepare(`UPDATE object SET note=?,update_at=datetime('now') WHERE id=?`).run(note, id);
+const createObject = (projectId, categoryId, name, colorId) => {
+  const r = getDB().prepare(`INSERT INTO object (name,project_id,category_id,color) VALUES (?,?,?,?)`).run(name, projectId, categoryId, colorId || null);
+  const wiki = require('./wiki'); // lazy: avoids module cycle
+  wiki.resolveDanglingLinks(name, wiki.nexusOfObject(r.lastInsertRowid));
+  return r;
+};
+const updateObject = (id, name, colorId) => {
+  const r = getDB().prepare(`UPDATE object SET name=?,color=?,update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
+  const wiki = require('./wiki');
+  wiki.resolveDanglingLinks(name, wiki.nexusOfObject(id));
+  return r;
+};
+const updateObjectNote = (id, note) => {
+  const r = getDB().prepare(`UPDATE object SET note=?,update_at=datetime('now') WHERE id=?`).run(note, id);
+  const wiki = require('./wiki'); // lazy: avoids module cycle
+  wiki.reindexWikiLinks(`obj_${id}`, note, wiki.nexusOfObject(id));
+  return r;
+};
 const deleteObject = (id) => {
   const d = getDB();
   const tx = d.transaction((objectId) => {
@@ -119,17 +135,18 @@ const upsertAttr = (objectId, templateId, value) =>
   `).run(objectId, templateId, value);
 
 // ── Search ───────────────────────────────────────────
-const searchAll = (query) => {
+const searchAll = (query, nexusId) => {
   const d = getDB();
   const qStr = `%${query}%`;
-  const projects = d.prepare(`SELECT p.*, uc.color_code FROM project p LEFT JOIN use_color uc ON p.project_color = uc.id WHERE p.name LIKE ? OR p.codename LIKE ? ORDER BY p.name`).all(qStr, qStr);
+  const nx = nexusId ?? null;
+  const projects = d.prepare(`SELECT p.*, uc.color_code FROM project p LEFT JOIN use_color uc ON p.project_color = uc.id WHERE (p.name LIKE ? OR p.codename LIKE ?) AND (? IS NULL OR p.nexus_ref=?) ORDER BY p.name`).all(qStr, qStr, nx, nx);
   const objects = d.prepare(`
     SELECT DISTINCT o.*, uc.color_code, oc.category_name, p.name AS project_name
     FROM object o JOIN object_category oc ON o.category_id = oc.id JOIN project p ON o.project_id = p.id
     LEFT JOIN use_color uc ON o.color = uc.id
     LEFT JOIN object_hashtag oh ON oh.object_id = o.id LEFT JOIN hashtag h ON h.id = oh.hashtag_id
-    WHERE o.name LIKE ? OR h.tag_name LIKE ? ORDER BY o.name
-  `).all(qStr, qStr);
+    WHERE (o.name LIKE ? OR h.tag_name LIKE ?) AND (? IS NULL OR p.nexus_ref=?) ORDER BY o.name
+  `).all(qStr, qStr, nx, nx);
   const hashtags = d.prepare(`SELECT h.*, uc.color_code FROM hashtag h LEFT JOIN use_color uc ON h.tag_color = uc.id WHERE h.tag_name LIKE ? ORDER BY h.tag_name`).all(qStr);
   return { projects, objects, hashtags };
 };

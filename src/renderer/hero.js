@@ -38,7 +38,7 @@ async function selectGame(id) {
 
 // ═══ GAME LIST (no game selected) ═════════════════════
 async function renderGameList() {
-  const games = await api.game.getAll();
+  const games = await api.game.getAll(S.nexus?.id ?? null);
   let h = `<div class="ph"><h4>${t('hero')}</h4>
     <button class="btn btn-g btn-i" onclick="openGameModal()" title="${t('gameNew')}">${I.plus}</button>
   </div>`;
@@ -316,7 +316,7 @@ async function renderElementDetail(elemId) {
 // ═══ SUBMODULE: NOVEL LINK ═════════════════════════════
 async function renderHeroNovel() {
   const g = S.game;
-  const [link, novels] = await Promise.all([api.game.getNovelLink(g.id), api.project.getAll(null)]);
+  const [link, novels] = await Promise.all([api.game.getNovelLink(g.id), api.project.getAll(null, S.nexus?.id ?? null)]);
   const pid = link?.project_ref || '';
   let lh = `<div class="ph"><h4>${t('gameNovelLink')}</h4></div>
     <div class="fg" style="padding:6px 10px;margin:0">
@@ -787,7 +787,7 @@ async function saveGameProject(id) {
   const c = q('#sel-color').value || null;
   let gid = id;
   if (id) await api.game.update(id, n, cn, m, c);
-  else { const r = await api.game.create(n, cn, m, c); gid = r?.lastInsertRowid; }
+  else { const r = await api.game.create(n, cn, m, c, S.nexus?.id ?? null); gid = r?.lastInsertRowid; }
   if (gid) await api.game.setTags(gid, getModalTagIds('game'));
   closeModal();
   toast(t('saved'), 'ok');

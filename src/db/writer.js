@@ -2,14 +2,14 @@ const { getDB } = require('./core');
 const now = () => new Date().toISOString().replace('T',' ').slice(0,19);
 
 // Write Projects
-function getWriteProjects() {
-  return getDB().prepare(`SELECT wp.*, uc.color_code FROM write_project wp LEFT JOIN use_color uc ON uc.id=wp.color ORDER BY wp.project_name`).all();
+function getWriteProjects(nexusId) {
+  return getDB().prepare(`SELECT wp.*, uc.color_code FROM write_project wp LEFT JOIN use_color uc ON uc.id=wp.color WHERE (? IS NULL OR wp.nexus_ref=?) ORDER BY wp.project_name`).all(nexusId ?? null, nexusId ?? null);
 }
 function getWriteProject(id) {
   return getDB().prepare(`SELECT wp.*, uc.color_code FROM write_project wp LEFT JOIN use_color uc ON uc.id=wp.color WHERE wp.id=?`).get(id);
 }
-function createWriteProject(name, codename, color) {
-  return getDB().prepare(`INSERT INTO write_project (project_name,codename,color,update_at) VALUES (?,?,?,?)`).run(name, codename||null, color||null, now()).lastInsertRowid;
+function createWriteProject(name, codename, color, nexusId) {
+  return getDB().prepare(`INSERT INTO write_project (project_name,codename,color,nexus_ref,update_at) VALUES (?,?,?,?,?)`).run(name, codename||null, color||null, nexusId||null, now()).lastInsertRowid;
 }
 function updateWriteProject(id, name, codename, color) {
   getDB().prepare(`UPDATE write_project SET project_name=?,codename=?,color=?,update_at=? WHERE id=?`).run(name, codename||null, color||null, now(), id);
@@ -63,6 +63,8 @@ function updateWriteChapter(id, name, color) {
 }
 function updateWriteChapterContent(id, content) {
   getDB().prepare(`UPDATE write_chapter SET chapter_content=?,update_at=? WHERE id=?`).run(content||'', now(), id);
+  const wiki = require('./wiki'); // lazy: avoids module cycle
+  wiki.reindexWikiLinks(`wchp_${id}`, content, wiki.nexusOfChapter(id));
 }
 function moveWriteChapter(id, dir) {
   const db = getDB();

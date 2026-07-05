@@ -37,7 +37,7 @@ async function selectWriteSeries(projectId, seriesId) {
 
 // ═══ PROJECT LIST (no project active) ═════════════════
 async function renderWriteProjectList() {
-  const projects = await api.write.getProjects();
+  const projects = await api.write.getProjects(S.nexus?.id ?? null);
   let h = `<div class="ph"><h4>${t('writer')}</h4>
     <button class="btn btn-g btn-i" onclick="openWriteProjectModal()" title="${t('writeProjectNew')}">${I.plus}</button>
   </div>`;
@@ -237,6 +237,7 @@ async function renderWriteChapterEditor(chapterId) {
     <div class="wchap-editor-head">
       <span style="font-weight:600;font-size:13.5px">${x(chapter.name)}</span>
       <span id="wchap-save-state" style="color:var(--t3);font-size:11.5px;margin-left:auto"></span>
+      <button id="wchap-preview-btn" class="btn btn-s btn-sm" onclick="toggleWchapPreview()">${t('preview')}</button>
     </div>
     <div class="wchap-wrap">
       <div id="wchap-backdrop" class="wchap-backdrop" aria-hidden="true"></div>
@@ -284,6 +285,14 @@ function refreshWchapHighlights(text, links, chapterId) {
       idx = end;
     }
   }
+  // [[wikilinks]] tinted like linked words (indexed on save by the db layer)
+  if (typeof mdExtractWikilinks === 'function') {
+    for (const l of mdExtractWikilinks(text)) {
+      if (!ranges.some(r => l.start < r.end && l.end > r.start)) {
+        ranges.push({ start: l.start, end: l.end, color: '', wikilink: true });
+      }
+    }
+  }
   ranges.sort((a, b) => a.start - b.start);
   _wchapRanges = ranges.map(r => ({ ...r, chapterId }));
   const bd = q('#wchap-backdrop');
@@ -294,7 +303,7 @@ function refreshWchapHighlights(text, links, chapterId) {
     html += x(text.slice(pos, r.start));
     const col = r.color;
     const st = col ? `style="text-decoration-color:${col};background:color-mix(in srgb, ${col} 22%, transparent)"` : '';
-    html += `<mark class="wlink-mark" ${st}>${x(text.slice(r.start, r.end))}</mark>`;
+    html += `<mark class="wlink-mark${r.wikilink ? ' wchap-wikimark' : ''}" ${st}>${x(text.slice(r.start, r.end))}</mark>`;
     pos = r.end;
   }
   html += x(text.slice(pos));
@@ -316,14 +325,48 @@ function handleWchapMouseUp(e, ta, chapterId) {
     return;
   }
   hideWlinkFloat();
-  // Caret click on a linked word jumps to the wiki word list.
+  // Caret click on a linked word jumps to the wiki word list;
+  // on a [[wikilink]] it navigates to the linked entity.
   const hit = _wchapRanges.find(r => start >= r.start && start <= r.end);
-  if (hit) jumpToWikiChapter(chapterId);
+  if (!hit) return;
+  if (hit.wikilink) {
+    const raw = ta.value.slice(hit.start, hit.end).replace(/^\[\[|\]\]$/g, '');
+    const name = raw.split('|')[0].trim();
+    api.wiki.resolve(name, S.nexus?.id ?? null).then(key => { if (key) openEntityByKey(key); });
+    return;
+  }
+  jumpToWikiChapter(chapterId);
 }
 
 function hideWlinkFloat() {
   const btn = q('#wlink-float');
   if (btn) btn.style.display = 'none';
+}
+
+// Markdown preview of the chapter text (read-only; toggles the edit textarea).
+async function toggleWchapPreview() {
+  const wrap = q('.wchap-wrap');
+  const btn = q('#wchap-preview-btn');
+  if (!wrap || !btn) return;
+  const existing = wrap.querySelector('.md-preview');
+  if (existing) {
+    existing.remove();
+    wrap.querySelector('.wchap-text').style.display = '';
+    wrap.querySelector('.wchap-backdrop').style.display = '';
+    btn.textContent = t('preview');
+    return;
+  }
+  const ta = wrap.querySelector('.wchap-text');
+  await refreshWikiCache();
+  const pv = document.createElement('div');
+  pv.className = 'md-preview';
+  pv.style.position = 'absolute';
+  pv.style.inset = '0';
+  pv.innerHTML = mdRender(ta.value, { resolveLink: resolveWikiNameCached });
+  ta.style.display = 'none';
+  wrap.querySelector('.wchap-backdrop').style.display = 'none';
+  wrap.appendChild(pv);
+  btn.textContent = t('editMode');
 }
 
 function jumpToWikiChapter(chapterId) {
@@ -397,7 +440,7 @@ async function renderWriteNovelLink() {
   }
   const [link, novels, wikis] = await Promise.all([
     api.write.getNovelLink(S.writeSeries),
-    api.project.getAll(null),
+    api.project.getAll(null, S.nexus?.id ?? null),
     api.write.getWikiChapters(S.writeSeries),
   ]);
   const nid = link?.novel_id || '';
@@ -627,7 +670,7 @@ async function saveWriteProject(id) {
         upsertEntityTab({ id, name: S.write.project_name, color_code: S.write.color_code }, 'write', 'writer');
       }
     } else {
-      await api.write.createProject(name, codename, color);
+      await api.write.createProject(name, codename, color, S.nexus?.id ?? null);
     }
   } catch (e) {
     toast(e.message, 'err');

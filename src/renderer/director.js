@@ -459,7 +459,7 @@ async function buildDetail(oid){
   h += `</div>
     <div class="note-section">
       <label style="display:flex;align-items:center;gap:4px"><span class="icon" style="width:12px;height:12px">${I.edit}</span> โน็ต (Note)</label>
-      <textarea class="note-textarea auto-expand detail-note-field" id="note-${oid}" data-oid="${oid}" placeholder="เพิ่มหมายเหตุเพิ่มเติมสำหรับรายการนี้..." oninput="autoExpandTextarea(this)">${x(objNote)}</textarea>
+      <div class="detail-note-md" id="note-md-${oid}"></div>
     </div>
     <div class="detail-relations">
       <div class="tags-head"><span>ความสัมพันธ์ของรายการนี้</span></div>
@@ -595,14 +595,6 @@ function autoExpandTextarea(textarea) {
   textarea.style.height = (textarea.scrollHeight) + 'px';
 }
 
-async function saveNote(oid) {
-  const noteEl = q(`#note-${oid}`);
-  if(!noteEl) return;
-  const noteText = noteEl.value.trim();
-  await api.object.updateNote(oid, noteText);
-  toast('บันทึกสำเร็จ','ok');
-}
-
 function bindDetailAutoSave(oid) {
   const onBlurSave = (el, saveFn) => {
     el.dataset.prev = el.value;
@@ -620,12 +612,6 @@ function bindDetailAutoSave(oid) {
       await api.object.upsertAttr(+el.dataset.oid, +el.dataset.tid, newVal);
     });
   });
-  const noteEl = q(`.detail-note-field`);
-  if(noteEl) {
-    onBlurSave(noteEl, async newVal => {
-      await api.object.updateNote(+noteEl.dataset.oid, newVal.trim());
-    });
-  }
 }
 
 async function renderDetail(oid){
@@ -638,6 +624,17 @@ async function renderDetail(oid){
     });
   }, 0);
   bindDetailAutoSave(oid);
+  // Markdown note editor with [[wikilinks]] + backlinks (mdeditor.js)
+  const noteWrap = q(`#note-md-${oid}`);
+  if (noteWrap) {
+    const obj = S.object?.id === oid ? S.object : await api.object.get(oid);
+    createMarkdownEditor(noteWrap, {
+      title: '',
+      content: obj?.note || '',
+      srcKey: `obj_${oid}`,
+      save: (content) => api.object.updateNote(oid, content),
+    });
+  }
   renderTagSuggestions(oid);
 }
 

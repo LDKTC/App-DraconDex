@@ -103,6 +103,36 @@ h('db:importFileMerge', async () => {
   return { canceled: false, summary };
 });
 
+// Nexus (vault)
+h('nexus:getAll', ()             => db.getNexuses());
+h('nexus:get',    (id)           => db.getNexus(id));
+h('nexus:create', (n,m,c)        => db.createNexus(n,m,c));
+h('nexus:update', (id,n,m,c)     => db.updateNexus(id,n,m,c));
+h('nexus:delete', (id)           => db.deleteNexus(id));
+
+// Scribe (markdown notes)
+h('note:getFolders',   (nx)            => db.getNoteFolders(nx));
+h('note:createFolder', (nx,n,p,c)      => db.createNoteFolder(nx,n,p,c));
+h('note:updateFolder', (id,n,p,c)      => db.updateNoteFolder(id,n,p,c));
+h('note:deleteFolder', (id)            => db.deleteNoteFolder(id));
+h('note:getAll',       (nx)            => db.getNotes(nx));
+h('note:get',          (id)            => db.getNote(id));
+h('note:create',       (nx,t,f,c)      => db.createNote(nx,t,f,c));
+h('note:update',       (id,t,f,c,p)    => db.updateNote(id,t,f,c,p));
+h('note:updateContent',(id,content)    => db.updateNoteContent(id,content));
+h('note:delete',       (id)            => db.deleteNote(id));
+
+// Wiki-link index
+h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
+h('wiki:backlinks',    (key)       => db.getBacklinks(key));
+h('wiki:outgoing',     (key)       => db.getOutgoingLinks(key));
+h('wiki:quickIndex',   (nx)        => db.quickIndex(nx));
+h('wiki:entityPath',   (key)       => db.getEntityPath(key));
+h('wiki:rebuild',      ()          => db.rebuildWikiIndex());
+h('wiki:explorerTree', (nx)        => db.explorerTree(nx));
+h('wiki:getGraph',     (nx)        => db.getGraph(nx));
+h('wiki:renameTarget', (key,o,n)   => db.renameWikiTarget(key,o,n));
+
 // Folder
 h('folder:getAll',  ()           => db.getFolders());
 h('folder:create',  (n,m,c)      => db.createFolder(n,m,c));
@@ -110,7 +140,7 @@ h('folder:update',  (id,n,m,c)   => db.updateFolder(id,n,m,c));
 h('folder:delete',  (id)         => db.deleteFolder(id));
 
 // Project
-h('project:getAll', (fid)        => db.getProjects(fid));
+h('project:getAll', (fid,nx)     => db.getProjects(fid,nx));
 h('project:get',    (id)         => db.getProject(id));
 h('project:create', (data)       => db.createProject(data));
 h('project:update', (id,data)    => db.updateProject(id,data));
@@ -216,7 +246,7 @@ h('timeline:addEventTag', (eid,tid) => db.addEventTag(eid,tid));
 h('timeline:removeEventTag', (eid,tid) => db.removeEventTag(eid,tid));
 
 // Search
-h('search:all', (q) => db.searchAll(q));
+h('search:all', (q,nx) => db.searchAll(q,nx));
 
 // Hashtag objects by tag
 h('hashtag:getObjectsByTag', (tagId, projectId) => db.getObjectsByHashtag(tagId, projectId));
@@ -224,9 +254,9 @@ h('hashtag:getEventsByTag', (tagId, projectId) => db.getEventsByHashtag(tagId, p
 h('project:getAllUsedTags', (pid) => db.getAllProjectUsedTags(pid));
 
 // Navigator (v2.5.2) — World module
-h('world:getAll',           ()                        => db.getWorlds());
+h('world:getAll',           (nx)                      => db.getWorlds(nx));
 h('world:get',              (id)                      => db.getWorld(id));
-h('world:create',           (code,n,m,c)              => db.createWorld(code,n,m,c));
+h('world:create',           (code,n,m,c,nx)           => db.createWorld(code,n,m,c,nx));
 h('world:update',           (id,code,n,m,c)           => db.updateWorld(id,code,n,m,c));
 h('world:delete',           (id)                      => db.deleteWorld(id));
 
@@ -305,9 +335,9 @@ h('world:updateEventObjectPoint',(id,x,y)             => db.updateEventObjectPoi
 h('world:removeEventObject',(id)                      => db.removeEventObject(id));
 
 // Hero (v2.6) — Game module
-h('game:getAll',            ()                        => db.getGames());
+h('game:getAll',            (nx)                      => db.getGames(nx));
 h('game:get',               (id)                      => db.getGame(id));
-h('game:create',            (n,cn,m,c)                => db.createGame(n,cn,m,c));
+h('game:create',            (n,cn,m,c,nx)             => db.createGame(n,cn,m,c,nx));
 h('game:update',            (id,n,cn,m,c)             => db.updateGame(id,n,cn,m,c));
 h('game:delete',            (id)                      => db.deleteGame(id));
 
@@ -381,9 +411,9 @@ h('game:getCharsByTag',     (tid,gid)                 => db.getGameCharsByTag(ti
 h('game:getElementsByTag',  (tid,gid)                 => db.getGameElementsByTag(tid,gid));
 
 // Writer (v2.7)
-h('write:getProjects',      ()               => db.getWriteProjects());
+h('write:getProjects',      (nx)             => db.getWriteProjects(nx));
 h('write:getProject',       (id)             => db.getWriteProject(id));
-h('write:createProject',    (n,cn,c)         => db.createWriteProject(n,cn,c));
+h('write:createProject',    (n,cn,c,nx)      => db.createWriteProject(n,cn,c,nx));
 h('write:updateProject',    (id,n,cn,c)      => db.updateWriteProject(id,n,cn,c));
 h('write:deleteProject',    (id)             => db.deleteWriteProject(id));
 h('write:getSeries',        (pid)            => db.getWriteSeries(pid));

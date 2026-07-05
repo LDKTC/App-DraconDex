@@ -2,13 +2,17 @@ function ensureKonva(){
   if(window.Konva) return Promise.resolve();
   if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
   window.__konvaLoading = true;
-  return new Promise((resolve,reject)=>{
+  // Vendored copy first (offline app); CDN only as a fallback.
+  const load = (src) => new Promise((resolve,reject)=>{
     const s = document.createElement('script');
-    s.src = 'https://unpkg.com/konva@9/konva.min.js';
-    s.onload = ()=>{ window.__konvaLoading = false; resolve(); };
-    s.onerror = ()=>{ window.__konvaLoading = false; reject(new Error('Failed to load Konva')); };
+    s.src = src;
+    s.onload = ()=>resolve();
+    s.onerror = ()=>{ s.remove(); reject(new Error('Failed to load '+src)); };
     document.body.appendChild(s);
   });
+  return load('vendor/konva.min.js')
+    .catch(()=>load('https://unpkg.com/konva@9/konva.min.js'))
+    .finally(()=>{ window.__konvaLoading = false; });
 }
 
 // These three were previously (and incorrectly) only defined in relation.js —

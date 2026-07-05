@@ -6,14 +6,14 @@ const { getDB } = require('./core');
 // categories/objects, maps and a dated timeline.
 
 // ---- World CRUD ----------------------------------------------------------
-const getWorlds = () =>
-  getDB().prepare(`SELECT w.*, uc.color_code FROM world_project w LEFT JOIN use_color uc ON w.color=uc.id ORDER BY w.name`).all();
+const getWorlds = (nexusId) =>
+  getDB().prepare(`SELECT w.*, uc.color_code FROM world_project w LEFT JOIN use_color uc ON w.color=uc.id WHERE (? IS NULL OR w.nexus_ref=?) ORDER BY w.name`).all(nexusId ?? null, nexusId ?? null);
 
 const getWorld = (id) =>
   getDB().prepare(`SELECT w.*, uc.color_code FROM world_project w LEFT JOIN use_color uc ON w.color=uc.id WHERE w.id=?`).get(id);
 
-const createWorld = (codename, name, memo, colorId) =>
-  getDB().prepare(`INSERT INTO world_project (codename,name,memo,color) VALUES (?,?,?,?)`).run(codename||null, name, memo||null, colorId||null).lastInsertRowid;
+const createWorld = (codename, name, memo, colorId, nexusId) =>
+  getDB().prepare(`INSERT INTO world_project (codename,name,memo,color,nexus_ref) VALUES (?,?,?,?,?)`).run(codename||null, name, memo||null, colorId||null, nexusId||null).lastInsertRowid;
 
 const updateWorld = (id, codename, name, memo, colorId) =>
   getDB().prepare(`UPDATE world_project SET codename=?,name=?,memo=?,color=?,update_at=datetime('now') WHERE id=?`).run(codename||null, name, memo||null, colorId||null, id);
