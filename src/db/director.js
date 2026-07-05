@@ -81,10 +81,18 @@ const getObjects = (categoryId) =>
   getDB().prepare(`SELECT o.*, uc.color_code FROM object o LEFT JOIN use_color uc ON o.color = uc.id WHERE o.category_id=? ORDER BY o.name`).all(categoryId);
 const getObject = (id) =>
   getDB().prepare(`SELECT o.*, uc.color_code FROM object o LEFT JOIN use_color uc ON o.color = uc.id WHERE o.id=?`).get(id);
-const createObject = (projectId, categoryId, name, colorId) =>
-  getDB().prepare(`INSERT INTO object (name,project_id,category_id,color) VALUES (?,?,?,?)`).run(name, projectId, categoryId, colorId || null);
-const updateObject = (id, name, colorId) =>
-  getDB().prepare(`UPDATE object SET name=?,color=?,update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
+const createObject = (projectId, categoryId, name, colorId) => {
+  const r = getDB().prepare(`INSERT INTO object (name,project_id,category_id,color) VALUES (?,?,?,?)`).run(name, projectId, categoryId, colorId || null);
+  const wiki = require('./wiki'); // lazy: avoids module cycle
+  wiki.resolveDanglingLinks(name, wiki.nexusOfObject(r.lastInsertRowid));
+  return r;
+};
+const updateObject = (id, name, colorId) => {
+  const r = getDB().prepare(`UPDATE object SET name=?,color=?,update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
+  const wiki = require('./wiki');
+  wiki.resolveDanglingLinks(name, wiki.nexusOfObject(id));
+  return r;
+};
 const updateObjectNote = (id, note) => {
   const r = getDB().prepare(`UPDATE object SET note=?,update_at=datetime('now') WHERE id=?`).run(note, id);
   const wiki = require('./wiki'); // lazy: avoids module cycle

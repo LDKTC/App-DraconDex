@@ -1091,6 +1091,7 @@ function importDatabaseMerge(sourcePath) {
     colors: 0, folders: 0, projects: 0, categories: 0, templates: 0,
     objects: 0, timelines: 0, events: 0, hashtags: 0, descriptions: 0,
     relationTypes: 0, relations: 0, mappings: 0,
+    nexuses: 0, noteFolders: 0, notes: 0,
   };
 
   const tx = target.transaction(() => {
@@ -1100,6 +1101,40 @@ function importDatabaseMerge(sourcePath) {
       const rows = source.prepare(`SELECT color_code FROM use_color WHERE color_code IS NOT NULL`).all();
       const ins = target.prepare(`INSERT OR IGNORE INTO use_color (color_code) VALUES (?)`);
       for (const r of rows) summary.colors += ins.run(r.color_code).changes;
+    }
+
+    // Nexus vaults + Scribe notes (v2.8), matched by name/title.
+    if (hasTable(source, 'nexus')) {
+      const colorById = hasTable(source, 'use_color') ? source.prepare(`SELECT id, color_code FROM use_color`).all().reduce((m, r) => (m.set(r.id, r.color_code), m), new Map()) : new Map();
+      const srcNexus = source.prepare(`SELECT id, name, memo, color FROM nexus`).all();
+      for (const n of srcNexus) {
+        summary.nexuses += target.prepare(`INSERT OR IGNORE INTO nexus (name, memo, color) VALUES (?, ?, (SELECT id FROM use_color WHERE color_code=?))`)
+          .run(n.name, n.memo, colorById.get(n.color) || null).changes;
+      }
+      const targetNexusByName = target.prepare(`SELECT id, name FROM nexus`).all().reduce((m, r) => (m.set(r.name, r.id), m), new Map());
+      const srcNexusName = new Map(srcNexus.map(n => [n.id, n.name]));
+
+      if (hasTable(source, 'note_folder')) {
+        // flat match by (target nexus, name); nesting is not reconstructed
+        for (const f of source.prepare(`SELECT nexus_ref, name, color FROM note_folder`).all()) {
+          const nx = targetNexusByName.get(srcNexusName.get(f.nexus_ref));
+          if (!nx) continue;
+          const exists = target.prepare(`SELECT 1 FROM note_folder WHERE nexus_ref=? AND name=?`).get(nx, f.name);
+          if (exists) continue;
+          summary.noteFolders += target.prepare(`INSERT INTO note_folder (nexus_ref, name, color) VALUES (?, ?, (SELECT id FROM use_color WHERE color_code=?))`)
+            .run(nx, f.name, colorById.get(f.color) || null).changes;
+        }
+      }
+      if (hasTable(source, 'note')) {
+        const srcFolderName = hasTable(source, 'note_folder') ? source.prepare(`SELECT id, name FROM note_folder`).all().reduce((m, r) => (m.set(r.id, r.name), m), new Map()) : new Map();
+        for (const n of source.prepare(`SELECT nexus_ref, folder_ref, title, content, color, pinned FROM note`).all()) {
+          const nx = targetNexusByName.get(srcNexusName.get(n.nexus_ref));
+          if (!nx) continue;
+          const folder = n.folder_ref ? target.prepare(`SELECT id FROM note_folder WHERE nexus_ref=? AND name=?`).get(nx, srcFolderName.get(n.folder_ref))?.id : null;
+          summary.notes += target.prepare(`INSERT OR IGNORE INTO note (nexus_ref, folder_ref, title, content, color, pinned) VALUES (?, ?, ?, ?, (SELECT id FROM use_color WHERE color_code=?), ?)`)
+            .run(nx, folder || null, n.title, n.content || '', colorById.get(n.color) || null, n.pinned ? 1 : 0).changes;
+        }
+      }
     }
 
     if (hasTable(source, 'project_folder')) {
@@ -1317,9 +1352,21 @@ function importDatabaseMerge(sourcePath) {
       for (const r of rows) summary.relationTypes += target.prepare(`INSERT OR IGNORE INTO relation_type (relation_name, color) VALUES (?, (SELECT id FROM use_color WHERE color_code=?))`).run(r.relation_name, colorById.get(r.color) || null).changes;
     }
 
+    // Merged projects arrive without nexus_ref; adopt them like the v2.8
+    // migration does so they don't vanish from every vault until restart.
+    let nx = target.prepare(`SELECT id FROM nexus ORDER BY id LIMIT 1`).get();
+    if (!nx) {
+      nx = { id: target.prepare(`INSERT INTO nexus (name) VALUES ('Nexus')`).run().lastInsertRowid };
+    }
+    for (const t of NEXUS_PROJECT_TABLES) {
+      target.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref IS NULL`).run(nx.id);
+    }
+
     target.exec("PRAGMA foreign_keys = ON");
   });
   tx();
+  // Imported content may carry [[wikilinks]]; rebuild the whole index.
+  try { require('./wiki').rebuildWikiIndex(); } catch (e) { console.error('wiki reindex after merge:', e); }
   return summary;
 }
 

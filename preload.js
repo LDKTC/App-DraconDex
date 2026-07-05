@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('api', {
     rebuild:    ()         => inv('wiki:rebuild'),
     explorerTree: (nx)     => inv('wiki:explorerTree', nx),
     getGraph:   (nx)       => inv('wiki:getGraph', nx),
+    renameTarget: (key,o,n) => inv('wiki:renameTarget', key,o,n),
   },
   folder: {
     getAll:  ()            => inv('folder:getAll'),

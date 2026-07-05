@@ -131,6 +131,7 @@ h('wiki:entityPath',   (key)       => db.getEntityPath(key));
 h('wiki:rebuild',      ()          => db.rebuildWikiIndex());
 h('wiki:explorerTree', (nx)        => db.explorerTree(nx));
 h('wiki:getGraph',     (nx)        => db.getGraph(nx));
+h('wiki:renameTarget', (key,o,n)   => db.renameWikiTarget(key,o,n));
 
 // Folder
 h('folder:getAll',  ()           => db.getFolders());

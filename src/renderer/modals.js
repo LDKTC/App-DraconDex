@@ -171,7 +171,14 @@ async function createObject(catId){
 }
 async function saveObject(id){
   const n=q('#on').value.trim(); if(!n) return;
+  const before=await api.object.get(id);
   await api.object.update(id,n,q('#sel-color').value||null);
+  if(before && before.name!==n){
+    const refs=await api.wiki.backlinks(`obj_${id}`);
+    if(refs.length && await uiConfirm(t('renameUpdateLinks'),{danger:false})){
+      await api.wiki.renameTarget(`obj_${id}`, before.name, n);
+    }
+  }
   const tags = q('#obj-tag-value')?.value.split(',').filter(Boolean).map(Number) || [];
   await api.object.setTags(id,tags);
   closeModal(); S.object=await api.object.get(id); await renderCatBody(S.category.id); toast('บันทึกเรียบร้อยแล้ว','ok');

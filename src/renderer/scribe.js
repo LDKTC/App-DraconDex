@@ -158,9 +158,17 @@ async function createNoteSubmit() {
 async function saveNoteMeta(id) {
   const title = q('#sn-title').value.trim();
   if (!title) return;
+  const before = await api.note.get(id);
   try {
     await api.note.update(id, title, q('#sn-folder').value || null, q('#sel-color').value || null, q('#sn-pinned').checked);
   } catch (e) { toast(t('noteTitleTaken'), 'error'); return; }
+  // keep [[links]] pointing here working after a rename
+  if (before && before.title !== title) {
+    const refs = await api.wiki.backlinks(`note_${id}`);
+    if (refs.length && await uiConfirm(t('renameUpdateLinks'), { danger: false })) {
+      await api.wiki.renameTarget(`note_${id}`, before.title, title);
+    }
+  }
   closeModal();
   if (S.scribeNote?.id === id) S.scribeNote = await api.note.get(id);
   const idx = S.entityTabs.findIndex(v => v.key === `note-${id}`);

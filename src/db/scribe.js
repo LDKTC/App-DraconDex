@@ -40,8 +40,11 @@ const createNote = (nexusId, title, folderId, colorId) => {
   for (let i = 1; i <= 200; i++) {
     const candidate = i === 1 ? base : `${base} ${i}`;
     try {
-      return d.prepare(`INSERT INTO note (nexus_ref,folder_ref,title,color) VALUES (?,?,?,?)`)
+      const newId = d.prepare(`INSERT INTO note (nexus_ref,folder_ref,title,color) VALUES (?,?,?,?)`)
         .run(nexusId, folderId || null, candidate, colorId || null).lastInsertRowid;
+      // [[links]] typed before this note existed now resolve to it
+      require('./wiki').resolveDanglingLinks(candidate, nexusId);
+      return newId;
     } catch (e) {
       if (!/UNIQUE/i.test(String(e.message))) throw e;
     }
@@ -50,9 +53,13 @@ const createNote = (nexusId, title, folderId, colorId) => {
 };
 
 // Rename throws on a duplicate title (no silent suffix — the user typed it).
-const updateNote = (id, title, folderId, colorId, pinned) =>
-  getDB().prepare(`UPDATE note SET title=?,folder_ref=?,color=?,pinned=?,update_at=datetime('now') WHERE id=?`)
+const updateNote = (id, title, folderId, colorId, pinned) => {
+  const r = getDB().prepare(`UPDATE note SET title=?,folder_ref=?,color=?,pinned=?,update_at=datetime('now') WHERE id=?`)
     .run(title, folderId || null, colorId || null, pinned ? 1 : 0, id);
+  const wiki = require('./wiki');
+  wiki.resolveDanglingLinks(title, wiki.nexusOfNote(id));
+  return r;
+};
 
 const updateNoteContent = (id, content) => {
   const r = getDB().prepare(`UPDATE note SET content=?,update_at=datetime('now') WHERE id=?`)

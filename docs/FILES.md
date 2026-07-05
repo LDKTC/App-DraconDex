@@ -1,7 +1,7 @@
 # DraconDex — เอกสารรายไฟล์ (มีอะไร ทำงานยังไง)
 
 > คู่กับ [SYSTEMS.md](SYSTEMS.md) ซึ่งอธิบายภาพรวมของแต่ละระบบ — ไฟล์นี้ไล่ทีละไฟล์
-> ตัวเลขจำนวนบรรทัดเป็นค่าโดยประมาณ ณ 2026-07-04
+> ตัวเลขจำนวนบรรทัดเป็นค่าโดยประมาณ ณ 2026-07-05 (หลัง Obsidian-like rework v2.8)
 
 ## โครงสร้างรีโป
 
@@ -10,13 +10,14 @@ App-NovelManager/
 ├─ main.js            ← Electron main process + IPC handlers ทั้งหมด
 ├─ preload.js         ← สะพาน window.api (contextBridge)
 ├─ database.js        ← รวม export ของ src/db/*
-├─ index.html         ← โครง HTML เปล่า + โหลดสคริปต์เริ่มต้น 5 ตัว
+├─ index.html         ← โครง HTML เปล่า + โหลดสคริปต์เริ่มต้น 7 ตัว
 ├─ style.css          ← สไตล์ทั้งแอป + ธีมทั้งหมด
 ├─ start.js           ← ตัวรัน npm start
 ├─ ensure-electron.js ← ตรวจ/ซ่อม Electron binary (postinstall)
+├─ vendor/            ← D3 + Konva ที่ vendor ไว้ใช้ออฟไลน์ (v2.8)
 ├─ src/
-│  ├─ db/             ← ชั้นฐานข้อมูล (main process) 12 ไฟล์
-│  └─ renderer/       ← ชั้น UI (renderer) 14 ไฟล์
+│  ├─ db/             ← ชั้นฐานข้อมูล (main process) 15 ไฟล์
+│  └─ renderer/       ← ชั้น UI (renderer) 19 ไฟล์
 ├─ scripts/finish-portable.mjs
 ├─ Image/             ← ไอคอน/โลโก้
 ├─ flutter_app/       ← Flutter port (front-end แยก ใช้ schema เดียวกัน)
@@ -36,29 +37,40 @@ App-NovelManager/
   preload) + เมนู View (ซ่อนอยู่ แต่คง accelerator DevTools)
 - **บรรทัด 73 เป็นต้นไป**: helper `h(channel, fn)` ลงทะเบียน `ipcMain.handle`
   พร้อม log error แล้วประกาศ handler ทุกช่องแบบบรรทัดเดียวจบ เรียงตาม namespace:
-  `db:` (export/import ผ่าน dialog), `folder: project: category: template:
-  object: color: timeline: relation: map: hashtag: search:` (Director),
-  `world:` (Navigator), `game:` (Hero), `write:` (Writer), `artisan:`,
-  `sage:`, `window:` (ปุ่มย่อ/ขยาย/ปิดของ title bar)
+  `db:` (export/import ผ่าน dialog), `nexus:` (v2.8 vault CRUD),
+  `folder: project: category: template: object: color: timeline: relation:
+  map: hashtag: search:` (Director), `world:` (Navigator), `game:` (Hero),
+  `write:` (Writer), `note:` (v2.8 Scribe), `wiki:` (v2.8 wikilink/backlinks/
+  graph/explorer/quick-switcher), `artisan:`, `sage:`, `window:`
+  (ปุ่มย่อ/ขยาย/ปิดของ title bar)
 - ไม่มี business logic ในไฟล์นี้ — ทุก handler ส่งต่อ `db.<fn>()` ทันที
+- ฟังก์ชัน list หลายตัว (`project:getAll`, `world:getAll`, `game:getAll`,
+  `write:getProjects`, `search:all`) รับพารามิเตอร์ `nexusId` เพิ่ม (v2.8)
+  เพื่อ scope ผลลัพธ์ตาม vault ที่เปิดอยู่
 
-### preload.js (~340 บรรทัด) — สะพาน IPC
+### preload.js (~380 บรรทัด) — สะพาน IPC
 - `contextBridge.exposeInMainWorld('api', {...})` — mapping 1:1 กับช่อง IPC
   ใน main.js จัดกลุ่มเป็น namespace (`api.project.create(...)` →
   `invoke('project:create', ...)`)
 - เป็น "สารบัญ API" ที่ดีที่สุดของแอป: อยากรู้ว่า renderer ทำอะไรกับ DB ได้บ้าง
   ให้เปิดไฟล์นี้
+- v2.8 เพิ่ม namespace `api.nexus.*`, `api.note.*`, `api.wiki.*`
+  (resolve/backlinks/outgoing/quickIndex/entityPath/explorerTree/getGraph/
+  renameTarget/rebuild)
 
-### database.js (29 บรรทัด)
-- require `src/db/*` ทั้ง 12 ไฟล์แล้ว spread รวมเป็น object เดียว export ให้
-  main.js ใช้
+### database.js (~32 บรรทัด)
+- require `src/db/*` ทั้ง 15 ไฟล์ (v2.8 เพิ่ม `nexus.js`, `scribe.js`,
+  `wiki.js`) แล้ว spread รวมเป็น object เดียว export ให้ main.js ใช้
 
-### index.html (~235 บรรทัด)
-- โครงคงที่: `#nav-sidebar` (ปุ่ม rail ทุกโมดูล — ส่วนใหญ่ `display:none`
-  รอ JS เปิดตาม state), `#left-panel` (+ ปุ่มย่อ), `#main-area`,
+### index.html (~270 บรรทัด)
+- โครงคงที่: `#nav-sidebar` (ปุ่ม rail ทุกโมดูล รวม Explorer/Scribe ที่เพิ่มใน
+  v2.8 — ส่วนใหญ่ `display:none` รอ JS เปิดตาม state), `#left-panel`
+  (+ ปุ่มย่อ), `#main-area`, `#status-bar` (v2.8 — IDE-style footer),
   `#modal-overlay/#modal`, `#toast`, `#search-bar` (`#search-input`)
-- ท้ายไฟล์โหลดแค่ 5 สคริปต์: `i18n.js → core.js → director.js → modals.js →
-  search.js` (ลำดับสำคัญ: i18n ต้องมาก่อน) — โมดูลอื่น lazy-load
+- ท้ายไฟล์โหลด 7 สคริปต์: `i18n.js → markdown.js → mdeditor.js → core.js →
+  director.js → modals.js → search.js` (ลำดับสำคัญ: i18n ก่อน, markdown/
+  mdeditor ก่อน core เพราะ core เรียก `createMarkdownEditor` โดยตรงในบาง
+  จุด) — โมดูลอื่น lazy-load
 - เนื้อหาเกือบทั้งหมดของหน้าถูกสร้างด้วย JS ตอนรัน — grep hendler จาก
   `src/renderer/*.js` ไม่ใช่จากไฟล์นี้
 
@@ -87,10 +99,18 @@ App-NovelManager/
   `portable` / `nsis` (สคริปต์ `build:portable` / `build:exe` /
   `build:installer`)
 
+### vendor/ (v2.8)
+- `d3.min.js` + `d3.LICENSE`, `konva.min.js` + `konva.LICENSE` — ก้อน npm
+  pack ตรงจาก `d3@7`/`konva@9` ให้แอปใช้งานได้แบบออฟไลน์ (`ensureD3`/
+  `ensureKonva` ใน relation.js/map.js ลองไฟล์นี้ก่อน แล้วค่อย fallback ไป
+  CDN unpkg)
+
 ### ไฟล์ note อื่น ๆ
 - `Plan.md`, `Install-Guide.txt`, `cmd-note.txt` — โน้ตผู้พัฒนา/วิธีติดตั้ง
 - `.claude/skills/run-dracondex/` — driver อัตโนมัติ (Playwright `_electron`)
-  ใช้รัน/ทดสอบแอปกับ data dir แยก
+  ใช้รัน/ทดสอบแอปกับ data dir แยก; v2.8 เพิ่ม `web-driver.mjs` — รัน renderer/
+  preload/db จริงใน Playwright **Chromium** (stub เฉพาะ Electron shell) สำหรับ
+  sandbox ที่โหลด Electron binary ไม่ได้ (เช่น proxy บล็อก GitHub releases)
 
 ---
 
@@ -101,16 +121,19 @@ App-NovelManager/
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `core.js` | 1238 | เปิด/adapt DB, **schema ทั้งหมด ~75 ตาราง**, migrations (legacy Navigator, Hero v2.6, Writer v2.7), seed สัญลักษณ์, `ensureIndexes()`, export/import-merge |
-| `director.js` | 146 | folder / project / project_description / category / template / object / attribute + `searchAll` (ค้นหา global) |
+| `core.js` | ~1400 | เปิด/adapt DB, **schema ทั้งหมด ~78 ตาราง** (v2.8 เพิ่ม `nexus`, `note_folder`, `note`, `wiki_link`), migrations (legacy Navigator, Hero v2.6, Writer v2.7, **Nexus v2.8** `migrateNexusV28` — adopt project เก่าเข้า vault เริ่มต้น + backfill `wiki_link` ครั้งแรก), seed สัญลักษณ์, `ensureIndexes()`, export/import-merge (v2.8 รวม nexus/note ด้วย แล้ว `rebuildWikiIndex()` หลัง merge) |
+| `nexus.js` | 41 | (v2.8) CRUD ของ Nexus vault: `getNexuses` (พร้อมนับ project ต่อ vault), `getNexus/createNexus/updateNexus`, `deleteNexus` (คืน `{blocked,count}` ถ้ายังมี project อยู่) |
+| `director.js` | ~155 | folder / project / project_description / category / template / object / attribute + `searchAll` (ค้นหา global) — v2.8: `getProjects/searchAll` รับ `nexusId`, `createProject` เซ็ต `nexus_ref`, `createObject/updateObject/updateObjectNote` hook เข้า wiki reindex/resolve |
 | `color.js` | 27 | ตาราง `use_color`: getAll/add/markUsed/getRecent/delete |
 | `timeline.js` | 68 | timeline / `getOrCreateDate` (normalize วันที่สมมุติ) / event CRUD + story |
 | `map.js` | 34 | map / area / จุด polygon (`setPoints` ลบ-แทรกใหม่ทั้งชุด) |
 | `relation.js` | 126 | relation_type + relation 3 ชนิด (OBOB/OBTL/TLTL) + query รวม object/event ของโปรเจกต์ + ลิงก์ของ event |
 | `hashtag.js` | 67 | ตาราง hashtag + mapping project/object/event + query "ใครใช้แท็กนี้" |
-| `navigator.js` | 445 | ทุกอย่างของ World: world CRUD, เชื่อมนิยาย, ตัวละครโลก+ลิงก์, category/object/template/attr ของโลก (orig_*), world description, world tags, map timeline + การวาง object บนแผนที่ต่อเหตุการณ์, symbol collection |
-| `hero.js` | 388 | ทุกอย่างของ Game: เกม, novel link (unique ต่อนิยาย), import category/object, ตัวละคร+template มี level+attr+element, collection+element+template+attr, story/dialogue/conversation/storyline, แท็กเกม |
-| `writer.js` | 196 | write project / series / book / chapter (+เนื้อหา+ลำดับ) / novel link / wiki / word link / note / chat |
+| `navigator.js` | ~450 | ทุกอย่างของ World: world CRUD (v2.8: `getWorlds/createWorld` รับ `nexusId`), เชื่อมนิยาย, ตัวละครโลก+ลิงก์, category/object/template/attr ของโลก (orig_*), world description, world tags, map timeline + การวาง object บนแผนที่ต่อเหตุการณ์, symbol collection |
+| `hero.js` | ~390 | ทุกอย่างของ Game: เกม (v2.8: `getGames/createGame` รับ `nexusId`), novel link (unique ต่อนิยาย), import category/object, ตัวละคร+template มี level+attr+element, collection+element+template+attr, story/dialogue/conversation/storyline, แท็กเกม |
+| `writer.js` | ~200 | write project (v2.8: `getWriteProjects/createWriteProject` รับ `nexusId`) / series / book / chapter (+เนื้อหา+ลำดับ, v2.8: `updateWriteChapterContent` hook เข้า wiki reindex) / novel link / wiki / word link / note / chat |
+| `scribe.js` | 78 | (v2.8) note_folder + note CRUD ผูก `nexus_ref`, `UNIQUE(nexus_ref,title)`; `createNote` auto-suffix ชื่อชนกัน + resolve dangling wikilink; `updateNoteContent/updateNote` hook เข้า wiki reindex |
+| `wiki.js` | ~400 | (v2.8) แกน wikilink ทั้งหมด: `resolveWikiName` (ลำดับ precedence ตายตัว + namespace escape), `reindexWikiLinks`, `rebuildWikiIndex` (backfill/หลัง import), `getBacklinks/getOutgoingLinks/resolveEntityKeys`, `quickIndex` (ป้อน quick switcher + `[[` autocomplete), `getEntityPath` (นำทางลึกถึง entity), `explorerTree` (โครงต้นไม้ทั้ง vault), `getGraph` (node/edge ทั้ง vault รวม wiki_link), `renameWikiTarget`/`resolveDanglingLinks` (rename safety) |
 | `sage.js` | 200 | query สถิติ read-only 4 ชุด: dataSize, objectAmounts, linkerList, linkerGraph (nodes+edges ข้ามโมดูล) |
 | `artisan.js` | 82 | `artisanCreateNovel/World/Game/Write` — รับ `base` (ชื่อ ฯลฯ) + `spec` (โครงจากเทมเพลต) สร้างทุกแถวใน transaction เดียว |
 
@@ -121,24 +144,46 @@ App-NovelManager/
 ทุกไฟล์เป็น global function (ไม่มี module system) เรียก DB ผ่าน `window.api`
 render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 
-### i18n.js (1580 บรรทัด) — โหลดก่อนทุกไฟล์
+### i18n.js (~1780 บรรทัด) — โหลดก่อนทุกไฟล์
 - ตาราง `L` แปล UI key 18 ภาษา + รายชื่อภาษาใน picker + ตาราง `TX`
   (dictionary แปลข้อความ hardcode ไทย/อังกฤษ → ภาษาอื่น รวมภาษาสมมุติ `qd`)
+- v2.8 เพิ่ม ~40 key (nexus/scribe/wiki/explorer/quick-switcher/graph/rename)
+  ครบทั้ง 18 ภาษา
 - ไม่มี logic — logic การแปลอยู่ใน core.js (`t()`, `tr()`,
   `translateCommonUiText()`)
 
-### core.js (1253 บรรทัด) — โครงหลักของ renderer
+### markdown.js (130 บรรทัด, v2.8) — โหลดก่อน core.js
+- Markdown parser เขียนเอง ไม่มี dependency ภายนอก: `mdRender(text,{resolveLink})`
+  → HTML (heading/hr/quote/fenced code/list ซ้อน+task/bold/italic/strike/
+  `==highlight==`/inline code/`[text](url)`/`[[Wikilink]]`/`[[Wikilink|alias]]`)
+  escape ข้อความผู้ใช้ทุกจุดก่อนแปะ HTML
+- `mdExtractWikilinks(text)` → `[{name,alias,start,end}]` — regex เดียวกับ
+  `WIKILINK_RE` ใน `src/db/wiki.js` (คอมเมนต์ทั้งสองฝั่งเตือนให้ sync กัน)
+
+### mdeditor.js (267 บรรทัด, v2.8) — โหลดก่อน core.js
+- `createMarkdownEditor(container, opts)` — คอมโพเนนต์ editor กลาง reuse โดย
+  Scribe และช่องโน้ตของ Director object: textarea ทับ backdrop ไฮไลต์
+  `[[wikilink]]`, debounce autosave 800ms, ปุ่ม/Ctrl+E สลับ edit↔preview,
+  แผง backlinks/outgoing links พับได้ (เรียก `api.wiki.backlinks/outgoing`),
+  `[[` autocomplete (caret-positioned floating list, ↑/↓/Enter/Esc/Tab)
+- cache ชื่อ entity ทั้ง vault (`refreshWikiCache/resolveWikiNameCached`) ให้
+  `mdRender` resolve ลิงก์แบบ synchronous ได้ตอน preview
+- รายงาน word count/สถานะ save เข้า `updateStatusBar()` ของ core.js
+
+### core.js (~1700 บรรทัด) — โครงหลักของ renderer
 - **State**: object `S` (view, activeModule, project/category/object,
-  world/game/write state, แท็บ, settings) + `loadUiSettings/saveUiSettings`
-  (localStorage: ธีม, ภาษา, ขนาด UI)
-- **บูต**: `init()` (DOMContentLoaded) → โหลด settings/สี → `bindNav`,
-  `bindWindowChrome` (ปุ่ม min/max/close), `renderNexusHome`
+  world/game/write/scribe state, nexus ที่เปิดอยู่, แท็บ, settings,
+  `recentEntities`, `explorerOpen`) + `loadUiSettings/saveUiSettings`
+  (localStorage: ธีม, ภาษา, ขนาด UI, **nexus ล่าสุด** v2.8)
+- **บูต**: `init()` (DOMContentLoaded) → โหลด settings/สี/nexus ล่าสุด →
+  `bindNav`, `bindWindowChrome` (ปุ่ม min/max/close), `bindWikilinkClicks`,
+  `bindGlobalShortcuts` (v2.8), `renderNexusHome`
 - **Routing**: `selectModule()` / `switchView()` + `loadModule()` (lazy-load
   สคริปต์โมดูล), การโชว์/ซ่อนปุ่ม rail (`updateModuleSubNav`,
-  `MODULE_SUBNAV` = subtab ของ hero/writer/sage)
+  `MODULE_SUBNAV` = subtab ของ hero/writer/sage/**scribe**)
 - **แท็บ title bar**: `upsertProjectTab/upsertEntityTab/switchProjectTab/
-  switchEntityTab/close*` (Director เปิดเป็น project tab; Hero/Writer เปิดเป็น
-  entity tab)
+  switchEntityTab/close*` (Director เปิดเป็น project tab; Hero/Writer/**Scribe**
+  เปิดเป็น entity tab)
 - **คอมโพเนนต์กลาง**: `openModal/closeModal`, `toast`, `uiConfirm`,
   `colorPicker` (+wheel `pickColor/addColorFromPicker`), `symbolPicker`,
   `hashtagSelector` + ฟังก์ชันชิปแท็กใน modal, novel picker แบบ tree
@@ -146,17 +191,26 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   `translateCommonUiText`, `observeUiLanguage` (MutationObserver)
 - **เมนูตั้งค่า**: `renderSettingsMenu/setUiSetting` (ธีม+swatch, ภาษา,
   สไลเดอร์ขนาด), `exportDatabaseFile/importDatabaseFile`
-- `renderNexusHome()` การ์ด 6 โมดูล, `reloadSidebar/renderSidebar`
+- **Nexus vault (v2.8)**: `renderNexusHome()` (2 ระดับ — picker/การ์ด 7 โมดูล),
+  `renderNexusPicker/openNexusModal/createNexusSubmit/saveNexus/delNexus`,
+  `selectNexus/closeNexus/clearWorkspaceTabs`, `reloadSidebar/renderSidebar`
+- **Wiki navigation (v2.8)**: `openEntityByKey(key)` (จุดเดียวที่เปิด entity
+  จาก key ทุกที่ — wikilink click/backlinks/quick switcher/graph node),
+  `bindWikilinkClicks` (event delegation บน `#main-inner`),
+  `trackRecentEntity`
+- **IDE shell (v2.8)**: `updateStatusBar()` (footer: vault/item/word count/
+  save state), `bindGlobalShortcuts()` (Ctrl+P/E/N/W/Tab), `openExplorer()`
 
-### director.js (644 บรรทัด)
+### director.js (~650 บรรทัด)
 - sidebar โปรเจกต์ (`renderProjectSidebar`, โฟลเดอร์พับได้ `tglFolder`),
   `selectProject/activateProject`, `renderProject`
 - body ของ category: `renderCatBody` มุมมองรายการ/ตาราง, inline edit
   (`bindTableInlineEditors`), ซ่อนคอลัมน์ (`openColumnVisibilityModal`),
   `sortTable`
 - detail ของ object: `buildDetail/renderDetail` — field autosave
-  (`saveAttrs`, `bindDetailAutoSave`), โน้ต (`saveNote`), relation ของ object
-  (`getObjectRelationRows`), แท็ก (`openObjectTagsModal`)
+  (`saveAttrs`, `bindDetailAutoSave`), **โน้ตเป็น markdown editor** (v2.8 —
+  `createMarkdownEditor` แทน textarea เดิม, ฟังก์ชัน `saveNote` แบบเก่าถูกลบ),
+  relation ของ object (`getObjectRelationRows`), แท็ก (`openObjectTagsModal`)
 
 ### modals.js (461 บรรทัด)
 - modal + create/save/delete ของฝั่ง Director ทั้งหมด: folder (`#fn`),
@@ -176,15 +230,18 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   (`renderTimelineDetail` — จุด/เส้น/foreignObject คลิกได้), รายการเหตุการณ์ +
   textarea สตอรี่ (`saveEventStory`), zoom/scroll บนแกนเวลา
 
-### relation.js (602 บรรทัด)
-- `renderForceGraph` (force simulation เอง + Konva canvas, `ensureKonva`
-  โหลด Konva ครั้งแรก), whiteboard 3 มุมมอง (`renderCategoryWhiteboard/
-  renderObjectWhiteboard/renderProjectWhiteboard` + `switchRelViewMode`),
-  ลาก node (`startNodeDrag`), โน้ตของ node (`showRelationNodeNote`),
-  รายการ relation ด้านล่าง + ปรับความสูง (`startRelListResize`)
+### relation.js (~610 บรรทัด)
+- `renderForceGraph` (D3 force simulation, `ensureD3` โหลด D3 ครั้งแรก —
+  v2.8: ลอง `vendor/d3.min.js` ก่อน แล้วค่อย fallback ไป unpkg CDN),
+  whiteboard 3 มุมมอง (`renderCategoryWhiteboard/renderObjectWhiteboard/
+  renderProjectWhiteboard` + `switchRelViewMode`, ใช้ Konva — `ensureKonva`
+  v2.8 เช่นกันลอง `vendor/konva.min.js` ก่อน), ลาก node (`startNodeDrag`),
+  โน้ตของ node (`showRelationNodeNote`), รายการ relation ด้านล่าง +
+  ปรับความสูง (`startRelListResize`)
 
-### map.js (382 บรรทัด)
-- `renderMapView` — sidebar รายชื่อแผนที่, canvas พื้นที่ polygon ต่อ area,
+### map.js (~390 บรรทัด)
+- `renderMapView` — sidebar รายชื่อแผนที่, canvas พื้นที่ polygon ต่อ area
+  (Konva ผ่าน `ensureKonva` — v2.8 vendor-first เหมือน relation.js),
   เครื่องมือ (`setMapTool` เลือก/เพิ่มจุด/ลบ), modal map/area, บันทึกจุดผ่าน
   `api.map.setPoints`
 
@@ -216,25 +273,54 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   เรียงลำดับ)
 - หน้า novel link (import category/object จากนิยาย), หน้า tags
 
-### writer.js (786 บรรทัด)
-- โครงสร้าง 3 ชั้น: `renderWriteProjectList` (โปรเจกต์+ซีรีส์ พับได้) →
-  `renderWriteProject`/`renderWriteBookGrid` (เล่ม) → `renderWriteBookPage`
-  (รายการตอน + editor)
+### writer.js (~850 บรรทัด)
+- โครงสร้าง 3 ชั้น: `renderWriteProjectList` (โปรเจกต์+ซีรีส์ พับได้ — v2.8:
+  รับ `nexusId`) → `renderWriteProject`/`renderWriteBookGrid` (เล่ม) →
+  `renderWriteBookPage` (รายการตอน + editor)
 - editor: `renderWriteChapterEditor` — textarea `#wchap-text` + backdrop
-  ไฮไลต์ word link, autosave debounce 800ms, ลากเลือกคำ → ปุ่มลอยสร้างลิงก์
-  (`openCreateLinkModal/createWlinkForObject`)
+  ไฮไลต์ word link **+ `[[wikilink]]`** (v2.8, เส้นประแยกจาก word link),
+  autosave debounce 800ms, ลากเลือกคำ → ปุ่มลอยสร้างลิงก์
+  (`openCreateLinkModal/createWlinkForObject`), คลิก `[[wikilink]]` →
+  `openEntityByKey` ผ่าน `api.wiki.resolve`, ปุ่ม "พรีวิว" (v2.8 —
+  `toggleWchapPreview`, ใช้ `mdRender`/`resolveWikiNameCached`)
 - tab novel link/วิกิ (`renderWriteNovelLink`, `openWriteWikiModal`),
   tab chat note (`renderWriteChatnote`, `submitWriteChat`)
 - modal ทั้งหมดของโมดูล (project `#wp-name`, series `#ws-name`, book
   `#wb-name`, chapter `#wc-name`, note `#wn-name`)
 
-### sage.js (375 บรรทัด)
+### scribe.js (236 บรรทัด, v2.8) — โมดูลที่ 7
+- `renderScribeView/renderScribeSidebar` (folder tree ซ้อนได้ + รายการโน้ต) /
+  `renderScribeMain` (editor ผ่าน `createMarkdownEditor`)
+- โน้ต/โฟลเดอร์ CRUD ผ่าน modal (`openNoteModal/createNoteSubmit/
+  saveNoteMeta` — เตือน rename ที่มีคนลิงก์มา, `openNoteFolderModal`)
+- `setScribeTab('graph')` สลับไปกราฟทั้ง vault: `renderScribeGraph` +
+  `tglScribeGraphModule` (reuse `buildSageGraph` จาก sage.js ผ่าน opts ใหม่)
+
+### sage.js (~390 บรรทัด)
 - `renderSageView/setSageTab` + หน้าละฟังก์ชัน: `renderSageDataSize` (การ์ด),
   `renderSageObjectAmount` (ตาราง), `renderSageLinkerList` (ตารางลิงก์),
-  `renderSageLinkerGraph` + `buildSageGraph` (force-graph + checkbox กรองโมดูล)
+  `renderSageLinkerGraph` + `buildSageGraph` (SVG force-graph มือเขียนเอง
+  ไม่พึ่ง lib — v2.8 เพิ่ม opts `container/colors/labels/onNodeClick` แบบ
+  backward-compatible ให้ Scribe graph view เรียกใช้ร่วมกันได้, edge ที่มาจาก
+  `wiki_link` วาดเส้นประสี accent)
 
 ### artisan.js (258 บรรทัด)
 - `ARTISAN_TARGETS` + `artisanTemplates(target)` — นิยามเทมเพลตทั้งหมด
+
+### markdown.js / mdeditor.js / scribe.js / explorer.js / quickswitch.js
+ดูรายละเอียดด้านบน (markdown.js, mdeditor.js อยู่ก่อน core.js ตามลำดับโหลด;
+scribe.js/explorer.js/quickswitch.js lazy-load เหมือนโมดูลอื่น)
+
+### explorer.js (73 บรรทัด, v2.8)
+- `renderNexusExplorer()` — ต้นไม้เดียวรวมทุกอย่างใน vault (ข้อมูลจาก
+  `api.wiki.explorerTree`), `tglExplorerNode` พับ/กาง, แถวคลิกแล้ว
+  `openEntityByKey`; ปุ่ม rail `openExplorerPanel/openExplorer` เปิดได้ตลอด
+  เมื่อมี vault เปิดอยู่ ไม่ผูกกับโมดูลใดโมดูลหนึ่ง
+
+### quickswitch.js (110 บรรทัด, v2.8)
+- `openQuickSwitcher()` (Ctrl+P) — overlay + input, ดึง `api.wiki.quickIndex`
+  ครั้งเดียวตอนเปิด, `fuzzyScore` (subsequence, โบนัสต้นคำ/ตัวติดกัน),
+  ↑/↓/Enter/Esc, query ว่างโชว์ `S.recentEntities`
   (ชื่อ/คำอธิบาย/preview chip/ฟังก์ชัน `build(name)` คืน spec) โดยดึงข้อความผ่าน
   `t()` → **สร้างข้อมูลตามภาษา UI ปัจจุบัน**
 - `renderArtisanView` (เลือกเป้าหมาย) → `renderArtisanMain` (การ์ดเทมเพลต) →

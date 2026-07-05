@@ -339,7 +339,58 @@ function getEntityPath(key) {
   return null;
 }
 
+// A newly created entity should claim [[links]] typed before it existed —
+// they were indexed with target_key NULL. Called from entity create paths.
+function resolveDanglingLinks(name, nexusId) {
+  const d = getDB();
+  const rows = d.prepare(`SELECT id, target_text FROM wiki_link WHERE target_key IS NULL AND (? IS NULL OR nexus_ref=?)`)
+    .all(nexusId ?? null, nexusId ?? null);
+  const bare = (s) => String(s).replace(/^\w+:/, '').trim().toLowerCase();
+  const wanted = String(name).trim().toLowerCase();
+  let n = 0;
+  for (const r of rows) {
+    if (bare(r.target_text) !== wanted) continue;
+    const key = resolveWikiName(r.target_text, nexusId);
+    if (key) { d.prepare(`UPDATE wiki_link SET target_key=?, update_at=datetime('now') WHERE id=?`).run(key, r.id); n++; }
+  }
+  return n;
+}
+
+// ── Rename safety ───────────────────────────────────────────────────────────
+// [[links]] live in plain text, so renaming a target breaks them. This
+// rewrites [[Old]] / [[Old|alias]] / [[ns:Old]] inside every source that
+// references targetKey, then reindexes those sources.
+const CONTENT_SOURCES = {
+  note: { get: `SELECT content AS c FROM note WHERE id=?`, set: `UPDATE note SET content=?, update_at=datetime('now') WHERE id=?` },
+  obj:  { get: `SELECT note AS c FROM object WHERE id=?`,  set: `UPDATE object SET note=?, update_at=datetime('now') WHERE id=?` },
+  wchp: { get: `SELECT chapter_content AS c FROM write_chapter WHERE id=?`, set: `UPDATE write_chapter SET chapter_content=?, update_at=datetime('now') WHERE id=?` },
+};
+
+function renameWikiTarget(targetKey, oldName, newName) {
+  const d = getDB();
+  if (!oldName || !newName || oldName === newName) return 0;
+  const esc = String(oldName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`\\[\\[((?:\\w+:)?)\\s*${esc}\\s*(\\||\\]\\])`, 'gi');
+  const rows = d.prepare(`SELECT DISTINCT src_key, nexus_ref FROM wiki_link WHERE target_key=?`).all(targetKey);
+  let changed = 0;
+  for (const r of rows) {
+    const m = String(r.src_key).match(/^([a-z]+)_(\d+)$/);
+    const src = m && CONTENT_SOURCES[m[1]];
+    if (!src) continue;
+    const id = Number(m[2]);
+    const row = d.prepare(src.get).get(id);
+    if (!row || !row.c) continue;
+    const next = row.c.replace(re, (_, ns, tail) => `[[${ns}${newName}${tail}`);
+    if (next === row.c) continue;
+    d.prepare(src.set).run(next, id);
+    reindexWikiLinks(r.src_key, next, r.nexus_ref);
+    changed++;
+  }
+  return changed;
+}
+
 module.exports = {
+  renameWikiTarget, resolveDanglingLinks,
   resolveWikiName, reindexWikiLinks, rebuildWikiIndex,
   nexusOfNote, nexusOfObject, nexusOfChapter,
   getBacklinks, getOutgoingLinks, resolveEntityKeys,
