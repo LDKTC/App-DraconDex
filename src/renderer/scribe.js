@@ -5,7 +5,40 @@
 async function renderScribeView() {
   S.view = 'scribe';
   await renderScribeSidebar();
-  await renderScribeMain();
+  if (S.scribeTab === 'graph') await renderScribeGraph();
+  else await renderScribeMain();
+  if (typeof updateModuleSubNav === 'function') updateModuleSubNav();
+}
+
+// Rail subnav: the graph icon toggles between notes and the vault graph.
+async function setScribeTab(tab) {
+  S.scribeTab = (S.scribeTab === tab) ? 'notes' : tab;
+  await renderScribeView();
+}
+
+// ── Vault graph (Obsidian-style) ─────────────────────────
+const SCRIBE_GRAPH_COLORS = { director:'#6366f1', navigator:'#22c55e', hero:'#f59e0b', writer:'#8b5cf6', scribe:'#0ea5e9' };
+let _scribeGraphHidden = new Set();
+
+async function renderScribeGraph() {
+  const el = q('#main-inner');
+  if (!el || !S.nexus) return;
+  await loadModule('src/renderer/sage.js'); // buildSageGraph lives there
+  const data = await api.wiki.getGraph(S.nexus.id);
+  el.classList.remove('relation-main');
+  el.innerHTML = `
+    <div class="scribe-graph-head"><h3>${t('graphView')}</h3></div>
+    <div id="scribe-graph-wrap" style="flex:1;position:relative;overflow:hidden;min-height:420px"></div>`;
+  if (!data.nodes.length) {
+    q('#scribe-graph-wrap').innerHTML = `<div class="empty" style="margin-top:60px"><p>${t('noteEmpty')}</p></div>`;
+    return;
+  }
+  buildSageGraph(data, _scribeGraphHidden, {
+    container: '#scribe-graph-wrap',
+    colors: SCRIBE_GRAPH_COLORS,
+    labels: { scribe: t('scribe'), director: t('director'), navigator: t('navigator'), hero: t('hero'), writer: t('writer') },
+    onNodeClick: (n) => { if (n.key) openEntityByKey(n.key); },
+  });
 }
 
 async function renderScribeSidebar() {

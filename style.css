@@ -904,6 +904,14 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .detail-note-md .mded-wrap{min-height:170px}
 .wchap-wikimark{border-bottom:1.5px dashed var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent)}
 
+/* Scribe graph view */
+#main-inner:has(#scribe-graph-wrap){display:flex;flex-direction:column}
+.scribe-graph-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:4px 2px 10px;flex-wrap:wrap}
+.scribe-graph-head h3{color:var(--t1);font-size:15px}
+.scribe-graph-filters{display:flex;gap:12px;flex-wrap:wrap}
+.scribe-graph-filter{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2);cursor:pointer;user-select:none}
+.scribe-graph-filter .dot{width:8px;height:8px;border-radius:50%}
+
 /* Scribe sidebar */
 .scribe-folder-body{margin-left:14px;border-left:1px solid var(--border);padding-left:4px}
 .scribe-note{display:flex;align-items:center;gap:8px}

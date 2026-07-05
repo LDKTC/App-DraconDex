@@ -98,7 +98,7 @@ const S = {
   // Artisan module state
   artisanTarget:null,
   // Scribe module state
-  scribeNote:null, scribeFolders:[], scribeNotes:[], scribeOpenFolders:new Set(),
+  scribeNote:null, scribeFolders:[], scribeNotes:[], scribeOpenFolders:new Set(), scribeTab:'notes',
   // Wiki navigation state
   recentEntities:[],
   // Explorer state
@@ -484,6 +484,8 @@ const MODULE_SUBNAV = {
     ['tags','hashtag','gameTags'] ] },
   writer: { setter:'setWriteTab', items:[
     ['novel','relation','writeNovelLink'], ['note','story','writeChatnote'] ] },
+  scribe: { setter:'setScribeTab', items:[
+    ['graph','relation','graphView'] ] },
   sage: { setter:'setSageTab', items:[
     ['dataSize','layer','sageDataSize'], ['objectAmount','table','sageObjectAmount'],
     ['linkerList','list','sageLinkerList'], ['linkerGraph','relation','sageLinkerGraph'] ] },
@@ -510,8 +512,9 @@ function updateModuleSubNav(){
     hero:      S.activeModule === 'hero'      && !!S.game,
     writer:    S.activeModule === 'writer'    && !!S.write,
     sage:      S.activeModule === 'sage',
+    scribe:    S.activeModule === 'scribe',
   };
-  const cur = { hero:S.gameTab, writer:S.writeTab, sage:S.sageTab };
+  const cur = { hero:S.gameTab, writer:S.writeTab, sage:S.sageTab, scribe:S.scribeTab };
   for(const mod of Object.keys(MODULE_SUBNAV)){
     document.querySelectorAll(`.nav-btn.${mod}-sub`).forEach(btn => {
       btn.style.display = show[mod] ? '' : 'none';
@@ -1309,7 +1312,7 @@ function selectModule(name) {
     loadModule('src/renderer/artisan.js').then(() => renderArtisanView());
   } else if (name === 'scribe') {
     S.view = 'scribe';
-    S.scribeNote = null;
+    S.scribeNote = null; S.scribeTab = 'notes';
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
     q('.nav-btn[data-panel="scribe"]')?.classList.add('active');
     updateTopNavButton();

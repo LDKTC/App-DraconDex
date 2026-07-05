@@ -179,6 +179,54 @@ function quickIndex(nexusId) {
   return out;
 }
 
+// Vault-scoped Obsidian-style graph: every quickIndex entity is a node
+// (node.key feeds openEntityByKey), edges = structural containment/links +
+// Director relations + wiki_link references (flagged wiki:true so the UI can
+// draw them differently).
+function getGraph(nexusId) {
+  const d = getDB();
+  const nx = nexusId ?? null;
+  const nodes = [];
+  const idx = new Map();
+  for (const e of quickIndex(nexusId)) {
+    if (!idx.has(e.key)) {
+      idx.set(e.key, nodes.length);
+      nodes.push({ id: nodes.length, key: e.key, label: e.name, type: e.type, module: e.module });
+    }
+  }
+  const edges = [];
+  const eSet = new Set();
+  const addEdge = (aKey, bKey, wiki) => {
+    const s = idx.get(aKey), t = idx.get(bKey);
+    if (s == null || t == null || s === t) return;
+    const dk = (s < t ? `${s}-${t}` : `${t}-${s}`) + (wiki ? 'w' : '');
+    if (eSet.has(dk)) return;
+    eSet.add(dk);
+    edges.push({ source: s, target: t, wiki: !!wiki });
+  };
+  const run = (sql, fn) => { try { d.prepare(sql).all(nx, nx).forEach(fn); } catch (_) {} };
+
+  // structural containment
+  run(`SELECT o.id, o.project_id FROM object o JOIN project p ON o.project_id=p.id WHERE (? IS NULL OR p.nexus_ref=?)`, r => addEdge(`obj_${r.id}`, `proj_${r.project_id}`));
+  run(`SELECT c.id, c.world_ref FROM world_character c JOIN world_project w ON c.world_ref=w.id WHERE (? IS NULL OR w.nexus_ref=?)`, r => addEdge(`wchar_${r.id}`, `world_${r.world_ref}`));
+  run(`SELECT o.id, c.world_ref FROM world_orig_object o JOIN world_orig_category c ON o.category_id=c.id JOIN world_project w ON c.world_ref=w.id WHERE (? IS NULL OR w.nexus_ref=?)`, r => addEdge(`wobj_${r.id}`, `world_${r.world_ref}`));
+  run(`SELECT c.id, c.game_ref FROM game_character c JOIN game_project g ON c.game_ref=g.id WHERE (? IS NULL OR g.nexus_ref=?)`, r => addEdge(`gchar_${r.id}`, `game_${r.game_ref}`));
+  run(`SELECT e.id, c.game_ref FROM game_col_element e JOIN game_collection c ON e.collection_ref=c.id JOIN game_project g ON c.game_ref=g.id WHERE (? IS NULL OR g.nexus_ref=?)`, r => addEdge(`gel_${r.id}`, `game_${r.game_ref}`));
+  run(`SELECT ch.id, s.project_id FROM write_chapter ch JOIN write_book b ON ch.book_id=b.id JOIN write_series s ON b.series_id=s.id JOIN write_project p ON s.project_id=p.id WHERE (? IS NULL OR p.nexus_ref=?)`, r => addEdge(`wchp_${r.id}`, `write_${r.project_id}`));
+  // cross-module project links
+  run(`SELECT wn.world_ref, wn.project_ref FROM world_novel wn JOIN world_project w ON wn.world_ref=w.id WHERE (? IS NULL OR w.nexus_ref=?)`, r => addEdge(`world_${r.world_ref}`, `proj_${r.project_ref}`));
+  run(`SELECT gl.game_ref, gl.project_ref FROM game_novel_link gl JOIN game_project g ON gl.game_ref=g.id WHERE (? IS NULL OR g.nexus_ref=?)`, r => addEdge(`game_${r.game_ref}`, `proj_${r.project_ref}`));
+  run(`SELECT s.project_id, l.novel_id FROM write_novel_link l JOIN write_series s ON l.series_id=s.id JOIN write_project p ON s.project_id=p.id WHERE (? IS NULL OR p.nexus_ref=?)`, r => addEdge(`write_${r.project_id}`, `proj_${r.novel_id}`));
+  // Director object↔object relations
+  run(`SELECT ro.object_from, ro.object_to FROM relation_obob ro JOIN relation rl ON ro.relation_id=rl.id JOIN project p ON rl.project_id=p.id WHERE (? IS NULL OR p.nexus_ref=?)`, r => addEdge(`obj_${r.object_from}`, `obj_${r.object_to}`));
+  // character↔director-object links (Navigator, Hero)
+  run(`SELECT cl.character_ref, cl.object_ref FROM world_character_link cl JOIN world_character c ON cl.character_ref=c.id JOIN world_project w ON c.world_ref=w.id WHERE (? IS NULL OR w.nexus_ref=?)`, r => addEdge(`wchar_${r.character_ref}`, `obj_${r.object_ref}`));
+  // wiki links
+  run(`SELECT src_key, target_key FROM wiki_link WHERE target_key IS NOT NULL AND (? IS NULL OR nexus_ref=?)`, r => addEdge(r.src_key, r.target_key, true));
+
+  return { nodes, edges };
+}
+
 // One batched tree of everything in a vault, for the IDE-style explorer.
 // Shape: [{key, name, color, children:[…]}] per module section.
 function explorerTree(nexusId) {
@@ -295,5 +343,5 @@ module.exports = {
   resolveWikiName, reindexWikiLinks, rebuildWikiIndex,
   nexusOfNote, nexusOfObject, nexusOfChapter,
   getBacklinks, getOutgoingLinks, resolveEntityKeys,
-  quickIndex, getEntityPath, explorerTree,
+  quickIndex, getEntityPath, explorerTree, getGraph,
 };

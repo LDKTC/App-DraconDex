@@ -130,6 +130,7 @@ h('wiki:quickIndex',   (nx)        => db.quickIndex(nx));
 h('wiki:entityPath',   (key)       => db.getEntityPath(key));
 h('wiki:rebuild',      ()          => db.rebuildWikiIndex());
 h('wiki:explorerTree', (nx)        => db.explorerTree(nx));
+h('wiki:getGraph',     (nx)        => db.getGraph(nx));
 
 // Folder
 h('folder:getAll',  ()           => db.getFolders());

@@ -150,8 +150,14 @@ async function renderSageLinkerGraph(container) {
   buildSageGraph(data, _sageGraphState.hiddenModules);
 }
 
-function buildSageGraph(data, hiddenModules) {
-  const wrap = q('#sage-graph-wrap');
+// opts (all optional, defaults preserve the Sage behavior):
+//   container   — selector of the wrap element ('#sage-graph-wrap')
+//   colors      — module → fill color map (SAGE_MODULE_COLORS)
+//   onNodeClick — fn(node) fired on a click that wasn't a drag
+// Edges flagged {wiki:true} render dashed in the accent color.
+function buildSageGraph(data, hiddenModules, opts = {}) {
+  const moduleColors = opts.colors || SAGE_MODULE_COLORS;
+  const wrap = q(opts.container || '#sage-graph-wrap');
   if (!wrap) return;
   wrap.innerHTML = '';
   const W = wrap.clientWidth || 800, H = wrap.clientHeight || 500;
@@ -189,9 +195,11 @@ function buildSageGraph(data, hiddenModules) {
 
   const lines = data.edges.map(e => {
     const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('stroke','var(--border)'); line.setAttribute('stroke-width','1.25');
+    line.setAttribute('stroke', e.wiki ? 'var(--accent)' : 'var(--border)');
+    line.setAttribute('stroke-width','1.25');
+    if (e.wiki) { line.setAttribute('stroke-dasharray','4 3'); line.setAttribute('stroke-opacity','.8'); }
     gLinks.appendChild(line);
-    return { el:line, source:e.source, target:e.target };
+    return { el:line, source:e.source, target:e.target, wiki:e.wiki };
   });
 
   // ── pan & zoom ──────────────────────────────────────────
@@ -232,7 +240,7 @@ function buildSageGraph(data, hiddenModules) {
     g.dataset.id = n.id;
     const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
     c.setAttribute('r', n.r);
-    c.setAttribute('fill', SAGE_MODULE_COLORS[n.module]||'var(--raised)');
+    c.setAttribute('fill', moduleColors[n.module]||'var(--raised)');
     c.setAttribute('stroke','var(--bg)'); c.setAttribute('stroke-width','2');
     const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
     txt.setAttribute('text-anchor','middle'); txt.setAttribute('y', n.r + 12);
@@ -263,13 +271,14 @@ function buildSageGraph(data, hiddenModules) {
     window.addEventListener('mouseup', () => { dragging = false; g.style.cursor = 'grab'; });
     g.addEventListener('mouseenter', () => highlightNode(n.id));
     g.addEventListener('mouseleave', () => highlightNode(null));
+    if (opts.onNodeClick) g.addEventListener('click', () => { if (!moved) opts.onNodeClick(n); });
     return { el:g, circle:c, text:txt, node:n };
   });
 
   function highlightNode(id) {
     if (id == null) {
       circles.forEach(({el, text}) => { el.style.opacity = ''; text.style.opacity = '0'; });
-      lines.forEach(({el}) => { el.style.opacity = ''; el.setAttribute('stroke-width','1.25'); });
+      lines.forEach(({el, wiki}) => { el.style.opacity = ''; el.setAttribute('stroke-width','1.25'); el.setAttribute('stroke', wiki ? 'var(--accent)' : 'var(--border)'); });
       return;
     }
     const neigh = neighbors.get(id) || new Set();
@@ -278,12 +287,12 @@ function buildSageGraph(data, hiddenModules) {
       el.style.opacity = on ? '1' : '0.15';
       text.style.opacity = on ? '1' : '0';
     });
-    lines.forEach(({el, source, target}) => {
+    lines.forEach(({el, source, target, wiki}) => {
       const active = source === id || target === id;
       el.style.opacity = active ? '1' : '0.08';
       el.setAttribute('stroke-width', active ? '2' : '1.25');
-      if (active) el.setAttribute('stroke', SAGE_MODULE_COLORS[nodeById.get(id).module] || 'var(--t3)');
-      else el.setAttribute('stroke', 'var(--border)');
+      if (active) el.setAttribute('stroke', moduleColors[nodeById.get(id).module] || 'var(--t3)');
+      else el.setAttribute('stroke', wiki ? 'var(--accent)' : 'var(--border)');
     });
   }
 
@@ -352,15 +361,15 @@ function buildSageGraph(data, hiddenModules) {
   animate();
 
   // ── module filter checkboxes (top-left overlay) ────────
-  const counts = { director:0, navigator:0, hero:0, writer:0, global:0 };
+  const counts = {};
   nodes.forEach(n => { counts[n.module] = (counts[n.module]||0)+1; });
   const panel = document.createElement('div');
   panel.style.cssText = 'position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;z-index:2';
-  const moduleLabels = { director:t('director'), navigator:t('navigator'), hero:t('hero'), writer:t('writer'), global:t('hashtag') };
-  panel.innerHTML = Object.keys(SAGE_MODULE_COLORS).map(mod => `
+  const moduleLabels = opts.labels || { director:t('director'), navigator:t('navigator'), hero:t('hero'), writer:t('writer'), global:t('hashtag') };
+  panel.innerHTML = Object.keys(moduleColors).map(mod => `
     <label style="display:flex;align-items:center;gap:6px;color:var(--t2);cursor:pointer;user-select:none">
       <input type="checkbox" class="sage-graph-mod-cb" data-mod="${mod}" ${hiddenModules.has(mod)?'':'checked'}>
-      <span style="width:10px;height:10px;border-radius:50%;background:${SAGE_MODULE_COLORS[mod]};display:inline-block;flex-shrink:0"></span>
+      <span style="width:10px;height:10px;border-radius:50%;background:${moduleColors[mod]};display:inline-block;flex-shrink:0"></span>
       <span style="flex:1">${moduleLabels[mod]}</span>
       <span style="color:var(--t3)">${counts[mod]||0}</span>
     </label>`).join('');

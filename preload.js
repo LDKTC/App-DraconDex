@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('api', {
     entityPath: (key)      => inv('wiki:entityPath', key),
     rebuild:    ()         => inv('wiki:rebuild'),
     explorerTree: (nx)     => inv('wiki:explorerTree', nx),
+    getGraph:   (nx)       => inv('wiki:getGraph', nx),
   },
   folder: {
     getAll:  ()            => inv('folder:getAll'),
