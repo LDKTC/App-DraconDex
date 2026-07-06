@@ -4,4 +4,5 @@
 4.Nexus/leftpanel แสดงListของProjectที่อยู่ในNexusนั้นแทนโดยแยกประเภทของProjectด้วยIconจากแต่ละโมดูล
 5.Nexus/project list/สร้างFolderของแต่ละNexusแยกกัน
 6.แต่ละNexusจะแยกข้อมูลกันอย่างสมบูรณ์
-7.เมื่อสร้างNexusจะเลือกFolderจากexplorer ในเครื่องที่ต้องการใช้เป็นNexus
+7.เมื่อสร้างNexusจะเลือกFolderจากexplorer ในเครื่องที่ต้องการใช้เป็นตำแหน่งนั้นเป็น Nexus
+8.ในNexusใช้ระบบที่สามารถสร้างหรือ
