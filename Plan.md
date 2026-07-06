@@ -1,5 +1,6 @@
 //AI หลังจากทำเสร็จข้อไหนให้ลบออกจากlist โดยอัตโนมัติ และขยับลำดับให้ด้วย
 
+----
 0.ต้องการปรับโครงสร้างUIและUXของAppคล้ายIDE รูปแบบคล้ายๆ obsidian+vscode
 1.Artisan Module Nav-Bar/Button ในแต่ละModuleไม่ต้องแสดงbutton หลังจากที่ACtive project ของModuleนั้นๆแล้ว
 2.Title bar/tab เพิ่มระบบให้สามารถเลื่อนขยับTabซ้ายขวาได้แบบChromeและแอพBrowserอื่น
@@ -18,7 +19,10 @@
 15.navi/char-cat/char create modal/ช่องใส่symbol ให้ใช้เป็นicon collection แบบmodal symbol collectionที่หลังจากนี้จะถูกเปลี่ยนเป็น icon collectionแทน
 16.navi/map-timeline/leftpanel ให้แสดงmapทั้งหมดของNovelที่เชื่อมต่อกับworldนี้เป็นlistลงมา พร้อมปุ่มopen/closeที่เมื่อกดจะแสดงtimeline listที่ที่ใช้mapนั้นอ้างอิงอยู่ในmap listนั้น
 17.direc/project list ทำให้สามารถขยับย้ายproject listวางในFolderอื่นเพื่อเปลี่ยนfolderได้
+----
 
-Main การเปลี่ยนแปลงหลักที่ต้องการ
+-----
+Main v.3 การเปลี่ยนแปลงหลักที่ต้องการ
      Nexus เก็บข้อมูลแบบFile folderโดยใช้รูปแบบการสร้างprojectรวมจากModuleต่างๆลงในNexusเดียว และUser จะเป็นคนจัดproject ในnexusเองแบบอิสระ สามารถแยกProjectจากต่างModuleมาใส่Folderเดียวกันก็ได้
      ไม่ต้องเปิดModule เพื่อเข้าไปอ่านหรือใช้projectอีกต่อไป ใช้การสร้างModule project ในnexusแทน และเปิดModuleจากprojectที่อยู่ในnexusเลย
+-----
