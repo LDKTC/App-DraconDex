@@ -14,16 +14,29 @@ part 1 architecture/UI
 		-title bar/ ส่วนหัวของแอพโดยจะมี
 			-Icon app
 			-nexus nest toggle/
-			-tab bar 1/
-			-tab bar 2/
+			-tab bar/ แสดงtabของmain area
+				*หากมีmain area 2จะแยกtabระหว่างmain area1 และmain area2
 			-window style button/
 				-overlay popup/ แสดงขึ้นโดยมีสไตล์ให้เลือก
 					-default/
 						-title bar ด้านบนสุด
-						-tools bar อยู่ริมซ้ายสุดของwindow
+						-tools bar แสดงicon อยู่ริมซ้ายสุดของwindow
 						-nexus nest อยู่ริมซ้ายถัดออกมาจากtools bar
-						-main area 1/อยู่ถัดมาด้านซ้ายของNexus
-						-main area 2/อยู่ด้านข้าง
+						-main area 1 อยู่ถัดมาด้านซ้ายของNexus
+						-main area 2 อยู่ด้านข้างmain area 1 *เปิดใช้งานได้หากต้องการ
+					-watchroom/
+						-title bar ด้านบนสุด
+						-tools bar แสดงชื่อfunction เป็นแนวนอนอยูใต้title bar
+						-nexus nest อยู่ริมซ้ายสุดของwindow
+						-main area 1 อยู่ถัดมาทางขวาของNexus 
+							-มีtab เป็นแนวตั้งอยู่ทางด้านซ้ายของmain area
+						-main area 2 อยู่ขวาถัดต่อมาจากmain area1 หากต้องการจะเปิด
+						-main area 3&4 อยู่ด้านใต้main area1&2 ถ้าเปิด
+			-main area 2 toggle/ ใช้เปิดปิดmain area 2
+			-button set/ปุ่มใช้งานทั่วไป
+				-minimal button/
+				-toggle fullscreen window/
+				-close app/
 		-tools bar/ ส่วนnav-sidebar โดยจะมีtoolดังนี้
 			-open nexus nest/
 			-open sage/
