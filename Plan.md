@@ -1,16 +1,45 @@
-//AI หลังจากทำเสร็จข้อไหนให้ลบออกจากlist โดยอัตโนมัติ และขยับลำดับให้ด้วย
+***AI หลังจากทำเสร็จข้อไหนให้ลบออกจากlist โดยอัตโนมัติ และขยับลำดับให้ด้วย
+-
+สร้าง procress.md โดยสร้างตามลำดับการทำงานของplanที่สร้าง
+-
 
 -----
-part architecture
-Main v.3 to v.4 การเปลี่ยนแปลงหลักที่ต้องการ  
-     Nexus เก็บข้อมูลแบบ Creative IDE โดยมีพื้นที่Explorer แบบอิสระที่สามารถจัดระเบียบข้อมูลเองได้เช่นการ สร้างfolderอิสระ และย้ายprojectจากต่างmodulesเข้ามารวมกันได้  
-	 ในแต่ละproject จะแสดงiconของmodule นั้นๆ ไว้ที่ด้านหน้าของของproject listนั้นๆเพื่อแสดงให้รู้ว่าprojectนั้นมาจากmoduleไหน  
-	 ในแต่ละproject list สามารถสร้างsubmodule elementขึ้นมาโดยจะเป็นลิสที่แสดงอยู่ด้านในของprojectนั้นๆ และยังแสดงทุกsubmoudule elementอยู่ในlist แบบรวมกันโดยสามารถสร้างfolder เพื่ิอจัดระเบียบsubmoduleได้  
-	 ปรับStyleหน้าWindow โดยต้องมีข้อมูลต่อไปนี่
+part 1 architecture/UI
+-
+	Main v.3 to v.4 การเปลี่ยนแปลงหลักที่ต้องการ  
+    -Nexus เก็บข้อมูลแบบ Creative IDE โดยมีพื้นที่Explorer แบบอิสระที่สามารถจัดระเบียบข้อมูลเองได้เช่นการ สร้างfolderอิสระ และย้ายprojectจากต่างmodulesเข้ามารวมกันได้  
+	-ในแต่ละproject จะแสดงiconของmodule นั้นๆ ไว้ที่ด้านหน้าของของproject listนั้นๆเพื่อแสดงให้รู้ว่าprojectนั้นมาจากmoduleไหน  
+	-ในแต่ละproject list สามารถสร้างsubmodule elementขึ้นมาโดยจะเป็นลิสที่แสดงอยู่ด้านในของprojectนั้นๆ และยังแสดงทุกsubmoudule elementอยู่ในlist แบบรวมกันโดยสามารถสร้างfolder เพื่ิอจัดระเบียบsubmoduleได้  
+	-ปรับStyleหน้าWindow โดยต้องมีส่วนต่อไปนี่
+		-title bar/ ส่วนหัวของแอพโดยจะมี
+			-Icon app
+			-nexus nest toggle/
+			-tab bar 1/
+			-tab bar 2/
+			-window style button/
+				-overlay popup/ แสดงขึ้นโดยมีสไตล์ให้เลือก
+					-default/
+						-title bar ด้านบนสุด
+						-tools bar อยู่ริมซ้ายสุดของwindow
+						-nexus nest อยู่ริมซ้ายถัดออกมาจากtools bar
+						-main area 1/อยู่ถัดมาด้านซ้ายของNexus
+						-main area 2/อยู่ด้านข้าง
+		-tools bar/ ส่วนnav-sidebar โดยจะมีtoolดังนี้
+			-open nexus nest/
+			-open sage/
+			-create folder/
+			-create director project/
+			-create navigator project/
+			-create hero project/
+			-create writer project/
+			-create scribe/
+		-nexus nest/
+		-main area/
 -----
 
 -----
-part UX
+part 2 UI/UX (ยังไม่ต้องทำ)
+-
 	0.ต้องการปรับโครงสร้างUIและUXของAppคล้ายIDE รูปแบบคล้ายๆ obsidian+vscode
 	1.Artisan Module Nav-Bar/Button ในแต่ละModuleไม่ต้องแสดงbutton หลังจากที่ACtive project ของModuleนั้นๆแล้ว
 	2.Title bar/tab เพิ่มระบบให้สามารถเลื่อนขยับTabซ้ายขวาได้แบบChromeและแอพBrowserอื่น
