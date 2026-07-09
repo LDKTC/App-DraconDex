@@ -39,5 +39,28 @@ part 1 architecture/UI
 		-Import Dock เปิดImportจากfolderที่สร้างเอาไว้แบบVaultของObsidian โดยสามารถImportพวกรูปภาพ/ไฟล์เอกสารเพื่อlinkกับlistในnestได้
 -----
 
+-----
+part Claude
+-
+	สรุปแผนจาก progress.md (ออกแบบ UI v3 อ้างอิง Obsidian+VSCode — ยังไม่เริ่มโค้ด)
+	-Dynamic module toolbar เปลี่ยน nav-sidebar จากปุ่ม module ตายตัว เป็น toolbar สร้าง Major module ใหม่ + icon แถบที่เพิ่มอัตโนมัติ
+	-Hub panel shell ทำ accordion 3 ส่วนใน left-panel: Nexus nest / Sage Hut / Import Dock
+	-Nexus nest section ต้นไม้ Major/Minor ลากจัดลำดับ Major ได้ Minor ล็อกอยู่ใต้ Major ตัวเอง
+	-Module detail(+) และ module UI(:) inspector panel แบบ properties panel ของ Obsidian
+	-Category"Classifier" เลือกประเภท Object/Element/Character ตอนสร้าง category
+	-Folder"Collector"/Project"Manager"/Detail"Inspector" โมดูลจัดระเบียบข้อมูลเบาๆ
+	-Map"Locator" กราฟพื้นที่มี BG grid วาง Area ด้วย x,y
+	-Timeline"Chronicler" กราฟเส้นตรงวาง Event ตาม date/time
+	-TimeMap"Wanderer" รวม Map+Timeline เป็นกราฟคู่ ผูกด้วย MapEvent
+	-Story"Narrator" กระดาน graph วาง Dialogue node เก็บ Conversation
+	-Book"Author" หนังสือ/Chapter ใช้ markdown editor เดิม
+	-Chat"Scribe" หน้า chat bubble แบบ note (ชื่อชนกับ Scribe เดิม — ดู open question ใน progress.md)
+	-Doc"Drafter" กระดาษเปล่า markdown (ใช้ editor ตัวเดียวกับ Scribe ปัจจุบัน)
+	-Analys"Viewer"/Relation"Connector" แสดงผล list ที่ filter ไว้ และกราฟความสัมพันธ์
+	-Sage Hut section ย้ายเข้า hub panel accordion แทนปุ่ม nav-rail เดิม
+	-Import Dock section import ไฟล์แบบ Obsidian vault แล้ว link เข้า nest
+	-Artisan template migration ย้าย Director/Navigator/Hero/Writer เป็น template ใน Artisan ใช้ตอนสร้าง Major module ใหม่ผ่าน Classifier
+	-เอกสารฉบับเต็ม: progress.md (root) + mockup HTML (Claude Artifact)
+-----
 
 
