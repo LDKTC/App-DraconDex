@@ -843,6 +843,72 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .htag.lk{border-color:var(--accent);color:var(--accentH);cursor:pointer}
 .htag.lk:hover{background:var(--hover)}
 
+/* Icon Collection picker (progress.md Phase 5) */
+.ipk-tabs{display:flex;gap:6px;margin-bottom:10px}
+.ipk-tab{padding:5px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--raised);
+	color:var(--t2);font-size:12px;font-family:inherit;cursor:pointer}
+.ipk-tab:hover{background:var(--hover);color:var(--t1)}
+.ipk-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.ipk-tab-disabled{opacity:.4;cursor:default}
+.ipk-tab-disabled:hover{background:var(--raised);color:var(--t2)}
+.ipk-symbol{font-size:17px}
+.ipk-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:180px;overflow-y:auto;margin-bottom:10px}
+.ipk-cell{width:36px;height:36px;border:1px solid var(--border);border-radius:var(--rs);background:var(--raised);
+	color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
+.ipk-cell:hover{background:var(--hover);color:var(--t1)}
+.ipk-cell.sel{border-color:var(--accent);background:rgba(99,102,241,.15);color:var(--t1)}
+.ipk-color-row,.ipk-preview-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ipk-color-row .pk,.ipk-preview-row .pk{width:60px;flex-shrink:0;color:var(--t3);font-size:11.5px}
+.ipk-colors{display:flex;flex-wrap:wrap;gap:6px}
+.ipk-colors .cswatch{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.ipk-colors .cswatch.sel{border-color:var(--t1)}
+.kicon-glyph{font-size:14px;line-height:1}
+
+/* Classifier type picker (progress.md Phase 5) */
+.typegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.typecard{border:1px solid var(--border);border-radius:var(--r);padding:11px;cursor:pointer}
+.typecard:hover{border-color:var(--t3)}
+.typecard.sel{border-color:var(--accent);background:rgba(99,102,241,.08)}
+.typecard h5{font-size:12.5px;margin-bottom:3px;display:flex;gap:6px;align-items:center}
+.typecard h5 .icon{width:14px;height:14px}
+.typecard p{font-size:10.5px;color:var(--t3);line-height:1.45}
+.togglerow{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t2);margin-top:7px}
+.tg{width:26px;height:14px;border-radius:7px;background:var(--raised);border:1px solid var(--border);position:relative;flex-shrink:0}
+.tg.on{background:var(--accent);border-color:var(--accent)}
+.tg::after{content:'';position:absolute;top:1px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--t2)}
+.tg.on::after{left:auto;right:2px;background:#fff}
+
+/* Classifier views (progress.md Phase 5) */
+.classifier-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.viewbar{display:inline-flex;align-items:center;gap:0;margin-left:auto;border:1px solid var(--border);
+	border-radius:var(--rs);overflow:hidden;background:var(--surface)}
+.viewbar .vlbl{font-size:10px;color:var(--t3);padding:0 8px}
+.viewbar .vitem{font-size:10.5px;color:var(--t2);padding:5px 10px;border-left:1px solid var(--border);cursor:pointer}
+.viewbar .vitem:hover{background:var(--hover);color:var(--t1)}
+.viewbar .vitem.act{background:var(--accent);color:#fff;font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle}
+.cls-table-wrap{overflow-x:auto}
+.cls-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.cls-table th{color:var(--t3);text-align:left;font-weight:600;font-size:11px;letter-spacing:.04em;
+	text-transform:uppercase;padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.cls-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--t2)}
+.cls-table td:first-child{color:var(--t1);white-space:nowrap}
+.cls-cell:focus{outline:1px solid var(--accent);outline-offset:-1px;background:var(--raised)}
+.cls-rowacts{display:flex;gap:2px;white-space:nowrap}
+.cls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.cls-card{border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center;cursor:pointer;background:var(--surface)}
+.cls-card:hover{background:var(--hover)}
+.cls-card-dot{width:26px;height:26px;border-radius:50%;margin:0 auto 8px}
+.cls-card-name{font-size:12.5px;color:var(--t1)}
+.cls-listdetail{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;min-height:260px}
+.cls-list{width:200px;flex-shrink:0;border-right:1px solid var(--border);padding:6px}
+.cls-detail{flex:1;padding:14px 16px;min-width:0}
+.cls-relation-wrap{position:relative;min-height:260px;border:1px solid var(--border);border-radius:var(--r);
+	background-image:linear-gradient(rgba(46,46,63,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(46,46,63,.35) 1px,transparent 1px);
+	background-size:24px 24px}
+.cls-reldot{position:absolute;width:110px;padding:8px;border:1.5px solid;border-radius:var(--r);
+	background:var(--surface);font-size:11.5px;color:var(--t1);text-align:center}
+
 /* ═══ MARKDOWN EDITOR (mdeditor.js — Scribe notes, object notes) ═══ */
 .scribe-editor{display:flex;flex-direction:column;height:100%;min-height:0}
 .mded-head{display:flex;align-items:center;gap:10px;padding:4px 2px 8px;border-bottom:1px solid var(--border);margin-bottom:8px}

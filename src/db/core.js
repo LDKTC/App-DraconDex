@@ -865,7 +865,54 @@ function initDB() {
       hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
       UNIQUE(module_ref, hashtag_id)
     );
+
+    -- Category "Classifier" (Phase 5). A Classifier module IS its category --
+    -- one 'classifier'-kind module row owns one set of objects/templates.
+    -- Deliberately a *parallel* schema rather than reusing Director's
+    -- object_category/object_template/object/object_attribute: those tables
+    -- are read via INNER JOINs (wiki.js's obj resolver, Director's own
+    -- project-scoped queries, relation.js, hashtag.js) that all assume every
+    -- object belongs to a real legacy project row, so relaxing that would
+    -- have meant auditing/patching every one of those call sites. See
+    -- progress.md Section C for the full writeup of this decision.
+    CREATE TABLE IF NOT EXISTS classifier_object (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      color INTEGER REFERENCES use_color(id),
+      note TEXT,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- object_ref NULL = shared category template (Object/Element default);
+    -- set = the one private attribute a Character-type object may carry.
+    CREATE TABLE IF NOT EXISTS classifier_template (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      object_ref INTEGER REFERENCES classifier_object(id) ON DELETE CASCADE,
+      description TEXT NOT NULL,
+      attribute_type TEXT DEFAULT 'text',
+      levelable INTEGER NOT NULL DEFAULT 0,
+      has_condition INTEGER NOT NULL DEFAULT 0,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS classifier_attribute (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      object_ref INTEGER NOT NULL REFERENCES classifier_object(id) ON DELETE CASCADE,
+      template_ref INTEGER NOT NULL REFERENCES classifier_template(id) ON DELETE CASCADE,
+      attribute_value TEXT,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(object_ref, template_ref)
+    );
   `);
+
+  if (!hasColumn(db, 'module', 'cat_type')) {
+    try { db.prepare(`ALTER TABLE module ADD COLUMN cat_type TEXT CHECK(cat_type IN ('object','element','character'))`).run(); } catch (_) {}
+  }
 
   if (!hasColumn(db, 'relation_type', 'color')) {
     try { db.prepare(`ALTER TABLE relation_type ADD COLUMN color INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
@@ -1074,6 +1121,13 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_module_attribute_module ON module_attribute(module_ref);
     CREATE INDEX IF NOT EXISTS idx_module_ui_module        ON module_ui(module_ref);
     CREATE INDEX IF NOT EXISTS idx_module_hashtag_tag      ON module_hashtag(hashtag_id);
+
+    -- Classifier (Phase 5)
+    CREATE INDEX IF NOT EXISTS idx_classifier_object_module    ON classifier_object(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_template_module  ON classifier_template(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_template_object  ON classifier_template(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_attribute_object ON classifier_attribute(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_attribute_tmpl   ON classifier_attribute(template_ref);
   `);
 }
 

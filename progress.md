@@ -27,7 +27,7 @@ chrome and theme system — no new design system.
 
 **M2 — Module core**
 - [x] Phase 4 — Module Inspector (detail spec · UI spec · attributes · tags · links)
-- [ ] Phase 5 — Category "Classifier" (+ Icon Collection picker)
+- [x] Phase 5 — Category "Classifier" (+ Icon Collection picker)
 - [ ] Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
 
 **M3 — Graph kinds**
@@ -139,31 +139,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 5 — Category "Classifier"
-- **Goal:** category creation flow — pick a template as the core (from
-  Artisan, Phase 23), then one data type per category:
-  **Object** (default, attributes from template), **Element** (adds
-  Levelable/Condition toggles), **Character** (adds one custom attribute
-  unique to that character). Includes the **Icon Collection picker**: modal
-  with searchable tabs — SVG icons (tinted by chosen color) · Symbols
-  (reusing `symbol_collection`, user-extendable) · user-uploaded — with a
-  live preview of the nest row; used by all module create/edit flows.
-- **Panel:** modal from Nexus nest. **Reference:** VS Code "new file from template".
-- **Reuses:** `openModal()` + `.mfoot`, Attribute-template logic in
-  `src/db/director.js`, `symbolPicker()`/`symbol_collection`,
-  `colorPicker()`.
-- **New:** three-way type picker + per-type toggles; icon picker modal.
-- **Files:** new `src/renderer/mod/classifier.js`, `src/renderer/iconpicker.js`,
-  `src/db/module.js`, `src/db/core.js` (cat_type/levelable/condition columns).
-- **Depends:** 3, 4, E. **Views (Major-level, 4):** Table · List + Detail ·
-  Relation in Cat · Grid Collection.
-- **i18n:** `classifier`, `catTypeObject/Element/Character`, `levelable`,
-  `condition`, `iconCollection`, `useThisIcon`.
-- **Acceptance:** create a Classifier of each type; Element rows expose
-  Levelable/Condition; a Character object can hold exactly one custom
-  attribute; all four views switch and persist; icon picker changes the
-  nest-row icon live.
 
 ### Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
 - **Goal:** three organizational kinds. **Collector** groups items and is the
@@ -500,6 +475,40 @@ user-visible string goes through `t('key')` in **all 18 locales**
    (Phase 21) for the same reason. `getAttrs/upsertAttr/deleteAttr`,
    `getUi/setUi`, `getTags/setTags`, `getLinks` all match Section E.3's
    `api.module.*` surface as specified.
+8. **Phase 5 build notes (implemented) — parallel schema instead of reusing
+   Director's tables:** Section E.2 originally said Classifier should reuse
+   `object_category`/`object_template`/`object`/`object_attribute`. Investi-
+   gating that turned up more risk than expected: those tables are read
+   through `INNER JOIN`s that assume every row belongs to a real legacy
+   `project` (most importantly `wiki.js`'s `obj` resolver, `nexusOfObject`,
+   `quickIndex`, and `rebuildWikiIndex`'s object loop all `JOIN project p ON
+   o.project_id=p.id`), plus Director/Navigator/Hero/relation.js/hashtag.js
+   all query `object_category`/`object` directly. Making `object.project_id`
+   nullable for module-scoped rows would have meant auditing and patching
+   every one of those call sites, on tables three already-shipped modules
+   depend on. Given that risk, Classifier instead got its own parallel
+   tables — `classifier_object`/`classifier_template`/`classifier_attribute`
+   (Section E.1) — mirroring Director's category→template→object→attribute
+   shape without touching the shared tables at all. `object_ref` on
+   `classifier_template` (NULL = shared category template, set = a
+   Character's one private attribute) is the mechanism for Section E.2's
+   "per-character custom attribute = one template row scoped by object_ref."
+   `cat_type` ended up as a nullable column directly on `module` (alongside
+   `description` from Phase 4) rather than in Section E.1's original
+   location, matching how `description` was added.
+   The **Artisan template picker** in the create-Classifier flow is not
+   implemented — Phase 23 (the thing it would pick from) doesn't exist yet,
+   so the modal only offers a blank category, per the Phase 23 dependency
+   already implied by Section F's recommended order. **"Relation in Cat"**
+   (one of the four views) is a static grid layout of the category's object
+   names, not a real relationship graph — Classifier objects have no
+   relation-type system of their own yet (Director's `relation`/
+   `relation_obob` tables are project-scoped, not usable here), and building
+   one was out of scope for this phase; revisit alongside Phase 14
+   (Connector) or a future phase if per-category relationships are wanted.
+   `classifier_attribute` values are edited inline (contenteditable table
+   cells / detail-panel fields) with no version history yet — same
+   Phase-21-shaped gap as everything else in M1-M2 so far.
 
 ---
 
@@ -544,9 +553,19 @@ module            id, nexus_ref, parent_id (NULL = Major; set = Minor, one level
                   'classifier','locator','chronicler','wanderer','narrator','author',
                   'scribe','drafter','viewer','connector','sketcher','designer')),
                   icon TEXT, icon_color→use_color, color→use_color, description TEXT,
-                  display_order INT, pinned INT DEFAULT 0
+                  cat_type TEXT('object'|'element'|'character'), display_order INT, pinned INT DEFAULT 0
                   -- description (added in Phase 4): free-text "Module detail spec"
                   -- field, [[wikilink]]-indexed under key kind `module_<id>` (below)
+                  -- cat_type (added in Phase 5): meaningful only for kind='classifier'
+classifier_object     id, module_ref→module, name, color→use_color, note TEXT, display_order
+classifier_template   id, module_ref→module, object_ref→classifier_object NULL,
+                       description, attribute_type, levelable INT, has_condition INT, display_order
+                       -- object_ref NULL = shared category template; set = the one
+                       -- private attribute a Character-type object may carry
+classifier_attribute  id, object_ref→classifier_object, template_ref→classifier_template,
+                       attribute_value TEXT   (UNIQUE object_ref+template_ref)
+                       -- Phase 5: parallel to object_category/object_template/object/
+                       -- object_attribute rather than reusing them — see Section C item 8
 module_attribute  id, module_ref→module, attr_name, attr_value, display_order   -- free-form "+"
 module_ui         id, module_ref, ui_key, ui_value                              -- ":" incl. active view
 module_hashtag    module_ref, hashtag_id  (UNIQUE pair)
@@ -575,7 +594,7 @@ custom_theme      id, name UNIQUE, palette TEXT(JSON: 10 tokens)
 | Author | `write_book`, `write_chapter` + `module_ref` |
 | Scribe (chat) | `write_note`/`write_chat` shape, generalized |
 | Drafter | `note` (markdown) + `module_ref` |
-| Classifier | `object_category` + `cat_type TEXT('object'|'element'|'character')`; `object_template` + `levelable INT`, `has_condition INT`; per-character custom attribute = one `object_template` row scoped by `object_ref` |
+| Classifier | *(not generalized — see Section E.1's `classifier_object`/`classifier_template`/`classifier_attribute` and Section C item 8 for why)* |
 | Links | `wiki_link` — new source/target key kind `module_<id>` |
 | Tags | `hashtag` + new `module_hashtag` |
 
@@ -587,6 +606,12 @@ api.module:   getTree(nx) · get(id) · create(data) · update(id,data) · delet
               getAttrs/upsertAttr/deleteAttr · getUi/setUi
               getTags/setTags · getLinks(id)            (wiki-backed)
               getVersions(id)/restoreVersion(id,seq)
+api.classifier: setCatType(id,catType) · getObjects/getObject/createObject/updateObject/
+              updateObjectNote/deleteObject · getTemplates/getObjectTemplates/
+              createTemplate/updateTemplate/deleteTemplate/countObjectTemplates ·
+              getAttrs(objectId)/upsertAttr(objectId,templateId,value)
+              -- Phase 5, not in the original Section E.3 draft (added when
+              -- Classifier got its own tables instead of reusing object.*)
 api.searchlink: query(nx, text, scope('vault'|'siblings'|'subtree'), kind)
 api.importdock: importFolder() · list(nx) · linkFile(id,key,useAsImage) · readFile(id)
 api.sketch:   pages/strokes CRUD · exportPng(moduleId,pageNo)

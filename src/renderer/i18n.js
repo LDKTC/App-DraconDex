@@ -81,7 +81,13 @@ const L = {
     toggleHub:'Toggle hub panel', nestEmpty:'No modules yet — create your first Major module.', addMinorModule:'Add Minor module',
     moduleInspector:'Module Inspector', moduleDetailSpec:'Module detail spec', moduleAttribute:'Module attribute',
     moduleUiSpec:'Module UI spec', moduleLink:'Module link', tagLink:'Tag link', addAttribute:'Add attribute',
-    addDetail:'Add detail…', versionHistory:'Version History', versionHistoryComingSoon:'Version History is coming in a future update.'
+    addDetail:'Add detail…', versionHistory:'Version History', versionHistoryComingSoon:'Version History is coming in a future update.',
+    iconCollection:'Icon Collection', useThisIcon:'Use this icon', iconTabIcons:'Icons', iconTabSymbols:'Symbols', iconTabUploaded:'Uploaded',
+    classifierNew:'Create Classifier', catTypeLabel:'Data type (choose 1 per Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Default — build attributes from a template', catTypeElementDesc:'Like Object, plus Levelable / Condition toggles',
+    catTypeCharacterDesc:'Like Object, plus one custom attribute for just this character',
+    levelable:'Levelable', condition:'Condition', addObject:'Add Object', editTemplate:'Edit Template', customAttribute:'Custom Attribute'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
@@ -160,7 +166,13 @@ const L = {
     toggleHub:'ハブパネルの表示切替', nestEmpty:'モジュールがありません — 最初のメジャーモジュールを作成しましょう。', addMinorModule:'マイナーモジュールを追加',
     moduleInspector:'モジュールインスペクター', moduleDetailSpec:'モジュール詳細仕様', moduleAttribute:'モジュール属性',
     moduleUiSpec:'モジュールUI仕様', moduleLink:'モジュールリンク', tagLink:'タグリンク', addAttribute:'属性を追加',
-    addDetail:'詳細を追加…', versionHistory:'バージョン履歴', versionHistoryComingSoon:'バージョン履歴は今後のアップデートで追加予定です。'
+    addDetail:'詳細を追加…', versionHistory:'バージョン履歴', versionHistoryComingSoon:'バージョン履歴は今後のアップデートで追加予定です。',
+    iconCollection:'アイコンコレクション', useThisIcon:'このアイコンを使う', iconTabIcons:'アイコン', iconTabSymbols:'シンボル', iconTabUploaded:'アップロード',
+    classifierNew:'Classifierを作成', catTypeLabel:'データ種別（Categoryごとに1つ選択）',
+    catTypeObject:'オブジェクト', catTypeElement:'エレメント', catTypeCharacter:'キャラクター',
+    catTypeObjectDesc:'デフォルト — テンプレートから属性を作成', catTypeElementDesc:'Objectと同様、Levelable/Conditionの切替が追加',
+    catTypeCharacterDesc:'Objectと同様、そのキャラクター専用の属性を1つ追加可能',
+    levelable:'レベル可能', condition:'条件', addObject:'オブジェクトを追加', editTemplate:'テンプレートを編集', customAttribute:'カスタム属性'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
@@ -239,7 +251,13 @@ const L = {
     toggleHub:'허브 패널 전환', nestEmpty:'아직 모듈이 없습니다 — 첫 메이저 모듈을 만들어 보세요.', addMinorModule:'마이너 모듈 추가',
     moduleInspector:'모듈 인스펙터', moduleDetailSpec:'모듈 상세 사양', moduleAttribute:'모듈 속성',
     moduleUiSpec:'모듈 UI 사양', moduleLink:'모듈 링크', tagLink:'태그 링크', addAttribute:'속성 추가',
-    addDetail:'세부 정보 추가…', versionHistory:'버전 기록', versionHistoryComingSoon:'버전 기록은 추후 업데이트에서 제공됩니다.'
+    addDetail:'세부 정보 추가…', versionHistory:'버전 기록', versionHistoryComingSoon:'버전 기록은 추후 업데이트에서 제공됩니다.',
+    iconCollection:'아이콘 컬렉션', useThisIcon:'이 아이콘 사용', iconTabIcons:'아이콘', iconTabSymbols:'심볼', iconTabUploaded:'업로드',
+    classifierNew:'Classifier 만들기', catTypeLabel:'데이터 유형 (Category당 1개 선택)',
+    catTypeObject:'오브젝트', catTypeElement:'엘리먼트', catTypeCharacter:'캐릭터',
+    catTypeObjectDesc:'기본값 — 템플릿에서 속성 생성', catTypeElementDesc:'Object와 동일 + Levelable/Condition 전환 가능',
+    catTypeCharacterDesc:'Object와 동일 + 해당 캐릭터 전용 속성 1개 추가 가능',
+    levelable:'레벨 가능', condition:'조건', addObject:'오브젝트 추가', editTemplate:'템플릿 편집', customAttribute:'커스텀 속성'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
@@ -318,7 +336,13 @@ const L = {
     toggleHub:'เปิด/ปิดแผง hub', nestEmpty:'ยังไม่มี module — สร้าง Major module แรกของคุณ', addMinorModule:'เพิ่ม Minor module',
     moduleInspector:'Module Inspector', moduleDetailSpec:'Module detail spec', moduleAttribute:'Module attribute',
     moduleUiSpec:'Module UI spec', moduleLink:'Module link', tagLink:'Tag link', addAttribute:'เพิ่ม attribute',
-    addDetail:'เพิ่มรายละเอียด...', versionHistory:'ประวัติเวอร์ชัน', versionHistoryComingSoon:'ประวัติเวอร์ชันจะมาในอัปเดตถัดไป'
+    addDetail:'เพิ่มรายละเอียด...', versionHistory:'ประวัติเวอร์ชัน', versionHistoryComingSoon:'ประวัติเวอร์ชันจะมาในอัปเดตถัดไป',
+    iconCollection:'Icon Collection', useThisIcon:'ใช้ icon นี้', iconTabIcons:'Icons', iconTabSymbols:'Symbols', iconTabUploaded:'อัปโหลดเอง',
+    classifierNew:'สร้าง Classifier', catTypeLabel:'ประเภทข้อมูล (เลือก 1 ต่อ Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'ค่าเริ่มต้น — สร้าง Attribute จาก template ได้', catTypeElementDesc:'เหมือน Object + เลือกได้ว่า attribute จะ Levelable / มี Condition',
+    catTypeCharacterDesc:'เหมือน Object + เพิ่ม custom attribute เฉพาะตัวละครนั้นได้ 1 รายการ',
+    levelable:'Levelable', condition:'Condition', addObject:'เพิ่ม Object', editTemplate:'แก้ไข Template', customAttribute:'Custom Attribute'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
@@ -397,7 +421,13 @@ const L = {
     toggleHub:'切换 hub 面板', nestEmpty:'还没有模块 — 创建你的第一个主模块。', addMinorModule:'添加次模块',
     moduleInspector:'模块检查器', moduleDetailSpec:'模块详情规格', moduleAttribute:'模块属性',
     moduleUiSpec:'模块 UI 规格', moduleLink:'模块链接', tagLink:'标签链接', addAttribute:'添加属性',
-    addDetail:'添加详情…', versionHistory:'版本历史', versionHistoryComingSoon:'版本历史将在后续更新中推出。'
+    addDetail:'添加详情…', versionHistory:'版本历史', versionHistoryComingSoon:'版本历史将在后续更新中推出。',
+    iconCollection:'图标集合', useThisIcon:'使用此图标', iconTabIcons:'图标', iconTabSymbols:'符号', iconTabUploaded:'已上传',
+    classifierNew:'创建 Classifier', catTypeLabel:'数据类型（每个 Category 选 1 个）',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'默认 — 从模板创建属性', catTypeElementDesc:'与 Object 相同，另可切换 Levelable / Condition',
+    catTypeCharacterDesc:'与 Object 相同，还可为该角色单独添加 1 个自定义属性',
+    levelable:'可升级', condition:'条件', addObject:'添加 Object', editTemplate:'编辑模板', customAttribute:'自定义属性'
   },
   vi: {
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
@@ -476,7 +506,13 @@ const L = {
     toggleHub:'Bật/tắt bảng hub', nestEmpty:'Chưa có module — hãy tạo Major module đầu tiên.', addMinorModule:'Thêm Minor module',
     moduleInspector:'Module Inspector', moduleDetailSpec:'Chi tiết module', moduleAttribute:'Thuộc tính module',
     moduleUiSpec:'UI spec của module', moduleLink:'Liên kết module', tagLink:'Liên kết tag', addAttribute:'Thêm thuộc tính',
-    addDetail:'Thêm chi tiết…', versionHistory:'Lịch sử phiên bản', versionHistoryComingSoon:'Lịch sử phiên bản sẽ có trong bản cập nhật sau.'
+    addDetail:'Thêm chi tiết…', versionHistory:'Lịch sử phiên bản', versionHistoryComingSoon:'Lịch sử phiên bản sẽ có trong bản cập nhật sau.',
+    iconCollection:'Bộ sưu tập Icon', useThisIcon:'Dùng icon này', iconTabIcons:'Icons', iconTabSymbols:'Symbols', iconTabUploaded:'Đã tải lên',
+    classifierNew:'Tạo Classifier', catTypeLabel:'Loại dữ liệu (chọn 1 cho mỗi Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Mặc định — tạo thuộc tính từ template', catTypeElementDesc:'Giống Object, thêm tùy chọn Levelable / Condition',
+    catTypeCharacterDesc:'Giống Object, thêm 1 thuộc tính riêng cho nhân vật đó',
+    levelable:'Có thể lên cấp', condition:'Điều kiện', addObject:'Thêm Object', editTemplate:'Sửa Template', customAttribute:'Thuộc tính tùy chỉnh'
   },
   id: {
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
@@ -555,7 +591,13 @@ const L = {
     toggleHub:'Alihkan panel hub', nestEmpty:'Belum ada module — buat Major module pertamamu.', addMinorModule:'Tambah Minor module',
     moduleInspector:'Module Inspector', moduleDetailSpec:'Spesifikasi detail module', moduleAttribute:'Atribut module',
     moduleUiSpec:'Spesifikasi UI module', moduleLink:'Tautan module', tagLink:'Tautan tag', addAttribute:'Tambah atribut',
-    addDetail:'Tambah detail…', versionHistory:'Riwayat Versi', versionHistoryComingSoon:'Riwayat Versi akan hadir di pembaruan berikutnya.'
+    addDetail:'Tambah detail…', versionHistory:'Riwayat Versi', versionHistoryComingSoon:'Riwayat Versi akan hadir di pembaruan berikutnya.',
+    iconCollection:'Koleksi Ikon', useThisIcon:'Gunakan ikon ini', iconTabIcons:'Ikon', iconTabSymbols:'Simbol', iconTabUploaded:'Diunggah',
+    classifierNew:'Buat Classifier', catTypeLabel:'Jenis data (pilih 1 per Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Default — buat atribut dari template', catTypeElementDesc:'Seperti Object, tambah opsi Levelable / Condition',
+    catTypeCharacterDesc:'Seperti Object, tambah 1 atribut khusus untuk karakter itu',
+    levelable:'Bisa Naik Level', condition:'Kondisi', addObject:'Tambah Object', editTemplate:'Edit Template', customAttribute:'Atribut Kustom'
   },
   es: {
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
@@ -634,7 +676,13 @@ const L = {
     toggleHub:'Alternar panel hub', nestEmpty:'Aún no hay módulos — crea tu primer módulo Mayor.', addMinorModule:'Añadir módulo Menor',
     moduleInspector:'Inspector de Módulo', moduleDetailSpec:'Especificación de detalle del módulo', moduleAttribute:'Atributo del módulo',
     moduleUiSpec:'Especificación de UI del módulo', moduleLink:'Enlace de módulo', tagLink:'Enlace de etiqueta', addAttribute:'Añadir atributo',
-    addDetail:'Añadir detalle…', versionHistory:'Historial de versiones', versionHistoryComingSoon:'El historial de versiones llegará en una futura actualización.'
+    addDetail:'Añadir detalle…', versionHistory:'Historial de versiones', versionHistoryComingSoon:'El historial de versiones llegará en una futura actualización.',
+    iconCollection:'Colección de Iconos', useThisIcon:'Usar este icono', iconTabIcons:'Iconos', iconTabSymbols:'Símbolos', iconTabUploaded:'Subidos',
+    classifierNew:'Crear Classifier', catTypeLabel:'Tipo de dato (elige 1 por Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Predeterminado — crea atributos desde una plantilla', catTypeElementDesc:'Como Object, más opciones Levelable / Condition',
+    catTypeCharacterDesc:'Como Object, más un atributo personalizado solo para ese personaje',
+    levelable:'Nivelable', condition:'Condición', addObject:'Añadir Object', editTemplate:'Editar Plantilla', customAttribute:'Atributo Personalizado'
   },
   pt: {
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
@@ -713,7 +761,13 @@ const L = {
     toggleHub:'Alternar painel hub', nestEmpty:'Ainda não há módulos — crie seu primeiro módulo Maior.', addMinorModule:'Adicionar módulo Menor',
     moduleInspector:'Inspetor de Módulo', moduleDetailSpec:'Especificação de detalhe do módulo', moduleAttribute:'Atributo do módulo',
     moduleUiSpec:'Especificação de UI do módulo', moduleLink:'Link de módulo', tagLink:'Link de tag', addAttribute:'Adicionar atributo',
-    addDetail:'Adicionar detalhe…', versionHistory:'Histórico de Versões', versionHistoryComingSoon:'O histórico de versões chegará em uma atualização futura.'
+    addDetail:'Adicionar detalhe…', versionHistory:'Histórico de Versões', versionHistoryComingSoon:'O histórico de versões chegará em uma atualização futura.',
+    iconCollection:'Coleção de Ícones', useThisIcon:'Usar este ícone', iconTabIcons:'Ícones', iconTabSymbols:'Símbolos', iconTabUploaded:'Enviados',
+    classifierNew:'Criar Classifier', catTypeLabel:'Tipo de dado (escolha 1 por Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Padrão — cria atributos a partir de um template', catTypeElementDesc:'Como Object, mais opções Levelable / Condition',
+    catTypeCharacterDesc:'Como Object, mais um atributo personalizado só para esse personagem',
+    levelable:'Nivelável', condition:'Condição', addObject:'Adicionar Object', editTemplate:'Editar Template', customAttribute:'Atributo Personalizado'
   },
   fr: {
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
@@ -792,7 +846,13 @@ const L = {
     toggleHub:'Afficher/masquer le panneau hub', nestEmpty:'Aucun module — créez votre premier module Majeur.', addMinorModule:'Ajouter un module Mineur',
     moduleInspector:'Inspecteur de Module', moduleDetailSpec:'Spécification de détail du module', moduleAttribute:'Attribut du module',
     moduleUiSpec:'Spécification UI du module', moduleLink:'Lien de module', tagLink:'Lien de tag', addAttribute:'Ajouter un attribut',
-    addDetail:'Ajouter un détail…', versionHistory:'Historique des versions', versionHistoryComingSoon:'L’historique des versions arrivera dans une prochaine mise à jour.'
+    addDetail:'Ajouter un détail…', versionHistory:'Historique des versions', versionHistoryComingSoon:'L’historique des versions arrivera dans une prochaine mise à jour.',
+    iconCollection:'Collection d’Icônes', useThisIcon:'Utiliser cette icône', iconTabIcons:'Icônes', iconTabSymbols:'Symboles', iconTabUploaded:'Importés',
+    classifierNew:'Créer un Classifier', catTypeLabel:'Type de données (1 par Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Par défaut — crée des attributs depuis un modèle', catTypeElementDesc:'Comme Object, plus les options Levelable / Condition',
+    catTypeCharacterDesc:'Comme Object, plus un attribut personnalisé pour ce personnage',
+    levelable:'Nivelable', condition:'Condition', addObject:'Ajouter un Object', editTemplate:'Modifier le modèle', customAttribute:'Attribut personnalisé'
   },
   de: {
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
@@ -871,7 +931,13 @@ const L = {
     toggleHub:'Hub-Panel umschalten', nestEmpty:'Noch keine Module — erstelle dein erstes Hauptmodul.', addMinorModule:'Nebenmodul hinzufügen',
     moduleInspector:'Modul-Inspektor', moduleDetailSpec:'Moduldetail-Spezifikation', moduleAttribute:'Modulattribut',
     moduleUiSpec:'Modul-UI-Spezifikation', moduleLink:'Modul-Link', tagLink:'Tag-Link', addAttribute:'Attribut hinzufügen',
-    addDetail:'Detail hinzufügen…', versionHistory:'Versionsverlauf', versionHistoryComingSoon:'Der Versionsverlauf kommt in einem zukünftigen Update.'
+    addDetail:'Detail hinzufügen…', versionHistory:'Versionsverlauf', versionHistoryComingSoon:'Der Versionsverlauf kommt in einem zukünftigen Update.',
+    iconCollection:'Icon-Sammlung', useThisIcon:'Dieses Icon verwenden', iconTabIcons:'Icons', iconTabSymbols:'Symbole', iconTabUploaded:'Hochgeladen',
+    classifierNew:'Classifier erstellen', catTypeLabel:'Datentyp (1 pro Category wählen)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Standard — Attribute aus einer Vorlage erstellen', catTypeElementDesc:'Wie Object, plus Levelable-/Condition-Schalter',
+    catTypeCharacterDesc:'Wie Object, plus ein individuelles Attribut nur für diesen Charakter',
+    levelable:'Levelbar', condition:'Bedingung', addObject:'Object hinzufügen', editTemplate:'Vorlage bearbeiten', customAttribute:'Individuelles Attribut'
   },
   ru: {
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
@@ -950,7 +1016,13 @@ const L = {
     toggleHub:'Показать/скрыть панель hub', nestEmpty:'Пока нет модулей — создайте первый главный модуль.', addMinorModule:'Добавить вложенный модуль',
     moduleInspector:'Инспектор модуля', moduleDetailSpec:'Спецификация модуля', moduleAttribute:'Атрибут модуля',
     moduleUiSpec:'UI-спецификация модуля', moduleLink:'Ссылка модуля', tagLink:'Ссылка тега', addAttribute:'Добавить атрибут',
-    addDetail:'Добавить деталь…', versionHistory:'История версий', versionHistoryComingSoon:'История версий появится в будущем обновлении.'
+    addDetail:'Добавить деталь…', versionHistory:'История версий', versionHistoryComingSoon:'История версий появится в будущем обновлении.',
+    iconCollection:'Коллекция иконок', useThisIcon:'Использовать эту иконку', iconTabIcons:'Иконки', iconTabSymbols:'Символы', iconTabUploaded:'Загруженные',
+    classifierNew:'Создать Classifier', catTypeLabel:'Тип данных (по 1 на Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'По умолчанию — атрибуты из шаблона', catTypeElementDesc:'Как Object, плюс переключатели Levelable / Condition',
+    catTypeCharacterDesc:'Как Object, плюс один свой атрибут только для этого персонажа',
+    levelable:'Прокачиваемый', condition:'Условие', addObject:'Добавить Object', editTemplate:'Изменить шаблон', customAttribute:'Свой атрибут'
   },
   it: {
     settings:'Impostazioni', theme:'Tema', language:'Lingua', uiSize:'Dimensione UI', cancel:'Annulla',
@@ -1029,7 +1101,13 @@ const L = {
     toggleHub:'Attiva/disattiva pannello hub', nestEmpty:'Nessun modulo ancora — crea il tuo primo modulo Maggiore.', addMinorModule:'Aggiungi modulo Minore',
     moduleInspector:'Ispettore Modulo', moduleDetailSpec:'Specifica dettaglio modulo', moduleAttribute:'Attributo modulo',
     moduleUiSpec:'Specifica UI modulo', moduleLink:'Link modulo', tagLink:'Link tag', addAttribute:'Aggiungi attributo',
-    addDetail:'Aggiungi dettaglio…', versionHistory:'Cronologia versioni', versionHistoryComingSoon:'La cronologia versioni arriverà in un futuro aggiornamento.'
+    addDetail:'Aggiungi dettaglio…', versionHistory:'Cronologia versioni', versionHistoryComingSoon:'La cronologia versioni arriverà in un futuro aggiornamento.',
+    iconCollection:'Collezione Icone', useThisIcon:'Usa questa icona', iconTabIcons:'Icone', iconTabSymbols:'Simboli', iconTabUploaded:'Caricate',
+    classifierNew:'Crea Classifier', catTypeLabel:'Tipo di dato (scegli 1 per Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Predefinito — crea attributi da un modello', catTypeElementDesc:'Come Object, più le opzioni Levelable / Condition',
+    catTypeCharacterDesc:'Come Object, più un attributo personalizzato solo per quel personaggio',
+    levelable:'Livellabile', condition:'Condizione', addObject:'Aggiungi Object', editTemplate:'Modifica modello', customAttribute:'Attributo personalizzato'
   },
   nl: {
     settings:'Instellingen', theme:'Thema', language:'Taal', uiSize:'UI-grootte', cancel:'Annuleren',
@@ -1108,7 +1186,13 @@ const L = {
     toggleHub:'Hub-paneel wisselen', nestEmpty:'Nog geen modules — maak je eerste Hoofdmodule.', addMinorModule:'Submodule toevoegen',
     moduleInspector:'Module-inspector', moduleDetailSpec:'Module detailspecificatie', moduleAttribute:'Module-attribuut',
     moduleUiSpec:'Module UI-specificatie', moduleLink:'Module-link', tagLink:'Tag-link', addAttribute:'Attribuut toevoegen',
-    addDetail:'Detail toevoegen…', versionHistory:'Versiegeschiedenis', versionHistoryComingSoon:'Versiegeschiedenis komt in een toekomstige update.'
+    addDetail:'Detail toevoegen…', versionHistory:'Versiegeschiedenis', versionHistoryComingSoon:'Versiegeschiedenis komt in een toekomstige update.',
+    iconCollection:'Icoonverzameling', useThisIcon:'Dit icoon gebruiken', iconTabIcons:'Iconen', iconTabSymbols:'Symbolen', iconTabUploaded:'Geüpload',
+    classifierNew:'Classifier maken', catTypeLabel:'Gegevenstype (1 per Category kiezen)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Standaard — attributen maken vanuit een sjabloon', catTypeElementDesc:'Zoals Object, plus Levelable-/Condition-schakelaars',
+    catTypeCharacterDesc:'Zoals Object, plus één aangepast attribuut alleen voor dit personage',
+    levelable:'Levelbaar', condition:'Voorwaarde', addObject:'Object toevoegen', editTemplate:'Sjabloon bewerken', customAttribute:'Aangepast attribuut'
   },
   pl: {
     settings:'Ustawienia', theme:'Motyw', language:'Język', uiSize:'Rozmiar UI', cancel:'Anuluj',
@@ -1187,7 +1271,13 @@ const L = {
     toggleHub:'Przełącz panel hub', nestEmpty:'Brak modułów — utwórz swój pierwszy moduł główny.', addMinorModule:'Dodaj moduł podrzędny',
     moduleInspector:'Inspektor modułu', moduleDetailSpec:'Specyfikacja szczegółów modułu', moduleAttribute:'Atrybut modułu',
     moduleUiSpec:'Specyfikacja UI modułu', moduleLink:'Link modułu', tagLink:'Link tagu', addAttribute:'Dodaj atrybut',
-    addDetail:'Dodaj szczegół…', versionHistory:'Historia wersji', versionHistoryComingSoon:'Historia wersji pojawi się w przyszłej aktualizacji.'
+    addDetail:'Dodaj szczegół…', versionHistory:'Historia wersji', versionHistoryComingSoon:'Historia wersji pojawi się w przyszłej aktualizacji.',
+    iconCollection:'Kolekcja ikon', useThisIcon:'Użyj tej ikony', iconTabIcons:'Ikony', iconTabSymbols:'Symbole', iconTabUploaded:'Przesłane',
+    classifierNew:'Utwórz Classifier', catTypeLabel:'Typ danych (wybierz 1 na Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Domyślny — twórz atrybuty z szablonu', catTypeElementDesc:'Jak Object, plus przełączniki Levelable / Condition',
+    catTypeCharacterDesc:'Jak Object, plus jeden własny atrybut tylko dla tej postaci',
+    levelable:'Z poziomami', condition:'Warunek', addObject:'Dodaj Object', editTemplate:'Edytuj szablon', customAttribute:'Własny atrybut'
   },
   uk: {
     settings:'Налаштування', theme:'Тема', language:'Мова', uiSize:'Розмір інтерфейсу', cancel:'Скасувати',
@@ -1266,7 +1356,13 @@ const L = {
     toggleHub:'Перемкнути панель hub', nestEmpty:'Ще немає модулів — створіть перший головний модуль.', addMinorModule:'Додати вкладений модуль',
     moduleInspector:'Інспектор модуля', moduleDetailSpec:'Специфікація модуля', moduleAttribute:'Атрибут модуля',
     moduleUiSpec:'UI-специфікація модуля', moduleLink:'Посилання модуля', tagLink:'Посилання тегу', addAttribute:'Додати атрибут',
-    addDetail:'Додати деталь…', versionHistory:'Історія версій', versionHistoryComingSoon:'Історія версій з’явиться в майбутньому оновленні.'
+    addDetail:'Додати деталь…', versionHistory:'Історія версій', versionHistoryComingSoon:'Історія версій з’явиться в майбутньому оновленні.',
+    iconCollection:'Колекція іконок', useThisIcon:'Використати цю іконку', iconTabIcons:'Іконки', iconTabSymbols:'Символи', iconTabUploaded:'Завантажені',
+    classifierNew:'Створити Classifier', catTypeLabel:'Тип даних (по 1 на Category)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'За замовчуванням — атрибути з шаблону', catTypeElementDesc:'Як Object, плюс перемикачі Levelable / Condition',
+    catTypeCharacterDesc:'Як Object, плюс один власний атрибут лише для цього персонажа',
+    levelable:'Прокачуваний', condition:'Умова', addObject:'Додати Object', editTemplate:'Редагувати шаблон', customAttribute:'Власний атрибут'
   },
   tr: {
     settings:'Ayarlar', theme:'Tema', language:'Dil', uiSize:'Arayüz Boyutu', cancel:'İptal',
@@ -1345,7 +1441,13 @@ const L = {
     toggleHub:'Hub panelini aç/kapat', nestEmpty:'Henüz modül yok — ilk Major modülünü oluştur.', addMinorModule:'Minor modül ekle',
     moduleInspector:'Modül Denetleyicisi', moduleDetailSpec:'Modül detay şartnamesi', moduleAttribute:'Modül özniteliği',
     moduleUiSpec:'Modül UI şartnamesi', moduleLink:'Modül bağlantısı', tagLink:'Etiket bağlantısı', addAttribute:'Öznitelik ekle',
-    addDetail:'Detay ekle…', versionHistory:'Sürüm Geçmişi', versionHistoryComingSoon:'Sürüm Geçmişi gelecek bir güncellemede gelecek.'
+    addDetail:'Detay ekle…', versionHistory:'Sürüm Geçmişi', versionHistoryComingSoon:'Sürüm Geçmişi gelecek bir güncellemede gelecek.',
+    iconCollection:'Simge Koleksiyonu', useThisIcon:'Bu simgeyi kullan', iconTabIcons:'Simgeler', iconTabSymbols:'Semboller', iconTabUploaded:'Yüklenenler',
+    classifierNew:'Classifier Oluştur', catTypeLabel:'Veri türü (Category başına 1 seç)',
+    catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
+    catTypeObjectDesc:'Varsayılan — şablondan öznitelik oluştur', catTypeElementDesc:'Object gibi, artı Levelable / Condition anahtarları',
+    catTypeCharacterDesc:'Object gibi, artı yalnızca o karaktere özel 1 öznitelik',
+    levelable:'Seviyelenebilir', condition:'Koşul', addObject:'Object Ekle', editTemplate:'Şablonu Düzenle', customAttribute:'Özel Öznitelik'
   },
   qd: {
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
@@ -1424,7 +1526,13 @@ const L = {
     toggleHub:'Swyvv thy Hub panylle', nestEmpty:'No modyul yeth — kryneth thy fyrst Majyra Modyul.', addMinorModule:'Addyth Minyra Modyul',
     moduleInspector:'Modyul Skryha', moduleDetailSpec:'Modyul Detayl Speka', moduleAttribute:'Modyul Aspektyx',
     moduleUiSpec:'Modyul UI Speka', moduleLink:'Modyul Lynkath', tagLink:'Tagg Lynkath', addAttribute:'Addyth Aspektyx',
-    addDetail:'Addyth Detayl…', versionHistory:'Vyrsion Sagaal', versionHistoryComingSoon:'Vyrsion Sagaal comythe in a fyture updayt.'
+    addDetail:'Addyth Detayl…', versionHistory:'Vyrsion Sagaal', versionHistoryComingSoon:'Vyrsion Sagaal comythe in a fyture updayt.',
+    iconCollection:'Iconyx Hoardyx', useThisIcon:'Usyth thys Icon', iconTabIcons:'Iconyx', iconTabSymbols:'Symbolyx', iconTabUploaded:'Uploadyd',
+    classifierNew:'Kryneth Classifier', catTypeLabel:'Dataform (choozz 1 per Category)',
+    catTypeObject:'Objyct', catTypeElement:'Elemyntyx', catTypeCharacter:'Charactyr',
+    catTypeObjectDesc:'Standyrd — kryneth Aspektyx frome a templyt', catTypeElementDesc:'Lyke Objyct, plys Levelable / Condition swytches',
+    catTypeCharacterDesc:'Lyke Objyct, plys wyn custym aspektyx fyr thys charactyr onlye',
+    levelable:'Levylabyl', condition:'Condytion', addObject:'Addyth Objyct', editTemplate:'Zhakrii Templyt', customAttribute:'Custym Aspektyx'
   },
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文', vi:'VI - Tiếng Việt', id:'ID - Bahasa Indonesia', es:'ES - Español', pt:'PT - Português (Brasil)', fr:'FR - Français', de:'DE - Deutsch', ru:'RU - Русский', it:'IT - Italiano', nl:'NL - Nederlands', pl:'PL - Polski', uk:'UA - Українська', tr:'TR - Türkçe', qd:'🐉 Draconic' };

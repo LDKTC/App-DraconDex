@@ -28,13 +28,13 @@ const getModule = (id) => getDB().prepare(`${SEL} WHERE m.id = ?`).get(id);
 
 function createModule(data) {
   const d = getDB();
-  const { nexus_ref, parent_id = null, name, kind, icon = null, icon_color = null, color = null } = data;
+  const { nexus_ref, parent_id = null, name, kind, icon = null, icon_color = null, color = null, cat_type = null } = data;
   const maxOrder = d.prepare(`SELECT COALESCE(MAX(display_order),-1) AS m FROM module WHERE nexus_ref=? AND parent_id IS ?`)
     .get(nexus_ref, parent_id).m;
   return d.prepare(`
-    INSERT INTO module (nexus_ref, parent_id, name, kind, icon, icon_color, color, display_order)
-    VALUES (?,?,?,?,?,?,?,?)
-  `).run(nexus_ref, parent_id, name, kind, icon, icon_color, color, maxOrder + 1).lastInsertRowid;
+    INSERT INTO module (nexus_ref, parent_id, name, kind, icon, icon_color, color, cat_type, display_order)
+    VALUES (?,?,?,?,?,?,?,?,?)
+  `).run(nexus_ref, parent_id, name, kind, icon, icon_color, color, cat_type, maxOrder + 1).lastInsertRowid;
 }
 
 function updateModule(id, data) {

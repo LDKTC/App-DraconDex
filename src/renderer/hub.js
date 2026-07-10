@@ -24,6 +24,18 @@ const KIND_LABEL = {
   sketcher:'Sketcher', designer:'Designer',
 };
 
+// Selection made in the Icon Collection picker (Phase 5): `svg:<I-key>` or
+// `sym:<glyph>`, stored verbatim in module.icon. Falls back to the kind's
+// default icon when unset.
+function moduleIconHtml(m) {
+  if (m.icon) {
+    if (m.icon.startsWith('sym:')) return `<span class="kicon-glyph">${x(m.icon.slice(4))}</span>`;
+    const key = m.icon.startsWith('svg:') ? m.icon.slice(4) : m.icon;
+    if (I[key]) return I[key];
+  }
+  return I[KIND_ICON[m.kind]] || I.layer;
+}
+
 function findModuleNode(id) {
   for (const m of S.moduleTree) {
     if (m.id === id) return m;
@@ -53,7 +65,7 @@ function renderModuleRail() {
   for (const m of S.moduleTree) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
     html += `<button class="nav-btn module-rail-item${active}" title="${x(m.name)}" onclick="openModuleNode(${m.id})">
-      ${I[KIND_ICON[m.kind]] || I.layer}<span class="mdot" style="background:${x(m.color_code || '#6366f1')}"></span>
+      ${moduleIconHtml(m)}<span class="mdot" style="background:${x(m.color_code || '#6366f1')}"></span>
     </button>`;
   }
   anchor.insertAdjacentHTML('afterend', html);
@@ -115,7 +127,7 @@ function buildNestRow(m, depth) {
   return `<div class="li${depth ? ` indent${depth}` : ''}${sel}" ${depth === 0 ? `ondragover="onNestDragOver(event)" ondrop="onNestDrop(event,${m.id})"` : ''}
       onclick="${rowClick}">
     ${grip}${chev}
-    <span class="kicon" style="color:${x(col)}">${I[KIND_ICON[m.kind]] || I.layer}</span>
+    <span class="kicon" style="color:${x(col)}">${moduleIconHtml(m)}</span>
     <span class="name">${x(m.name)}</span>
     <span class="kind">${x(KIND_LABEL[m.kind] || m.kind)}</span>
     <span class="acts">
@@ -164,13 +176,47 @@ async function openModuleEditModal(id) {
   await moduleFormModal(m, m.parent_id);
 }
 
+function buildCatTypePicker(selected) {
+  const sel = selected || 'object';
+  return `<div class="fg" id="mm-cattype-section">
+    <label>${t('catTypeLabel')}</label>
+    <div class="typegrid">
+      <div class="typecard${sel === 'object' ? ' sel' : ''}" onclick="pickCatType('object')">
+        <h5>${I.layer} ${t('catTypeObject')}</h5><p>${t('catTypeObjectDesc')}</p>
+      </div>
+      <div class="typecard${sel === 'element' ? ' sel' : ''}" onclick="pickCatType('element')">
+        <h5>${I.relation} ${t('catTypeElement')}</h5><p>${t('catTypeElementDesc')}</p>
+        <div class="togglerow"><span class="tg on"></span>${t('levelable')}</div>
+        <div class="togglerow"><span class="tg"></span>${t('condition')}</div>
+      </div>
+      <div class="typecard${sel === 'character' ? ' sel' : ''}" onclick="pickCatType('character')">
+        <h5>${I.person} ${t('catTypeCharacter')}</h5><p>${t('catTypeCharacterDesc')}</p>
+      </div>
+    </div>
+    <input type="hidden" id="mm-cattype" value="${sel}">
+  </div>`;
+}
+
+function pickCatType(type) {
+  q('#mm-cattype').value = type;
+  const cards = document.querySelectorAll('#mm-cattype-section .typecard');
+  ['object', 'element', 'character'].forEach((k, i) => cards[i]?.classList.toggle('sel', k === type));
+}
+
+function toggleClassifierFieldsVisibility() {
+  const wrap = q('#mm-cattype-wrap');
+  if (wrap) wrap.style.display = q('#mm-kind').value === 'classifier' ? '' : 'none';
+}
+
 async function moduleFormModal(existing, parentId) {
   const kindOptions = MODULE_KINDS.map(k => `<option value="${k}" ${existing?.kind === k ? 'selected' : ''}>${KIND_LABEL[k]}</option>`).join('');
   const title = existing ? t('moduleEdit') : (parentId ? t('minorModuleNew') : t('majorModuleNew'));
+  const startKind = existing?.kind || 'manager';
   openModal(title, `
     <div class="fg"><label>${t('name')} *</label><input id="mm-name" value="${x(existing?.name || '')}"></div>
-    <div class="fg"><label>${t('moduleKind')}</label><select id="mm-kind" ${existing ? 'disabled' : ''}>${kindOptions}</select></div>
-    <div class="fg"><label>${t('color')}</label>${await colorPicker(existing?.color || null)}</div>
+    <div class="fg"><label>${t('moduleKind')}</label><select id="mm-kind" ${existing ? 'disabled' : ''} onchange="toggleClassifierFieldsVisibility()">${kindOptions}</select></div>
+    <div id="mm-cattype-wrap" style="display:${startKind === 'classifier' ? '' : 'none'}">${buildCatTypePicker(existing?.cat_type)}</div>
+    <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing?.icon || null, existing?.color || null, existing?.name || '', existing ? (KIND_LABEL[existing.kind] || existing.kind) : '')}</div>
     <div class="mfoot">
       ${existing ? `<button class="btn btn-d" onclick="deleteModuleNode(${existing.id})">${t('delete')}</button>` : ''}
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
@@ -184,14 +230,19 @@ async function submitModuleForm(existingId, parentId) {
   if (!name) return;
   const kind = q('#mm-kind').value;
   const colorId = q('#sel-color').value || null;
+  const icon = getIconPickerValue() || null;
+  const catType = kind === 'classifier' ? (q('#mm-cattype')?.value || 'object') : null;
+  let moduleId = existingId;
   if (existingId) {
-    await api.module.update(existingId, { name, color: colorId, icon_color: colorId });
+    await api.module.update(existingId, { name, color: colorId, icon_color: colorId, icon });
+    if (kind === 'classifier') await api.classifier.setCatType(existingId, catType);
   } else {
-    await api.module.create({ nexus_ref: S.nexus.id, parent_id: parentId, name, kind, color: colorId, icon_color: colorId });
+    moduleId = await api.module.create({ nexus_ref: S.nexus.id, parent_id: parentId, name, kind, color: colorId, icon_color: colorId, icon, cat_type: catType });
   }
   closeModal();
   await reloadModuleTree();
   toast(existingId ? t('saved') : t('created'), 'ok');
+  if (!existingId) openModuleNode(moduleId);
 }
 
 async function deleteModuleNode(id) {
@@ -213,22 +264,27 @@ async function openModuleNode(id) {
   S.activeModuleNode = m;
   renderModuleRail();
   renderNexusHome();
-  await loadInspectorData(id);
+  const loaders = [loadInspectorData(id)];
+  if (m.kind === 'classifier' && typeof loadClassifierData === 'function') loaders.push(loadClassifierData(m));
+  await Promise.all(loaders);
   if (S.activeModuleNode?.id === id) renderNexusHome();
 }
 
 function buildModuleDetailHtml(m) {
   const col = m.icon_color_code || m.color_code || 'var(--accent)';
+  const mainHtml = m.kind === 'classifier' && typeof buildClassifierMainHtml === 'function'
+    ? buildClassifierMainHtml(m)
+    : `<div class="empty" style="margin-top:40px">
+        <div class="ei" style="color:${x(col)}">${moduleIconHtml(m)}</div>
+        <h3>${x(m.name)}</h3>
+        <p>${x(KIND_LABEL[m.kind] || m.kind)}</p>
+      </div>`;
   return `<div class="module-builder">
     <div class="module-main">
       <div class="detail-head" style="border-left:4px solid ${x(col)};padding-left:12px">
         <h2 style="margin:0;font-size:1.1em">${x(m.name)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${x(KIND_LABEL[m.kind] || m.kind)}</span></h2>
       </div>
-      <div class="empty" style="margin-top:40px">
-        <div class="ei" style="color:${x(col)}">${I[KIND_ICON[m.kind]] || I.layer}</div>
-        <h3>${x(m.name)}</h3>
-        <p>${x(KIND_LABEL[m.kind] || m.kind)}</p>
-      </div>
+      ${mainHtml}
     </div>
     ${buildInspectorHtml(m)}
   </div>`;

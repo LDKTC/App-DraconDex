@@ -118,6 +118,7 @@ const S = {
   // alongside the legacy Director/Navigator/Hero/Writer/Scribe/Sage/Artisan
   // modules; see progress.md Section C for the scoping decision.
   moduleTree:[], activeModuleNode:null, inspectorData:null,
+  classifierData:null, classifierView:'table', classifierSelectedObject:null,
   hubOpen:loadHubOpen(),
   moduleCollapsed:new Set(),
   dragMajorId:null,

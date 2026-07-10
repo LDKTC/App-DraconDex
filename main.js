@@ -140,6 +140,23 @@ h('module:getTags',     (id)          => db.getModuleTags(id));
 h('module:setTags',     (id,tags)     => db.setModuleTags(id,tags));
 h('module:getLinks',    (id)          => db.getModuleLinks(id));
 
+// Category "Classifier" (v3 Phase 5)
+h('classifier:setCatType',        (id,ct)              => db.setCatType(id,ct));
+h('classifier:getObjects',        (mref)                => db.getObjects(mref));
+h('classifier:getObject',         (id)                  => db.getObject(id));
+h('classifier:createObject',      (mref,n,c)            => db.createObject(mref,n,c));
+h('classifier:updateObject',      (id,n,c)              => db.updateObject(id,n,c));
+h('classifier:updateObjectNote',  (id,note)             => db.updateObjectNote(id,note));
+h('classifier:deleteObject',      (id)                  => db.deleteObject(id));
+h('classifier:getTemplates',      (mref)                => db.getTemplates(mref));
+h('classifier:getObjectTemplates',(mref,oref)           => db.getObjectTemplates(mref,oref));
+h('classifier:createTemplate',    (mref,d,t,lv,c,oref)  => db.createTemplate(mref,d,t,lv,c,oref));
+h('classifier:updateTemplate',    (id,d,t,lv,c)         => db.updateTemplate(id,d,t,lv,c));
+h('classifier:deleteTemplate',    (id)                  => db.deleteTemplate(id));
+h('classifier:countObjectTemplates', (oref)             => db.countObjectTemplates(oref));
+h('classifier:getAttrs',          (oid)                 => db.getAttrs(oid));
+h('classifier:upsertAttr',        (oid,tid,v)           => db.upsertAttr(oid,tid,v));
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));
