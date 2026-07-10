@@ -74,7 +74,11 @@ const L = {
     artIdeas:'Ideas', artBook:'Book', artChapter:'Chapter',
     artFldRole:'Role', artFldAge:'Age', artFldAppearance:'Appearance', artFldPersonality:'Personality', artFldGoal:'Goal',
     artFldBackstory:'Backstory', artFldDescription:'Description', artFldHistory:'History', artFldRules:'Rules',
-    artFldEffect:'Effect', artFldMotive:'Motive', artFldPremise:'Premise', artFldOwner:'Owner'
+    artFldEffect:'Effect', artFldMotive:'Motive', artFldPremise:'Premise', artFldOwner:'Owner',
+    createMajorModule:'Create Major module', majorModuleNew:'New Major Module', minorModuleNew:'New Minor Module',
+    moduleKind:'Kind', moduleEdit:'Edit Module', moduleDeleteConfirm:'Delete this module? Minor modules inside it will also be deleted.',
+    nexusNest:'Nexus nest', sageHut:'Sage Hut', importDock:'Import Dock', importDockComingSoon:'Coming in a future update',
+    toggleHub:'Toggle hub panel', nestEmpty:'No modules yet — create your first Major module.', addMinorModule:'Add Minor module'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
@@ -146,7 +150,11 @@ const L = {
     artIdeas:'アイデア', artBook:'ブック', artChapter:'チャプター',
     artFldRole:'役割', artFldAge:'年齢', artFldAppearance:'外見', artFldPersonality:'性格', artFldGoal:'目標',
     artFldBackstory:'背景', artFldDescription:'説明', artFldHistory:'歴史', artFldRules:'ルール',
-    artFldEffect:'効果', artFldMotive:'動機', artFldPremise:'あらすじ', artFldOwner:'所有者'
+    artFldEffect:'効果', artFldMotive:'動機', artFldPremise:'あらすじ', artFldOwner:'所有者',
+    createMajorModule:'メジャーモジュールを作成', majorModuleNew:'新しいメジャーモジュール', minorModuleNew:'新しいマイナーモジュール',
+    moduleKind:'種類', moduleEdit:'モジュールを編集', moduleDeleteConfirm:'このモジュールを削除しますか？中のマイナーモジュールも削除されます。',
+    nexusNest:'Nexusネスト', sageHut:'セージハット', importDock:'インポートドック', importDockComingSoon:'今後のアップデートで追加予定',
+    toggleHub:'ハブパネルの表示切替', nestEmpty:'モジュールがありません — 最初のメジャーモジュールを作成しましょう。', addMinorModule:'マイナーモジュールを追加'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
@@ -218,7 +226,11 @@ const L = {
     artIdeas:'아이디어', artBook:'책', artChapter:'챕터',
     artFldRole:'역할', artFldAge:'나이', artFldAppearance:'외모', artFldPersonality:'성격', artFldGoal:'목표',
     artFldBackstory:'배경 이야기', artFldDescription:'설명', artFldHistory:'역사', artFldRules:'규칙',
-    artFldEffect:'효과', artFldMotive:'동기', artFldPremise:'전제', artFldOwner:'소유자'
+    artFldEffect:'효과', artFldMotive:'동기', artFldPremise:'전제', artFldOwner:'소유자',
+    createMajorModule:'메이저 모듈 만들기', majorModuleNew:'새 메이저 모듈', minorModuleNew:'새 마이너 모듈',
+    moduleKind:'종류', moduleEdit:'모듈 편집', moduleDeleteConfirm:'이 모듈을 삭제할까요? 안의 마이너 모듈도 함께 삭제됩니다.',
+    nexusNest:'Nexus 둥지', sageHut:'세이지 헛', importDock:'임포트 독', importDockComingSoon:'추후 업데이트에서 제공됩니다',
+    toggleHub:'허브 패널 전환', nestEmpty:'아직 모듈이 없습니다 — 첫 메이저 모듈을 만들어 보세요.', addMinorModule:'마이너 모듈 추가'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
@@ -290,7 +302,11 @@ const L = {
     artIdeas:'ไอเดีย', artBook:'เล่มที่', artChapter:'ตอนที่',
     artFldRole:'บทบาท', artFldAge:'อายุ', artFldAppearance:'รูปลักษณ์', artFldPersonality:'นิสัย', artFldGoal:'เป้าหมาย',
     artFldBackstory:'ปูมหลัง', artFldDescription:'รายละเอียด', artFldHistory:'ประวัติศาสตร์', artFldRules:'กฎ',
-    artFldEffect:'ผลลัพธ์', artFldMotive:'แรงจูงใจ', artFldPremise:'แก่นเรื่อง', artFldOwner:'เจ้าของ'
+    artFldEffect:'ผลลัพธ์', artFldMotive:'แรงจูงใจ', artFldPremise:'แก่นเรื่อง', artFldOwner:'เจ้าของ',
+    createMajorModule:'สร้าง Major module', majorModuleNew:'Major Module ใหม่', minorModuleNew:'Minor Module ใหม่',
+    moduleKind:'ประเภท', moduleEdit:'แก้ไข Module', moduleDeleteConfirm:'ลบ module นี้? Minor module ข้างในจะถูกลบไปด้วย',
+    nexusNest:'Nexus nest', sageHut:'Sage Hut', importDock:'Import Dock', importDockComingSoon:'จะมาในอัปเดตถัดไป',
+    toggleHub:'เปิด/ปิดแผง hub', nestEmpty:'ยังไม่มี module — สร้าง Major module แรกของคุณ', addMinorModule:'เพิ่ม Minor module'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
@@ -362,7 +378,11 @@ const L = {
     artIdeas:'灵感', artBook:'卷', artChapter:'章节',
     artFldRole:'角色定位', artFldAge:'年龄', artFldAppearance:'外貌', artFldPersonality:'性格', artFldGoal:'目标',
     artFldBackstory:'背景故事', artFldDescription:'描述', artFldHistory:'历史', artFldRules:'规则',
-    artFldEffect:'效果', artFldMotive:'动机', artFldPremise:'故事前提', artFldOwner:'持有者'
+    artFldEffect:'效果', artFldMotive:'动机', artFldPremise:'故事前提', artFldOwner:'持有者',
+    createMajorModule:'创建主模块', majorModuleNew:'新建主模块', minorModuleNew:'新建次模块',
+    moduleKind:'类型', moduleEdit:'编辑模块', moduleDeleteConfirm:'删除此模块？其中的次模块也会一并删除。',
+    nexusNest:'Nexus 巢', sageHut:'Sage Hut 智库', importDock:'导入坞', importDockComingSoon:'将在后续更新中推出',
+    toggleHub:'切换 hub 面板', nestEmpty:'还没有模块 — 创建你的第一个主模块。', addMinorModule:'添加次模块'
   },
   vi: {
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
@@ -434,7 +454,11 @@ const L = {
     artIdeas:'Ý tưởng', artBook:'Quyển', artChapter:'Chương',
     artFldRole:'Vai trò', artFldAge:'Tuổi', artFldAppearance:'Ngoại hình', artFldPersonality:'Tính cách', artFldGoal:'Mục tiêu',
     artFldBackstory:'Tiền truyện', artFldDescription:'Mô tả', artFldHistory:'Lịch sử', artFldRules:'Quy tắc',
-    artFldEffect:'Hiệu ứng', artFldMotive:'Động cơ', artFldPremise:'Tiền đề', artFldOwner:'Chủ sở hữu'
+    artFldEffect:'Hiệu ứng', artFldMotive:'Động cơ', artFldPremise:'Tiền đề', artFldOwner:'Chủ sở hữu',
+    createMajorModule:'Tạo Major module', majorModuleNew:'Major Module mới', minorModuleNew:'Minor Module mới',
+    moduleKind:'Loại', moduleEdit:'Sửa Module', moduleDeleteConfirm:'Xóa module này? Các Minor module bên trong cũng sẽ bị xóa.',
+    nexusNest:'Nexus nest', sageHut:'Sage Hut', importDock:'Import Dock', importDockComingSoon:'Sẽ có trong bản cập nhật sau',
+    toggleHub:'Bật/tắt bảng hub', nestEmpty:'Chưa có module — hãy tạo Major module đầu tiên.', addMinorModule:'Thêm Minor module'
   },
   id: {
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
@@ -506,7 +530,11 @@ const L = {
     artIdeas:'Ide', artBook:'Buku', artChapter:'Bab',
     artFldRole:'Peran', artFldAge:'Usia', artFldAppearance:'Penampilan', artFldPersonality:'Kepribadian', artFldGoal:'Tujuan',
     artFldBackstory:'Latar belakang', artFldDescription:'Deskripsi', artFldHistory:'Sejarah', artFldRules:'Aturan',
-    artFldEffect:'Efek', artFldMotive:'Motif', artFldPremise:'Premis', artFldOwner:'Pemilik'
+    artFldEffect:'Efek', artFldMotive:'Motif', artFldPremise:'Premis', artFldOwner:'Pemilik',
+    createMajorModule:'Buat Major module', majorModuleNew:'Major Module Baru', minorModuleNew:'Minor Module Baru',
+    moduleKind:'Jenis', moduleEdit:'Edit Module', moduleDeleteConfirm:'Hapus module ini? Minor module di dalamnya juga akan terhapus.',
+    nexusNest:'Nexus nest', sageHut:'Sage Hut', importDock:'Import Dock', importDockComingSoon:'Akan hadir di pembaruan berikutnya',
+    toggleHub:'Alihkan panel hub', nestEmpty:'Belum ada module — buat Major module pertamamu.', addMinorModule:'Tambah Minor module'
   },
   es: {
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
@@ -578,7 +606,11 @@ const L = {
     artIdeas:'Ideas', artBook:'Libro', artChapter:'Capítulo',
     artFldRole:'Rol', artFldAge:'Edad', artFldAppearance:'Apariencia', artFldPersonality:'Personalidad', artFldGoal:'Objetivo',
     artFldBackstory:'Trasfondo', artFldDescription:'Descripción', artFldHistory:'Historia', artFldRules:'Reglas',
-    artFldEffect:'Efecto', artFldMotive:'Motivo', artFldPremise:'Premisa', artFldOwner:'Dueño'
+    artFldEffect:'Efecto', artFldMotive:'Motivo', artFldPremise:'Premisa', artFldOwner:'Dueño',
+    createMajorModule:'Crear módulo Mayor', majorModuleNew:'Nuevo Módulo Mayor', minorModuleNew:'Nuevo Módulo Menor',
+    moduleKind:'Tipo', moduleEdit:'Editar módulo', moduleDeleteConfirm:'¿Eliminar este módulo? Los módulos menores dentro también se eliminarán.',
+    nexusNest:'Nido de Nexus', sageHut:'Sage Hut', importDock:'Muelle de importación', importDockComingSoon:'Disponible en una futura actualización',
+    toggleHub:'Alternar panel hub', nestEmpty:'Aún no hay módulos — crea tu primer módulo Mayor.', addMinorModule:'Añadir módulo Menor'
   },
   pt: {
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
@@ -650,7 +682,11 @@ const L = {
     artIdeas:'Ideias', artBook:'Livro', artChapter:'Capítulo',
     artFldRole:'Papel', artFldAge:'Idade', artFldAppearance:'Aparência', artFldPersonality:'Personalidade', artFldGoal:'Objetivo',
     artFldBackstory:'História de fundo', artFldDescription:'Descrição', artFldHistory:'História', artFldRules:'Regras',
-    artFldEffect:'Efeito', artFldMotive:'Motivo', artFldPremise:'Premissa', artFldOwner:'Dono'
+    artFldEffect:'Efeito', artFldMotive:'Motivo', artFldPremise:'Premissa', artFldOwner:'Dono',
+    createMajorModule:'Criar módulo Maior', majorModuleNew:'Novo Módulo Maior', minorModuleNew:'Novo Módulo Menor',
+    moduleKind:'Tipo', moduleEdit:'Editar módulo', moduleDeleteConfirm:'Excluir este módulo? Os módulos menores dentro dele também serão excluídos.',
+    nexusNest:'Ninho do Nexus', sageHut:'Sage Hut', importDock:'Doca de importação', importDockComingSoon:'Chegará em uma atualização futura',
+    toggleHub:'Alternar painel hub', nestEmpty:'Ainda não há módulos — crie seu primeiro módulo Maior.', addMinorModule:'Adicionar módulo Menor'
   },
   fr: {
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
@@ -722,7 +758,11 @@ const L = {
     artIdeas:'Idées', artBook:'Livre', artChapter:'Chapitre',
     artFldRole:'Rôle', artFldAge:'Âge', artFldAppearance:'Apparence', artFldPersonality:'Personnalité', artFldGoal:'Objectif',
     artFldBackstory:'Passé', artFldDescription:'Description', artFldHistory:'Histoire', artFldRules:'Règles',
-    artFldEffect:'Effet', artFldMotive:'Mobile', artFldPremise:'Prémisse', artFldOwner:'Propriétaire'
+    artFldEffect:'Effet', artFldMotive:'Mobile', artFldPremise:'Prémisse', artFldOwner:'Propriétaire',
+    createMajorModule:'Créer un module Majeur', majorModuleNew:'Nouveau Module Majeur', minorModuleNew:'Nouveau Module Mineur',
+    moduleKind:'Type', moduleEdit:'Modifier le module', moduleDeleteConfirm:'Supprimer ce module ? Les modules mineurs qu’il contient seront aussi supprimés.',
+    nexusNest:'Nid du Nexus', sageHut:'Sage Hut', importDock:'Quai d’import', importDockComingSoon:'Disponible dans une prochaine mise à jour',
+    toggleHub:'Afficher/masquer le panneau hub', nestEmpty:'Aucun module — créez votre premier module Majeur.', addMinorModule:'Ajouter un module Mineur'
   },
   de: {
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
@@ -794,7 +834,11 @@ const L = {
     artIdeas:'Ideen', artBook:'Band', artChapter:'Kapitel',
     artFldRole:'Rolle', artFldAge:'Alter', artFldAppearance:'Aussehen', artFldPersonality:'Persönlichkeit', artFldGoal:'Ziel',
     artFldBackstory:'Hintergrund', artFldDescription:'Beschreibung', artFldHistory:'Geschichte', artFldRules:'Regeln',
-    artFldEffect:'Effekt', artFldMotive:'Motiv', artFldPremise:'Prämisse', artFldOwner:'Besitzer'
+    artFldEffect:'Effekt', artFldMotive:'Motiv', artFldPremise:'Prämisse', artFldOwner:'Besitzer',
+    createMajorModule:'Hauptmodul erstellen', majorModuleNew:'Neues Hauptmodul', minorModuleNew:'Neues Nebenmodul',
+    moduleKind:'Art', moduleEdit:'Modul bearbeiten', moduleDeleteConfirm:'Dieses Modul löschen? Enthaltene Nebenmodule werden ebenfalls gelöscht.',
+    nexusNest:'Nexus-Nest', sageHut:'Sage Hut', importDock:'Import-Dock', importDockComingSoon:'Kommt in einem zukünftigen Update',
+    toggleHub:'Hub-Panel umschalten', nestEmpty:'Noch keine Module — erstelle dein erstes Hauptmodul.', addMinorModule:'Nebenmodul hinzufügen'
   },
   ru: {
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
@@ -866,7 +910,11 @@ const L = {
     artIdeas:'Идеи', artBook:'Книга', artChapter:'Глава',
     artFldRole:'Роль', artFldAge:'Возраст', artFldAppearance:'Внешность', artFldPersonality:'Характер', artFldGoal:'Цель',
     artFldBackstory:'Предыстория', artFldDescription:'Описание', artFldHistory:'История', artFldRules:'Правила',
-    artFldEffect:'Эффект', artFldMotive:'Мотив', artFldPremise:'Завязка', artFldOwner:'Владелец'
+    artFldEffect:'Эффект', artFldMotive:'Мотив', artFldPremise:'Завязка', artFldOwner:'Владелец',
+    createMajorModule:'Создать главный модуль', majorModuleNew:'Новый главный модуль', minorModuleNew:'Новый вложенный модуль',
+    moduleKind:'Тип', moduleEdit:'Изменить модуль', moduleDeleteConfirm:'Удалить этот модуль? Вложенные модули внутри также будут удалены.',
+    nexusNest:'Гнездо Nexus', sageHut:'Sage Hut', importDock:'Док импорта', importDockComingSoon:'Появится в будущем обновлении',
+    toggleHub:'Показать/скрыть панель hub', nestEmpty:'Пока нет модулей — создайте первый главный модуль.', addMinorModule:'Добавить вложенный модуль'
   },
   it: {
     settings:'Impostazioni', theme:'Tema', language:'Lingua', uiSize:'Dimensione UI', cancel:'Annulla',
@@ -938,7 +986,11 @@ const L = {
     artIdeas:'Idee', artBook:'Libro', artChapter:'Capitolo',
     artFldRole:'Ruolo', artFldAge:'Età', artFldAppearance:'Aspetto', artFldPersonality:'Personalità', artFldGoal:'Obiettivo',
     artFldBackstory:'Retroscena', artFldDescription:'Descrizione', artFldHistory:'Storia', artFldRules:'Regole',
-    artFldEffect:'Effetto', artFldMotive:'Movente', artFldPremise:'Premessa', artFldOwner:'Proprietario'
+    artFldEffect:'Effetto', artFldMotive:'Movente', artFldPremise:'Premessa', artFldOwner:'Proprietario',
+    createMajorModule:'Crea modulo Maggiore', majorModuleNew:'Nuovo Modulo Maggiore', minorModuleNew:'Nuovo Modulo Minore',
+    moduleKind:'Tipo', moduleEdit:'Modifica modulo', moduleDeleteConfirm:'Eliminare questo modulo? Anche i moduli minori al suo interno verranno eliminati.',
+    nexusNest:'Nido del Nexus', sageHut:'Sage Hut', importDock:'Banchina di importazione', importDockComingSoon:'Disponibile in un futuro aggiornamento',
+    toggleHub:'Attiva/disattiva pannello hub', nestEmpty:'Nessun modulo ancora — crea il tuo primo modulo Maggiore.', addMinorModule:'Aggiungi modulo Minore'
   },
   nl: {
     settings:'Instellingen', theme:'Thema', language:'Taal', uiSize:'UI-grootte', cancel:'Annuleren',
@@ -1010,7 +1062,11 @@ const L = {
     artIdeas:'Ideeën', artBook:'Boek', artChapter:'Hoofdstuk',
     artFldRole:'Rol', artFldAge:'Leeftijd', artFldAppearance:'Uiterlijk', artFldPersonality:'Persoonlijkheid', artFldGoal:'Doel',
     artFldBackstory:'Achtergrondverhaal', artFldDescription:'Beschrijving', artFldHistory:'Geschiedenis', artFldRules:'Regels',
-    artFldEffect:'Effect', artFldMotive:'Motief', artFldPremise:'Premisse', artFldOwner:'Eigenaar'
+    artFldEffect:'Effect', artFldMotive:'Motief', artFldPremise:'Premisse', artFldOwner:'Eigenaar',
+    createMajorModule:'Hoofdmodule maken', majorModuleNew:'Nieuwe Hoofdmodule', minorModuleNew:'Nieuwe Submodule',
+    moduleKind:'Soort', moduleEdit:'Module bewerken', moduleDeleteConfirm:'Deze module verwijderen? Submodules erin worden ook verwijderd.',
+    nexusNest:'Nexus-nest', sageHut:'Sage Hut', importDock:'Importdok', importDockComingSoon:'Komt in een toekomstige update',
+    toggleHub:'Hub-paneel wisselen', nestEmpty:'Nog geen modules — maak je eerste Hoofdmodule.', addMinorModule:'Submodule toevoegen'
   },
   pl: {
     settings:'Ustawienia', theme:'Motyw', language:'Język', uiSize:'Rozmiar UI', cancel:'Anuluj',
@@ -1082,7 +1138,11 @@ const L = {
     artIdeas:'Pomysły', artBook:'Książka', artChapter:'Rozdział',
     artFldRole:'Rola', artFldAge:'Wiek', artFldAppearance:'Wygląd', artFldPersonality:'Osobowość', artFldGoal:'Cel',
     artFldBackstory:'Historia postaci', artFldDescription:'Opis', artFldHistory:'Historia', artFldRules:'Zasady',
-    artFldEffect:'Efekt', artFldMotive:'Motyw', artFldPremise:'Założenie', artFldOwner:'Właściciel'
+    artFldEffect:'Efekt', artFldMotive:'Motyw', artFldPremise:'Założenie', artFldOwner:'Właściciel',
+    createMajorModule:'Utwórz moduł główny', majorModuleNew:'Nowy moduł główny', minorModuleNew:'Nowy moduł podrzędny',
+    moduleKind:'Rodzaj', moduleEdit:'Edytuj moduł', moduleDeleteConfirm:'Usunąć ten moduł? Zawarte w nim moduły podrzędne również zostaną usunięte.',
+    nexusNest:'Gniazdo Nexus', sageHut:'Sage Hut', importDock:'Dok importu', importDockComingSoon:'Pojawi się w przyszłej aktualizacji',
+    toggleHub:'Przełącz panel hub', nestEmpty:'Brak modułów — utwórz swój pierwszy moduł główny.', addMinorModule:'Dodaj moduł podrzędny'
   },
   uk: {
     settings:'Налаштування', theme:'Тема', language:'Мова', uiSize:'Розмір інтерфейсу', cancel:'Скасувати',
@@ -1154,7 +1214,11 @@ const L = {
     artIdeas:'Ідеї', artBook:'Книга', artChapter:'Розділ',
     artFldRole:'Роль', artFldAge:'Вік', artFldAppearance:'Зовнішність', artFldPersonality:'Особистість', artFldGoal:'Мета',
     artFldBackstory:'Передісторія', artFldDescription:'Опис', artFldHistory:'Історія', artFldRules:'Правила',
-    artFldEffect:'Ефект', artFldMotive:'Мотив', artFldPremise:'Зав’язка', artFldOwner:'Власник'
+    artFldEffect:'Ефект', artFldMotive:'Мотив', artFldPremise:'Зав’язка', artFldOwner:'Власник',
+    createMajorModule:'Створити головний модуль', majorModuleNew:'Новий головний модуль', minorModuleNew:'Новий вкладений модуль',
+    moduleKind:'Тип', moduleEdit:'Редагувати модуль', moduleDeleteConfirm:'Видалити цей модуль? Вкладені модулі всередині також будуть видалені.',
+    nexusNest:'Гніздо Nexus', sageHut:'Sage Hut', importDock:'Док імпорту', importDockComingSoon:'З’явиться в майбутньому оновленні',
+    toggleHub:'Перемкнути панель hub', nestEmpty:'Ще немає модулів — створіть перший головний модуль.', addMinorModule:'Додати вкладений модуль'
   },
   tr: {
     settings:'Ayarlar', theme:'Tema', language:'Dil', uiSize:'Arayüz Boyutu', cancel:'İptal',
@@ -1226,7 +1290,11 @@ const L = {
     artIdeas:'Fikirler', artBook:'Kitap', artChapter:'Bölüm',
     artFldRole:'Rol', artFldAge:'Yaş', artFldAppearance:'Görünüm', artFldPersonality:'Kişilik', artFldGoal:'Hedef',
     artFldBackstory:'Geçmiş hikâye', artFldDescription:'Açıklama', artFldHistory:'Tarih', artFldRules:'Kurallar',
-    artFldEffect:'Etki', artFldMotive:'Güdü', artFldPremise:'Öncül', artFldOwner:'Sahip'
+    artFldEffect:'Etki', artFldMotive:'Güdü', artFldPremise:'Öncül', artFldOwner:'Sahip',
+    createMajorModule:'Major modül oluştur', majorModuleNew:'Yeni Major Modül', minorModuleNew:'Yeni Minor Modül',
+    moduleKind:'Tür', moduleEdit:'Modülü Düzenle', moduleDeleteConfirm:'Bu modül silinsin mi? İçindeki Minor modüller de silinecek.',
+    nexusNest:'Nexus yuvası', sageHut:'Sage Hut', importDock:'İçe Aktarma Rıhtımı', importDockComingSoon:'Gelecek bir güncellemede gelecek',
+    toggleHub:'Hub panelini aç/kapat', nestEmpty:'Henüz modül yok — ilk Major modülünü oluştur.', addMinorModule:'Minor modül ekle'
   },
   qd: {
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
@@ -1298,7 +1366,11 @@ const L = {
     artIdeas:'Ideyxae', artBook:'Tomyx', artChapter:'Versethra',
     artFldRole:'Rolyx', artFldAge:'Agyx', artFldAppearance:'Formyra', artFldPersonality:'Soulyx', artFldGoal:'Goalyx',
     artFldBackstory:'Backsagaal', artFldDescription:'Descryx', artFldHistory:'Historyx', artFldRules:'Rulyxae',
-    artFldEffect:'Emberyx', artFldMotive:'Motyva', artFldPremise:'Premyx', artFldOwner:'Hoardyr'
+    artFldEffect:'Emberyx', artFldMotive:'Motyva', artFldPremise:'Premyx', artFldOwner:'Hoardyr',
+    createMajorModule:'Kryneth Majyra Modyul', majorModuleNew:'Modyul Majyra Vyrran', minorModuleNew:'Modyul Minyra Vyrran',
+    moduleKind:'Kynda', moduleEdit:'Zhakrii Modyul', moduleDeleteConfirm:'Vhoreth thys modyul? Modyul minyra withyn shalle vhoreth too.',
+    nexusNest:'Nexus Nystha', sageHut:'Saje Hytt', importDock:'Importh Dokka', importDockComingSoon:'Comythe in a fyture updayt',
+    toggleHub:'Swyvv thy Hub panylle', nestEmpty:'No modyul yeth — kryneth thy fyrst Majyra Modyul.', addMinorModule:'Addyth Minyra Modyul'
   },
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文', vi:'VI - Tiếng Việt', id:'ID - Bahasa Indonesia', es:'ES - Español', pt:'PT - Português (Brasil)', fr:'FR - Français', de:'DE - Deutsch', ru:'RU - Русский', it:'IT - Italiano', nl:'NL - Nederlands', pl:'PL - Polski', uk:'UA - Українська', tr:'TR - Türkçe', qd:'🐉 Draconic' };

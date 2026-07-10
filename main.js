@@ -122,6 +122,15 @@ h('note:update',       (id,t,f,c,p)    => db.updateNote(id,t,f,c,p));
 h('note:updateContent',(id,content)    => db.updateNoteContent(id,content));
 h('note:delete',       (id)            => db.deleteNote(id));
 
+// Module system (v3 Nexus nest)
+h('module:getTree',     (nx)          => db.getTree(nx));
+h('module:get',         (id)          => db.getModule(id));
+h('module:create',      (data)        => db.createModule(data));
+h('module:update',      (id,data)     => db.updateModule(id,data));
+h('module:delete',      (id)          => db.deleteModule(id));
+h('module:reorder',     (nx,ids)      => db.reorderMajors(nx,ids));
+h('module:count',       (nx)          => db.countModules(nx));
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));

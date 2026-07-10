@@ -21,9 +21,9 @@ chrome and theme system — no new design system.
 ## Master checklist
 
 **M1 — Foundation**
-- [ ] Phase 1 — Dynamic module toolbar (nav rail)
-- [ ] Phase 2 — Hub panel shell (accordion + title-bar hub toggle)
-- [ ] Phase 3 — Nexus nest tree (Major/Minor)
+- [x] Phase 1 — Dynamic module toolbar (nav rail)
+- [x] Phase 2 — Hub panel shell (accordion + title-bar hub toggle)
+- [x] Phase 3 — Nexus nest tree (Major/Minor)
 
 **M2 — Module core**
 - [ ] Phase 4 — Module Inspector (detail spec · UI spec · attributes · tags · links)
@@ -139,55 +139,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 1 — Dynamic module toolbar
-- **Goal:** replace `#nav-sidebar`'s fixed `.nexus-only` buttons with a
-  "create Major module" tool (opens the Classifier flow, Phase 5) + an icon
-  strip auto-populated from Major modules (icon + color from Icon
-  Collection). Scribe / Sage Hut / Import Dock / Artisan stay pinned.
-- **Panel:** `#nav-sidebar`. **Reference:** VS Code Activity Bar / Obsidian ribbon.
-- **Reuses:** `.nav-btn` styling, `I.*` icon dict, `toast()`.
-- **New:** dynamic icon population (today's icons are static markup in
-  `index.html`); per-module active state; color dot badge.
-- **Files:** `index.html`, `src/renderer/core.js`
-  (`updateTopNavButton`/`buildModuleSubNav` reworked), `src/db/module.js`,
-  `main.js`, `preload.js`, `style.css`.
-- **Depends:** Section E schema. **i18n:** `createMajorModule`, kind names ×2 sets.
-- **Acceptance:** create a Major module → its icon appears on the rail,
-  tinted with its color; clicking opens it; pinned tools unchanged.
-
-### Phase 2 — Hub panel shell
-- **Goal:** three-section accordion (Nexus nest / Sage Hut / Import Dock) in
-  `#left-panel-inner`, independently collapsible (Nexus nest expanded by
-  default), plus the **hub toggle** button in the title bar and removal of
-  title-bar tabs (tab strip itself lands in Phase 19).
-- **Panel:** `#left-panel` → `#left-panel-inner` + `#title-tab-bar`.
-- **Reference:** VS Code sidebar panel stack; Obsidian sidebar toggle.
-- **Reuses:** `.ph` header pattern, `--r`/`--rs`, `--border`,
-  `setLeftPanelCollapsed()`.
-- **New:** accordion mechanic (no precedent in codebase); hub-toggle button.
-- **Files:** `index.html`, new `src/renderer/hub.js`, `src/renderer/core.js`,
-  `style.css`.
-- **Depends:** —. **i18n:** `nexusNest`, `sageHut`, `importDock`, `toggleHub`.
-- **Acceptance:** all three sections collapse/expand independently; state
-  survives restart (localStorage); title bar shows no tabs; toggle hides and
-  shows the hub.
-
-### Phase 3 — Nexus nest tree
-- **Goal:** the Major/Minor tree. Majors freely drag-reorderable (grip ⠿ on
-  hover); Minors nested one level under their Major and **not movable**.
-  Rows show the **kind icon tinted with the item's color** (no plain color
-  dots) + name + kind badge (unique/classic per Settings).
-- **Panel:** Nexus nest accordion section.
-- **Reference:** Obsidian file tree.
-- **Reuses:** `.li` row shape, `x()` escaping, `openModal()` for rename.
-- **New:** drag-reorder for Majors (`display_order`); enforced one-level lock.
-- **Files:** `src/renderer/hub.js`, `src/db/module.js` (`getTree`,
-  `reorder`, `move` rejected for Minors), `preload.js`, `main.js`.
-- **Depends:** 2, E. **i18n:** kind names, `newMinorModule`.
-- **Acceptance:** drag Major above/below another → order persists; Minor
-  rows have no grip and cannot be dragged; every kind shows its icon in the
-  item's color; clicking a Minor opens it in the builder (except Collector).
 
 ### Phase 4 — Module Inspector
 - **Goal:** docked right-side panel in the builder for the focused module:
@@ -522,6 +473,33 @@ user-visible string goes through `t('key')` in **all 18 locales**
    no title-bar tabs + hub toggle, font-size setting, custom themes,
    Sketcher, Import Dock linking/viewers, Icon Collection, Designer,
    Viewer's three views) are folded into Sections A/B above.
+6. **M1 build strategy (Phases 1-3, implemented):** built **additively**,
+   not as a literal replacement. The legacy Director/Navigator/Hero/Writer/
+   Scribe/Sage/Artisan modules and their `.nav-btn.nexus-only` rail buttons
+   are untouched and stay fully reachable exactly as before — Phase 23's own
+   acceptance criterion ("old fixed nav-rail buttons gone") already implies
+   they still exist until then, so removing them in Phase 1 would have
+   contradicted Phase 23 and broken the app's only way to reach existing
+   user data for the whole M1-M6 window. Concretely: the new Major-module
+   icon strip is *inserted* into `#nav-sidebar` (after `#nav-logo-btn`),
+   not a replacement of the existing buttons; the Nexus nest / Sage Hut /
+   Import Dock accordion replaces only the old flat module-card list inside
+   `renderNexusHome()` (`#left-panel-inner`) on the vault-picker screen —
+   Sage Hut's row opens the real Sage module via the existing `selectModule
+   ('sage')`, so nothing about Sage itself is reimplemented; Import Dock is
+   a static "coming later" placeholder until Phase 18. Title-bar project
+   tabs (`#project-tabs`) are also left in place — Phase 2's mockup shows
+   them removed, but that's only safe once Phase 19's builder tab strip
+   exists to replace them, so removal is deferred to Phase 19 as that
+   phase's own dependency chain (`19 → M1`) already implies.
+   Opening a Major/Minor module (any kind other than Collector) renders a
+   minimal placeholder detail (name, kind badge, tinted icon) in
+   `#main-inner` — the real per-kind editors (Table/Canvas/Chat/…) are
+   Phases 5-16; nothing about this placeholder is meant to survive once a
+   kind gets its real renderer. The Classifier create flow used for now is
+   a plain name/kind-select/color modal, not the full type-picker + Icon
+   Collection picker — that arrives with Phase 5 and should replace
+   `moduleFormModal()` in `src/renderer/hub.js` rather than sit beside it.
 
 ---
 

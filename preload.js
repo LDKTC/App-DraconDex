@@ -25,6 +25,15 @@ contextBridge.exposeInMainWorld('api', {
     updateContent: (id,content)   => inv('note:updateContent', id,content),
     delete:        (id)           => inv('note:delete', id),
   },
+  module: {
+    getTree: (nx)        => inv('module:getTree', nx),
+    get:     (id)        => inv('module:get', id),
+    create:  (data)      => inv('module:create', data),
+    update:  (id,data)   => inv('module:update', id,data),
+    delete:  (id)        => inv('module:delete', id),
+    reorder: (nx,ids)    => inv('module:reorder', nx,ids),
+    count:   (nx)        => inv('module:count', nx),
+  },
   wiki: {
     resolve:    (name,nx)  => inv('wiki:resolve', name,nx),
     backlinks:  (key)      => inv('wiki:backlinks', key),

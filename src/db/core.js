@@ -817,6 +817,27 @@ function initDB() {
       target_text TEXT NOT NULL,
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- v3 module system (progress.md M1): Major/Minor tree living in the Nexus
+    -- nest, independent of the legacy project/world_project/game_project/
+    -- write_project trees. parent_id NULL = Major (freely reorderable via
+    -- display_order), set = Minor (locked one level under its Major).
+    CREATE TABLE IF NOT EXISTS module (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      parent_id INTEGER REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      kind TEXT NOT NULL CHECK(kind IN ('collector','manager','inspector','classifier',
+        'locator','chronicler','wanderer','narrator','author','scribe','drafter',
+        'viewer','connector','sketcher','designer')),
+      icon TEXT,
+      icon_color INTEGER REFERENCES use_color(id),
+      color INTEGER REFERENCES use_color(id),
+      display_order INTEGER NOT NULL DEFAULT 0,
+      pinned INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   if (!hasColumn(db, 'relation_type', 'color')) {
@@ -1019,6 +1040,10 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_note_folder_parent        ON note_folder(parent_ref);
     CREATE INDEX IF NOT EXISTS idx_wiki_link_src             ON wiki_link(src_key);
     CREATE INDEX IF NOT EXISTS idx_wiki_link_target          ON wiki_link(target_key);
+
+    -- Module system (v3)
+    CREATE INDEX IF NOT EXISTS idx_module_nexus              ON module(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_parent             ON module(parent_id);
   `);
 }
 
