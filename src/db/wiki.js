@@ -29,6 +29,7 @@ const RESOLVERS = [
   ['world', (d, n, nx) => d.prepare(`SELECT id FROM world_project WHERE (? IS NULL OR nexus_ref=?) AND name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'world_'],
   ['game',  (d, n, nx) => d.prepare(`SELECT id FROM game_project WHERE (? IS NULL OR nexus_ref=?) AND name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'game_'],
   ['write', (d, n, nx) => d.prepare(`SELECT id FROM write_project WHERE (? IS NULL OR nexus_ref=?) AND project_name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'write_'],
+  ['module', (d, n, nx) => d.prepare(`SELECT id FROM module WHERE (? IS NULL OR nexus_ref=?) AND name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'module_'],
 ];
 
 function resolveWikiName(rawName, nexusId) {
@@ -103,6 +104,9 @@ function rebuildWikiIndex() {
   `).all()) {
     reindexWikiLinks(`wchp_${r.id}`, r.chapter_content, r.nexus_ref);
   }
+  for (const r of d.prepare(`SELECT id, description, nexus_ref FROM module WHERE description LIKE '%[[%'`).all()) {
+    reindexWikiLinks(`module_${r.id}`, r.description, r.nexus_ref);
+  }
 }
 
 // ── Key hydration ───────────────────────────────────────────────────────────
@@ -120,6 +124,7 @@ const KEY_LOOKUPS = {
   world: { sql: `SELECT id, name FROM world_project WHERE id=?`,               type: 'project',   module: 'navigator' },
   game:  { sql: `SELECT id, name FROM game_project WHERE id=?`,                type: 'project',   module: 'hero' },
   write: { sql: `SELECT id, project_name AS name FROM write_project WHERE id=?`, type: 'project', module: 'writer' },
+  module: { sql: `SELECT id, name FROM module WHERE id=?`, type: 'module', module: 'hub' },
 };
 
 function resolveEntityKeys(keys) {
@@ -176,6 +181,7 @@ function quickIndex(nexusId) {
   add(`SELECT id, name, NULL AS color_code FROM world_project WHERE (? IS NULL OR nexus_ref=?)`, 'world_', 'project', 'navigator');
   add(`SELECT id, name, NULL AS color_code FROM game_project WHERE (? IS NULL OR nexus_ref=?)`, 'game_', 'project', 'hero');
   add(`SELECT id, project_name AS name, NULL AS color_code FROM write_project WHERE (? IS NULL OR nexus_ref=?)`, 'write_', 'project', 'writer');
+  add(`SELECT m.id, m.name, uc.color_code FROM module m LEFT JOIN use_color uc ON uc.id=m.color WHERE (? IS NULL OR m.nexus_ref=?)`, 'module_', 'module', 'hub');
   return out;
 }
 
@@ -334,6 +340,7 @@ function getEntityPath(key) {
         const r = d.prepare(`SELECT project_id FROM write_note WHERE id=?`).get(id);
         return r && { kind: 'write', writeId: r.project_id, wnoteId: id };
       }
+      case 'module': return { kind: 'module', moduleId: id };
     }
   } catch (_) {}
   return null;
@@ -364,6 +371,7 @@ const CONTENT_SOURCES = {
   note: { get: `SELECT content AS c FROM note WHERE id=?`, set: `UPDATE note SET content=?, update_at=datetime('now') WHERE id=?` },
   obj:  { get: `SELECT note AS c FROM object WHERE id=?`,  set: `UPDATE object SET note=?, update_at=datetime('now') WHERE id=?` },
   wchp: { get: `SELECT chapter_content AS c FROM write_chapter WHERE id=?`, set: `UPDATE write_chapter SET chapter_content=?, update_at=datetime('now') WHERE id=?` },
+  module: { get: `SELECT description AS c FROM module WHERE id=?`, set: `UPDATE module SET description=?, update_at=datetime('now') WHERE id=?` },
 };
 
 function renameWikiTarget(targetKey, oldName, newName) {

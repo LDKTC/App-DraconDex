@@ -203,26 +203,33 @@ async function deleteModuleNode(id) {
   toast(t('deleted'), 'ok');
 }
 
-// ═══ Open a module — minimal placeholder detail; the real per-kind
-// renderers (Table/Canvas/Editor/...) are Phases 5-16 ═════════════════
-function openModuleNode(id) {
+// ═══ Open a module — minimal placeholder content + the Module Inspector
+// dock (Phase 4); the real per-kind renderers (Table/Canvas/Editor/...)
+// are Phases 5-16 ═══════════════════════════════════════════════════
+async function openModuleNode(id) {
   const m = findModuleNode(id);
   if (!m) return;
   if (m.kind === 'collector') { if (m.parent_id == null) toggleMajorExpand(id); return; }
   S.activeModuleNode = m;
   renderModuleRail();
   renderNexusHome();
+  await loadInspectorData(id);
+  if (S.activeModuleNode?.id === id) renderNexusHome();
 }
 
 function buildModuleDetailHtml(m) {
   const col = m.icon_color_code || m.color_code || 'var(--accent)';
-  return `
-    <div class="detail-head" style="border-left:4px solid ${x(col)};padding-left:12px">
-      <h2 style="margin:0;font-size:1.1em">${x(m.name)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${x(KIND_LABEL[m.kind] || m.kind)}</span></h2>
+  return `<div class="module-builder">
+    <div class="module-main">
+      <div class="detail-head" style="border-left:4px solid ${x(col)};padding-left:12px">
+        <h2 style="margin:0;font-size:1.1em">${x(m.name)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${x(KIND_LABEL[m.kind] || m.kind)}</span></h2>
+      </div>
+      <div class="empty" style="margin-top:40px">
+        <div class="ei" style="color:${x(col)}">${I[KIND_ICON[m.kind]] || I.layer}</div>
+        <h3>${x(m.name)}</h3>
+        <p>${x(KIND_LABEL[m.kind] || m.kind)}</p>
+      </div>
     </div>
-    <div class="empty" style="margin-top:40px">
-      <div class="ei" style="color:${x(col)}">${I[KIND_ICON[m.kind]] || I.layer}</div>
-      <h3>${x(m.name)}</h3>
-      <p>${x(KIND_LABEL[m.kind] || m.kind)}</p>
-    </div>`;
+    ${buildInspectorHtml(m)}
+  </div>`;
 }

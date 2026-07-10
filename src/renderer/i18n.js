@@ -78,7 +78,10 @@ const L = {
     createMajorModule:'Create Major module', majorModuleNew:'New Major Module', minorModuleNew:'New Minor Module',
     moduleKind:'Kind', moduleEdit:'Edit Module', moduleDeleteConfirm:'Delete this module? Minor modules inside it will also be deleted.',
     nexusNest:'Nexus nest', sageHut:'Sage Hut', importDock:'Import Dock', importDockComingSoon:'Coming in a future update',
-    toggleHub:'Toggle hub panel', nestEmpty:'No modules yet — create your first Major module.', addMinorModule:'Add Minor module'
+    toggleHub:'Toggle hub panel', nestEmpty:'No modules yet — create your first Major module.', addMinorModule:'Add Minor module',
+    moduleInspector:'Module Inspector', moduleDetailSpec:'Module detail spec', moduleAttribute:'Module attribute',
+    moduleUiSpec:'Module UI spec', moduleLink:'Module link', tagLink:'Tag link', addAttribute:'Add attribute',
+    addDetail:'Add detail…', versionHistory:'Version History', versionHistoryComingSoon:'Version History is coming in a future update.'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
@@ -154,7 +157,10 @@ const L = {
     createMajorModule:'メジャーモジュールを作成', majorModuleNew:'新しいメジャーモジュール', minorModuleNew:'新しいマイナーモジュール',
     moduleKind:'種類', moduleEdit:'モジュールを編集', moduleDeleteConfirm:'このモジュールを削除しますか？中のマイナーモジュールも削除されます。',
     nexusNest:'Nexusネスト', sageHut:'セージハット', importDock:'インポートドック', importDockComingSoon:'今後のアップデートで追加予定',
-    toggleHub:'ハブパネルの表示切替', nestEmpty:'モジュールがありません — 最初のメジャーモジュールを作成しましょう。', addMinorModule:'マイナーモジュールを追加'
+    toggleHub:'ハブパネルの表示切替', nestEmpty:'モジュールがありません — 最初のメジャーモジュールを作成しましょう。', addMinorModule:'マイナーモジュールを追加',
+    moduleInspector:'モジュールインスペクター', moduleDetailSpec:'モジュール詳細仕様', moduleAttribute:'モジュール属性',
+    moduleUiSpec:'モジュールUI仕様', moduleLink:'モジュールリンク', tagLink:'タグリンク', addAttribute:'属性を追加',
+    addDetail:'詳細を追加…', versionHistory:'バージョン履歴', versionHistoryComingSoon:'バージョン履歴は今後のアップデートで追加予定です。'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
@@ -230,7 +236,10 @@ const L = {
     createMajorModule:'메이저 모듈 만들기', majorModuleNew:'새 메이저 모듈', minorModuleNew:'새 마이너 모듈',
     moduleKind:'종류', moduleEdit:'모듈 편집', moduleDeleteConfirm:'이 모듈을 삭제할까요? 안의 마이너 모듈도 함께 삭제됩니다.',
     nexusNest:'Nexus 둥지', sageHut:'세이지 헛', importDock:'임포트 독', importDockComingSoon:'추후 업데이트에서 제공됩니다',
-    toggleHub:'허브 패널 전환', nestEmpty:'아직 모듈이 없습니다 — 첫 메이저 모듈을 만들어 보세요.', addMinorModule:'마이너 모듈 추가'
+    toggleHub:'허브 패널 전환', nestEmpty:'아직 모듈이 없습니다 — 첫 메이저 모듈을 만들어 보세요.', addMinorModule:'마이너 모듈 추가',
+    moduleInspector:'모듈 인스펙터', moduleDetailSpec:'모듈 상세 사양', moduleAttribute:'모듈 속성',
+    moduleUiSpec:'모듈 UI 사양', moduleLink:'모듈 링크', tagLink:'태그 링크', addAttribute:'속성 추가',
+    addDetail:'세부 정보 추가…', versionHistory:'버전 기록', versionHistoryComingSoon:'버전 기록은 추후 업데이트에서 제공됩니다.'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
@@ -306,7 +315,10 @@ const L = {
     createMajorModule:'สร้าง Major module', majorModuleNew:'Major Module ใหม่', minorModuleNew:'Minor Module ใหม่',
     moduleKind:'ประเภท', moduleEdit:'แก้ไข Module', moduleDeleteConfirm:'ลบ module นี้? Minor module ข้างในจะถูกลบไปด้วย',
     nexusNest:'Nexus nest', sageHut:'Sage Hut', importDock:'Import Dock', importDockComingSoon:'จะมาในอัปเดตถัดไป',
-    toggleHub:'เปิด/ปิดแผง hub', nestEmpty:'ยังไม่มี module — สร้าง Major module แรกของคุณ', addMinorModule:'เพิ่ม Minor module'
+    toggleHub:'เปิด/ปิดแผง hub', nestEmpty:'ยังไม่มี module — สร้าง Major module แรกของคุณ', addMinorModule:'เพิ่ม Minor module',
+    moduleInspector:'Module Inspector', moduleDetailSpec:'Module detail spec', moduleAttribute:'Module attribute',
+    moduleUiSpec:'Module UI spec', moduleLink:'Module link', tagLink:'Tag link', addAttribute:'เพิ่ม attribute',
+    addDetail:'เพิ่มรายละเอียด...', versionHistory:'ประวัติเวอร์ชัน', versionHistoryComingSoon:'ประวัติเวอร์ชันจะมาในอัปเดตถัดไป'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
@@ -382,7 +394,10 @@ const L = {
     createMajorModule:'创建主模块', majorModuleNew:'新建主模块', minorModuleNew:'新建次模块',
     moduleKind:'类型', moduleEdit:'编辑模块', moduleDeleteConfirm:'删除此模块？其中的次模块也会一并删除。',
     nexusNest:'Nexus 巢', sageHut:'Sage Hut 智库', importDock:'导入坞', importDockComingSoon:'将在后续更新中推出',
-    toggleHub:'切换 hub 面板', nestEmpty:'还没有模块 — 创建你的第一个主模块。', addMinorModule:'添加次模块'
+    toggleHub:'切换 hub 面板', nestEmpty:'还没有模块 — 创建你的第一个主模块。', addMinorModule:'添加次模块',
+    moduleInspector:'模块检查器', moduleDetailSpec:'模块详情规格', moduleAttribute:'模块属性',
+    moduleUiSpec:'模块 UI 规格', moduleLink:'模块链接', tagLink:'标签链接', addAttribute:'添加属性',
+    addDetail:'添加详情…', versionHistory:'版本历史', versionHistoryComingSoon:'版本历史将在后续更新中推出。'
   },
   vi: {
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
@@ -458,7 +473,10 @@ const L = {
     createMajorModule:'Tạo Major module', majorModuleNew:'Major Module mới', minorModuleNew:'Minor Module mới',
     moduleKind:'Loại', moduleEdit:'Sửa Module', moduleDeleteConfirm:'Xóa module này? Các Minor module bên trong cũng sẽ bị xóa.',
     nexusNest:'Nexus nest', sageHut:'Sage Hut', importDock:'Import Dock', importDockComingSoon:'Sẽ có trong bản cập nhật sau',
-    toggleHub:'Bật/tắt bảng hub', nestEmpty:'Chưa có module — hãy tạo Major module đầu tiên.', addMinorModule:'Thêm Minor module'
+    toggleHub:'Bật/tắt bảng hub', nestEmpty:'Chưa có module — hãy tạo Major module đầu tiên.', addMinorModule:'Thêm Minor module',
+    moduleInspector:'Module Inspector', moduleDetailSpec:'Chi tiết module', moduleAttribute:'Thuộc tính module',
+    moduleUiSpec:'UI spec của module', moduleLink:'Liên kết module', tagLink:'Liên kết tag', addAttribute:'Thêm thuộc tính',
+    addDetail:'Thêm chi tiết…', versionHistory:'Lịch sử phiên bản', versionHistoryComingSoon:'Lịch sử phiên bản sẽ có trong bản cập nhật sau.'
   },
   id: {
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
@@ -534,7 +552,10 @@ const L = {
     createMajorModule:'Buat Major module', majorModuleNew:'Major Module Baru', minorModuleNew:'Minor Module Baru',
     moduleKind:'Jenis', moduleEdit:'Edit Module', moduleDeleteConfirm:'Hapus module ini? Minor module di dalamnya juga akan terhapus.',
     nexusNest:'Nexus nest', sageHut:'Sage Hut', importDock:'Import Dock', importDockComingSoon:'Akan hadir di pembaruan berikutnya',
-    toggleHub:'Alihkan panel hub', nestEmpty:'Belum ada module — buat Major module pertamamu.', addMinorModule:'Tambah Minor module'
+    toggleHub:'Alihkan panel hub', nestEmpty:'Belum ada module — buat Major module pertamamu.', addMinorModule:'Tambah Minor module',
+    moduleInspector:'Module Inspector', moduleDetailSpec:'Spesifikasi detail module', moduleAttribute:'Atribut module',
+    moduleUiSpec:'Spesifikasi UI module', moduleLink:'Tautan module', tagLink:'Tautan tag', addAttribute:'Tambah atribut',
+    addDetail:'Tambah detail…', versionHistory:'Riwayat Versi', versionHistoryComingSoon:'Riwayat Versi akan hadir di pembaruan berikutnya.'
   },
   es: {
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
@@ -610,7 +631,10 @@ const L = {
     createMajorModule:'Crear módulo Mayor', majorModuleNew:'Nuevo Módulo Mayor', minorModuleNew:'Nuevo Módulo Menor',
     moduleKind:'Tipo', moduleEdit:'Editar módulo', moduleDeleteConfirm:'¿Eliminar este módulo? Los módulos menores dentro también se eliminarán.',
     nexusNest:'Nido de Nexus', sageHut:'Sage Hut', importDock:'Muelle de importación', importDockComingSoon:'Disponible en una futura actualización',
-    toggleHub:'Alternar panel hub', nestEmpty:'Aún no hay módulos — crea tu primer módulo Mayor.', addMinorModule:'Añadir módulo Menor'
+    toggleHub:'Alternar panel hub', nestEmpty:'Aún no hay módulos — crea tu primer módulo Mayor.', addMinorModule:'Añadir módulo Menor',
+    moduleInspector:'Inspector de Módulo', moduleDetailSpec:'Especificación de detalle del módulo', moduleAttribute:'Atributo del módulo',
+    moduleUiSpec:'Especificación de UI del módulo', moduleLink:'Enlace de módulo', tagLink:'Enlace de etiqueta', addAttribute:'Añadir atributo',
+    addDetail:'Añadir detalle…', versionHistory:'Historial de versiones', versionHistoryComingSoon:'El historial de versiones llegará en una futura actualización.'
   },
   pt: {
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
@@ -686,7 +710,10 @@ const L = {
     createMajorModule:'Criar módulo Maior', majorModuleNew:'Novo Módulo Maior', minorModuleNew:'Novo Módulo Menor',
     moduleKind:'Tipo', moduleEdit:'Editar módulo', moduleDeleteConfirm:'Excluir este módulo? Os módulos menores dentro dele também serão excluídos.',
     nexusNest:'Ninho do Nexus', sageHut:'Sage Hut', importDock:'Doca de importação', importDockComingSoon:'Chegará em uma atualização futura',
-    toggleHub:'Alternar painel hub', nestEmpty:'Ainda não há módulos — crie seu primeiro módulo Maior.', addMinorModule:'Adicionar módulo Menor'
+    toggleHub:'Alternar painel hub', nestEmpty:'Ainda não há módulos — crie seu primeiro módulo Maior.', addMinorModule:'Adicionar módulo Menor',
+    moduleInspector:'Inspetor de Módulo', moduleDetailSpec:'Especificação de detalhe do módulo', moduleAttribute:'Atributo do módulo',
+    moduleUiSpec:'Especificação de UI do módulo', moduleLink:'Link de módulo', tagLink:'Link de tag', addAttribute:'Adicionar atributo',
+    addDetail:'Adicionar detalhe…', versionHistory:'Histórico de Versões', versionHistoryComingSoon:'O histórico de versões chegará em uma atualização futura.'
   },
   fr: {
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
@@ -762,7 +789,10 @@ const L = {
     createMajorModule:'Créer un module Majeur', majorModuleNew:'Nouveau Module Majeur', minorModuleNew:'Nouveau Module Mineur',
     moduleKind:'Type', moduleEdit:'Modifier le module', moduleDeleteConfirm:'Supprimer ce module ? Les modules mineurs qu’il contient seront aussi supprimés.',
     nexusNest:'Nid du Nexus', sageHut:'Sage Hut', importDock:'Quai d’import', importDockComingSoon:'Disponible dans une prochaine mise à jour',
-    toggleHub:'Afficher/masquer le panneau hub', nestEmpty:'Aucun module — créez votre premier module Majeur.', addMinorModule:'Ajouter un module Mineur'
+    toggleHub:'Afficher/masquer le panneau hub', nestEmpty:'Aucun module — créez votre premier module Majeur.', addMinorModule:'Ajouter un module Mineur',
+    moduleInspector:'Inspecteur de Module', moduleDetailSpec:'Spécification de détail du module', moduleAttribute:'Attribut du module',
+    moduleUiSpec:'Spécification UI du module', moduleLink:'Lien de module', tagLink:'Lien de tag', addAttribute:'Ajouter un attribut',
+    addDetail:'Ajouter un détail…', versionHistory:'Historique des versions', versionHistoryComingSoon:'L’historique des versions arrivera dans une prochaine mise à jour.'
   },
   de: {
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
@@ -838,7 +868,10 @@ const L = {
     createMajorModule:'Hauptmodul erstellen', majorModuleNew:'Neues Hauptmodul', minorModuleNew:'Neues Nebenmodul',
     moduleKind:'Art', moduleEdit:'Modul bearbeiten', moduleDeleteConfirm:'Dieses Modul löschen? Enthaltene Nebenmodule werden ebenfalls gelöscht.',
     nexusNest:'Nexus-Nest', sageHut:'Sage Hut', importDock:'Import-Dock', importDockComingSoon:'Kommt in einem zukünftigen Update',
-    toggleHub:'Hub-Panel umschalten', nestEmpty:'Noch keine Module — erstelle dein erstes Hauptmodul.', addMinorModule:'Nebenmodul hinzufügen'
+    toggleHub:'Hub-Panel umschalten', nestEmpty:'Noch keine Module — erstelle dein erstes Hauptmodul.', addMinorModule:'Nebenmodul hinzufügen',
+    moduleInspector:'Modul-Inspektor', moduleDetailSpec:'Moduldetail-Spezifikation', moduleAttribute:'Modulattribut',
+    moduleUiSpec:'Modul-UI-Spezifikation', moduleLink:'Modul-Link', tagLink:'Tag-Link', addAttribute:'Attribut hinzufügen',
+    addDetail:'Detail hinzufügen…', versionHistory:'Versionsverlauf', versionHistoryComingSoon:'Der Versionsverlauf kommt in einem zukünftigen Update.'
   },
   ru: {
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
@@ -914,7 +947,10 @@ const L = {
     createMajorModule:'Создать главный модуль', majorModuleNew:'Новый главный модуль', minorModuleNew:'Новый вложенный модуль',
     moduleKind:'Тип', moduleEdit:'Изменить модуль', moduleDeleteConfirm:'Удалить этот модуль? Вложенные модули внутри также будут удалены.',
     nexusNest:'Гнездо Nexus', sageHut:'Sage Hut', importDock:'Док импорта', importDockComingSoon:'Появится в будущем обновлении',
-    toggleHub:'Показать/скрыть панель hub', nestEmpty:'Пока нет модулей — создайте первый главный модуль.', addMinorModule:'Добавить вложенный модуль'
+    toggleHub:'Показать/скрыть панель hub', nestEmpty:'Пока нет модулей — создайте первый главный модуль.', addMinorModule:'Добавить вложенный модуль',
+    moduleInspector:'Инспектор модуля', moduleDetailSpec:'Спецификация модуля', moduleAttribute:'Атрибут модуля',
+    moduleUiSpec:'UI-спецификация модуля', moduleLink:'Ссылка модуля', tagLink:'Ссылка тега', addAttribute:'Добавить атрибут',
+    addDetail:'Добавить деталь…', versionHistory:'История версий', versionHistoryComingSoon:'История версий появится в будущем обновлении.'
   },
   it: {
     settings:'Impostazioni', theme:'Tema', language:'Lingua', uiSize:'Dimensione UI', cancel:'Annulla',
@@ -990,7 +1026,10 @@ const L = {
     createMajorModule:'Crea modulo Maggiore', majorModuleNew:'Nuovo Modulo Maggiore', minorModuleNew:'Nuovo Modulo Minore',
     moduleKind:'Tipo', moduleEdit:'Modifica modulo', moduleDeleteConfirm:'Eliminare questo modulo? Anche i moduli minori al suo interno verranno eliminati.',
     nexusNest:'Nido del Nexus', sageHut:'Sage Hut', importDock:'Banchina di importazione', importDockComingSoon:'Disponibile in un futuro aggiornamento',
-    toggleHub:'Attiva/disattiva pannello hub', nestEmpty:'Nessun modulo ancora — crea il tuo primo modulo Maggiore.', addMinorModule:'Aggiungi modulo Minore'
+    toggleHub:'Attiva/disattiva pannello hub', nestEmpty:'Nessun modulo ancora — crea il tuo primo modulo Maggiore.', addMinorModule:'Aggiungi modulo Minore',
+    moduleInspector:'Ispettore Modulo', moduleDetailSpec:'Specifica dettaglio modulo', moduleAttribute:'Attributo modulo',
+    moduleUiSpec:'Specifica UI modulo', moduleLink:'Link modulo', tagLink:'Link tag', addAttribute:'Aggiungi attributo',
+    addDetail:'Aggiungi dettaglio…', versionHistory:'Cronologia versioni', versionHistoryComingSoon:'La cronologia versioni arriverà in un futuro aggiornamento.'
   },
   nl: {
     settings:'Instellingen', theme:'Thema', language:'Taal', uiSize:'UI-grootte', cancel:'Annuleren',
@@ -1066,7 +1105,10 @@ const L = {
     createMajorModule:'Hoofdmodule maken', majorModuleNew:'Nieuwe Hoofdmodule', minorModuleNew:'Nieuwe Submodule',
     moduleKind:'Soort', moduleEdit:'Module bewerken', moduleDeleteConfirm:'Deze module verwijderen? Submodules erin worden ook verwijderd.',
     nexusNest:'Nexus-nest', sageHut:'Sage Hut', importDock:'Importdok', importDockComingSoon:'Komt in een toekomstige update',
-    toggleHub:'Hub-paneel wisselen', nestEmpty:'Nog geen modules — maak je eerste Hoofdmodule.', addMinorModule:'Submodule toevoegen'
+    toggleHub:'Hub-paneel wisselen', nestEmpty:'Nog geen modules — maak je eerste Hoofdmodule.', addMinorModule:'Submodule toevoegen',
+    moduleInspector:'Module-inspector', moduleDetailSpec:'Module detailspecificatie', moduleAttribute:'Module-attribuut',
+    moduleUiSpec:'Module UI-specificatie', moduleLink:'Module-link', tagLink:'Tag-link', addAttribute:'Attribuut toevoegen',
+    addDetail:'Detail toevoegen…', versionHistory:'Versiegeschiedenis', versionHistoryComingSoon:'Versiegeschiedenis komt in een toekomstige update.'
   },
   pl: {
     settings:'Ustawienia', theme:'Motyw', language:'Język', uiSize:'Rozmiar UI', cancel:'Anuluj',
@@ -1142,7 +1184,10 @@ const L = {
     createMajorModule:'Utwórz moduł główny', majorModuleNew:'Nowy moduł główny', minorModuleNew:'Nowy moduł podrzędny',
     moduleKind:'Rodzaj', moduleEdit:'Edytuj moduł', moduleDeleteConfirm:'Usunąć ten moduł? Zawarte w nim moduły podrzędne również zostaną usunięte.',
     nexusNest:'Gniazdo Nexus', sageHut:'Sage Hut', importDock:'Dok importu', importDockComingSoon:'Pojawi się w przyszłej aktualizacji',
-    toggleHub:'Przełącz panel hub', nestEmpty:'Brak modułów — utwórz swój pierwszy moduł główny.', addMinorModule:'Dodaj moduł podrzędny'
+    toggleHub:'Przełącz panel hub', nestEmpty:'Brak modułów — utwórz swój pierwszy moduł główny.', addMinorModule:'Dodaj moduł podrzędny',
+    moduleInspector:'Inspektor modułu', moduleDetailSpec:'Specyfikacja szczegółów modułu', moduleAttribute:'Atrybut modułu',
+    moduleUiSpec:'Specyfikacja UI modułu', moduleLink:'Link modułu', tagLink:'Link tagu', addAttribute:'Dodaj atrybut',
+    addDetail:'Dodaj szczegół…', versionHistory:'Historia wersji', versionHistoryComingSoon:'Historia wersji pojawi się w przyszłej aktualizacji.'
   },
   uk: {
     settings:'Налаштування', theme:'Тема', language:'Мова', uiSize:'Розмір інтерфейсу', cancel:'Скасувати',
@@ -1218,7 +1263,10 @@ const L = {
     createMajorModule:'Створити головний модуль', majorModuleNew:'Новий головний модуль', minorModuleNew:'Новий вкладений модуль',
     moduleKind:'Тип', moduleEdit:'Редагувати модуль', moduleDeleteConfirm:'Видалити цей модуль? Вкладені модулі всередині також будуть видалені.',
     nexusNest:'Гніздо Nexus', sageHut:'Sage Hut', importDock:'Док імпорту', importDockComingSoon:'З’явиться в майбутньому оновленні',
-    toggleHub:'Перемкнути панель hub', nestEmpty:'Ще немає модулів — створіть перший головний модуль.', addMinorModule:'Додати вкладений модуль'
+    toggleHub:'Перемкнути панель hub', nestEmpty:'Ще немає модулів — створіть перший головний модуль.', addMinorModule:'Додати вкладений модуль',
+    moduleInspector:'Інспектор модуля', moduleDetailSpec:'Специфікація модуля', moduleAttribute:'Атрибут модуля',
+    moduleUiSpec:'UI-специфікація модуля', moduleLink:'Посилання модуля', tagLink:'Посилання тегу', addAttribute:'Додати атрибут',
+    addDetail:'Додати деталь…', versionHistory:'Історія версій', versionHistoryComingSoon:'Історія версій з’явиться в майбутньому оновленні.'
   },
   tr: {
     settings:'Ayarlar', theme:'Tema', language:'Dil', uiSize:'Arayüz Boyutu', cancel:'İptal',
@@ -1294,7 +1342,10 @@ const L = {
     createMajorModule:'Major modül oluştur', majorModuleNew:'Yeni Major Modül', minorModuleNew:'Yeni Minor Modül',
     moduleKind:'Tür', moduleEdit:'Modülü Düzenle', moduleDeleteConfirm:'Bu modül silinsin mi? İçindeki Minor modüller de silinecek.',
     nexusNest:'Nexus yuvası', sageHut:'Sage Hut', importDock:'İçe Aktarma Rıhtımı', importDockComingSoon:'Gelecek bir güncellemede gelecek',
-    toggleHub:'Hub panelini aç/kapat', nestEmpty:'Henüz modül yok — ilk Major modülünü oluştur.', addMinorModule:'Minor modül ekle'
+    toggleHub:'Hub panelini aç/kapat', nestEmpty:'Henüz modül yok — ilk Major modülünü oluştur.', addMinorModule:'Minor modül ekle',
+    moduleInspector:'Modül Denetleyicisi', moduleDetailSpec:'Modül detay şartnamesi', moduleAttribute:'Modül özniteliği',
+    moduleUiSpec:'Modül UI şartnamesi', moduleLink:'Modül bağlantısı', tagLink:'Etiket bağlantısı', addAttribute:'Öznitelik ekle',
+    addDetail:'Detay ekle…', versionHistory:'Sürüm Geçmişi', versionHistoryComingSoon:'Sürüm Geçmişi gelecek bir güncellemede gelecek.'
   },
   qd: {
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
@@ -1370,7 +1421,10 @@ const L = {
     createMajorModule:'Kryneth Majyra Modyul', majorModuleNew:'Modyul Majyra Vyrran', minorModuleNew:'Modyul Minyra Vyrran',
     moduleKind:'Kynda', moduleEdit:'Zhakrii Modyul', moduleDeleteConfirm:'Vhoreth thys modyul? Modyul minyra withyn shalle vhoreth too.',
     nexusNest:'Nexus Nystha', sageHut:'Saje Hytt', importDock:'Importh Dokka', importDockComingSoon:'Comythe in a fyture updayt',
-    toggleHub:'Swyvv thy Hub panylle', nestEmpty:'No modyul yeth — kryneth thy fyrst Majyra Modyul.', addMinorModule:'Addyth Minyra Modyul'
+    toggleHub:'Swyvv thy Hub panylle', nestEmpty:'No modyul yeth — kryneth thy fyrst Majyra Modyul.', addMinorModule:'Addyth Minyra Modyul',
+    moduleInspector:'Modyul Skryha', moduleDetailSpec:'Modyul Detayl Speka', moduleAttribute:'Modyul Aspektyx',
+    moduleUiSpec:'Modyul UI Speka', moduleLink:'Modyul Lynkath', tagLink:'Tagg Lynkath', addAttribute:'Addyth Aspektyx',
+    addDetail:'Addyth Detayl…', versionHistory:'Vyrsion Sagaal', versionHistoryComingSoon:'Vyrsion Sagaal comythe in a fyture updayt.'
   },
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文', vi:'VI - Tiếng Việt', id:'ID - Bahasa Indonesia', es:'ES - Español', pt:'PT - Português (Brasil)', fr:'FR - Français', de:'DE - Deutsch', ru:'RU - Русский', it:'IT - Italiano', nl:'NL - Nederlands', pl:'PL - Polski', uk:'UA - Українська', tr:'TR - Türkçe', qd:'🐉 Draconic' };

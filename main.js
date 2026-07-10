@@ -127,9 +127,18 @@ h('module:getTree',     (nx)          => db.getTree(nx));
 h('module:get',         (id)          => db.getModule(id));
 h('module:create',      (data)        => db.createModule(data));
 h('module:update',      (id,data)     => db.updateModule(id,data));
+h('module:updateDescription', (id,d)  => db.updateModuleDescription(id,d));
 h('module:delete',      (id)          => db.deleteModule(id));
 h('module:reorder',     (nx,ids)      => db.reorderMajors(nx,ids));
 h('module:count',       (nx)          => db.countModules(nx));
+h('module:getAttrs',    (id)          => db.getModuleAttrs(id));
+h('module:upsertAttr',  (id,aid,n,v)  => db.upsertModuleAttr(id,aid,n,v));
+h('module:deleteAttr',  (id)          => db.deleteModuleAttr(id));
+h('module:getUi',       (id)          => db.getModuleUi(id));
+h('module:setUi',       (id,k,v)      => db.setModuleUi(id,k,v));
+h('module:getTags',     (id)          => db.getModuleTags(id));
+h('module:setTags',     (id,tags)     => db.setModuleTags(id,tags));
+h('module:getLinks',    (id)          => db.getModuleLinks(id));
 
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));

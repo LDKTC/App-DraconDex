@@ -26,7 +26,7 @@ chrome and theme system — no new design system.
 - [x] Phase 3 — Nexus nest tree (Major/Minor)
 
 **M2 — Module core**
-- [ ] Phase 4 — Module Inspector (detail spec · UI spec · attributes · tags · links)
+- [x] Phase 4 — Module Inspector (detail spec · UI spec · attributes · tags · links)
 - [ ] Phase 5 — Category "Classifier" (+ Icon Collection picker)
 - [ ] Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
 
@@ -139,25 +139,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 4 — Module Inspector
-- **Goal:** docked right-side panel in the builder for the focused module:
-  **Module detail spec** (type, description, kind-specific settings),
-  **Module attribute** (free-form key–value, "+ สร้างอิสระ ไม่ต้องใช้ template"),
-  **Tag link** row, **Module link** (Outgoing `[[…]]` + Backlinks),
-  **Module UI spec** (active view, kind-specific display options), and the
-  Version History entry point (Phase 21).
-- **Panel:** right dock in `#main-area`. **Reference:** Obsidian properties panel.
-- **Reuses:** `.fg` shapes, `btn-p`/`btn-s`, `hashtagSelector()`,
-  `api.wiki.backlinks/outgoing`.
-- **New:** the panel itself; `module_attribute` + `module_ui` storage.
-- **Files:** new `src/renderer/inspector.js`, `src/db/module.js`,
-  `preload.js`, `main.js`, `style.css`.
-- **Depends:** 3, E. **i18n:** `moduleDetailSpec`, `moduleAttribute`,
-  `moduleUiSpec`, `moduleLink`, `tagLink`, `addAttribute`, `outgoing`, `backlinks`.
-- **Acceptance:** open any Minor → Inspector shows its specs; add a free-form
-  attribute on a Locator → persists; tag chips and link chips render; links
-  navigate on click.
 
 ### Phase 5 — Category "Classifier"
 - **Goal:** category creation flow — pick a template as the core (from
@@ -500,6 +481,25 @@ user-visible string goes through `t('key')` in **all 18 locales**
    a plain name/kind-select/color modal, not the full type-picker + Icon
    Collection picker — that arrives with Phase 5 and should replace
    `moduleFormModal()` in `src/renderer/hub.js` rather than sit beside it.
+7. **Phase 4 build notes (implemented):** the Inspector (`src/renderer/
+   inspector.js`) is docked inside the same `#main-inner` placeholder from
+   Phase 1-3 (a `.module-builder` flex row: `.module-main` + `.module-
+   inspector`), not a separate builder pane — there is no builder yet
+   (Phase 19). Module links are wired through the *existing* generic
+   `wiki_link` system exactly as Section E.2 specifies: `src/db/wiki.js`
+   gained a `module` resolver, `KEY_LOOKUPS` entry, `quickIndex`/
+   `getEntityPath` cases and a `CONTENT_SOURCES` entry, so modules are now
+   first-class wiki citizens — any content can `[[link]]` to a module and
+   vice versa, `openEntityByKey()` navigates to them, and renaming a module
+   rewrites `[[old name]]` occurrences elsewhere (`renameWikiTarget`) the
+   same way object/chapter renames already did. The `description` column
+   added to `module` is the free-text field wikilinks live in — kind-
+   specific "detail spec" fields (grid scale, linked timeline, …) don't
+   exist yet since no kind has kind-specific settings until Phases 5+; the
+   Module UI spec section is a placeholder pointing at Version History
+   (Phase 21) for the same reason. `getAttrs/upsertAttr/deleteAttr`,
+   `getUi/setUi`, `getTags/setTags`, `getLinks` all match Section E.3's
+   `api.module.*` surface as specified.
 
 ---
 
@@ -543,8 +543,10 @@ module            id, nexus_ref, parent_id (NULL = Major; set = Minor, one level
                   name, kind TEXT CHECK(kind IN ('collector','manager','inspector',
                   'classifier','locator','chronicler','wanderer','narrator','author',
                   'scribe','drafter','viewer','connector','sketcher','designer')),
-                  icon TEXT, icon_color→use_color, color→use_color,
+                  icon TEXT, icon_color→use_color, color→use_color, description TEXT,
                   display_order INT, pinned INT DEFAULT 0
+                  -- description (added in Phase 4): free-text "Module detail spec"
+                  -- field, [[wikilink]]-indexed under key kind `module_<id>` (below)
 module_attribute  id, module_ref→module, attr_name, attr_value, display_order   -- free-form "+"
 module_ui         id, module_ref, ui_key, ui_value                              -- ":" incl. active view
 module_hashtag    module_ref, hashtag_id  (UNIQUE pair)

@@ -117,7 +117,7 @@ const S = {
   // v3 module system state (Nexus nest hub — progress.md Phases 1-3). Additive
   // alongside the legacy Director/Navigator/Hero/Writer/Scribe/Sage/Artisan
   // modules; see progress.md Section C for the scoping decision.
-  moduleTree:[], activeModuleNode:null,
+  moduleTree:[], activeModuleNode:null, inspectorData:null,
   hubOpen:loadHubOpen(),
   moduleCollapsed:new Set(),
   dragMajorId:null,
@@ -1387,6 +1387,11 @@ async function openEntityByKey(key) {
       S.writeSeries = p.seriesId; S.writeBook = p.bookId; S.writeChapter = p.chapterId;
       await renderWriterView();
     }
+  } else if (p.kind === 'module') {
+    S.activeModule = null; S.view = 'nexus';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    updateTopNavButton();
+    await openModuleNode(p.moduleId);
   }
   trackRecentEntity(key);
 }

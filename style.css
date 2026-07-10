@@ -821,6 +821,28 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .li:hover .grip{opacity:.7}
 .li.sel{background:var(--raised);color:var(--t1)}
 
+/* Module Inspector dock (progress.md Phase 4) */
+.module-builder{display:flex;gap:0;margin:-18px -22px;min-height:calc(100% + 36px)}
+.module-main{flex:1;min-width:0;padding:18px 22px}
+.module-inspector{width:290px;flex-shrink:0;border-left:1px solid var(--border);background:var(--surface);padding-bottom:14px}
+.insp-head{padding:10px 14px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;
+	letter-spacing:.06em;text-transform:uppercase;color:var(--t2);display:flex;align-items:center;gap:7px}
+.insp-label{padding:10px 14px 4px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3)}
+.prop{display:flex;align-items:center;gap:8px;padding:5px 14px;font-size:12px}
+.prop .pk{width:88px;color:var(--t3);flex-shrink:0}
+.prop .pv{flex:1;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prop .pv.ghost{color:var(--t3);font-style:italic}
+.prop .acts{margin-left:auto}
+.insp-desc-wrap{padding:4px 14px 8px}
+.insp-desc-wrap textarea{width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
+	padding:7px 9px;color:var(--t1);font-size:12px;font-family:inherit;resize:vertical}
+.insp-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px 14px 10px;align-items:center}
+.insp-attr:hover .acts{display:flex}
+.insp-attr .acts{display:none;gap:2px}
+.htag{font-size:10.5px;border:1px solid var(--border);border-radius:9px;padding:1px 8px;color:var(--t2);background:transparent;cursor:default}
+.htag.lk{border-color:var(--accent);color:var(--accentH);cursor:pointer}
+.htag.lk:hover{background:var(--hover)}
+
 /* ═══ MARKDOWN EDITOR (mdeditor.js — Scribe notes, object notes) ═══ */
 .scribe-editor{display:flex;flex-direction:column;height:100%;min-height:0}
 .mded-head{display:flex;align-items:center;gap:10px;padding:4px 2px 8px;border-bottom:1px solid var(--border);margin-bottom:8px}

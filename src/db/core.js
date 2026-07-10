@@ -833,10 +833,37 @@ function initDB() {
       icon TEXT,
       icon_color INTEGER REFERENCES use_color(id),
       color INTEGER REFERENCES use_color(id),
+      description TEXT,
       display_order INTEGER NOT NULL DEFAULT 0,
       pinned INTEGER NOT NULL DEFAULT 0,
       create_at TEXT NOT NULL DEFAULT (datetime('now')),
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Module Inspector (Phase 4): free-form attributes, per-kind UI spec
+    -- (active view etc., populated from Phase 5 onward) and tag links.
+    CREATE TABLE IF NOT EXISTS module_attribute (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      attr_name TEXT NOT NULL,
+      attr_value TEXT,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS module_ui (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      ui_key TEXT NOT NULL,
+      ui_value TEXT,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(module_ref, ui_key)
+    );
+
+    CREATE TABLE IF NOT EXISTS module_hashtag (
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(module_ref, hashtag_id)
     );
   `);
 
@@ -1042,8 +1069,11 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_wiki_link_target          ON wiki_link(target_key);
 
     -- Module system (v3)
-    CREATE INDEX IF NOT EXISTS idx_module_nexus              ON module(nexus_ref);
-    CREATE INDEX IF NOT EXISTS idx_module_parent             ON module(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_module_nexus            ON module(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_parent           ON module(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_module_attribute_module ON module_attribute(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_ui_module        ON module_ui(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_hashtag_tag      ON module_hashtag(hashtag_id);
   `);
 }
 
