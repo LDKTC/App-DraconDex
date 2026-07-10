@@ -218,6 +218,8 @@ h('color:delete',   (id)         => db.deleteColor(id));
 // Timeline
 h('timeline:getAll',  (pid) => db.getTimelines(pid));
 h('timeline:create',  (pid,n,c) => db.createTimeline(pid,n,c));
+h('timeline:getModuleTimelines', (moduleRef) => db.getModuleTimelines(moduleRef));
+h('timeline:createModuleTimeline', (moduleRef,n,c) => db.createModuleTimeline(moduleRef,n,c));
 h('timeline:update',  (id,n,c) => db.updateTimeline(id,n,c));
 h('timeline:delete',  (id) => db.deleteTimeline(id));
 h('timeline:getOrCreateDate', (d,m,y,hh,mm) => db.getOrCreateDate(d,m,y,hh,mm));

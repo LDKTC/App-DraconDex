@@ -123,6 +123,8 @@ contextBridge.exposeInMainWorld('api', {
   timeline: {
     getAll:  (pid)        => inv('timeline:getAll', pid),
     create:  (pid,n,c)    => inv('timeline:create', pid,n,c),
+    getModuleTimelines: (moduleRef) => inv('timeline:getModuleTimelines', moduleRef),
+    createModuleTimeline: (moduleRef,n,c) => inv('timeline:createModuleTimeline', moduleRef,n,c),
     update:  (id,n,c)     => inv('timeline:update', id,n,c),
     delete:  (id)         => inv('timeline:delete', id),
     getOrCreateDate: (d,m,y,hh,mm) => inv('timeline:getOrCreateDate', d,m,y,hh,mm),

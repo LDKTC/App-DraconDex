@@ -914,6 +914,7 @@ function initDB() {
     try { db.prepare(`ALTER TABLE module ADD COLUMN cat_type TEXT CHECK(cat_type IN ('object','element','character'))`).run(); } catch (_) {}
   }
   migrateMapV3(db);
+  migrateTimelineV3(db);
 
   if (!hasColumn(db, 'relation_type', 'color')) {
     try { db.prepare(`ALTER TABLE relation_type ADD COLUMN color INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
@@ -1023,6 +1024,32 @@ function migrateMapV3(db) {
   }
 }
 
+// Same table-rebuild pattern as migrateMapV3: timeline.project_id was
+// NOT NULL, Chronicler timelines need it nullable (module_ref set instead).
+function migrateTimelineV3(db) {
+  if (!hasTable(db, 'timeline') || hasColumn(db, 'timeline', 'module_ref')) return;
+  try {
+    db.exec(`PRAGMA foreign_keys = OFF`);
+    db.exec(`
+      CREATE TABLE timeline_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        line_name TEXT,
+        project_id INTEGER REFERENCES project(id) ON DELETE CASCADE,
+        module_ref INTEGER REFERENCES module(id) ON DELETE CASCADE,
+        color INTEGER REFERENCES use_color(id),
+        update_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO timeline_new (id, line_name, project_id, color, update_at)
+        SELECT id, line_name, project_id, color, update_at FROM timeline;
+      DROP TABLE timeline;
+      ALTER TABLE timeline_new RENAME TO timeline;
+    `);
+    db.exec(`PRAGMA foreign_keys = ON`);
+  } catch (e) {
+    console.error('Timeline v3 migration error:', e);
+  }
+}
+
 function migrateWriterV27(db) {
   try {
     if (!hasTable(db, 'library_project')) return;
@@ -1064,6 +1091,7 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_object_category           ON object(category_id);
     CREATE INDEX IF NOT EXISTS idx_object_attribute_template ON object_attribute(template_id);
     CREATE INDEX IF NOT EXISTS idx_timeline_project          ON timeline(project_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_module            ON timeline(module_ref);
     CREATE INDEX IF NOT EXISTS idx_timeline_event_timeline   ON timeline_event(timeline_id);
     CREATE INDEX IF NOT EXISTS idx_timeline_event_start      ON timeline_event(start_at);
     CREATE INDEX IF NOT EXISTS idx_timeline_event_end        ON timeline_event(end_at);

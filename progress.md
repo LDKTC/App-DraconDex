@@ -32,7 +32,7 @@ chrome and theme system — no new design system.
 
 **M3 — Graph kinds**
 - [x] Phase 7 — Map "Locator"
-- [ ] Phase 8 — Timeline "Chronicler"
+- [x] Phase 8 — Timeline "Chronicler"
 - [ ] Phase 9 — TimeMap "Wanderer"
 - [ ] Phase 10 — Story "Narrator"
 
@@ -139,22 +139,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 8 — Timeline "Chronicler"
-- **Goal:** straight-line time graph; Events store date (d/m/y) + time
-  (h:min). **Node spacing is a true time scale** (px-per-day ratio, month
-  ruler on the axis) — never equal spacing. Pan/zoom as Phase 7.
-- **Panel:** builder. **Reference:** VS Code timeline view.
-- **Reuses:** `timeline.js` renderer; `timeline`/`timeline_date`/
-  `timeline_event` generalized with `module_ref`.
-- **New:** standalone module kind usable by any Major; time-scale layout.
-- **Files:** `src/renderer/mod/chronicler.js`, `src/db/timeline.js`.
-- **Depends:** 4, E. **Views (3):** One-line · Down-line + event list ·
-  **Compare Parallel** — overlay a second selected timeline: shared events
-  joined across both lines with dashed connectors; unshared events stay on
-  their own line.
-- **Acceptance:** events at 1-month vs 8-month gaps are visibly proportional;
-  compare mode joins a shared event across two timelines with a dashed line.
 
 ### Phase 9 — TimeMap "Wanderer"
 - **Goal:** Map + Timeline dual graph. A **MapEvent** references one existing
@@ -531,6 +515,50 @@ user-visible string goes through `t('key')` in **all 18 locales**
     specificity, later in file, `background` resets `background-image`),
     so it had to be bumped to match specificity rather than reordering the
     file.
+11. **Phase 8 build notes (implemented):** same generalize-don't-replace
+    call as Phase 7 — `timeline` gained a nullable `module_ref` via
+    `migrateTimelineV3` (identical table-rebuild shape to `migrateMapV3`),
+    since `getTimelines`/`getEventsByHashtag`/`hashtag.js`'s timeline join
+    all filter by `project_id` in a `WHERE` clause rather than an
+    `INNER JOIN` that would break on a NULL, and `timeline_event`/
+    `timeline_date` never reference `project_id` at all. A Chronicler
+    module owns any number of timeline "lines" directly (new
+    `getModuleTimelines`/`createModuleTimeline` in `src/db/timeline.js`,
+    scoped by `module_ref` the same way Director's project-scoped
+    `getTimelines`/`createTimeline` already worked) rather than nesting a
+    single container row, matching how a Director project also owns
+    several timelines side by side. `src/renderer/timeline.js`'s existing
+    true-time-scale SVG graph was split into a standalone
+    `buildTimelineGraphHtml(evs, tlid, color)` (previously inlined in
+    `renderTimelineDetail`) plus the already-reusable
+    `bindTimelineGraphInteractions(tlid)` (it only ever depended on DOM
+    ids and `timelineGraphState[tlid]`, never `S.project`) — Chronicler's
+    Down-line view calls both directly instead of duplicating the SVG
+    generation, the same reuse shape as Locator sharing `map.js`. A month/
+    year ruler (`buildTimelineRulerSvg`, tick step switches from month to
+    year past a 4-year span to avoid overdraw) was added to that shared
+    builder to satisfy the Goal's "month ruler on the axis" line, so
+    Director's legacy Timeline view picked up the same ruler as a side
+    effect — left in, same reasoning as Phase 7's on-shape map labels
+    flowing back into Director's Map. One-line and Compare Parallel are
+    new, lighter builders in `src/renderer/mod/chronicler.js` that plot
+    on flat axis lines instead of the zigzag layout, but stay on the same
+    SVG id/dataset contract (`data-start-ts`, `.tl-ruler-tick`, etc.) so
+    `bindTimelineGraphInteractions` drives their pan/wheel-zoom for free;
+    `updateTimelineGraphX()` gained two more rescale cases (`.tl-ruler-*`,
+    `.tl-cmp-link`) to keep ruler ticks and Compare's dashed connectors
+    correctly positioned through a zoom. A "shared event" in Compare
+    Parallel is defined as two events with the same `start_at` id (the
+    `timeline_date` row `getOrCreateDate` already dedupes identical dates
+    to) — the natural, no-extra-schema definition of "the same moment"
+    across two lines. Event modals are Chronicler-specific
+    (`openChroniclerEventModal` etc.) rather than reusing Director's
+    `openEventModal`/`openTimelineModal`: those are wired to
+    `S.project`/`S.timeline` and to the project-scoped Object↔Event and
+    Timeline↔Timeline relation systems (`relation_obtl`/`relation_tltl`),
+    which — like Classifier's own relation gap documented in item 8 above
+    — were out of scope for a module-scoped timeline; Chronicler's modals
+    cover name/dates/color/story only.
 
 ---
 
