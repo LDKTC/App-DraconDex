@@ -28,7 +28,7 @@ chrome and theme system — no new design system.
 **M2 — Module core**
 - [x] Phase 4 — Module Inspector (detail spec · UI spec · attributes · tags · links)
 - [x] Phase 5 — Category "Classifier" (+ Icon Collection picker)
-- [ ] Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
+- [x] Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
 
 **M3 — Graph kinds**
 - [ ] Phase 7 — Map "Locator"
@@ -139,23 +139,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
-- **Goal:** three organizational kinds. **Collector** groups items and is the
-  only kind that cannot open in the builder. **Manager** groups *and* opens
-  to browse its contents (card grid of children with counts). **Inspector**
-  (Detail) is a small note field.
-- **Panel:** nest rows; Manager/Detail open in builder.
-- **Reference:** Obsidian folder vs note distinction.
-- **Reuses:** `.li`, `.empty`, project browsing pattern from `director.js`,
-  `mdeditor.js` for the Detail note.
-- **New:** Collector as pure organizer.
-- **Files:** `src/renderer/mod/manager.js`, `src/renderer/mod/detail.js`,
-  `src/renderer/hub.js`.
-- **Depends:** 3, 4. **Views:** Manager (4): Cards · List · Table · Recent;
-  Detail (2): Note · Preview.
-- **Acceptance:** Collector rows have no open action; Manager tab shows child
-  cards with kind badges + counts; Detail saves a short note with wikilinks.
 
 ### Phase 7 — Map "Locator"
 - **Goal:** canvas with background grid for gauging distance.
@@ -509,6 +492,26 @@ user-visible string goes through `t('key')` in **all 18 locales**
    `classifier_attribute` values are edited inline (contenteditable table
    cells / detail-panel fields) with no version history yet — same
    Phase-21-shaped gap as everything else in M1-M2 so far.
+9. **Phase 6 build notes (implemented):** Collector's "cannot open in the
+   builder" behavior was already correct since Phase 3 (`openModuleNode()`
+   already special-cased `kind==='collector'` to toggle-expand instead of
+   opening) — Phase 6 added no Collector code, just re-verified it. Manager
+   (`src/renderer/mod/manager.js`) reads its children straight off the
+   `.children` array `api.module.getTree()` already attaches to Majors, so
+   the only network round-trip is the persisted view + a per-child
+   attribute count; "counts" is Phase 4's `module_attribute` count (generic
+   across every kind), not a kind-specific object count, since a generic
+   Manager has no way to know what "objects" mean for an arbitrary child
+   kind. Detail/Inspector (`src/renderer/mod/detail.js`) doesn't introduce
+   a new note field — it mounts the shared `createMarkdownEditor` (same
+   component Scribe/object notes use) directly on `module.description`
+   (the same field Phase 4's Inspector dock already edits in its small
+   textarea), so the two views literally show the same data. That surfaced
+   a real bug during testing — saving from the big editor left the Inspector
+   dock's mirrored textarea and outgoing-link chips stale until the module
+   was reopened — fixed by having the editor's save callback reload and
+   swap in a fresh Inspector dock (`.module-inspector` outerHTML) without
+   tearing down the editor mid-edit.
 
 ---
 

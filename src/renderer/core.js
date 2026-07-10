@@ -119,6 +119,7 @@ const S = {
   // modules; see progress.md Section C for the scoping decision.
   moduleTree:[], activeModuleNode:null, inspectorData:null,
   classifierData:null, classifierView:'table', classifierSelectedObject:null,
+  managerData:null, managerView:'cards',
   hubOpen:loadHubOpen(),
   moduleCollapsed:new Set(),
   dragMajorId:null,
@@ -1182,6 +1183,7 @@ function renderNexusHome() {
     <h3>${x(S.nexus.name)}</h3>
     <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;
+  if (S.activeModuleNode?.kind === 'inspector' && typeof mountDetailEditor === 'function') mountDetailEditor(S.activeModuleNode);
 }
 
 function renderNexusPicker() {

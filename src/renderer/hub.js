@@ -266,15 +266,23 @@ async function openModuleNode(id) {
   renderNexusHome();
   const loaders = [loadInspectorData(id)];
   if (m.kind === 'classifier' && typeof loadClassifierData === 'function') loaders.push(loadClassifierData(m));
+  if (m.kind === 'manager' && typeof loadManagerData === 'function') loaders.push(loadManagerData(m));
   await Promise.all(loaders);
   if (S.activeModuleNode?.id === id) renderNexusHome();
 }
 
+// Kind -> its main-content builder, defined in src/renderer/mod/<kind>.js.
+// Falls back to the generic placeholder for kinds without a real renderer yet.
+const KIND_MAIN_BUILDER = {
+  classifier: () => typeof buildClassifierMainHtml === 'function' && buildClassifierMainHtml,
+  manager: () => typeof buildManagerMainHtml === 'function' && buildManagerMainHtml,
+  inspector: () => typeof buildDetailMainHtml === 'function' && buildDetailMainHtml,
+};
+
 function buildModuleDetailHtml(m) {
   const col = m.icon_color_code || m.color_code || 'var(--accent)';
-  const mainHtml = m.kind === 'classifier' && typeof buildClassifierMainHtml === 'function'
-    ? buildClassifierMainHtml(m)
-    : `<div class="empty" style="margin-top:40px">
+  const builder = KIND_MAIN_BUILDER[m.kind]?.();
+  const mainHtml = builder ? builder(m) : `<div class="empty" style="margin-top:40px">
         <div class="ei" style="color:${x(col)}">${moduleIconHtml(m)}</div>
         <h3>${x(m.name)}</h3>
         <p>${x(KIND_LABEL[m.kind] || m.kind)}</p>
