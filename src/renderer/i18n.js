@@ -87,7 +87,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Default — build attributes from a template', catTypeElementDesc:'Like Object, plus Levelable / Condition toggles',
     catTypeCharacterDesc:'Like Object, plus one custom attribute for just this character',
-    levelable:'Levelable', condition:'Condition', addObject:'Add Object', editTemplate:'Edit Template', customAttribute:'Custom Attribute'
+    levelable:'Levelable', condition:'Condition', addObject:'Add Object', editTemplate:'Edit Template', customAttribute:'Custom Attribute',
+    locatorToolCreate:'Create point', locatorToolDelete:'Delete point', locatorToolMove:'Move point',
+    locatorPanHint:'Right-drag pans · Scroll zooms', locatorAreas:'Area', locatorAddArea:'Add Area'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
@@ -172,7 +174,9 @@ const L = {
     catTypeObject:'オブジェクト', catTypeElement:'エレメント', catTypeCharacter:'キャラクター',
     catTypeObjectDesc:'デフォルト — テンプレートから属性を作成', catTypeElementDesc:'Objectと同様、Levelable/Conditionの切替が追加',
     catTypeCharacterDesc:'Objectと同様、そのキャラクター専用の属性を1つ追加可能',
-    levelable:'レベル可能', condition:'条件', addObject:'オブジェクトを追加', editTemplate:'テンプレートを編集', customAttribute:'カスタム属性'
+    levelable:'レベル可能', condition:'条件', addObject:'オブジェクトを追加', editTemplate:'テンプレートを編集', customAttribute:'カスタム属性',
+    locatorToolCreate:'点を作成', locatorToolDelete:'点を削除', locatorToolMove:'点を移動',
+    locatorPanHint:'右ドラッグでパン · スクロールでズーム', locatorAreas:'エリア', locatorAddArea:'エリアを追加'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
@@ -257,7 +261,9 @@ const L = {
     catTypeObject:'오브젝트', catTypeElement:'엘리먼트', catTypeCharacter:'캐릭터',
     catTypeObjectDesc:'기본값 — 템플릿에서 속성 생성', catTypeElementDesc:'Object와 동일 + Levelable/Condition 전환 가능',
     catTypeCharacterDesc:'Object와 동일 + 해당 캐릭터 전용 속성 1개 추가 가능',
-    levelable:'레벨 가능', condition:'조건', addObject:'오브젝트 추가', editTemplate:'템플릿 편집', customAttribute:'커스텀 속성'
+    levelable:'레벨 가능', condition:'조건', addObject:'오브젝트 추가', editTemplate:'템플릿 편집', customAttribute:'커스텀 속성',
+    locatorToolCreate:'점 생성', locatorToolDelete:'점 삭제', locatorToolMove:'점 이동',
+    locatorPanHint:'우클릭 드래그로 이동 · 스크롤로 확대/축소', locatorAreas:'영역', locatorAddArea:'영역 추가'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
@@ -342,7 +348,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'ค่าเริ่มต้น — สร้าง Attribute จาก template ได้', catTypeElementDesc:'เหมือน Object + เลือกได้ว่า attribute จะ Levelable / มี Condition',
     catTypeCharacterDesc:'เหมือน Object + เพิ่ม custom attribute เฉพาะตัวละครนั้นได้ 1 รายการ',
-    levelable:'Levelable', condition:'Condition', addObject:'เพิ่ม Object', editTemplate:'แก้ไข Template', customAttribute:'Custom Attribute'
+    levelable:'Levelable', condition:'Condition', addObject:'เพิ่ม Object', editTemplate:'แก้ไข Template', customAttribute:'Custom Attribute',
+    locatorToolCreate:'สร้างจุด', locatorToolDelete:'ลบจุด', locatorToolMove:'ย้ายจุด',
+    locatorPanHint:'คลิกขวาลาก = เลื่อนกราฟ · Scroll = ซูม', locatorAreas:'Area', locatorAddArea:'เพิ่ม Area'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
@@ -427,7 +435,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'默认 — 从模板创建属性', catTypeElementDesc:'与 Object 相同，另可切换 Levelable / Condition',
     catTypeCharacterDesc:'与 Object 相同，还可为该角色单独添加 1 个自定义属性',
-    levelable:'可升级', condition:'条件', addObject:'添加 Object', editTemplate:'编辑模板', customAttribute:'自定义属性'
+    levelable:'可升级', condition:'条件', addObject:'添加 Object', editTemplate:'编辑模板', customAttribute:'自定义属性',
+    locatorToolCreate:'创建点', locatorToolDelete:'删除点', locatorToolMove:'移动点',
+    locatorPanHint:'右键拖动平移 · 滚轮缩放', locatorAreas:'区域', locatorAddArea:'添加区域'
   },
   vi: {
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
@@ -512,7 +522,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Mặc định — tạo thuộc tính từ template', catTypeElementDesc:'Giống Object, thêm tùy chọn Levelable / Condition',
     catTypeCharacterDesc:'Giống Object, thêm 1 thuộc tính riêng cho nhân vật đó',
-    levelable:'Có thể lên cấp', condition:'Điều kiện', addObject:'Thêm Object', editTemplate:'Sửa Template', customAttribute:'Thuộc tính tùy chỉnh'
+    levelable:'Có thể lên cấp', condition:'Điều kiện', addObject:'Thêm Object', editTemplate:'Sửa Template', customAttribute:'Thuộc tính tùy chỉnh',
+    locatorToolCreate:'Tạo điểm', locatorToolDelete:'Xóa điểm', locatorToolMove:'Di chuyển điểm',
+    locatorPanHint:'Kéo chuột phải để di chuyển · Cuộn để zoom', locatorAreas:'Khu vực', locatorAddArea:'Thêm khu vực'
   },
   id: {
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
@@ -597,7 +609,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Default — buat atribut dari template', catTypeElementDesc:'Seperti Object, tambah opsi Levelable / Condition',
     catTypeCharacterDesc:'Seperti Object, tambah 1 atribut khusus untuk karakter itu',
-    levelable:'Bisa Naik Level', condition:'Kondisi', addObject:'Tambah Object', editTemplate:'Edit Template', customAttribute:'Atribut Kustom'
+    levelable:'Bisa Naik Level', condition:'Kondisi', addObject:'Tambah Object', editTemplate:'Edit Template', customAttribute:'Atribut Kustom',
+    locatorToolCreate:'Buat titik', locatorToolDelete:'Hapus titik', locatorToolMove:'Pindahkan titik',
+    locatorPanHint:'Seret kanan untuk geser · Gulir untuk zoom', locatorAreas:'Area', locatorAddArea:'Tambah Area'
   },
   es: {
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
@@ -682,7 +696,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Predeterminado — crea atributos desde una plantilla', catTypeElementDesc:'Como Object, más opciones Levelable / Condition',
     catTypeCharacterDesc:'Como Object, más un atributo personalizado solo para ese personaje',
-    levelable:'Nivelable', condition:'Condición', addObject:'Añadir Object', editTemplate:'Editar Plantilla', customAttribute:'Atributo Personalizado'
+    levelable:'Nivelable', condition:'Condición', addObject:'Añadir Object', editTemplate:'Editar Plantilla', customAttribute:'Atributo Personalizado',
+    locatorToolCreate:'Crear punto', locatorToolDelete:'Eliminar punto', locatorToolMove:'Mover punto',
+    locatorPanHint:'Arrastra con clic derecho para desplazar · Rueda para zoom', locatorAreas:'Área', locatorAddArea:'Añadir Área'
   },
   pt: {
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
@@ -767,7 +783,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Padrão — cria atributos a partir de um template', catTypeElementDesc:'Como Object, mais opções Levelable / Condition',
     catTypeCharacterDesc:'Como Object, mais um atributo personalizado só para esse personagem',
-    levelable:'Nivelável', condition:'Condição', addObject:'Adicionar Object', editTemplate:'Editar Template', customAttribute:'Atributo Personalizado'
+    levelable:'Nivelável', condition:'Condição', addObject:'Adicionar Object', editTemplate:'Editar Template', customAttribute:'Atributo Personalizado',
+    locatorToolCreate:'Criar ponto', locatorToolDelete:'Excluir ponto', locatorToolMove:'Mover ponto',
+    locatorPanHint:'Arraste com o botão direito para mover · Role para zoom', locatorAreas:'Área', locatorAddArea:'Adicionar Área'
   },
   fr: {
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
@@ -852,7 +870,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Par défaut — crée des attributs depuis un modèle', catTypeElementDesc:'Comme Object, plus les options Levelable / Condition',
     catTypeCharacterDesc:'Comme Object, plus un attribut personnalisé pour ce personnage',
-    levelable:'Nivelable', condition:'Condition', addObject:'Ajouter un Object', editTemplate:'Modifier le modèle', customAttribute:'Attribut personnalisé'
+    levelable:'Nivelable', condition:'Condition', addObject:'Ajouter un Object', editTemplate:'Modifier le modèle', customAttribute:'Attribut personnalisé',
+    locatorToolCreate:'Créer un point', locatorToolDelete:'Supprimer un point', locatorToolMove:'Déplacer un point',
+    locatorPanHint:'Glisser-droit pour déplacer · Molette pour zoomer', locatorAreas:'Zone', locatorAddArea:'Ajouter une zone'
   },
   de: {
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
@@ -937,7 +957,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Standard — Attribute aus einer Vorlage erstellen', catTypeElementDesc:'Wie Object, plus Levelable-/Condition-Schalter',
     catTypeCharacterDesc:'Wie Object, plus ein individuelles Attribut nur für diesen Charakter',
-    levelable:'Levelbar', condition:'Bedingung', addObject:'Object hinzufügen', editTemplate:'Vorlage bearbeiten', customAttribute:'Individuelles Attribut'
+    levelable:'Levelbar', condition:'Bedingung', addObject:'Object hinzufügen', editTemplate:'Vorlage bearbeiten', customAttribute:'Individuelles Attribut',
+    locatorToolCreate:'Punkt erstellen', locatorToolDelete:'Punkt löschen', locatorToolMove:'Punkt verschieben',
+    locatorPanHint:'Rechtsklick-Ziehen zum Verschieben · Scrollen zum Zoomen', locatorAreas:'Gebiet', locatorAddArea:'Gebiet hinzufügen'
   },
   ru: {
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
@@ -1022,7 +1044,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'По умолчанию — атрибуты из шаблона', catTypeElementDesc:'Как Object, плюс переключатели Levelable / Condition',
     catTypeCharacterDesc:'Как Object, плюс один свой атрибут только для этого персонажа',
-    levelable:'Прокачиваемый', condition:'Условие', addObject:'Добавить Object', editTemplate:'Изменить шаблон', customAttribute:'Свой атрибут'
+    levelable:'Прокачиваемый', condition:'Условие', addObject:'Добавить Object', editTemplate:'Изменить шаблон', customAttribute:'Свой атрибут',
+    locatorToolCreate:'Создать точку', locatorToolDelete:'Удалить точку', locatorToolMove:'Переместить точку',
+    locatorPanHint:'Перетаскивание правой кнопкой — панорама · Прокрутка — масштаб', locatorAreas:'Область', locatorAddArea:'Добавить область'
   },
   it: {
     settings:'Impostazioni', theme:'Tema', language:'Lingua', uiSize:'Dimensione UI', cancel:'Annulla',
@@ -1107,7 +1131,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Predefinito — crea attributi da un modello', catTypeElementDesc:'Come Object, più le opzioni Levelable / Condition',
     catTypeCharacterDesc:'Come Object, più un attributo personalizzato solo per quel personaggio',
-    levelable:'Livellabile', condition:'Condizione', addObject:'Aggiungi Object', editTemplate:'Modifica modello', customAttribute:'Attributo personalizzato'
+    levelable:'Livellabile', condition:'Condizione', addObject:'Aggiungi Object', editTemplate:'Modifica modello', customAttribute:'Attributo personalizzato',
+    locatorToolCreate:'Crea punto', locatorToolDelete:'Elimina punto', locatorToolMove:'Sposta punto',
+    locatorPanHint:'Trascina con il tasto destro per spostare · Scorri per zoom', locatorAreas:'Area', locatorAddArea:'Aggiungi Area'
   },
   nl: {
     settings:'Instellingen', theme:'Thema', language:'Taal', uiSize:'UI-grootte', cancel:'Annuleren',
@@ -1192,7 +1218,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Standaard — attributen maken vanuit een sjabloon', catTypeElementDesc:'Zoals Object, plus Levelable-/Condition-schakelaars',
     catTypeCharacterDesc:'Zoals Object, plus één aangepast attribuut alleen voor dit personage',
-    levelable:'Levelbaar', condition:'Voorwaarde', addObject:'Object toevoegen', editTemplate:'Sjabloon bewerken', customAttribute:'Aangepast attribuut'
+    levelable:'Levelbaar', condition:'Voorwaarde', addObject:'Object toevoegen', editTemplate:'Sjabloon bewerken', customAttribute:'Aangepast attribuut',
+    locatorToolCreate:'Punt maken', locatorToolDelete:'Punt verwijderen', locatorToolMove:'Punt verplaatsen',
+    locatorPanHint:'Rechtermuisknop-slepen om te pannen · Scrollen om te zoomen', locatorAreas:'Gebied', locatorAddArea:'Gebied toevoegen'
   },
   pl: {
     settings:'Ustawienia', theme:'Motyw', language:'Język', uiSize:'Rozmiar UI', cancel:'Anuluj',
@@ -1277,7 +1305,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Domyślny — twórz atrybuty z szablonu', catTypeElementDesc:'Jak Object, plus przełączniki Levelable / Condition',
     catTypeCharacterDesc:'Jak Object, plus jeden własny atrybut tylko dla tej postaci',
-    levelable:'Z poziomami', condition:'Warunek', addObject:'Dodaj Object', editTemplate:'Edytuj szablon', customAttribute:'Własny atrybut'
+    levelable:'Z poziomami', condition:'Warunek', addObject:'Dodaj Object', editTemplate:'Edytuj szablon', customAttribute:'Własny atrybut',
+    locatorToolCreate:'Utwórz punkt', locatorToolDelete:'Usuń punkt', locatorToolMove:'Przesuń punkt',
+    locatorPanHint:'Przeciąganie prawym przyciskiem przesuwa · Przewijanie powiększa', locatorAreas:'Obszar', locatorAddArea:'Dodaj obszar'
   },
   uk: {
     settings:'Налаштування', theme:'Тема', language:'Мова', uiSize:'Розмір інтерфейсу', cancel:'Скасувати',
@@ -1362,7 +1392,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'За замовчуванням — атрибути з шаблону', catTypeElementDesc:'Як Object, плюс перемикачі Levelable / Condition',
     catTypeCharacterDesc:'Як Object, плюс один власний атрибут лише для цього персонажа',
-    levelable:'Прокачуваний', condition:'Умова', addObject:'Додати Object', editTemplate:'Редагувати шаблон', customAttribute:'Власний атрибут'
+    levelable:'Прокачуваний', condition:'Умова', addObject:'Додати Object', editTemplate:'Редагувати шаблон', customAttribute:'Власний атрибут',
+    locatorToolCreate:'Створити точку', locatorToolDelete:'Видалити точку', locatorToolMove:'Перемістити точку',
+    locatorPanHint:'Перетягування правою кнопкою — панорама · Прокрутка — масштаб', locatorAreas:'Область', locatorAddArea:'Додати область'
   },
   tr: {
     settings:'Ayarlar', theme:'Tema', language:'Dil', uiSize:'Arayüz Boyutu', cancel:'İptal',
@@ -1447,7 +1479,9 @@ const L = {
     catTypeObject:'Object', catTypeElement:'Element', catTypeCharacter:'Character',
     catTypeObjectDesc:'Varsayılan — şablondan öznitelik oluştur', catTypeElementDesc:'Object gibi, artı Levelable / Condition anahtarları',
     catTypeCharacterDesc:'Object gibi, artı yalnızca o karaktere özel 1 öznitelik',
-    levelable:'Seviyelenebilir', condition:'Koşul', addObject:'Object Ekle', editTemplate:'Şablonu Düzenle', customAttribute:'Özel Öznitelik'
+    levelable:'Seviyelenebilir', condition:'Koşul', addObject:'Object Ekle', editTemplate:'Şablonu Düzenle', customAttribute:'Özel Öznitelik',
+    locatorToolCreate:'Nokta oluştur', locatorToolDelete:'Nokta sil', locatorToolMove:'Noktayı taşı',
+    locatorPanHint:'Sağ tıkla sürükle = kaydır · Kaydırma tekerleği = yakınlaştır', locatorAreas:'Alan', locatorAddArea:'Alan Ekle'
   },
   qd: {
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
@@ -1532,7 +1566,9 @@ const L = {
     catTypeObject:'Objyct', catTypeElement:'Elemyntyx', catTypeCharacter:'Charactyr',
     catTypeObjectDesc:'Standyrd — kryneth Aspektyx frome a templyt', catTypeElementDesc:'Lyke Objyct, plys Levelable / Condition swytches',
     catTypeCharacterDesc:'Lyke Objyct, plys wyn custym aspektyx fyr thys charactyr onlye',
-    levelable:'Levylabyl', condition:'Condytion', addObject:'Addyth Objyct', editTemplate:'Zhakrii Templyt', customAttribute:'Custym Aspektyx'
+    levelable:'Levylabyl', condition:'Condytion', addObject:'Addyth Objyct', editTemplate:'Zhakrii Templyt', customAttribute:'Custym Aspektyx',
+    locatorToolCreate:'Kryneth Poyntyx', locatorToolDelete:'Vhoreth Poyntyx', locatorToolMove:'Movyth Poyntyx',
+    locatorPanHint:'Ryte-dragyth to pahn · Scrollyth to zoomyth', locatorAreas:'Areyx', locatorAddArea:'Addyth Areyx'
   },
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文', vi:'VI - Tiếng Việt', id:'ID - Bahasa Indonesia', es:'ES - Español', pt:'PT - Português (Brasil)', fr:'FR - Français', de:'DE - Deutsch', ru:'RU - Русский', it:'IT - Italiano', nl:'NL - Nederlands', pl:'PL - Polski', uk:'UA - Українська', tr:'TR - Türkçe', qd:'🐉 Draconic' };

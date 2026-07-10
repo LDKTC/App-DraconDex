@@ -166,6 +166,8 @@ contextBridge.exposeInMainWorld('api', {
     deleteArea: (id)         => inv('map:deleteArea', id),
     getPoints: (aid)         => inv('map:getPoints', aid),
     setPoints: (aid,points)  => inv('map:setPoints', aid, points),
+    getModuleMap: (mref)        => inv('map:getModuleMap', mref),
+    getOrCreateModuleMap: (mref) => inv('map:getOrCreateModuleMap', mref),
   },
   hashtag: {
     getAll:  ()           => inv('hashtag:getAll'),

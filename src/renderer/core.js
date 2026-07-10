@@ -120,6 +120,7 @@ const S = {
   moduleTree:[], activeModuleNode:null, inspectorData:null,
   classifierData:null, classifierView:'table', classifierSelectedObject:null,
   managerData:null, managerView:'cards',
+  locatorAreas:null,
   hubOpen:loadHubOpen(),
   moduleCollapsed:new Set(),
   dragMajorId:null,
@@ -1184,6 +1185,7 @@ function renderNexusHome() {
     <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;
   if (S.activeModuleNode?.kind === 'inspector' && typeof mountDetailEditor === 'function') mountDetailEditor(S.activeModuleNode);
+  if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
 }
 
 function renderNexusPicker() {

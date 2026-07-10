@@ -31,7 +31,7 @@ chrome and theme system — no new design system.
 - [x] Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
 
 **M3 — Graph kinds**
-- [ ] Phase 7 — Map "Locator"
+- [x] Phase 7 — Map "Locator"
 - [ ] Phase 8 — Timeline "Chronicler"
 - [ ] Phase 9 — TimeMap "Wanderer"
 - [ ] Phase 10 — Story "Narrator"
@@ -139,21 +139,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 7 — Map "Locator"
-- **Goal:** canvas with background grid for gauging distance.
-  **1 Area = multiple nodes** joined into a shape (polygon with vertex
-  nodes, translucent fill in the area's color) — the area's
-  name/coordinates/node count display *on the shape*. Right-drag pan, wheel
-  zoom, zoom control + hint pill, grid-scale label (e.g. `24px = 10 km`).
-- **Panel:** builder full canvas. **Reference:** Obsidian canvas.
-- **Reuses:** `map.js` canvas rendering; `map_area`/`map_point` already
-  separate area from points — **generalize** (add `module_ref`), don't replace.
-- **New:** polygon shape rendering; grid overlay; pan/zoom controls.
-- **Files:** `src/renderer/mod/locator.js`, `src/db/map.js`, `src/db/core.js`.
-- **Depends:** 4, E. **Views (2–3):** Canvas · Area list · (optional) Layers.
-- **Acceptance:** create an area, add ≥3 nodes → closed shape with fill and
-  vertex dots; label stays on shape while panning/zooming.
 
 ### Phase 8 — Timeline "Chronicler"
 - **Goal:** straight-line time graph; Events store date (d/m/y) + time
@@ -512,6 +497,40 @@ user-visible string goes through `t('key')` in **all 18 locales**
    was reopened — fixed by having the editor's save callback reload and
    swap in a fresh Inspector dock (`.module-inspector` outerHTML) without
    tearing down the editor mid-edit.
+10. **Phase 7 build notes (implemented):** matched Section E.2's
+    "generalize, don't replace" call — `map` gained a nullable `module_ref`
+    column via a table-rebuild migration (`migrateMapV3` in `src/db/core.js`,
+    same CREATE-new/copy/DROP/RENAME pattern as other v3 migrations) rather
+    than a parallel schema, since `map`/`map_area`/`map_point` had no
+    `wiki.js`/cross-module `INNER JOIN` coupling to worry about (unlike
+    Phase 5's Classifier) and Director's own map queries already filter by
+    `project_id`, so a `module_ref`-scoped row is invisible to them for free.
+    `src/renderer/map.js`'s existing Konva pan/zoom/polygon engine is shared
+    as-is between Director's legacy per-project Map and the new Locator
+    kind: the handful of call sites that used to assume a Director context
+    (`selectMapArea`/`setMapTool`/`createMapArea`/`saveMapArea`/`delMapArea`)
+    now route their refresh through a small `refreshMapHost()` dispatcher
+    that calls `mountLocatorBoard()` when `S.activeModuleNode?.kind ===
+    'locator'` and falls back to the original `renderMapView()` otherwise,
+    instead of forking the file. The on-shape label (area name + centroid
+    x/y + node count, required by this phase's acceptance criteria) and its
+    zoom-independent sizing (`fontSize: 12.5 / scale`, recentered via
+    `offsetX`/`offsetY`) were added directly inside `renderMapBoard()`, so
+    Director's legacy Map view picked up the same on-shape labels as a
+    side effect — left as-is since it's a strict improvement and keeps the
+    two Map surfaces visually consistent. Rescaling Circle/Line/Text
+    children on zoom (both the canvas wheel handler and Locator's +/−
+    buttons) was factored into one `rescaleMapLayer(layer, newScale)`
+    helper in `map.js` used by both `map.js`'s own wheel handler and
+    `zoomLocator()` in `src/renderer/mod/locator.js`, instead of duplicating
+    the rescale logic per call site. The distance grid (`24px = 10 km`) is
+    scoped to Locator only via a `.map-whiteboard.locator-board` compound
+    selector in `style.css` — a plain `.locator-board{background-image:…}`
+    rule was tried first but lost the cascade to the pre-existing
+    `.map-whiteboard{background:var(--raised)}` shorthand (equal
+    specificity, later in file, `background` resets `background-image`),
+    so it had to be bumped to match specificity rather than reordering the
+    file.
 
 ---
 

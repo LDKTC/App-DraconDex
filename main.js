@@ -257,6 +257,8 @@ h('map:updateArea',  (id,n,c) => db.updateMapArea(id,n,c));
 h('map:deleteArea',  (id) => db.deleteMapArea(id));
 h('map:getPoints',   (aid) => db.getMapAreaPoints(aid));
 h('map:setPoints',   (aid,points) => db.setMapAreaPoints(aid, points));
+h('map:getModuleMap',       (mref) => db.getModuleMap(mref));
+h('map:getOrCreateModuleMap', (mref) => db.getOrCreateModuleMap(mref));
 
 // Hashtag
 h('hashtag:getAll',  () => db.getHashtags());

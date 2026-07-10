@@ -915,6 +915,24 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .mgr-card-icon .icon{width:22px;height:22px}
 .mgr-card-count{font-size:10px;color:var(--t3)}
 
+/* Canvas chrome: pan/zoom hint pill + zoom control (progress.md Phase 7,
+   cross-cutting per Section A.3 #6 — every canvas/graph kind gets these) */
+.chint{position:absolute;left:14px;bottom:14px;z-index:3;font-size:10.5px;color:var(--t3);
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:4px 10px}
+.czoom{position:absolute;right:14px;bottom:14px;z-index:3;display:flex;align-items:center;gap:7px;
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:4px 8px}
+.zbtn{width:18px;height:18px;border:1px solid var(--border);border-radius:4px;display:inline-flex;
+	align-items:center;justify-content:center;color:var(--t2);font-size:12px;background:var(--raised);cursor:pointer}
+.zbtn:hover{background:var(--hover);color:var(--t1)}
+.zlvl{color:var(--t1);font-size:11px;min-width:34px;text-align:center}
+
+/* Locator (progress.md Phase 7) */
+.locator-scalelbl{margin-left:auto;font-size:11px;color:var(--t3)}
+.map-whiteboard.locator-board{
+	background-image:linear-gradient(rgba(255,255,255,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.11) 1px,transparent 1px),
+		linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+	background-size:120px 120px,120px 120px,24px 24px,24px 24px}
+
 /* ═══ MARKDOWN EDITOR (mdeditor.js — Scribe notes, object notes) ═══ */
 .scribe-editor{display:flex;flex-direction:column;height:100%;min-height:0}
 .mded-head{display:flex;align-items:center;gap:10px;padding:4px 2px 8px;border-bottom:1px solid var(--border);margin-bottom:8px}

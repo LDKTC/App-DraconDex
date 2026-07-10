@@ -913,6 +913,7 @@ function initDB() {
   if (!hasColumn(db, 'module', 'cat_type')) {
     try { db.prepare(`ALTER TABLE module ADD COLUMN cat_type TEXT CHECK(cat_type IN ('object','element','character'))`).run(); } catch (_) {}
   }
+  migrateMapV3(db);
 
   if (!hasColumn(db, 'relation_type', 'color')) {
     try { db.prepare(`ALTER TABLE relation_type ADD COLUMN color INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
@@ -990,6 +991,38 @@ function migrateNexusV28(db) {
 // v2.7 replaced the entire Writer module schema (library/series/document) with
 // the write_* tables. The old library data has no v2.7 equivalent and is
 // dropped; the new tables are created by the CREATE IF NOT EXISTS block above.
+// v3 (Phase 7): Locator reuses `map`/`map_area`/`map_point` instead of a
+// parallel schema like Classifier's — unlike object_category, nothing joins
+// `map` to `project` through an assumption every map has one (no wiki.js
+// resolver exists for maps at all yet, and Navigator's own map queries
+// already filter to matching project ids before ever reaching a JOIN), so
+// relaxing `project_id` and adding `module_ref` is safe here. SQLite can't
+// drop a NOT NULL with ALTER, so this rebuilds the table — ids are
+// preserved so map_area's FK and world_map.map_ref stay valid untouched.
+function migrateMapV3(db) {
+  if (!hasTable(db, 'map') || hasColumn(db, 'map', 'module_ref')) return;
+  try {
+    db.exec(`PRAGMA foreign_keys = OFF`);
+    db.exec(`
+      CREATE TABLE map_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        map_name TEXT,
+        project_id INTEGER REFERENCES project(id) ON DELETE CASCADE,
+        module_ref INTEGER REFERENCES module(id) ON DELETE CASCADE,
+        color INTEGER REFERENCES use_color(id),
+        update_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO map_new (id, map_name, project_id, color, update_at)
+        SELECT id, map_name, project_id, color, update_at FROM map;
+      DROP TABLE map;
+      ALTER TABLE map_new RENAME TO map;
+    `);
+    db.exec(`PRAGMA foreign_keys = ON`);
+  } catch (e) {
+    console.error('Map v3 migration error:', e);
+  }
+}
+
 function migrateWriterV27(db) {
   try {
     if (!hasTable(db, 'library_project')) return;
@@ -1035,6 +1068,7 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_timeline_event_start      ON timeline_event(start_at);
     CREATE INDEX IF NOT EXISTS idx_timeline_event_end        ON timeline_event(end_at);
     CREATE INDEX IF NOT EXISTS idx_map_project               ON map(project_id);
+    CREATE INDEX IF NOT EXISTS idx_map_module                ON map(module_ref);
     CREATE INDEX IF NOT EXISTS idx_map_area_map              ON map_area(map_id);
     CREATE INDEX IF NOT EXISTS idx_map_point_area            ON map_point(area_id);
     CREATE INDEX IF NOT EXISTS idx_relation_project          ON relation(project_id);

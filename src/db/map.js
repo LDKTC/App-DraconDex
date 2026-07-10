@@ -31,4 +31,21 @@ const setMapAreaPoints = (areaId, points = []) => {
   tx(areaId, Array.isArray(points) ? points : []);
 };
 
-module.exports = { getMaps, createMap, updateMap, deleteMap, getMapAreas, createMapArea, updateMapArea, deleteMapArea, getMapAreaPoints, setMapAreaPoints };
+// Locator (v3 Phase 7): a Locator module IS its map — one row, auto-created
+// on first open rather than picked from a list. See core.js's migrateMapV3
+// comment for why `map` was generalized (module_ref) instead of a parallel
+// schema, unlike Classifier.
+const getModuleMap = (moduleRef) =>
+  getDB().prepare(`SELECT m.*, uc.color_code FROM map m LEFT JOIN use_color uc ON m.color=uc.id WHERE m.module_ref=?`).get(moduleRef);
+
+function getOrCreateModuleMap(moduleRef) {
+  const existing = getModuleMap(moduleRef);
+  if (existing) return existing;
+  getDB().prepare(`INSERT INTO map (module_ref) VALUES (?)`).run(moduleRef);
+  return getModuleMap(moduleRef);
+}
+
+module.exports = {
+  getMaps, createMap, updateMap, deleteMap, getMapAreas, createMapArea, updateMapArea, deleteMapArea, getMapAreaPoints, setMapAreaPoints,
+  getModuleMap, getOrCreateModuleMap,
+};
