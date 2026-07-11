@@ -2323,3 +2323,18 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .nar-read-line{font-size:13px;color:var(--t2);line-height:1.8}
 .nar-read-line.ghost{color:var(--t3)}
 .nar-read-branch{font-size:11px;color:var(--accentH);margin-top:8px;border-top:1px dashed var(--border);padding-top:7px}
+
+/* Book "Author" (Phase 11, mockup 12) */
+.author-layout{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;min-height:480px}
+.author-chapters{width:230px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:10px 0;overflow-y:auto}
+.au-col-label{padding:0 14px 8px;font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--t2)}
+.author-chapters .li{margin:0 6px}
+.author-chapters .li.au-add{color:var(--t3);gap:6px}
+.author-main{flex:1;min-width:0;padding:14px 18px;overflow-y:auto;background:var(--bg)}
+.au-editor{height:calc(100vh - 300px);min-height:420px}
+.au-outline-sec{margin-bottom:14px}
+.au-outline-ch{font-size:13px;font-weight:650;color:var(--t1);cursor:pointer;padding:4px 0}
+.au-outline-ch:hover{color:var(--accentH)}
+.au-outline-h{font-size:12px;color:var(--t2);padding:2px 0}
+.au-outline-h.ghost{color:var(--t3)}
+.au-reading{max-width:680px;font-size:13.5px;line-height:2;color:var(--t2)}

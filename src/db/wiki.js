@@ -30,6 +30,7 @@ const RESOLVERS = [
   ['game',  (d, n, nx) => d.prepare(`SELECT id FROM game_project WHERE (? IS NULL OR nexus_ref=?) AND name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'game_'],
   ['write', (d, n, nx) => d.prepare(`SELECT id FROM write_project WHERE (? IS NULL OR nexus_ref=?) AND project_name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'write_'],
   ['module', (d, n, nx) => d.prepare(`SELECT id FROM module WHERE (? IS NULL OR nexus_ref=?) AND name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'module_'],
+  ['bchp',  (d, n, nx) => d.prepare(`SELECT ch.id FROM book_chapter ch JOIN module m ON ch.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?) AND ch.name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'bchp_'],
 ];
 
 function resolveWikiName(rawName, nexusId) {
@@ -107,6 +108,9 @@ function rebuildWikiIndex() {
   for (const r of d.prepare(`SELECT id, description, nexus_ref FROM module WHERE description LIKE '%[[%'`).all()) {
     reindexWikiLinks(`module_${r.id}`, r.description, r.nexus_ref);
   }
+  for (const r of d.prepare(`SELECT ch.id, ch.chapter_content, m.nexus_ref FROM book_chapter ch JOIN module m ON ch.module_ref=m.id WHERE ch.chapter_content LIKE '%[[%'`).all()) {
+    reindexWikiLinks(`bchp_${r.id}`, r.chapter_content, r.nexus_ref);
+  }
 }
 
 // ── Key hydration ───────────────────────────────────────────────────────────
@@ -125,6 +129,7 @@ const KEY_LOOKUPS = {
   game:  { sql: `SELECT id, name FROM game_project WHERE id=?`,                type: 'project',   module: 'hero' },
   write: { sql: `SELECT id, project_name AS name FROM write_project WHERE id=?`, type: 'project', module: 'writer' },
   module: { sql: `SELECT id, name FROM module WHERE id=?`, type: 'module', module: 'hub' },
+  bchp:  { sql: `SELECT id, name FROM book_chapter WHERE id=?`,               type: 'chapter',   module: 'author' },
 };
 
 function resolveEntityKeys(keys) {
@@ -182,6 +187,7 @@ function quickIndex(nexusId) {
   add(`SELECT id, name, NULL AS color_code FROM game_project WHERE (? IS NULL OR nexus_ref=?)`, 'game_', 'project', 'hero');
   add(`SELECT id, project_name AS name, NULL AS color_code FROM write_project WHERE (? IS NULL OR nexus_ref=?)`, 'write_', 'project', 'writer');
   add(`SELECT m.id, m.name, uc.color_code FROM module m LEFT JOIN use_color uc ON uc.id=m.color WHERE (? IS NULL OR m.nexus_ref=?)`, 'module_', 'module', 'hub');
+  add(`SELECT ch.id, ch.name, NULL AS color_code FROM book_chapter ch JOIN module m ON ch.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?)`, 'bchp_', 'chapter', 'author');
   return out;
 }
 
@@ -219,6 +225,7 @@ function getGraph(nexusId) {
   run(`SELECT c.id, c.game_ref FROM game_character c JOIN game_project g ON c.game_ref=g.id WHERE (? IS NULL OR g.nexus_ref=?)`, r => addEdge(`gchar_${r.id}`, `game_${r.game_ref}`));
   run(`SELECT e.id, c.game_ref FROM game_col_element e JOIN game_collection c ON e.collection_ref=c.id JOIN game_project g ON c.game_ref=g.id WHERE (? IS NULL OR g.nexus_ref=?)`, r => addEdge(`gel_${r.id}`, `game_${r.game_ref}`));
   run(`SELECT ch.id, s.project_id FROM write_chapter ch JOIN write_book b ON ch.book_id=b.id JOIN write_series s ON b.series_id=s.id JOIN write_project p ON s.project_id=p.id WHERE (? IS NULL OR p.nexus_ref=?)`, r => addEdge(`wchp_${r.id}`, `write_${r.project_id}`));
+  run(`SELECT ch.id, ch.module_ref FROM book_chapter ch JOIN module m ON ch.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?)`, r => addEdge(`bchp_${r.id}`, `module_${r.module_ref}`));
   // cross-module project links
   run(`SELECT wn.world_ref, wn.project_ref FROM world_novel wn JOIN world_project w ON wn.world_ref=w.id WHERE (? IS NULL OR w.nexus_ref=?)`, r => addEdge(`world_${r.world_ref}`, `proj_${r.project_ref}`));
   run(`SELECT gl.game_ref, gl.project_ref FROM game_novel_link gl JOIN game_project g ON gl.game_ref=g.id WHERE (? IS NULL OR g.nexus_ref=?)`, r => addEdge(`game_${r.game_ref}`, `proj_${r.project_ref}`));
@@ -341,6 +348,10 @@ function getEntityPath(key) {
         return r && { kind: 'write', writeId: r.project_id, wnoteId: id };
       }
       case 'module': return { kind: 'module', moduleId: id };
+      case 'bchp': {
+        const r = d.prepare(`SELECT module_ref FROM book_chapter WHERE id=?`).get(id);
+        return r && { kind: 'bchp', moduleId: r.module_ref, chapterId: id };
+      }
     }
   } catch (_) {}
   return null;
@@ -372,6 +383,7 @@ const CONTENT_SOURCES = {
   obj:  { get: `SELECT note AS c FROM object WHERE id=?`,  set: `UPDATE object SET note=?, update_at=datetime('now') WHERE id=?` },
   wchp: { get: `SELECT chapter_content AS c FROM write_chapter WHERE id=?`, set: `UPDATE write_chapter SET chapter_content=?, update_at=datetime('now') WHERE id=?` },
   module: { get: `SELECT description AS c FROM module WHERE id=?`, set: `UPDATE module SET description=?, update_at=datetime('now') WHERE id=?` },
+  bchp: { get: `SELECT chapter_content AS c FROM book_chapter WHERE id=?`, set: `UPDATE book_chapter SET chapter_content=?, update_at=datetime('now') WHERE id=?` },
 };
 
 function renameWikiTarget(targetKey, oldName, newName) {

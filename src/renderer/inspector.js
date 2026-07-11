@@ -72,6 +72,7 @@ function inspectorViewLabel(m, ui) {
   if (m.kind === 'chronicler') return (typeof CHRONICLER_VIEW_LABEL !== 'undefined' && CHRONICLER_VIEW_LABEL[v]) || 'One-line';
   if (m.kind === 'wanderer') return (typeof WANDERER_VIEW_LABEL !== 'undefined' && WANDERER_VIEW_LABEL[v]) || 'Dual';
   if (m.kind === 'narrator') return (typeof NARRATOR_VIEW_LABEL !== 'undefined' && NARRATOR_VIEW_LABEL[v]) || 'Board';
+  if (m.kind === 'author') return (typeof AUTHOR_VIEW_LABEL !== 'undefined' && AUTHOR_VIEW_LABEL[v]) || 'Editor';
   if (m.kind === 'locator') return 'Canvas';
   if (m.kind === 'inspector') return 'Note';
   return '—';

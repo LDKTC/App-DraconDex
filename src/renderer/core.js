@@ -1249,6 +1249,7 @@ function renderNexusHome() {
     mountNarratorBoard();
     if (S.narratorData?.view === 'reader') mountNarratorReader();
   }
+  if (S.activeModuleNode?.kind === 'author' && typeof mountAuthorEditor === 'function') mountAuthorEditor();
 }
 
 function renderNexusPicker() {
@@ -1455,10 +1456,13 @@ async function openEntityByKey(key) {
       S.writeSeries = p.seriesId; S.writeBook = p.bookId; S.writeChapter = p.chapterId;
       await renderWriterView();
     }
-  } else if (p.kind === 'module') {
+  } else if (p.kind === 'module' || p.kind === 'bchp') {
     S.activeModule = null; S.view = 'nexus';
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
     updateTopNavButton();
+    // Author chapter links land on the module with that chapter selected
+    // (loadAuthorData consumes the pending id).
+    if (p.kind === 'bchp') S.pendingAuthorChapter = p.chapterId;
     await openModuleNode(p.moduleId);
   }
   trackRecentEntity(key);

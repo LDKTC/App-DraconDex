@@ -81,6 +81,13 @@ contextBridge.exposeInMainWorld('api', {
     updateTalk:        (id,sp,tx)       => inv('narrator:updateTalk', id,sp,tx),
     deleteTalk:        (id)             => inv('narrator:deleteTalk', id),
   },
+  author: {
+    getChapters:   (mref)    => inv('author:getChapters', mref),
+    createChapter: (mref,n)  => inv('author:createChapter', mref,n),
+    renameChapter: (id,n)    => inv('author:renameChapter', id,n),
+    updateContent: (id,c)    => inv('author:updateContent', id,c),
+    deleteChapter: (id)      => inv('author:deleteChapter', id),
+  },
   wiki: {
     resolve:    (name,nx)  => inv('wiki:resolve', name,nx),
     backlinks:  (key)      => inv('wiki:backlinks', key),

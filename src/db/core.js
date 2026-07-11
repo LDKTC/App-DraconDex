@@ -920,6 +920,19 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Book "Author" (Phase 11). An Author module IS a book; its chapters
+    -- carry the long-form markdown content (wikilink-indexed under the
+    -- bchp_<id> key kind — see src/db/wiki.js).
+    CREATE TABLE IF NOT EXISTS book_chapter (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      chapter_content TEXT,
+      chapter_order INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Category "Classifier" (Phase 5). A Classifier module IS its category --
     -- one 'classifier'-kind module row owns one set of objects/templates.
     -- Deliberately a *parallel* schema rather than reusing Director's

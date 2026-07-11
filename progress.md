@@ -50,7 +50,7 @@ chrome and theme system — no new design system.
 - [x] Phase 10 — Story "Narrator"
 
 **M4 — Content kinds**
-- [ ] Phase 11 — Book "Author"
+- [x] Phase 11 — Book "Author"
 - [ ] Phase 12 — Chat "Scribe"
 - [ ] Phase 13 — Doc "Drafter"
 - [ ] Phase 14 — Analys "Viewer" / Relation "Connector"
@@ -152,18 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 11 — Book "Author"
-- **Goal:** long-form novel storage; **Chapter** splits content into
-  sections. Chapter list column + document editor.
-- **Panel:** builder document view with chapter list.
-- **Reference:** Obsidian long-form editing + VS Code outline.
-- **Reuses:** `markdown.js`/`mdeditor.js` directly; Writer's Book→Chapter
-  model (`src/db/writer.js`) carried over.
-- **New:** none structurally — reframed as a module kind.
-- **Files:** `src/renderer/mod/author.js`, `src/db/writer.js`.
-- **Depends:** 4, E. **Views (2–3):** Editor · Outline · Reading.
-- **Acceptance:** add chapters, write with wikilinks, word count in status bar.
 
 ### Phase 12 — Chat "Scribe"
 - **Goal:** chat-style note page; one session (note) records messages as

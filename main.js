@@ -178,6 +178,13 @@ h('narrator:createTalk',     (did,sp,tx)        => db.createTalk(did,sp,tx));
 h('narrator:updateTalk',     (id,sp,tx)         => db.updateTalk(id,sp,tx));
 h('narrator:deleteTalk',     (id)               => db.deleteTalk(id));
 
+// Book "Author" (v3 Phase 11) — chapters
+h('author:getChapters',    (mref)      => db.getBookChapters(mref));
+h('author:createChapter',  (mref,n)    => db.createBookChapter(mref,n));
+h('author:renameChapter',  (id,n)      => db.renameBookChapter(id,n));
+h('author:updateContent',  (id,c)      => db.updateBookChapterContent(id,c));
+h('author:deleteChapter',  (id)        => db.deleteBookChapter(id));
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));
