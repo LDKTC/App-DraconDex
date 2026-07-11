@@ -157,6 +157,12 @@ h('classifier:countObjectTemplates', (oref)             => db.countObjectTemplat
 h('classifier:getAttrs',          (oid)                 => db.getAttrs(oid));
 h('classifier:upsertAttr',        (oid,tid,v)           => db.upsertAttr(oid,tid,v));
 
+// TimeMap "Wanderer" (v3 Phase 9) — MapEvent Link pins
+h('wanderer:list',   (mref)                 => db.getMapEvents(mref));
+h('wanderer:create', (mref,ev,lb,px,py,ar)  => db.createMapEvent(mref,ev,lb,px,py,ar));
+h('wanderer:update', (id,ev,lb,px,py)       => db.updateMapEvent(id,ev,lb,px,py));
+h('wanderer:delete', (id)                   => db.deleteMapEvent(id));
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));

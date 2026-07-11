@@ -46,7 +46,7 @@ chrome and theme system — no new design system.
 **M3 — Graph kinds**
 - [x] Phase 7 — Map "Locator"
 - [x] Phase 8 — Timeline "Chronicler"
-- [ ] Phase 9 — TimeMap "Wanderer"
+- [x] Phase 9 — TimeMap "Wanderer"
 - [ ] Phase 10 — Story "Narrator"
 
 **M4 — Content kinds**
@@ -152,19 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 9 — TimeMap "Wanderer"
-- **Goal:** Map + Timeline dual graph. A **MapEvent** references one existing
-  Locator and one Chronicler, places a Link item on the map, and chooses
-  which Event sets its displayed time.
-- **Panel:** builder split view (map pane above/beside timeline pane).
-- **Reference:** VS Code split editor (two synced panes).
-- **Reuses:** Phase 7 + 8 renderers composed.
-- **New:** the sync/link layer (`map_event` table).
-- **Files:** `src/renderer/mod/wanderer.js`, `src/db/module.js`.
-- **Depends:** 7, 8. **Views (2–3):** Dual · Map only · Timeline only.
-- **Acceptance:** place a Link on the map bound to an event → selecting the
-  event highlights it on the timeline and shows its time on the map pin.
 
 ### Phase 10 — Story "Narrator"
 - **Goal:** story-route board; **Dialogue** nodes hold stored Conversation

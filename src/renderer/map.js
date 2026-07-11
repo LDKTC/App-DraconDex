@@ -29,6 +29,7 @@ async function selectMap(id){
 // tools, just a different refresh target since there's no S.project there.
 function refreshMapHost(){
   if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
+  else if (S.activeModuleNode?.kind === 'wanderer' && typeof mountWandererBoard === 'function') mountWandererBoard();
   else renderMapView();
 }
 function selectMapArea(id){ S.mapAreaId=id; refreshMapHost(); }
@@ -150,6 +151,11 @@ function rescaleMapLayer(layer, newScale){
   if(!layer) return;
   for(const node of layer.getChildren()){
     if(node instanceof Konva.Circle){
+      if(node.attrs.wandererPin){
+        node.radius(8 / newScale);
+        node.strokeWidth(2 / newScale);
+        continue;
+      }
       const isActiveArea = node.attrs.areaId === S.mapAreaId;
       node.radius((isActiveArea ? 7 : 5) / newScale);
       node.strokeWidth(2 / newScale);

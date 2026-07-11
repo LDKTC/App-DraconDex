@@ -16,6 +16,7 @@ const sage      = require('./src/db/sage');
 const artisan   = require('./src/db/artisan');
 const module_   = require('./src/db/module');
 const classifier = require('./src/db/classifier');
+const wanderer  = require('./src/db/wanderer');
 
 module.exports = {
   ...core,
@@ -35,4 +36,5 @@ module.exports = {
   ...artisan,
   ...module_,
   ...classifier,
+  ...wanderer,
 };

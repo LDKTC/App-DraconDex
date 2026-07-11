@@ -70,6 +70,7 @@ function inspectorViewLabel(m, ui) {
   if (m.kind === 'classifier') return (typeof CLASSIFIER_VIEW_LABEL !== 'undefined' && CLASSIFIER_VIEW_LABEL[v]) || 'Table';
   if (m.kind === 'manager') return (typeof MANAGER_VIEW_LABEL !== 'undefined' && MANAGER_VIEW_LABEL[v]) || 'Cards';
   if (m.kind === 'chronicler') return (typeof CHRONICLER_VIEW_LABEL !== 'undefined' && CHRONICLER_VIEW_LABEL[v]) || 'One-line';
+  if (m.kind === 'wanderer') return (typeof WANDERER_VIEW_LABEL !== 'undefined' && WANDERER_VIEW_LABEL[v]) || 'Dual';
   if (m.kind === 'locator') return 'Canvas';
   if (m.kind === 'inspector') return 'Note';
   return '—';

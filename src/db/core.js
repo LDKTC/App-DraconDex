@@ -866,6 +866,25 @@ function initDB() {
       UNIQUE(module_ref, hashtag_id)
     );
 
+    -- TimeMap "Wanderer" (Phase 9). A Link pin placed on the referenced
+    -- Locator's map at (x,y); event_ref picks which Chronicler event sets
+    -- the pin's displayed time. The wanderer's chosen Locator/Chronicler
+    -- pair lives in module_ui (keys mapModule/timelineModule), so this row
+    -- only carries the pin itself. area_ref optionally anchors the pin to
+    -- an area for future use; deleting the event or area clears the ref
+    -- instead of dropping the pin.
+    CREATE TABLE IF NOT EXISTS map_event (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      event_ref INTEGER REFERENCES timeline_event(id) ON DELETE SET NULL,
+      area_ref INTEGER REFERENCES map_area(id) ON DELETE SET NULL,
+      label TEXT,
+      x REAL NOT NULL DEFAULT 0,
+      y REAL NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Category "Classifier" (Phase 5). A Classifier module IS its category --
     -- one 'classifier'-kind module row owns one set of objects/templates.
     -- Deliberately a *parallel* schema rather than reusing Director's

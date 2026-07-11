@@ -123,6 +123,7 @@ const S = {
   managerData:null, managerView:'cards',
   locatorAreas:null,
   chroniclerData:null,
+  wandererData:null,
   hubOpen:loadHubOpen(),
   moduleCollapsed:new Set(),
   dragMajorId:null,
@@ -1243,6 +1244,7 @@ function renderNexusHome() {
   if (S.activeModuleNode?.kind === 'inspector' && typeof mountDetailEditor === 'function') mountDetailEditor(S.activeModuleNode);
   if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
   if (S.activeModuleNode?.kind === 'chronicler' && typeof mountChroniclerGraph === 'function') mountChroniclerGraph();
+  if (S.activeModuleNode?.kind === 'wanderer' && typeof mountWandererBoard === 'function') mountWandererBoard();
 }
 
 function renderNexusPicker() {

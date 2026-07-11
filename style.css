@@ -2280,3 +2280,9 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 	display:flex;align-items:center;justify-content:center;margin:0 auto 8px;
 }
 .cls-card-icon .icon{width:16px;height:16px}
+
+/* ═══ TimeMap "Wanderer" (Phase 9, mockup 10) ═══════════════════════════ */
+.wanderer-split{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.wnd-map-pane{height:380px;border:none;border-radius:0;border-bottom:1px solid var(--border)}
+.wnd-tl-pane{min-height:200px;background:var(--surface);padding:8px 4px}
+.wnd-refline{font-size:11px;color:var(--t3);margin:2px 0 10px}

@@ -60,6 +60,12 @@ contextBridge.exposeInMainWorld('api', {
     getAttrs:          (oid)               => inv('classifier:getAttrs', oid),
     upsertAttr:        (oid,tid,v)         => inv('classifier:upsertAttr', oid,tid,v),
   },
+  wanderer: {
+    list:   (mref)                => inv('wanderer:list', mref),
+    create: (mref,ev,lb,px,py,ar) => inv('wanderer:create', mref,ev,lb,px,py,ar),
+    update: (id,ev,lb,px,py)      => inv('wanderer:update', id,ev,lb,px,py),
+    delete: (id)                  => inv('wanderer:delete', id),
+  },
   wiki: {
     resolve:    (name,nx)  => inv('wiki:resolve', name,nx),
     backlinks:  (key)      => inv('wiki:backlinks', key),
