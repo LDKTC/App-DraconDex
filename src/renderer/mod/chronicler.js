@@ -31,13 +31,14 @@ async function loadChroniclerData(m) {
   if (!activeId || !timelines.find(t => t.id === activeId)) activeId = timelines[0]?.id || null;
   let compareId = prev?.compareId;
   if (compareId && !timelines.find(t => t.id === compareId)) compareId = null;
-  const view = CHRONICLER_VIEWS.includes(ui.view) ? ui.view : 'downline';
+  const view = CHRONICLER_VIEWS.includes(ui.view) ? ui.view : 'oneline';
   S.chroniclerData = { moduleId: m.id, timelines, activeId, compareId, view };
 }
 
 async function setChroniclerView(view) {
   S.chroniclerData.view = view;
   await api.module.setUi(S.chroniclerData.moduleId, 'view', view);
+  if (S.inspectorData?.moduleId === S.chroniclerData.moduleId) S.inspectorData.ui = { ...S.inspectorData.ui, view };
   renderNexusHome();
 }
 
@@ -65,6 +66,7 @@ function buildChroniclerMainHtml(m) {
     ${lineSelect}
     <button class="btn btn-g btn-i" onclick="openChroniclerTimelineModal(${m.id})" title="${t('addTimelineLine')}">${I.plus}</button>
     ${activeId ? `<button class="btn btn-g btn-i" onclick="openChroniclerTimelineModal(${m.id},${activeId})" title="${t('edit')}">${I.edit}</button>` : ''}
+    ${activeId ? `<button class="btn btn-p" onclick="openChroniclerEventModal(${activeId})">${I.plus} ${t('addEvent')}</button>` : ''}
     ${viewBar}
   </div>`;
 
@@ -86,8 +88,7 @@ function buildChroniclerMainHtml(m) {
   }
 
   return `${toolbar}${compareBar}
-    <div id="chronicler-graph-host"></div>
-    ${view === 'downline' ? `<div id="chronicler-event-list" style="margin-top:24px"></div>` : ''}`;
+    <div id="chronicler-graph-host"></div>`;
 }
 
 // Post-DOM hook (parallels mountLocatorBoard/mountDetailEditor): fetches
@@ -114,18 +115,43 @@ async function mountChroniclerGraph() {
     return;
   }
 
-  if (data.view === 'oneline') {
-    host.innerHTML = buildChroniclerOneLineHtml(evs, data.activeId, col);
-  } else {
-    host.innerHTML = evs.length
-      ? buildTimelineGraphHtml(evs, data.activeId, col)
-      : `<div class="empty" style="margin-top:20px"><div class="ei">${I.timeline}</div><h3>${t('noEventsYet')}</h3>
-          <button class="btn btn-p" onclick="openChroniclerEventModal(${data.activeId})">${I.plus} ${t('addEvent')}</button></div>`;
+  if (!evs.length) {
+    host.innerHTML = `<div class="empty" style="margin-top:20px"><div class="ei">${I.timeline}</div><h3>${t('noEventsYet')}</h3>
+        <button class="btn btn-p" onclick="openChroniclerEventModal(${data.activeId})">${I.plus} ${t('addEvent')}</button></div>`;
+    return;
   }
-  if (evs.length) bindTimelineGraphInteractions(data.activeId);
+  if (data.view === 'downline') {
+    // Mockup 22: a vertical proportional time line on the left, the event
+    // list on the right — no pan/zoom on this view.
+    host.innerHTML = buildChroniclerDownlineHtml(evs, data.activeId, col);
+    return;
+  }
+  host.innerHTML = buildChroniclerOneLineHtml(evs, data.activeId, col);
+  bindTimelineGraphInteractions(data.activeId);
+}
 
-  const listHost = q('#chronicler-event-list');
-  if (listHost) listHost.innerHTML = buildChroniclerEventListHtml(evs, data.activeId, col);
+function buildChroniclerDownlineHtml(evs, tlid, col) {
+  const TOP = 26, W = 340, LINE_X = 40;
+  const H = Math.max(360, Math.min(720, evs.length * 96));
+  const tsOf = (ev) => timelineTsFromParts(ev.s_day, ev.s_month, ev.s_years, ev.s_hour, ev.s_minute);
+  const allTs = evs.map(tsOf).filter(ts => ts !== null);
+  const minTs = allTs.length ? Math.min(...allTs) : 0;
+  const spanTs = Math.max(1, (allTs.length ? Math.max(...allTs) : 1) - minTs);
+  const yFromTs = (ts) => ts === null ? TOP : TOP + ((ts - minTs) / spanTs) * (H - 2 * TOP);
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+    <line x1="${LINE_X}" y1="${TOP - 10}" x2="${LINE_X}" y2="${H - TOP + 10}" stroke="var(--border)" stroke-width="2"/>`;
+  for (const ev of evs) {
+    const ts = tsOf(ev), y = yFromTs(ts), ec = ev.color_code || col;
+    const sTxt = fmtDate(ev.s_day, ev.s_month, ev.s_years, ev.s_hour, ev.s_minute);
+    svg += `<circle cx="${LINE_X}" cy="${y}" r="6" fill="${ec}" style="cursor:pointer" onclick="openChroniclerEventModal(${tlid},${ev.id})"/>
+      <text x="${LINE_X + 20}" y="${y - 1}" fill="var(--t1)" font-size="12.5">${x(ev.event_name || '—')}</text>
+      <text x="${LINE_X + 20}" y="${y + 14}" fill="var(--t3)" font-size="10.5">${x(sTxt)}</text>`;
+  }
+  svg += `</svg>`;
+  return `<div class="chr-downline">
+    <div class="chr-downline-graph">${svg}<div class="chr-downline-note" data-no-i18n>${t('trueTimeScaleNote')}</div></div>
+    <div class="chr-downline-list">${buildChroniclerEventListHtml(evs, tlid, col)}</div>
+  </div>`;
 }
 
 function buildChroniclerOneLineHtml(evs, tlid, col) {
@@ -148,7 +174,17 @@ function buildChroniclerOneLineHtml(evs, tlid, col) {
   for (let i = 0; i < evs.length; i++) {
     const ev = evs[i], ec = ev.color_code || col, xi = xFromTs(startTs[i]);
     const sTxt = fmtDate(ev.s_day, ev.s_month, ev.s_years, ev.s_hour, ev.s_minute);
-    svg += `<circle data-event-dot="${ev.id}" data-start-ts="${startTs[i] || ''}" cx="${xi}" cy="${LINE_Y}" r="7" fill="${ec}" style="cursor:pointer" onclick="openChroniclerEventModal(${tlid},${ev.id})"><title>${x(ev.event_name || '')} — ${x(sTxt)}</title></circle>`;
+    // Mockup 04: event name + date alternate above/below the axis with a
+    // short connector tick, instead of tooltip-only dots.
+    const above = i % 2 === 0;
+    const tickY1 = above ? LINE_Y - 10 : LINE_Y + 10;
+    const tickY2 = above ? LINE_Y - 26 : LINE_Y + 26;
+    const nameY = above ? LINE_Y - 42 : LINE_Y + 42;
+    const dateY = above ? LINE_Y - 30 : LINE_Y + 56;
+    svg += `<line x1="${xi}" y1="${tickY1}" x2="${xi}" y2="${tickY2}" stroke="var(--border)" stroke-width="1"/>
+      <text x="${xi}" y="${nameY}" text-anchor="middle" fill="var(--t1)" font-size="12">${x(ev.event_name || '—')}</text>
+      <text x="${xi}" y="${dateY}" text-anchor="middle" fill="var(--t3)" font-size="10">${x(sTxt)}</text>
+      <circle data-event-dot="${ev.id}" data-start-ts="${startTs[i] || ''}" cx="${xi}" cy="${LINE_Y}" r="7" fill="${ec}" style="cursor:pointer" onclick="openChroniclerEventModal(${tlid},${ev.id})"><title>${x(ev.event_name || '')} — ${x(sTxt)}</title></circle>`;
   }
   svg += `</g></svg>`;
   return `<div class="timeline-graph-board" id="timeline-graph-board" style="height:${SVG_H}px">${svg}<div id="timeline-axis-tip" class="timeline-axis-tip hidden"></div></div>`;

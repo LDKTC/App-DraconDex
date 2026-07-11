@@ -48,7 +48,9 @@ function findModuleNode(id) {
 async function reloadModuleTree() {
   S.moduleTree = S.nexus ? await api.module.getTree(S.nexus.id) : [];
   S.activeModuleNode = S.activeModuleNode ? findModuleNode(S.activeModuleNode.id) : null;
+  S.moduleTabs = (S.moduleTabs || []).filter(id => !!findModuleNode(id));
   renderModuleRail();
+  renderProjectTabs();
   if (S.view === 'nexus' && !S.activeModule) renderNexusHome();
 }
 
@@ -60,15 +62,26 @@ function renderModuleRail() {
   if (!S.nexus) return;
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
-  let html = `<button class="nav-btn module-rail-tool" title="${t('createMajorModule')}" onclick="openMajorModuleModal()">${I.plus}</button>`;
+  let html = `<button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="openMajorModuleModal()">${I.plus}</button>`;
   if (S.moduleTree.length) html += `<div class="rail-sep module-rail-tool"></div>`;
   for (const m of S.moduleTree) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
-    html += `<button class="nav-btn module-rail-item${active}" title="${x(m.name)}" onclick="openModuleNode(${m.id})">
+    const col = m.icon_color_code || m.color_code || '#6366f1';
+    html += `<button class="nav-btn module-rail-item${active}" style="color:${x(col)}" title="${x(m.name)}" onclick="openModuleNode(${m.id})">
       ${moduleIconHtml(m)}<span class="mdot" style="background:${x(m.color_code || '#6366f1')}"></span>
     </button>`;
   }
+  // Pinned Import Dock tool (mockup 01's pinned cluster) — jumps to the hub
+  // section; the section's real content is Phase 18.
+  html += `<div class="rail-sep module-rail-tool"></div>
+    <button class="nav-btn module-rail-tool" title="${t('importDock')}" onclick="openImportDockSection()">${I.import}</button>`;
   anchor.insertAdjacentHTML('afterend', html);
+}
+
+function openImportDockSection() {
+  setLeftPanelCollapsed(false);
+  if (!S.hubOpen.dock) { S.hubOpen.dock = true; localStorage.setItem(HUB_OPEN_KEY, JSON.stringify(S.hubOpen)); }
+  renderNexusHome();
 }
 
 // ═══ HUB PANEL — accordion shell (Phase 2) + Nexus nest tree (Phase 3) ═
@@ -84,11 +97,18 @@ function toggleMajorExpand(id) {
 }
 
 function buildHubHtml() {
+  // Director/Navigator/Hero/Writer left the nav rail (Phase 1 — the rail's
+  // pinned set is only Scribe/Sage/Import Dock/Artisan); they stay reachable
+  // from this hub section until Phase 23 migrates them into Artisan.
+  const legacyRows = [
+    ['director', I.director], ['navigator', I.navigator], ['hero', I.hero], ['writer', I.writer],
+  ].map(([k, icon]) => `<div class="li" onclick="selectModule('${k}')"><span class="kicon">${icon}</span><span class="name">${t(k)}</span></div>`).join('');
   return `<div id="hub-body">
     ${buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
       `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal()" title="${t('createMajorModule')}">${I.plus}</button>`)}
     ${buildAccSection('sage', t('sageHut'), `<div class="li" onclick="selectModule('sage')">${I.sage}<span class="name">${t('sage')}</span></div>`)}
     ${buildAccSection('dock', t('importDock'), `<div class="empty" style="padding:24px 10px"><p>${t('importDockComingSoon')}</p></div>`)}
+    ${buildAccSection('legacy', t('legacyModules'), legacyRows)}
   </div>`;
 }
 
@@ -262,6 +282,8 @@ async function openModuleNode(id) {
   if (!m) return;
   if (m.kind === 'collector') { if (m.parent_id == null) toggleMajorExpand(id); return; }
   S.activeModuleNode = m;
+  upsertModuleTab(id);
+  updateStatusBar({ item: null, words: null, saveState: null });
   renderModuleRail();
   renderNexusHome();
   const loaders = [loadInspectorData(id)];
@@ -291,10 +313,19 @@ function buildModuleDetailHtml(m) {
         <h3>${x(m.name)}</h3>
         <p>${x(KIND_LABEL[m.kind] || m.kind)}</p>
       </div>`;
+  // Header per the approved mockups: name + kind chip, then a chips row of
+  // tag links and the 🔗 link-count chip (A.3 #1-2). Chip data comes from
+  // the inspector load that openModuleNode already awaited.
+  const d = (S.inspectorData && S.inspectorData.moduleId === m.id) ? S.inspectorData : null;
+  const tagChips = (d?.tags || []).map(tg =>
+    `<span class="htag" style="border-color:${x(tg.color_code || '#6366f1')};color:${x(tg.color_code || '#6366f1')}">#${x(tg.tag_name)}</span>`).join('');
+  const linkCount = d ? (d.links.outgoing.length + d.links.backlinks.length) : 0;
+  const linkChip = `<span class="htag lk" data-no-i18n title="${t('moduleLink')}">🔗 ${linkCount} links</span>`;
   return `<div class="module-builder">
     <div class="module-main">
-      <div class="detail-head" style="border-left:4px solid ${x(col)};padding-left:12px">
-        <h2 style="margin:0;font-size:1.1em">${x(m.name)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${x(KIND_LABEL[m.kind] || m.kind)}</span></h2>
+      <div class="detail-head module-head" style="border-left:4px solid ${x(col)};padding-left:12px">
+        <h2 style="margin:0;font-size:1.15em">${x(m.name)} <span class="kind-chip" data-no-i18n>${x(KIND_LABEL[m.kind] || m.kind)}${m.kind === 'classifier' && m.cat_type ? ` · ${m.cat_type.charAt(0).toUpperCase()}${m.cat_type.slice(1)}` : ''}</span></h2>
+        <div class="mtags">${tagChips}${linkChip}<button class="btn btn-g btn-i" onclick="openModuleTagModal(${m.id})" title="${t('tagLink')}">${I.plus}</button></div>
       </div>
       ${mainHtml}
     </div>

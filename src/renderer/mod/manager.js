@@ -22,6 +22,7 @@ async function loadManagerData(m) {
 async function setManagerView(moduleId, view) {
   S.managerView = view;
   await api.module.setUi(moduleId, 'activeView', view);
+  if (S.inspectorData?.moduleId === moduleId) S.inspectorData.ui = { ...S.inspectorData.ui, activeView: view };
   renderNexusHome();
 }
 

@@ -20,6 +20,19 @@ chrome and theme system — no new design system.
 
 ## Master checklist
 
+> 2026-07-11 — Phases 1–8 re-aligned to the approved mockups
+> (`docs/mockups/`): title bar carries no tabs (vault label + hub toggle
+> only), a minimal builder tab strip hosts all open tabs (name + kind badge
+> + ×; ◀/▶ history and splits remain Phase 19), module headers show the
+> kind chip + tag/🔗-link chips, the Inspector gained Tag link / UI-spec
+> view / Version-history sections, the status bar shows the
+> `Major › Minor` breadcrumb + type badge, the rail's create tool is
+> accent-styled and the four legacy fixed modules moved off the rail into a
+> hub "Legacy modules" section (until Phase 23), Chronicler defaults to
+> One-line with alternating event labels and Down-line became the vertical
+> line + event list layout, and Locator's tools float on the canvas with
+> the scale label in the zoom pill.
+
 **M1 — Foundation**
 - [x] Phase 1 — Dynamic module toolbar (nav rail)
 - [x] Phase 2 — Hub panel shell (accordion + title-bar hub toggle)

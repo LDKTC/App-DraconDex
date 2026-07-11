@@ -118,6 +118,7 @@ const S = {
   // alongside the legacy Director/Navigator/Hero/Writer/Scribe/Sage/Artisan
   // modules; see progress.md Section C for the scoping decision.
   moduleTree:[], activeModuleNode:null, inspectorData:null,
+  moduleTabs:[],
   classifierData:null, classifierView:'table', classifierSelectedObject:null,
   managerData:null, managerView:'cards',
   locatorAreas:null,
@@ -458,6 +459,9 @@ function translateCommonUiText(root=document){
     '.confirm-msg'
   ].join(',');
   root.querySelectorAll(selectors).forEach(el => {
+    // View-pattern names, kind badges and other locale-invariant labels opt
+    // out of auto-translation (progress.md A.3 — unique names are fixed).
+    if(el.closest('[data-no-i18n],.viewbar')) return;
     el.childNodes.forEach(node => {
       if(node.nodeType !== Node.TEXT_NODE) return;
       const value = node.nodeValue || '';
@@ -567,6 +571,12 @@ function updateTopNavButton(){
     logoBtn.classList.toggle('is-return', inModule);
   }
   document.querySelectorAll('.nav-btn.nexus-only').forEach(btn => {
+    // Phase 1 (progress.md Section A): the rail's pinned tools are only
+    // Scribe / Sage / Artisan (+ Import Dock) — the four legacy fixed
+    // modules leave the rail and live in the hub's Legacy section until
+    // their Phase 23 migration into Artisan templates.
+    const oc = btn.getAttribute('onclick') || '';
+    if (/selectModule\('(director|navigator|hero|writer)'\)/.test(oc)) { btn.style.display = 'none'; return; }
     btn.style.display = (!S.activeModule) ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.director-only').forEach(btn => {
@@ -679,8 +689,13 @@ function upsertProjectTab(project){
 // tab used to hide the tabs of every other module, so an open project/world/
 // game/write tab appeared to vanish the moment you switched modules even
 // though its state (S.projectTabs / S.entityTabs) was never cleared.
+// The tab strip lives in the builder (#builder-tabs at the top of
+// #main-area), not the title bar — progress.md decision (o) / mockup 01.
+// It merges legacy Director project tabs, legacy entity tabs and v3 module
+// tabs; the title bar only carries the vault label + hub toggle.
 function renderProjectTabs(){
-  const el = q('#project-tabs');
+  updateTitlebarVault();
+  const el = q('#builder-tabs');
   if(!el) return;
   const dirTabs = S.projectTabs.map(tab => `
     <button class="project-tab ${S.activeModule==='director' && S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
@@ -696,8 +711,48 @@ function renderProjectTabs(){
       <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
     </button>
   `).join('');
-  el.innerHTML = dirTabs + entTabs;
+  const modTabs = S.moduleTabs.map(id => {
+    const m = typeof findModuleNode === 'function' ? findModuleNode(id) : null;
+    if(!m) return '';
+    const active = !S.activeModule && S.activeModuleNode?.id === id;
+    return `
+    <button class="project-tab module-tab ${active?'active':''}" onclick="openModuleNode(${m.id})" title="${x(m.name)}">
+      <span class="tab-dot" style="background:${x(m.color_code || '#6366f1')}"></span>
+      <span class="tab-name">${x(m.name)}</span>
+      <span class="ek" data-no-i18n>${x(KIND_LABEL?.[m.kind] || m.kind)}</span>
+      <span class="tab-close" onclick="event.stopPropagation();closeModuleTab(${m.id})" title="${t('closeTab')}">&times;</span>
+    </button>`;
+  }).join('');
+  el.innerHTML = dirTabs + entTabs + modTabs;
+  el.classList.toggle('empty', !el.innerHTML.trim());
   document.title = S.project ? `${S.project.name} - DraconDex` : 'DraconDex';
+}
+
+function updateTitlebarVault(){
+  const el = q('#titlebar-vault');
+  if(el) el.textContent = S.nexus ? `${S.nexus.name} — DraconDex` : 'DraconDex';
+}
+
+// v3 module tabs (minimal builder tab strip — the visual part of Phase 19;
+// ◀/▶ history and split panes stay in Phase 19 proper).
+function upsertModuleTab(id){
+  if(!S.moduleTabs.includes(id)) S.moduleTabs.push(id);
+  renderProjectTabs();
+}
+
+async function closeModuleTab(id){
+  const idx = S.moduleTabs.indexOf(id);
+  if(idx < 0) return;
+  S.moduleTabs.splice(idx, 1);
+  if(S.activeModuleNode?.id === id && !S.activeModule){
+    const next = S.moduleTabs[idx] ?? S.moduleTabs[idx - 1];
+    if(next != null){ await openModuleNode(next); return; }
+    S.activeModuleNode = null;
+    renderModuleRail();
+    renderNexusHome();
+    updateStatusBar({ item: null, words: null, saveState: null });
+  }
+  renderProjectTabs();
 }
 
 function upsertEntityTab(entity, type, module) {
@@ -1223,7 +1278,7 @@ function clearWorkspaceTabs() {
   S.timeline = null; S.map = null; S.mapAreaId = null;
   S.world = null; S.game = null; S.write = null;
   S.scribeNote = null; S.scribeOpenFolders = new Set();
-  S.moduleTree = []; S.activeModuleNode = null;
+  S.moduleTree = []; S.activeModuleNode = null; S.moduleTabs = [];
   renderProjectTabs();
 }
 
@@ -1442,6 +1497,15 @@ function updateStatusBar(patch = {}) {
   if (!el) return;
   const parts = [];
   if (S.nexus) parts.push(`<span class="sb-item sb-nexus" onclick="renderNexusHome()"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</span>`);
+  // Breadcrumb + module-type badge for the focused v3 module (mockups /
+  // Section A status-bar spec): `Major › Minor` + `Major|Minor · Kind`.
+  const mNode = (!S.activeModule && S.activeModuleNode) ? S.activeModuleNode : null;
+  if (mNode) {
+    const major = mNode.parent_id != null && typeof findModuleNode === 'function' ? findModuleNode(mNode.parent_id) : null;
+    const crumb = major ? `${x(major.name)} › <b>${x(mNode.name)}</b>` : `<b>${x(mNode.name)}</b>`;
+    parts.push(`<span class="sb-item sb-crumb">${crumb}</span>`);
+    parts.push(`<span class="sb-badge" data-no-i18n>${mNode.parent_id != null ? 'Minor' : 'Major'} · ${x(KIND_LABEL?.[mNode.kind] || mNode.kind)}</span>`);
+  }
   if (_statusState.item) parts.push(`<span class="sb-item">${x(_statusState.item)}</span>`);
   const right = [];
   if (_statusState.words != null) right.push(`<span class="sb-item">${_statusState.words} ${t('words')}</span>`);
