@@ -885,6 +885,41 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Story "Narrator" (Phase 10). Module-scoped mirrors of the legacy
+    -- game_story board (game_dialogue/game_conversation/game_storyline):
+    -- Dialogue nodes at (x,y) on the route board, directed edges between
+    -- them, and ordered conversation lines inside each node. Parallel
+    -- schema, same reasoning as Classifier (progress.md Section C).
+    CREATE TABLE IF NOT EXISTS story_dialogue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      color INTEGER REFERENCES use_color(id),
+      pos_x REAL NOT NULL DEFAULT 0,
+      pos_y REAL NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS story_edge (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      from_ref INTEGER NOT NULL REFERENCES story_dialogue(id) ON DELETE CASCADE,
+      to_ref INTEGER NOT NULL REFERENCES story_dialogue(id) ON DELETE CASCADE,
+      label TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(from_ref, to_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS story_talk (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dialogue_ref INTEGER NOT NULL REFERENCES story_dialogue(id) ON DELETE CASCADE,
+      speaker TEXT,
+      talk_sentence TEXT,
+      talk_order INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Category "Classifier" (Phase 5). A Classifier module IS its category --
     -- one 'classifier'-kind module row owns one set of objects/templates.
     -- Deliberately a *parallel* schema rather than reusing Director's

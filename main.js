@@ -163,6 +163,21 @@ h('wanderer:create', (mref,ev,lb,px,py,ar)  => db.createMapEvent(mref,ev,lb,px,p
 h('wanderer:update', (id,ev,lb,px,py)       => db.updateMapEvent(id,ev,lb,px,py));
 h('wanderer:delete', (id)                   => db.deleteMapEvent(id));
 
+// Story "Narrator" (v3 Phase 10) — Dialogue route board
+h('narrator:getDialogues',   (mref)             => db.getDialogues(mref));
+h('narrator:createDialogue', (mref,n,c,px,py)   => db.createDialogue(mref,n,c,px,py));
+h('narrator:updateDialogue', (id,n,c)           => db.updateDialogue(id,n,c));
+h('narrator:updateDialoguePos', (id,px,py)      => db.updateDialoguePos(id,px,py));
+h('narrator:deleteDialogue', (id)               => db.deleteDialogue(id));
+h('narrator:getEdges',       (mref)             => db.getEdges(mref));
+h('narrator:createEdge',     (mref,f,to,lb)     => db.createEdge(mref,f,to,lb));
+h('narrator:updateEdgeLabel',(id,lb)            => db.updateEdgeLabel(id,lb));
+h('narrator:deleteEdge',     (id)               => db.deleteEdge(id));
+h('narrator:getTalks',       (did)              => db.getTalks(did));
+h('narrator:createTalk',     (did,sp,tx)        => db.createTalk(did,sp,tx));
+h('narrator:updateTalk',     (id,sp,tx)         => db.updateTalk(id,sp,tx));
+h('narrator:deleteTalk',     (id)               => db.deleteTalk(id));
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));

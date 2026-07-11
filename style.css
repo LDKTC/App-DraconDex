@@ -2286,3 +2286,40 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .wnd-map-pane{height:380px;border:none;border-radius:0;border-bottom:1px solid var(--border)}
 .wnd-tl-pane{min-height:200px;background:var(--surface);padding:8px 4px}
 .wnd-refline{font-size:11px;color:var(--t3);margin:2px 0 10px}
+
+/* Story "Narrator" route board (Phase 10, mockup 11) */
+.nar-layout{display:flex;gap:12px;align-items:stretch;min-height:0}
+.nar-board{position:relative;flex:1;min-width:0;height:560px;overflow:auto;
+	background:var(--raised);border:1px solid var(--border);border-radius:var(--r);
+	background-image:linear-gradient(rgba(90,90,114,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(90,90,114,.14) 1px,transparent 1px);
+	background-size:24px 24px;
+}
+.nar-board.is-panning{cursor:grabbing}
+#nar-graph{position:relative;width:2400px;height:1600px;transform-origin:0 0}
+#nar-edges{position:absolute;inset:0;pointer-events:none}
+.nar-node{position:absolute;width:190px;background:rgba(24,24,31,.92);border:1.5px solid var(--border);
+	border-radius:var(--r);padding:8px 10px;cursor:grab;user-select:none;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.nar-node.sel{box-shadow:0 0 0 3px rgba(99,102,241,.35),0 4px 16px rgba(0,0,0,.35)}
+.nar-node.edge-from{outline:2px dashed var(--accent);outline-offset:2px}
+.nar-node-head{display:flex;align-items:center;gap:3px}
+.nar-node .nn-name{font-size:12.5px;font-weight:650;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nar-node .nn-snippet{font-size:10.5px;color:var(--t2);margin-top:3px;line-height:1.45;
+	display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nar-node .nn-snippet.ghost{color:var(--t3);font-style:italic}
+.nar-node .nn-count{font-size:9.5px;color:var(--accentH);margin-top:3px}
+.nar-conv{width:300px;flex-shrink:0;display:flex;flex-direction:column;background:var(--surface);
+	border:1px solid var(--border);border-radius:var(--r);overflow:hidden;max-height:560px}
+.nar-talks{flex:1;overflow-y:auto;padding:6px 8px}
+.nar-talk{display:flex;gap:5px;align-items:center;margin-bottom:6px}
+.nar-talk .nt-speaker{width:84px;flex-shrink:0}
+.nar-talk .nt-text{flex:1;min-width:0}
+.nar-talk input{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
+	padding:5px 8px;color:var(--t1);font-size:12px}
+.nar-talk-new{padding:8px;border-top:1px solid var(--border)}
+.nar-reader{max-width:760px}
+.nar-read-sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+	padding:12px 16px;margin-bottom:12px}
+.nar-read-sec h4{font-size:13.5px;margin-bottom:6px}
+.nar-read-line{font-size:13px;color:var(--t2);line-height:1.8}
+.nar-read-line.ghost{color:var(--t3)}
+.nar-read-branch{font-size:11px;color:var(--accentH);margin-top:8px;border-top:1px dashed var(--border);padding-top:7px}

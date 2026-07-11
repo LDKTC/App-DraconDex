@@ -1245,6 +1245,10 @@ function renderNexusHome() {
   if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
   if (S.activeModuleNode?.kind === 'chronicler' && typeof mountChroniclerGraph === 'function') mountChroniclerGraph();
   if (S.activeModuleNode?.kind === 'wanderer' && typeof mountWandererBoard === 'function') mountWandererBoard();
+  if (S.activeModuleNode?.kind === 'narrator' && typeof mountNarratorBoard === 'function') {
+    mountNarratorBoard();
+    if (S.narratorData?.view === 'reader') mountNarratorReader();
+  }
 }
 
 function renderNexusPicker() {

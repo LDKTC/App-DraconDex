@@ -47,7 +47,7 @@ chrome and theme system — no new design system.
 - [x] Phase 7 — Map "Locator"
 - [x] Phase 8 — Timeline "Chronicler"
 - [x] Phase 9 — TimeMap "Wanderer"
-- [ ] Phase 10 — Story "Narrator"
+- [x] Phase 10 — Story "Narrator"
 
 **M4 — Content kinds**
 - [ ] Phase 11 — Book "Author"
@@ -152,18 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 10 — Story "Narrator"
-- **Goal:** story-route board; **Dialogue** nodes hold stored Conversation
-  content and connect into branching routes (node-and-edge board).
-- **Panel:** builder full board. **Reference:** Obsidian Canvas + graph engine.
-- **Reuses:** `relation.js` engine; `game_story`/`game_dialogue`/
-  `game_conversation` structures generalized.
-- **New:** Dialogue node type with embedded conversation editor.
-- **Files:** `src/renderer/mod/narrator.js`, `src/db/module.js`.
-- **Depends:** 4, E. **Views (2–3):** Board · Route list · Conversation reader.
-- **Acceptance:** build a 2-branch route; each node stores/edits conversation
-  text; drag nodes to arrange; edges have arrowheads.
 
 ### Phase 11 — Book "Author"
 - **Goal:** long-form novel storage; **Chapter** splits content into

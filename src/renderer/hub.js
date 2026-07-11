@@ -292,6 +292,7 @@ async function openModuleNode(id) {
   if (m.kind === 'locator' && typeof loadLocatorData === 'function') loaders.push(loadLocatorData(m));
   if (m.kind === 'chronicler' && typeof loadChroniclerData === 'function') loaders.push(loadChroniclerData(m));
   if (m.kind === 'wanderer' && typeof loadWandererData === 'function') loaders.push(loadWandererData(m));
+  if (m.kind === 'narrator' && typeof loadNarratorData === 'function') loaders.push(loadNarratorData(m));
   await Promise.all(loaders);
   if (S.activeModuleNode?.id === id) renderNexusHome();
 }
@@ -305,6 +306,7 @@ const KIND_MAIN_BUILDER = {
   locator: () => typeof buildLocatorMainHtml === 'function' && buildLocatorMainHtml,
   chronicler: () => typeof buildChroniclerMainHtml === 'function' && buildChroniclerMainHtml,
   wanderer: () => typeof buildWandererMainHtml === 'function' && buildWandererMainHtml,
+  narrator: () => typeof buildNarratorMainHtml === 'function' && buildNarratorMainHtml,
 };
 
 function buildModuleDetailHtml(m) {

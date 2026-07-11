@@ -17,6 +17,7 @@ const artisan   = require('./src/db/artisan');
 const module_   = require('./src/db/module');
 const classifier = require('./src/db/classifier');
 const wanderer  = require('./src/db/wanderer');
+const narrator  = require('./src/db/narrator');
 
 module.exports = {
   ...core,
@@ -37,4 +38,5 @@ module.exports = {
   ...module_,
   ...classifier,
   ...wanderer,
+  ...narrator,
 };
