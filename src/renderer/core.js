@@ -42,12 +42,22 @@ const I = {
   chart: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
   sage: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
   artisan: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg>`,
-  scribe: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m10.5 12.5 3 3L9 20l-3 1 1-3z"/></svg>`
+  scribe: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m10.5 12.5 3 3L9 20l-3 1 1-3z"/></svg>`,
+  manager: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+  narrator: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>`,
+  sketcher: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>`,
+  wanderer: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="12 7 14 12 12 17 10 12 12 7"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/></svg>`
 };
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
 const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
+const HUB_OPEN_KEY = 'novel-manager-hub-open';
+
+function loadHubOpen(){
+  try { return { nest:true, sage:false, dock:false, ...JSON.parse(localStorage.getItem(HUB_OPEN_KEY) || '{}') }; }
+  catch(e){ return { nest:true, sage:false, dock:false }; }
+}
 const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse','clearAurora','atTwilight','atSunset','clearComet','atDaybreak','afterSunset','atSunrise','atNight','atNoon','clearDusk','atMidnight','clearMoon','clearGalaxy','clearNebula','afterStorm','afterSnow','atMorning','clearSun','atEvening','clearMeteor'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','de','ru','it','nl','pl','uk','tr','qd'];
 const UI_SIZE_MIN = 50;
@@ -104,6 +114,17 @@ const S = {
   // Explorer state
   explorerOpen:new Set(['sec_scribe','sec_director','sec_navigator','sec_hero','sec_writer']),
   explorerTree:null,
+  // v3 module system state (Nexus nest hub — progress.md Phases 1-3). Additive
+  // alongside the legacy Director/Navigator/Hero/Writer/Scribe/Sage/Artisan
+  // modules; see progress.md Section C for the scoping decision.
+  moduleTree:[], activeModuleNode:null, inspectorData:null,
+  classifierData:null, classifierView:'table', classifierSelectedObject:null,
+  managerData:null, managerView:'cards',
+  locatorAreas:null,
+  chroniclerData:null,
+  hubOpen:loadHubOpen(),
+  moduleCollapsed:new Set(),
+  dragMajorId:null,
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -119,12 +140,15 @@ async function init() {
   S.nexus        = S.nexuses.find(n => n.id === savedNexusId) || null;
   S.folders      = await api.folder.getAll();
   S.projects     = await api.project.getAll(null, S.nexus?.id ?? null);
+  S.moduleTree   = S.nexus ? await api.module.getTree(S.nexus.id) : [];
   bindWindowChrome();
   bindLeftPanelToggle();
+  bindHubToggle();
   applyLeftPanelState();
   observeUiLanguage();
   removeLegacyDirectorProjectButton();
   buildModuleSubNav();
+  renderModuleRail();
   renderSettingsMenu();
   translateStaticChrome();
   renderProjectTabs();
@@ -223,6 +247,8 @@ function applyLeftPanelState(){
   q('#app')?.classList.toggle('left-panel-collapsed', S.leftPanelCollapsed);
   q('#left-panel-collapse')?.setAttribute('title', S.leftPanelCollapsed ? t('openPanel') : t('collapsePanel'));
   q('#left-panel-peek')?.setAttribute('title', t('openPanel'));
+  q('#hub-toggle-btn')?.classList.toggle('active', !S.leftPanelCollapsed);
+  q('#hub-toggle-btn')?.setAttribute('title', t('toggleHub'));
 }
 
 function setLeftPanelCollapsed(collapsed){
@@ -234,6 +260,10 @@ function setLeftPanelCollapsed(collapsed){
 function bindLeftPanelToggle(){
   q('#left-panel-collapse')?.addEventListener('click', () => setLeftPanelCollapsed(true));
   q('#left-panel-peek')?.addEventListener('click', () => setLeftPanelCollapsed(false));
+}
+
+function bindHubToggle(){
+  q('#hub-toggle-btn')?.addEventListener('click', () => setLeftPanelCollapsed(!S.leftPanelCollapsed));
 }
 
 function t(key){
@@ -1144,23 +1174,20 @@ function renderNexusHome() {
   q('#main-inner')?.classList.remove('relation-main');
   if (!S.nexus) { renderNexusPicker(); return; }
 
-  const moduleCard = (name) => `
-    <div class="module-item" onclick="selectModule('${name}')">
-      <span class="module-icon">${I[name]}</span>
-      <span class="module-name">${t(name)}</span>
-      <svg class="icon module-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>`;
   q('#left-panel-inner').innerHTML = `
     <div class="ph nexus-vault-head">
       <h4><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
       <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
     </div>
-    ${['director','navigator','hero','writer','scribe','sage','artisan'].map(moduleCard).join('')}`;
-  q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
+    ${buildHubHtml()}`;
+  q('#main-inner').innerHTML = S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode) : `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
     <h3>${x(S.nexus.name)}</h3>
     <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;
+  if (S.activeModuleNode?.kind === 'inspector' && typeof mountDetailEditor === 'function') mountDetailEditor(S.activeModuleNode);
+  if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
+  if (S.activeModuleNode?.kind === 'chronicler' && typeof mountChroniclerGraph === 'function') mountChroniclerGraph();
 }
 
 function renderNexusPicker() {
@@ -1196,6 +1223,7 @@ function clearWorkspaceTabs() {
   S.timeline = null; S.map = null; S.mapAreaId = null;
   S.world = null; S.game = null; S.write = null;
   S.scribeNote = null; S.scribeOpenFolders = new Set();
+  S.moduleTree = []; S.activeModuleNode = null;
   renderProjectTabs();
 }
 
@@ -1206,7 +1234,9 @@ async function selectNexus(id) {
   localStorage.setItem(NEXUS_ACTIVE_KEY, String(id));
   clearWorkspaceTabs();
   S.projects = await api.project.getAll(null, S.nexus.id);
+  S.moduleTree = await api.module.getTree(S.nexus.id);
   renderNexusHome();
+  renderModuleRail();
   updateStatusBar({ item: null, words: null, saveState: null });
 }
 
@@ -1215,6 +1245,7 @@ function closeNexus() {
   localStorage.removeItem(NEXUS_ACTIVE_KEY);
   clearWorkspaceTabs();
   renderNexusHome();
+  renderModuleRail();
   updateStatusBar({ item: null, words: null, saveState: null });
 }
 
@@ -1363,6 +1394,11 @@ async function openEntityByKey(key) {
       S.writeSeries = p.seriesId; S.writeBook = p.bookId; S.writeChapter = p.chapterId;
       await renderWriterView();
     }
+  } else if (p.kind === 'module') {
+    S.activeModule = null; S.view = 'nexus';
+    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
+    updateTopNavButton();
+    await openModuleNode(p.moduleId);
   }
   trackRecentEntity(key);
 }

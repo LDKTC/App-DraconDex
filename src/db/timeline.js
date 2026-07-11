@@ -5,6 +5,16 @@ const getTimelines = (pid) =>
   getDB().prepare(`SELECT t.*, uc.color_code FROM timeline t LEFT JOIN use_color uc ON t.color=uc.id WHERE t.project_id=? ORDER BY t.line_name`).all(pid);
 const createTimeline = (pid, n, c) =>
   getDB().prepare(`INSERT INTO timeline (line_name,project_id,color) VALUES (?,?,?)`).run(n, pid, c || null);
+
+// Chronicler (progress.md Phase 8): a module owns any number of timeline
+// "lines" directly, the same shape as a Director project owning several
+// timelines — module_ref generalizes the table rather than nesting a new
+// container row, mirroring how map/map_area/map_point already separate
+// their own container (map) from its children.
+const getModuleTimelines = (moduleRef) =>
+  getDB().prepare(`SELECT t.*, uc.color_code FROM timeline t LEFT JOIN use_color uc ON t.color=uc.id WHERE t.module_ref=? ORDER BY t.line_name`).all(moduleRef);
+const createModuleTimeline = (moduleRef, n, c) =>
+  getDB().prepare(`INSERT INTO timeline (line_name,module_ref,color) VALUES (?,?,?)`).run(n, moduleRef, c || null);
 const updateTimeline = (id, n, c) =>
   getDB().prepare(`UPDATE timeline SET line_name=?,color=?,update_at=datetime('now') WHERE id=?`).run(n, c || null, id);
 const deleteTimeline = (id) =>
@@ -62,6 +72,7 @@ const getEventsByHashtag = (tagId, projectId) =>
 
 module.exports = {
   getTimelines, createTimeline, updateTimeline, deleteTimeline,
+  getModuleTimelines, createModuleTimeline,
   getOrCreateDate,
   getEvents, createEvent, updateEvent, updateEventStory, deleteEvent,
   getEventTags, setEventTags, addEventTag, removeEventTag, getEventsByHashtag,

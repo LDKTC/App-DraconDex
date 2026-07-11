@@ -817,7 +817,104 @@ function initDB() {
       target_text TEXT NOT NULL,
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- v3 module system (progress.md M1): Major/Minor tree living in the Nexus
+    -- nest, independent of the legacy project/world_project/game_project/
+    -- write_project trees. parent_id NULL = Major (freely reorderable via
+    -- display_order), set = Minor (locked one level under its Major).
+    CREATE TABLE IF NOT EXISTS module (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      parent_id INTEGER REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      kind TEXT NOT NULL CHECK(kind IN ('collector','manager','inspector','classifier',
+        'locator','chronicler','wanderer','narrator','author','scribe','drafter',
+        'viewer','connector','sketcher','designer')),
+      icon TEXT,
+      icon_color INTEGER REFERENCES use_color(id),
+      color INTEGER REFERENCES use_color(id),
+      description TEXT,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      pinned INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Module Inspector (Phase 4): free-form attributes, per-kind UI spec
+    -- (active view etc., populated from Phase 5 onward) and tag links.
+    CREATE TABLE IF NOT EXISTS module_attribute (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      attr_name TEXT NOT NULL,
+      attr_value TEXT,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS module_ui (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      ui_key TEXT NOT NULL,
+      ui_value TEXT,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(module_ref, ui_key)
+    );
+
+    CREATE TABLE IF NOT EXISTS module_hashtag (
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+      UNIQUE(module_ref, hashtag_id)
+    );
+
+    -- Category "Classifier" (Phase 5). A Classifier module IS its category --
+    -- one 'classifier'-kind module row owns one set of objects/templates.
+    -- Deliberately a *parallel* schema rather than reusing Director's
+    -- object_category/object_template/object/object_attribute: those tables
+    -- are read via INNER JOINs (wiki.js's obj resolver, Director's own
+    -- project-scoped queries, relation.js, hashtag.js) that all assume every
+    -- object belongs to a real legacy project row, so relaxing that would
+    -- have meant auditing/patching every one of those call sites. See
+    -- progress.md Section C for the full writeup of this decision.
+    CREATE TABLE IF NOT EXISTS classifier_object (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      color INTEGER REFERENCES use_color(id),
+      note TEXT,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- object_ref NULL = shared category template (Object/Element default);
+    -- set = the one private attribute a Character-type object may carry.
+    CREATE TABLE IF NOT EXISTS classifier_template (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      object_ref INTEGER REFERENCES classifier_object(id) ON DELETE CASCADE,
+      description TEXT NOT NULL,
+      attribute_type TEXT DEFAULT 'text',
+      levelable INTEGER NOT NULL DEFAULT 0,
+      has_condition INTEGER NOT NULL DEFAULT 0,
+      display_order INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS classifier_attribute (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      object_ref INTEGER NOT NULL REFERENCES classifier_object(id) ON DELETE CASCADE,
+      template_ref INTEGER NOT NULL REFERENCES classifier_template(id) ON DELETE CASCADE,
+      attribute_value TEXT,
+      update_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(object_ref, template_ref)
+    );
   `);
+
+  if (!hasColumn(db, 'module', 'cat_type')) {
+    try { db.prepare(`ALTER TABLE module ADD COLUMN cat_type TEXT CHECK(cat_type IN ('object','element','character'))`).run(); } catch (_) {}
+  }
+  migrateMapV3(db);
+  migrateTimelineV3(db);
 
   if (!hasColumn(db, 'relation_type', 'color')) {
     try { db.prepare(`ALTER TABLE relation_type ADD COLUMN color INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
@@ -895,6 +992,64 @@ function migrateNexusV28(db) {
 // v2.7 replaced the entire Writer module schema (library/series/document) with
 // the write_* tables. The old library data has no v2.7 equivalent and is
 // dropped; the new tables are created by the CREATE IF NOT EXISTS block above.
+// v3 (Phase 7): Locator reuses `map`/`map_area`/`map_point` instead of a
+// parallel schema like Classifier's — unlike object_category, nothing joins
+// `map` to `project` through an assumption every map has one (no wiki.js
+// resolver exists for maps at all yet, and Navigator's own map queries
+// already filter to matching project ids before ever reaching a JOIN), so
+// relaxing `project_id` and adding `module_ref` is safe here. SQLite can't
+// drop a NOT NULL with ALTER, so this rebuilds the table — ids are
+// preserved so map_area's FK and world_map.map_ref stay valid untouched.
+function migrateMapV3(db) {
+  if (!hasTable(db, 'map') || hasColumn(db, 'map', 'module_ref')) return;
+  try {
+    db.exec(`PRAGMA foreign_keys = OFF`);
+    db.exec(`
+      CREATE TABLE map_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        map_name TEXT,
+        project_id INTEGER REFERENCES project(id) ON DELETE CASCADE,
+        module_ref INTEGER REFERENCES module(id) ON DELETE CASCADE,
+        color INTEGER REFERENCES use_color(id),
+        update_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO map_new (id, map_name, project_id, color, update_at)
+        SELECT id, map_name, project_id, color, update_at FROM map;
+      DROP TABLE map;
+      ALTER TABLE map_new RENAME TO map;
+    `);
+    db.exec(`PRAGMA foreign_keys = ON`);
+  } catch (e) {
+    console.error('Map v3 migration error:', e);
+  }
+}
+
+// Same table-rebuild pattern as migrateMapV3: timeline.project_id was
+// NOT NULL, Chronicler timelines need it nullable (module_ref set instead).
+function migrateTimelineV3(db) {
+  if (!hasTable(db, 'timeline') || hasColumn(db, 'timeline', 'module_ref')) return;
+  try {
+    db.exec(`PRAGMA foreign_keys = OFF`);
+    db.exec(`
+      CREATE TABLE timeline_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        line_name TEXT,
+        project_id INTEGER REFERENCES project(id) ON DELETE CASCADE,
+        module_ref INTEGER REFERENCES module(id) ON DELETE CASCADE,
+        color INTEGER REFERENCES use_color(id),
+        update_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO timeline_new (id, line_name, project_id, color, update_at)
+        SELECT id, line_name, project_id, color, update_at FROM timeline;
+      DROP TABLE timeline;
+      ALTER TABLE timeline_new RENAME TO timeline;
+    `);
+    db.exec(`PRAGMA foreign_keys = ON`);
+  } catch (e) {
+    console.error('Timeline v3 migration error:', e);
+  }
+}
+
 function migrateWriterV27(db) {
   try {
     if (!hasTable(db, 'library_project')) return;
@@ -936,10 +1091,12 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_object_category           ON object(category_id);
     CREATE INDEX IF NOT EXISTS idx_object_attribute_template ON object_attribute(template_id);
     CREATE INDEX IF NOT EXISTS idx_timeline_project          ON timeline(project_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_module            ON timeline(module_ref);
     CREATE INDEX IF NOT EXISTS idx_timeline_event_timeline   ON timeline_event(timeline_id);
     CREATE INDEX IF NOT EXISTS idx_timeline_event_start      ON timeline_event(start_at);
     CREATE INDEX IF NOT EXISTS idx_timeline_event_end        ON timeline_event(end_at);
     CREATE INDEX IF NOT EXISTS idx_map_project               ON map(project_id);
+    CREATE INDEX IF NOT EXISTS idx_map_module                ON map(module_ref);
     CREATE INDEX IF NOT EXISTS idx_map_area_map              ON map_area(map_id);
     CREATE INDEX IF NOT EXISTS idx_map_point_area            ON map_point(area_id);
     CREATE INDEX IF NOT EXISTS idx_relation_project          ON relation(project_id);
@@ -1019,6 +1176,20 @@ function ensureIndexes(db) {
     CREATE INDEX IF NOT EXISTS idx_note_folder_parent        ON note_folder(parent_ref);
     CREATE INDEX IF NOT EXISTS idx_wiki_link_src             ON wiki_link(src_key);
     CREATE INDEX IF NOT EXISTS idx_wiki_link_target          ON wiki_link(target_key);
+
+    -- Module system (v3)
+    CREATE INDEX IF NOT EXISTS idx_module_nexus            ON module(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_parent           ON module(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_module_attribute_module ON module_attribute(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_ui_module        ON module_ui(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_hashtag_tag      ON module_hashtag(hashtag_id);
+
+    -- Classifier (Phase 5)
+    CREATE INDEX IF NOT EXISTS idx_classifier_object_module    ON classifier_object(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_template_module  ON classifier_template(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_template_object  ON classifier_template(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_attribute_object ON classifier_attribute(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_attribute_tmpl   ON classifier_attribute(template_ref);
   `);
 }
 

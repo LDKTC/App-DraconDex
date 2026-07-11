@@ -38,6 +38,105 @@ async function selectTimeline(id){
   await renderTimelineView();
 }
 
+// ── Shared graph builder (Chronicler, progress.md Phase 8, reuses this
+// exact SVG + bindTimelineGraphInteractions for its own Down-line view) ──
+function timelineTsFromParts(d,m,y,hh,min){
+  if(!d||!m||!y) return null;
+  return Date.UTC(Number(y), Number(m)-1, Number(d), Number(hh||0), Number(min||0), 0, 0);
+}
+
+// Month/year tick marks along the axis so gaps read as a true time scale,
+// not just proportional dot spacing. Ticks carry data-tick-ts so
+// updateTimelineGraphX() (pan/zoom) can reposition them like everything else.
+function buildTimelineRulerSvg(minTs, maxTs, xFromTs, LINE_Y){
+  if(!(maxTs > minTs)) return '';
+  const spanDays = (maxTs-minTs)/86400000;
+  const byYear = spanDays > 365*4;
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const start = new Date(minTs);
+  let cursor = byYear
+    ? Date.UTC(start.getUTCFullYear(), 0, 1)
+    : Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1);
+  let svg = '';
+  let guard = 0;
+  while(cursor <= maxTs && guard < 240){
+    guard++;
+    if(cursor >= minTs){
+      const cx = xFromTs(cursor);
+      const d = new Date(cursor);
+      const label = byYear ? String(d.getUTCFullYear()) : `${monthNames[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+      svg += `<line class="tl-ruler-tick" data-tick-ts="${cursor}" x1="${cx}" y1="${LINE_Y-14}" x2="${cx}" y2="${LINE_Y+14}" stroke="var(--border)" stroke-width="1.5" opacity="0.55"/>
+        <text class="tl-ruler-label" data-tick-ts="${cursor}" x="${cx}" y="${LINE_Y+30}" text-anchor="middle" font-size="10.5" fill="var(--t3)">${label}</text>`;
+    }
+    const d = new Date(cursor);
+    cursor = byYear ? Date.UTC(d.getUTCFullYear()+1, 0, 1) : Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 1);
+  }
+  return svg;
+}
+
+function buildTimelineGraphHtml(evs, tlid, fallbackColor){
+  const col = fallbackColor || '#06b6d4';
+  const MARGIN=80, LINE_Y=180, CARD_W=120, SVG_H=400;
+  const n=evs.length;
+  const hostW=q('#main-inner')?.offsetWidth||900;
+  const trackW=Math.max(hostW, 900);
+  const usable=trackW-(2*MARGIN);
+  const graphState = timelineGraphState[tlid] ||= { scale:1, tx:0, yOffsets:{} };
+
+  const startTs = evs.map(ev=>timelineTsFromParts(ev.s_day,ev.s_month,ev.s_years,ev.s_hour,ev.s_minute));
+  const endTs = evs.map(ev=>timelineTsFromParts(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute));
+  const allTs = [];
+  for(let i=0;i<n;i++){
+    if(startTs[i]!==null) allTs.push(startTs[i]);
+    if(endTs[i]!==null) allTs.push(endTs[i]);
+  }
+  const minTs = allTs.length ? Math.min(...allTs) : 0;
+  const maxTs = allTs.length ? Math.max(...allTs) : 1;
+  const spanTs = Math.max(1, maxTs-minTs);
+  const xFromTs = (ts)=>{
+    if(ts===null) return MARGIN;
+    const ratio = (ts-minTs)/spanTs;
+    return MARGIN + (ratio*usable*graphState.scale);
+  };
+  const xs=evs.map((_,i)=>xFromTs(startTs[i]));
+
+  let svg = `<svg id="timeline-graph-svg" xmlns="http://www.w3.org/2000/svg" width="100%" height="${SVG_H}" viewBox="0 0 ${trackW} ${SVG_H}" data-min-ts="${minTs}" data-span-ts="${spanTs}" data-usable="${usable}" data-margin="${MARGIN}" data-line-y="${LINE_Y}" data-card-w="${CARD_W}" data-tlid="${tlid}">
+    <g id="timeline-graph-content" transform="translate(${graphState.tx},0)">
+    <line id="timeline-axis-line" x1="${MARGIN}" y1="${LINE_Y}" x2="${MARGIN + usable*graphState.scale}" y2="${LINE_Y}" stroke="var(--border)" stroke-width="8" stroke-linecap="round" opacity="0.75" style="cursor:crosshair"/>
+    ${buildTimelineRulerSvg(minTs, maxTs, xFromTs, LINE_Y)}`;
+  for(let i=0;i<n;i++){
+    const ev=evs[i], ec=ev.color_code||col, xi=xs[i];
+    const up=i%2===0, defaultBy=up?(LINE_Y-120):(LINE_Y+120);
+    const by=Math.max(36, Math.min(SVG_H-36, graphState.yOffsets[ev.id] ?? defaultBy));
+    const cardY=up?(by-68):(by+10);
+    const sTxt=fmtDate(ev.s_day,ev.s_month,ev.s_years,ev.s_hour,ev.s_minute);
+    const hasEnd=!!(ev.e_day&&ev.e_month&&ev.e_years);
+    const eTxt=hasEnd?fmtDate(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute):'';
+    const dateTxt=hasEnd?`${sTxt} - ${eTxt}`:sTxt;
+    let rangeSvg = '';
+    if(hasEnd){
+      let xe = xFromTs(endTs[i]);
+      let xStart = xi, xEnd = xe;
+      if(xEnd<xStart){ const t=xStart; xStart=xEnd; xEnd=t; }
+      const rw=Math.max(2, xEnd-xStart);
+      rangeSvg = `<rect data-event-range="${ev.id}" data-start-ts="${startTs[i]||''}" data-end-ts="${endTs[i]||''}" x="${xStart}" y="${LINE_Y-4}" width="${rw}" height="8" rx="4" fill="${ec}" opacity="0.28" style="pointer-events:none"/>`;
+    }
+    svg += `
+      ${rangeSvg}
+      <line data-event-stem="${ev.id}" data-start-ts="${startTs[i]||''}" x1="${xi}" y1="${LINE_Y}" x2="${xi}" y2="${by}" stroke="${ec}" stroke-width="2"/>
+      <circle data-event-dot="${ev.id}" data-start-ts="${startTs[i]||''}" cx="${xi}" cy="${LINE_Y}" r="6.5" fill="${ec}"/>
+      <circle data-event-node="${ev.id}" data-start-ts="${startTs[i]||''}" data-card-up="${up?'1':'0'}" cx="${xi}" cy="${by}" r="11" fill="${ec}" style="cursor:ns-resize"/>
+      <foreignObject data-event-card="${ev.id}" data-start-ts="${startTs[i]||''}" x="${xi-(CARD_W/2)}" y="${cardY}" width="${CARD_W}" height="64" style="cursor:pointer" onclick="openEventModal(${tlid},${ev.id})">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${ec};border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.3;overflow:hidden">
+          <div style="font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(ev.event_name||'ไม่มีชื่อ')}</div>
+          <div style="color:var(--t3);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
+        </div>
+      </foreignObject>`;
+  }
+  svg += `</g></svg>`;
+  return `<div class="timeline-graph-board" id="timeline-graph-board">${svg}<div id="timeline-axis-tip" class="timeline-axis-tip hidden"></div></div>`;
+}
+
 async function renderTimelineDetail(tlid){
   const tl=S.timeline, col=tl.color_code||'#06b6d4';
   const allEvs = await api.timeline.getEvents(tlid);
@@ -57,68 +156,7 @@ async function renderTimelineDetail(tlid){
     h += `<div class="empty"><div class="ei">${I.timeline}</div><h3>ยังไม่มีเหตุการณ์</h3>
       <button class="btn btn-p" onclick="openEventModal(${tlid})">${I.plus} เพิ่มเหตุการณ์</button></div>`;
   } else {
-    const MARGIN=80, LINE_Y=180, CARD_W=120, SVG_H=400;
-    const n=evs.length;
-    const hostW=q('#main-inner')?.offsetWidth||900;
-    const trackW=Math.max(hostW, 900);
-    const usable=trackW-(2*MARGIN);
-    const graphState = timelineGraphState[tlid] ||= { scale:1, tx:0, yOffsets:{} };
-
-    const toTs = (d,m,y,h,min)=>{
-      if(!d||!m||!y) return null;
-      return Date.UTC(Number(y), Number(m)-1, Number(d), Number(h||0), Number(min||0), 0, 0);
-    };
-    const startTs = evs.map(ev=>toTs(ev.s_day,ev.s_month,ev.s_years,ev.s_hour,ev.s_minute));
-    const endTs = evs.map(ev=>toTs(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute));
-    const allTs = [];
-    for(let i=0;i<n;i++){
-      if(startTs[i]!==null) allTs.push(startTs[i]);
-      if(endTs[i]!==null) allTs.push(endTs[i]);
-    }
-    const minTs = allTs.length ? Math.min(...allTs) : 0;
-    const maxTs = allTs.length ? Math.max(...allTs) : 1;
-    const spanTs = Math.max(1, maxTs-minTs);
-    const xFromTs = (ts)=>{
-      if(ts===null) return MARGIN;
-      const ratio = (ts-minTs)/spanTs;
-      return MARGIN + (ratio*usable*graphState.scale);
-    };
-    const xs=evs.map((_,i)=>xFromTs(startTs[i]));
-
-    let svg = `<svg id="timeline-graph-svg" xmlns="http://www.w3.org/2000/svg" width="100%" height="${SVG_H}" viewBox="0 0 ${trackW} ${SVG_H}" data-min-ts="${minTs}" data-span-ts="${spanTs}" data-usable="${usable}" data-margin="${MARGIN}" data-line-y="${LINE_Y}" data-card-w="${CARD_W}" data-tlid="${tlid}">
-      <g id="timeline-graph-content" transform="translate(${graphState.tx},0)">
-      <line id="timeline-axis-line" x1="${MARGIN}" y1="${LINE_Y}" x2="${MARGIN + usable*graphState.scale}" y2="${LINE_Y}" stroke="var(--border)" stroke-width="8" stroke-linecap="round" opacity="0.75" style="cursor:crosshair"/>`;
-    for(let i=0;i<n;i++){
-      const ev=evs[i], ec=ev.color_code||col, xi=xs[i];
-      const up=i%2===0, defaultBy=up?(LINE_Y-120):(LINE_Y+120);
-      const by=Math.max(36, Math.min(SVG_H-36, graphState.yOffsets[ev.id] ?? defaultBy));
-      const cardY=up?(by-68):(by+10);
-      const sTxt=fmtDate(ev.s_day,ev.s_month,ev.s_years,ev.s_hour,ev.s_minute);
-      const hasEnd=!!(ev.e_day&&ev.e_month&&ev.e_years);
-      const eTxt=hasEnd?fmtDate(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute):'';
-      const dateTxt=hasEnd?`${sTxt} - ${eTxt}`:sTxt;
-      let rangeSvg = '';
-      if(hasEnd){
-        let xe = xFromTs(endTs[i]);
-        let xStart = xi, xEnd = xe;
-        if(xEnd<xStart){ const t=xStart; xStart=xEnd; xEnd=t; }
-        const rw=Math.max(2, xEnd-xStart);
-        rangeSvg = `<rect data-event-range="${ev.id}" data-start-ts="${startTs[i]||''}" data-end-ts="${endTs[i]||''}" x="${xStart}" y="${LINE_Y-4}" width="${rw}" height="8" rx="4" fill="${ec}" opacity="0.28" style="pointer-events:none"/>`;
-      }
-      svg += `
-        ${rangeSvg}
-        <line data-event-stem="${ev.id}" data-start-ts="${startTs[i]||''}" x1="${xi}" y1="${LINE_Y}" x2="${xi}" y2="${by}" stroke="${ec}" stroke-width="2"/>
-        <circle data-event-dot="${ev.id}" data-start-ts="${startTs[i]||''}" cx="${xi}" cy="${LINE_Y}" r="6.5" fill="${ec}"/>
-        <circle data-event-node="${ev.id}" data-start-ts="${startTs[i]||''}" data-card-up="${up?'1':'0'}" cx="${xi}" cy="${by}" r="11" fill="${ec}" style="cursor:ns-resize"/>
-        <foreignObject data-event-card="${ev.id}" data-start-ts="${startTs[i]||''}" x="${xi-(CARD_W/2)}" y="${cardY}" width="${CARD_W}" height="64" style="cursor:pointer" onclick="openEventModal(${tlid},${ev.id})">
-          <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${ec};border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.3;overflow:hidden">
-            <div style="font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(ev.event_name||'ไม่มีชื่อ')}</div>
-            <div style="color:var(--t3);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
-          </div>
-        </foreignObject>`;
-    }
-    svg += `</g></svg>`;
-    h += `<div class="timeline-graph-board" id="timeline-graph-board">${svg}<div id="timeline-axis-tip" class="timeline-axis-tip hidden"></div></div>`;
+    h += buildTimelineGraphHtml(evs, tlid, col);
 
     const evtObtl = await api.relation.getOBTL(S.project.id);
     h += `<div style="margin-top:24px">
@@ -246,6 +284,24 @@ function bindTimelineGraphInteractions(tlid){
       const s = Number(card.dataset.startTs||'');
       if(isNaN(s)) return;
       card.setAttribute('x', xFromTs(s) - (cardW / 2));
+    });
+    svg.querySelectorAll('.tl-ruler-tick').forEach(tick => {
+      const s = Number(tick.dataset.tickTs||'');
+      if(isNaN(s)) return;
+      const tx = xFromTs(s);
+      tick.setAttribute('x1', tx);
+      tick.setAttribute('x2', tx);
+    });
+    svg.querySelectorAll('.tl-ruler-label').forEach(label => {
+      const s = Number(label.dataset.tickTs||'');
+      if(isNaN(s)) return;
+      label.setAttribute('x', xFromTs(s));
+    });
+    svg.querySelectorAll('.tl-cmp-link').forEach(link => {
+      const a = Number(link.dataset.aTs||''), b = Number(link.dataset.bTs||'');
+      if(isNaN(a) || isNaN(b)) return;
+      link.setAttribute('x1', xFromTs(a));
+      link.setAttribute('x2', xFromTs(b));
     });
   };
 

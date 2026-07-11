@@ -24,8 +24,15 @@ async function selectMap(id){
   S.mapAreaId = null;
   await renderMapView();
 }
-function selectMapArea(id){ S.mapAreaId=id; renderMapView(); }
-function setMapTool(tool){ S.mapTool=tool; renderMapView(); }
+// Locator (v3 Phase 7) reuses this whole renderer against a module-owned
+// map instead of a Director project's map list — same board, area list and
+// tools, just a different refresh target since there's no S.project there.
+function refreshMapHost(){
+  if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
+  else renderMapView();
+}
+function selectMapArea(id){ S.mapAreaId=id; refreshMapHost(); }
+function setMapTool(tool){ S.mapTool=tool; refreshMapHost(); }
 
 function renderAreaList(areas){
   if(!areas.length){
@@ -139,6 +146,23 @@ function getMapViewState(mapId){
   return mapState.viewByMap[mapId];
 }
 
+function rescaleMapLayer(layer, newScale){
+  if(!layer) return;
+  for(const node of layer.getChildren()){
+    if(node instanceof Konva.Circle){
+      const isActiveArea = node.attrs.areaId === S.mapAreaId;
+      node.radius((isActiveArea ? 7 : 5) / newScale);
+      node.strokeWidth(2 / newScale);
+    } else if(node instanceof Konva.Line){
+      node.strokeWidth(2 / newScale);
+    } else if(node.attrs.mapLabel){
+      node.fontSize(12.5 / newScale);
+      node.offsetX(node.width() / 2);
+      node.offsetY(node.height() / 2);
+    }
+  }
+}
+
 async function renderMapBoard(){
   if(!S.map) return;
   const areas = await api.map.getAreas(S.map.id);
@@ -205,6 +229,28 @@ async function renderMapBoard(){
         }
       });
       layer.add(poly);
+    }
+
+    // Area label (Locator, progress.md Phase 7): name + centroid coords +
+    // node count, rendered on the shape itself and kept a constant screen
+    // size while panning/zooming (font size compensates for stage scale,
+    // same trick as the vertex-dot radius below).
+    if (pts.length > 0) {
+      const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+      const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+      const label = new Konva.Text({
+        x: cx, y: cy,
+        text: `${area.area_name || ''}\nx:${Math.round(cx)} · y:${Math.round(cy)} · ${pts.length} nodes`,
+        fontSize: 12.5 / v.scale,
+        lineHeight: 1.3,
+        fill: '#e8e8f0',
+        align: 'center',
+        listening: false,
+        mapLabel: true,
+      });
+      label.offsetX(label.width() / 2);
+      label.offsetY(label.height() / 2);
+      layer.add(label);
     }
 
     for(const p of pts){
@@ -328,17 +374,9 @@ async function renderMapBoard(){
     v.tx = newPos.x;
     v.ty = newPos.y;
 
-    layer.getChildren().forEach((node) => {
-      if (node instanceof Konva.Circle) {
-        const isActive = S.mapAreaId === node.attrs.areaId;
-        node.radius((isActive ? 7 : 5) / newScale);
-        node.strokeWidth(2 / newScale);
-      } else if (node instanceof Konva.Line) {
-        node.strokeWidth(2 / newScale);
-      }
-    });
-
+    rescaleMapLayer(layer, newScale);
     layer.batchDraw();
+    if (S.activeModuleNode?.kind === 'locator' && typeof updateLocatorZoomLabel === 'function') updateLocatorZoomLabel();
   });
 
   const cleanupPan = () => {
@@ -374,9 +412,9 @@ async function openMapAreaModal(id=null){
     <div class="fg"><label>สี</label>${await colorPicker(a?.color)}</div>
     <div class="mfoot">${a?`<button class="btn btn-d" onclick="delMapArea(${id})">ลบ</button>`:''}<button class="btn btn-s" onclick="closeModal()">ยกเลิก</button><button class="btn btn-p" onclick="${a?'saveMapArea('+id+')':'createMapArea()'}">${a?'บันทึก':'สร้าง'}</button></div>`);
 }
-async function createMapArea(){ const n=q('#area-n').value.trim(); if(!n || !S.map) return; const r=await api.map.createArea(S.map.id,n,q('#sel-color').value||null); closeModal(); S.mapAreaId=r.lastInsertRowid; mapState.pointsByArea[S.mapAreaId]=[]; await renderMapView(); toast('สร้าง Area แล้ว','ok'); }
-async function saveMapArea(id){ const n=q('#area-n').value.trim(); if(!n) return; await api.map.updateArea(id,n,q('#sel-color').value||null); closeModal(); await renderMapView(); toast('บันทึกแล้ว','ok'); }
-async function delMapArea(id){ if(!await uiConfirm('ลบ Area นี้?')) return; await api.map.deleteArea(id); closeModal(); if(S.mapAreaId===id) S.mapAreaId=null; delete mapState.pointsByArea[id]; await renderMapView(); toast('ลบเรียบร้อยแล้ว'); }
+async function createMapArea(){ const n=q('#area-n').value.trim(); if(!n || !S.map) return; const r=await api.map.createArea(S.map.id,n,q('#sel-color').value||null); closeModal(); S.mapAreaId=r.lastInsertRowid; mapState.pointsByArea[S.mapAreaId]=[]; await refreshMapHost(); toast('สร้าง Area แล้ว','ok'); }
+async function saveMapArea(id){ const n=q('#area-n').value.trim(); if(!n) return; await api.map.updateArea(id,n,q('#sel-color').value||null); closeModal(); await refreshMapHost(); toast('บันทึกแล้ว','ok'); }
+async function delMapArea(id){ if(!await uiConfirm('ลบ Area นี้?')) return; await api.map.deleteArea(id); closeModal(); if(S.mapAreaId===id) S.mapAreaId=null; delete mapState.pointsByArea[id]; await refreshMapHost(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ HASHTAG VIEW ══════════════════════════════════════
 function autoExpand(el){

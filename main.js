@@ -122,6 +122,41 @@ h('note:update',       (id,t,f,c,p)    => db.updateNote(id,t,f,c,p));
 h('note:updateContent',(id,content)    => db.updateNoteContent(id,content));
 h('note:delete',       (id)            => db.deleteNote(id));
 
+// Module system (v3 Nexus nest)
+h('module:getTree',     (nx)          => db.getTree(nx));
+h('module:get',         (id)          => db.getModule(id));
+h('module:create',      (data)        => db.createModule(data));
+h('module:update',      (id,data)     => db.updateModule(id,data));
+h('module:updateDescription', (id,d)  => db.updateModuleDescription(id,d));
+h('module:delete',      (id)          => db.deleteModule(id));
+h('module:reorder',     (nx,ids)      => db.reorderMajors(nx,ids));
+h('module:count',       (nx)          => db.countModules(nx));
+h('module:getAttrs',    (id)          => db.getModuleAttrs(id));
+h('module:upsertAttr',  (id,aid,n,v)  => db.upsertModuleAttr(id,aid,n,v));
+h('module:deleteAttr',  (id)          => db.deleteModuleAttr(id));
+h('module:getUi',       (id)          => db.getModuleUi(id));
+h('module:setUi',       (id,k,v)      => db.setModuleUi(id,k,v));
+h('module:getTags',     (id)          => db.getModuleTags(id));
+h('module:setTags',     (id,tags)     => db.setModuleTags(id,tags));
+h('module:getLinks',    (id)          => db.getModuleLinks(id));
+
+// Category "Classifier" (v3 Phase 5)
+h('classifier:setCatType',        (id,ct)              => db.setCatType(id,ct));
+h('classifier:getObjects',        (mref)                => db.getObjects(mref));
+h('classifier:getObject',         (id)                  => db.getObject(id));
+h('classifier:createObject',      (mref,n,c)            => db.createObject(mref,n,c));
+h('classifier:updateObject',      (id,n,c)              => db.updateObject(id,n,c));
+h('classifier:updateObjectNote',  (id,note)             => db.updateObjectNote(id,note));
+h('classifier:deleteObject',      (id)                  => db.deleteObject(id));
+h('classifier:getTemplates',      (mref)                => db.getTemplates(mref));
+h('classifier:getObjectTemplates',(mref,oref)           => db.getObjectTemplates(mref,oref));
+h('classifier:createTemplate',    (mref,d,t,lv,c,oref)  => db.createTemplate(mref,d,t,lv,c,oref));
+h('classifier:updateTemplate',    (id,d,t,lv,c)         => db.updateTemplate(id,d,t,lv,c));
+h('classifier:deleteTemplate',    (id)                  => db.deleteTemplate(id));
+h('classifier:countObjectTemplates', (oref)             => db.countObjectTemplates(oref));
+h('classifier:getAttrs',          (oid)                 => db.getAttrs(oid));
+h('classifier:upsertAttr',        (oid,tid,v)           => db.upsertAttr(oid,tid,v));
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));
@@ -183,6 +218,8 @@ h('color:delete',   (id)         => db.deleteColor(id));
 // Timeline
 h('timeline:getAll',  (pid) => db.getTimelines(pid));
 h('timeline:create',  (pid,n,c) => db.createTimeline(pid,n,c));
+h('timeline:getModuleTimelines', (moduleRef) => db.getModuleTimelines(moduleRef));
+h('timeline:createModuleTimeline', (moduleRef,n,c) => db.createModuleTimeline(moduleRef,n,c));
 h('timeline:update',  (id,n,c) => db.updateTimeline(id,n,c));
 h('timeline:delete',  (id) => db.deleteTimeline(id));
 h('timeline:getOrCreateDate', (d,m,y,hh,mm) => db.getOrCreateDate(d,m,y,hh,mm));
@@ -222,6 +259,8 @@ h('map:updateArea',  (id,n,c) => db.updateMapArea(id,n,c));
 h('map:deleteArea',  (id) => db.deleteMapArea(id));
 h('map:getPoints',   (aid) => db.getMapAreaPoints(aid));
 h('map:setPoints',   (aid,points) => db.setMapAreaPoints(aid, points));
+h('map:getModuleMap',       (mref) => db.getModuleMap(mref));
+h('map:getOrCreateModuleMap', (mref) => db.getOrCreateModuleMap(mref));
 
 // Hashtag
 h('hashtag:getAll',  () => db.getHashtags());

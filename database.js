@@ -14,6 +14,8 @@ const hero      = require('./src/db/hero');
 const writer    = require('./src/db/writer');
 const sage      = require('./src/db/sage');
 const artisan   = require('./src/db/artisan');
+const module_   = require('./src/db/module');
+const classifier = require('./src/db/classifier');
 
 module.exports = {
   ...core,
@@ -31,4 +33,6 @@ module.exports = {
   ...writer,
   ...sage,
   ...artisan,
+  ...module_,
+  ...classifier,
 };

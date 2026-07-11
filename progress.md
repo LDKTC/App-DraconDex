@@ -21,18 +21,18 @@ chrome and theme system — no new design system.
 ## Master checklist
 
 **M1 — Foundation**
-- [ ] Phase 1 — Dynamic module toolbar (nav rail)
-- [ ] Phase 2 — Hub panel shell (accordion + title-bar hub toggle)
-- [ ] Phase 3 — Nexus nest tree (Major/Minor)
+- [x] Phase 1 — Dynamic module toolbar (nav rail)
+- [x] Phase 2 — Hub panel shell (accordion + title-bar hub toggle)
+- [x] Phase 3 — Nexus nest tree (Major/Minor)
 
 **M2 — Module core**
-- [ ] Phase 4 — Module Inspector (detail spec · UI spec · attributes · tags · links)
-- [ ] Phase 5 — Category "Classifier" (+ Icon Collection picker)
-- [ ] Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
+- [x] Phase 4 — Module Inspector (detail spec · UI spec · attributes · tags · links)
+- [x] Phase 5 — Category "Classifier" (+ Icon Collection picker)
+- [x] Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
 
 **M3 — Graph kinds**
-- [ ] Phase 7 — Map "Locator"
-- [ ] Phase 8 — Timeline "Chronicler"
+- [x] Phase 7 — Map "Locator"
+- [x] Phase 8 — Timeline "Chronicler"
 - [ ] Phase 9 — TimeMap "Wanderer"
 - [ ] Phase 10 — Story "Narrator"
 
@@ -139,147 +139,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 1 — Dynamic module toolbar
-- **Goal:** replace `#nav-sidebar`'s fixed `.nexus-only` buttons with a
-  "create Major module" tool (opens the Classifier flow, Phase 5) + an icon
-  strip auto-populated from Major modules (icon + color from Icon
-  Collection). Scribe / Sage Hut / Import Dock / Artisan stay pinned.
-- **Panel:** `#nav-sidebar`. **Reference:** VS Code Activity Bar / Obsidian ribbon.
-- **Reuses:** `.nav-btn` styling, `I.*` icon dict, `toast()`.
-- **New:** dynamic icon population (today's icons are static markup in
-  `index.html`); per-module active state; color dot badge.
-- **Files:** `index.html`, `src/renderer/core.js`
-  (`updateTopNavButton`/`buildModuleSubNav` reworked), `src/db/module.js`,
-  `main.js`, `preload.js`, `style.css`.
-- **Depends:** Section E schema. **i18n:** `createMajorModule`, kind names ×2 sets.
-- **Acceptance:** create a Major module → its icon appears on the rail,
-  tinted with its color; clicking opens it; pinned tools unchanged.
-
-### Phase 2 — Hub panel shell
-- **Goal:** three-section accordion (Nexus nest / Sage Hut / Import Dock) in
-  `#left-panel-inner`, independently collapsible (Nexus nest expanded by
-  default), plus the **hub toggle** button in the title bar and removal of
-  title-bar tabs (tab strip itself lands in Phase 19).
-- **Panel:** `#left-panel` → `#left-panel-inner` + `#title-tab-bar`.
-- **Reference:** VS Code sidebar panel stack; Obsidian sidebar toggle.
-- **Reuses:** `.ph` header pattern, `--r`/`--rs`, `--border`,
-  `setLeftPanelCollapsed()`.
-- **New:** accordion mechanic (no precedent in codebase); hub-toggle button.
-- **Files:** `index.html`, new `src/renderer/hub.js`, `src/renderer/core.js`,
-  `style.css`.
-- **Depends:** —. **i18n:** `nexusNest`, `sageHut`, `importDock`, `toggleHub`.
-- **Acceptance:** all three sections collapse/expand independently; state
-  survives restart (localStorage); title bar shows no tabs; toggle hides and
-  shows the hub.
-
-### Phase 3 — Nexus nest tree
-- **Goal:** the Major/Minor tree. Majors freely drag-reorderable (grip ⠿ on
-  hover); Minors nested one level under their Major and **not movable**.
-  Rows show the **kind icon tinted with the item's color** (no plain color
-  dots) + name + kind badge (unique/classic per Settings).
-- **Panel:** Nexus nest accordion section.
-- **Reference:** Obsidian file tree.
-- **Reuses:** `.li` row shape, `x()` escaping, `openModal()` for rename.
-- **New:** drag-reorder for Majors (`display_order`); enforced one-level lock.
-- **Files:** `src/renderer/hub.js`, `src/db/module.js` (`getTree`,
-  `reorder`, `move` rejected for Minors), `preload.js`, `main.js`.
-- **Depends:** 2, E. **i18n:** kind names, `newMinorModule`.
-- **Acceptance:** drag Major above/below another → order persists; Minor
-  rows have no grip and cannot be dragged; every kind shows its icon in the
-  item's color; clicking a Minor opens it in the builder (except Collector).
-
-### Phase 4 — Module Inspector
-- **Goal:** docked right-side panel in the builder for the focused module:
-  **Module detail spec** (type, description, kind-specific settings),
-  **Module attribute** (free-form key–value, "+ สร้างอิสระ ไม่ต้องใช้ template"),
-  **Tag link** row, **Module link** (Outgoing `[[…]]` + Backlinks),
-  **Module UI spec** (active view, kind-specific display options), and the
-  Version History entry point (Phase 21).
-- **Panel:** right dock in `#main-area`. **Reference:** Obsidian properties panel.
-- **Reuses:** `.fg` shapes, `btn-p`/`btn-s`, `hashtagSelector()`,
-  `api.wiki.backlinks/outgoing`.
-- **New:** the panel itself; `module_attribute` + `module_ui` storage.
-- **Files:** new `src/renderer/inspector.js`, `src/db/module.js`,
-  `preload.js`, `main.js`, `style.css`.
-- **Depends:** 3, E. **i18n:** `moduleDetailSpec`, `moduleAttribute`,
-  `moduleUiSpec`, `moduleLink`, `tagLink`, `addAttribute`, `outgoing`, `backlinks`.
-- **Acceptance:** open any Minor → Inspector shows its specs; add a free-form
-  attribute on a Locator → persists; tag chips and link chips render; links
-  navigate on click.
-
-### Phase 5 — Category "Classifier"
-- **Goal:** category creation flow — pick a template as the core (from
-  Artisan, Phase 23), then one data type per category:
-  **Object** (default, attributes from template), **Element** (adds
-  Levelable/Condition toggles), **Character** (adds one custom attribute
-  unique to that character). Includes the **Icon Collection picker**: modal
-  with searchable tabs — SVG icons (tinted by chosen color) · Symbols
-  (reusing `symbol_collection`, user-extendable) · user-uploaded — with a
-  live preview of the nest row; used by all module create/edit flows.
-- **Panel:** modal from Nexus nest. **Reference:** VS Code "new file from template".
-- **Reuses:** `openModal()` + `.mfoot`, Attribute-template logic in
-  `src/db/director.js`, `symbolPicker()`/`symbol_collection`,
-  `colorPicker()`.
-- **New:** three-way type picker + per-type toggles; icon picker modal.
-- **Files:** new `src/renderer/mod/classifier.js`, `src/renderer/iconpicker.js`,
-  `src/db/module.js`, `src/db/core.js` (cat_type/levelable/condition columns).
-- **Depends:** 3, 4, E. **Views (Major-level, 4):** Table · List + Detail ·
-  Relation in Cat · Grid Collection.
-- **i18n:** `classifier`, `catTypeObject/Element/Character`, `levelable`,
-  `condition`, `iconCollection`, `useThisIcon`.
-- **Acceptance:** create a Classifier of each type; Element rows expose
-  Levelable/Condition; a Character object can hold exactly one custom
-  attribute; all four views switch and persist; icon picker changes the
-  nest-row icon live.
-
-### Phase 6 — Folder "Collector" / Project "Manager" / Detail "Inspector"
-- **Goal:** three organizational kinds. **Collector** groups items and is the
-  only kind that cannot open in the builder. **Manager** groups *and* opens
-  to browse its contents (card grid of children with counts). **Inspector**
-  (Detail) is a small note field.
-- **Panel:** nest rows; Manager/Detail open in builder.
-- **Reference:** Obsidian folder vs note distinction.
-- **Reuses:** `.li`, `.empty`, project browsing pattern from `director.js`,
-  `mdeditor.js` for the Detail note.
-- **New:** Collector as pure organizer.
-- **Files:** `src/renderer/mod/manager.js`, `src/renderer/mod/detail.js`,
-  `src/renderer/hub.js`.
-- **Depends:** 3, 4. **Views:** Manager (4): Cards · List · Table · Recent;
-  Detail (2): Note · Preview.
-- **Acceptance:** Collector rows have no open action; Manager tab shows child
-  cards with kind badges + counts; Detail saves a short note with wikilinks.
-
-### Phase 7 — Map "Locator"
-- **Goal:** canvas with background grid for gauging distance.
-  **1 Area = multiple nodes** joined into a shape (polygon with vertex
-  nodes, translucent fill in the area's color) — the area's
-  name/coordinates/node count display *on the shape*. Right-drag pan, wheel
-  zoom, zoom control + hint pill, grid-scale label (e.g. `24px = 10 km`).
-- **Panel:** builder full canvas. **Reference:** Obsidian canvas.
-- **Reuses:** `map.js` canvas rendering; `map_area`/`map_point` already
-  separate area from points — **generalize** (add `module_ref`), don't replace.
-- **New:** polygon shape rendering; grid overlay; pan/zoom controls.
-- **Files:** `src/renderer/mod/locator.js`, `src/db/map.js`, `src/db/core.js`.
-- **Depends:** 4, E. **Views (2–3):** Canvas · Area list · (optional) Layers.
-- **Acceptance:** create an area, add ≥3 nodes → closed shape with fill and
-  vertex dots; label stays on shape while panning/zooming.
-
-### Phase 8 — Timeline "Chronicler"
-- **Goal:** straight-line time graph; Events store date (d/m/y) + time
-  (h:min). **Node spacing is a true time scale** (px-per-day ratio, month
-  ruler on the axis) — never equal spacing. Pan/zoom as Phase 7.
-- **Panel:** builder. **Reference:** VS Code timeline view.
-- **Reuses:** `timeline.js` renderer; `timeline`/`timeline_date`/
-  `timeline_event` generalized with `module_ref`.
-- **New:** standalone module kind usable by any Major; time-scale layout.
-- **Files:** `src/renderer/mod/chronicler.js`, `src/db/timeline.js`.
-- **Depends:** 4, E. **Views (3):** One-line · Down-line + event list ·
-  **Compare Parallel** — overlay a second selected timeline: shared events
-  joined across both lines with dashed connectors; unshared events stay on
-  their own line.
-- **Acceptance:** events at 1-month vs 8-month gaps are visibly proportional;
-  compare mode joins a shared event across two timelines with a dashed line.
 
 ### Phase 9 — TimeMap "Wanderer"
 - **Goal:** Map + Timeline dual graph. A **MapEvent** references one existing
@@ -522,6 +381,184 @@ user-visible string goes through `t('key')` in **all 18 locales**
    no title-bar tabs + hub toggle, font-size setting, custom themes,
    Sketcher, Import Dock linking/viewers, Icon Collection, Designer,
    Viewer's three views) are folded into Sections A/B above.
+6. **M1 build strategy (Phases 1-3, implemented):** built **additively**,
+   not as a literal replacement. The legacy Director/Navigator/Hero/Writer/
+   Scribe/Sage/Artisan modules and their `.nav-btn.nexus-only` rail buttons
+   are untouched and stay fully reachable exactly as before — Phase 23's own
+   acceptance criterion ("old fixed nav-rail buttons gone") already implies
+   they still exist until then, so removing them in Phase 1 would have
+   contradicted Phase 23 and broken the app's only way to reach existing
+   user data for the whole M1-M6 window. Concretely: the new Major-module
+   icon strip is *inserted* into `#nav-sidebar` (after `#nav-logo-btn`),
+   not a replacement of the existing buttons; the Nexus nest / Sage Hut /
+   Import Dock accordion replaces only the old flat module-card list inside
+   `renderNexusHome()` (`#left-panel-inner`) on the vault-picker screen —
+   Sage Hut's row opens the real Sage module via the existing `selectModule
+   ('sage')`, so nothing about Sage itself is reimplemented; Import Dock is
+   a static "coming later" placeholder until Phase 18. Title-bar project
+   tabs (`#project-tabs`) are also left in place — Phase 2's mockup shows
+   them removed, but that's only safe once Phase 19's builder tab strip
+   exists to replace them, so removal is deferred to Phase 19 as that
+   phase's own dependency chain (`19 → M1`) already implies.
+   Opening a Major/Minor module (any kind other than Collector) renders a
+   minimal placeholder detail (name, kind badge, tinted icon) in
+   `#main-inner` — the real per-kind editors (Table/Canvas/Chat/…) are
+   Phases 5-16; nothing about this placeholder is meant to survive once a
+   kind gets its real renderer. The Classifier create flow used for now is
+   a plain name/kind-select/color modal, not the full type-picker + Icon
+   Collection picker — that arrives with Phase 5 and should replace
+   `moduleFormModal()` in `src/renderer/hub.js` rather than sit beside it.
+7. **Phase 4 build notes (implemented):** the Inspector (`src/renderer/
+   inspector.js`) is docked inside the same `#main-inner` placeholder from
+   Phase 1-3 (a `.module-builder` flex row: `.module-main` + `.module-
+   inspector`), not a separate builder pane — there is no builder yet
+   (Phase 19). Module links are wired through the *existing* generic
+   `wiki_link` system exactly as Section E.2 specifies: `src/db/wiki.js`
+   gained a `module` resolver, `KEY_LOOKUPS` entry, `quickIndex`/
+   `getEntityPath` cases and a `CONTENT_SOURCES` entry, so modules are now
+   first-class wiki citizens — any content can `[[link]]` to a module and
+   vice versa, `openEntityByKey()` navigates to them, and renaming a module
+   rewrites `[[old name]]` occurrences elsewhere (`renameWikiTarget`) the
+   same way object/chapter renames already did. The `description` column
+   added to `module` is the free-text field wikilinks live in — kind-
+   specific "detail spec" fields (grid scale, linked timeline, …) don't
+   exist yet since no kind has kind-specific settings until Phases 5+; the
+   Module UI spec section is a placeholder pointing at Version History
+   (Phase 21) for the same reason. `getAttrs/upsertAttr/deleteAttr`,
+   `getUi/setUi`, `getTags/setTags`, `getLinks` all match Section E.3's
+   `api.module.*` surface as specified.
+8. **Phase 5 build notes (implemented) — parallel schema instead of reusing
+   Director's tables:** Section E.2 originally said Classifier should reuse
+   `object_category`/`object_template`/`object`/`object_attribute`. Investi-
+   gating that turned up more risk than expected: those tables are read
+   through `INNER JOIN`s that assume every row belongs to a real legacy
+   `project` (most importantly `wiki.js`'s `obj` resolver, `nexusOfObject`,
+   `quickIndex`, and `rebuildWikiIndex`'s object loop all `JOIN project p ON
+   o.project_id=p.id`), plus Director/Navigator/Hero/relation.js/hashtag.js
+   all query `object_category`/`object` directly. Making `object.project_id`
+   nullable for module-scoped rows would have meant auditing and patching
+   every one of those call sites, on tables three already-shipped modules
+   depend on. Given that risk, Classifier instead got its own parallel
+   tables — `classifier_object`/`classifier_template`/`classifier_attribute`
+   (Section E.1) — mirroring Director's category→template→object→attribute
+   shape without touching the shared tables at all. `object_ref` on
+   `classifier_template` (NULL = shared category template, set = a
+   Character's one private attribute) is the mechanism for Section E.2's
+   "per-character custom attribute = one template row scoped by object_ref."
+   `cat_type` ended up as a nullable column directly on `module` (alongside
+   `description` from Phase 4) rather than in Section E.1's original
+   location, matching how `description` was added.
+   The **Artisan template picker** in the create-Classifier flow is not
+   implemented — Phase 23 (the thing it would pick from) doesn't exist yet,
+   so the modal only offers a blank category, per the Phase 23 dependency
+   already implied by Section F's recommended order. **"Relation in Cat"**
+   (one of the four views) is a static grid layout of the category's object
+   names, not a real relationship graph — Classifier objects have no
+   relation-type system of their own yet (Director's `relation`/
+   `relation_obob` tables are project-scoped, not usable here), and building
+   one was out of scope for this phase; revisit alongside Phase 14
+   (Connector) or a future phase if per-category relationships are wanted.
+   `classifier_attribute` values are edited inline (contenteditable table
+   cells / detail-panel fields) with no version history yet — same
+   Phase-21-shaped gap as everything else in M1-M2 so far.
+9. **Phase 6 build notes (implemented):** Collector's "cannot open in the
+   builder" behavior was already correct since Phase 3 (`openModuleNode()`
+   already special-cased `kind==='collector'` to toggle-expand instead of
+   opening) — Phase 6 added no Collector code, just re-verified it. Manager
+   (`src/renderer/mod/manager.js`) reads its children straight off the
+   `.children` array `api.module.getTree()` already attaches to Majors, so
+   the only network round-trip is the persisted view + a per-child
+   attribute count; "counts" is Phase 4's `module_attribute` count (generic
+   across every kind), not a kind-specific object count, since a generic
+   Manager has no way to know what "objects" mean for an arbitrary child
+   kind. Detail/Inspector (`src/renderer/mod/detail.js`) doesn't introduce
+   a new note field — it mounts the shared `createMarkdownEditor` (same
+   component Scribe/object notes use) directly on `module.description`
+   (the same field Phase 4's Inspector dock already edits in its small
+   textarea), so the two views literally show the same data. That surfaced
+   a real bug during testing — saving from the big editor left the Inspector
+   dock's mirrored textarea and outgoing-link chips stale until the module
+   was reopened — fixed by having the editor's save callback reload and
+   swap in a fresh Inspector dock (`.module-inspector` outerHTML) without
+   tearing down the editor mid-edit.
+10. **Phase 7 build notes (implemented):** matched Section E.2's
+    "generalize, don't replace" call — `map` gained a nullable `module_ref`
+    column via a table-rebuild migration (`migrateMapV3` in `src/db/core.js`,
+    same CREATE-new/copy/DROP/RENAME pattern as other v3 migrations) rather
+    than a parallel schema, since `map`/`map_area`/`map_point` had no
+    `wiki.js`/cross-module `INNER JOIN` coupling to worry about (unlike
+    Phase 5's Classifier) and Director's own map queries already filter by
+    `project_id`, so a `module_ref`-scoped row is invisible to them for free.
+    `src/renderer/map.js`'s existing Konva pan/zoom/polygon engine is shared
+    as-is between Director's legacy per-project Map and the new Locator
+    kind: the handful of call sites that used to assume a Director context
+    (`selectMapArea`/`setMapTool`/`createMapArea`/`saveMapArea`/`delMapArea`)
+    now route their refresh through a small `refreshMapHost()` dispatcher
+    that calls `mountLocatorBoard()` when `S.activeModuleNode?.kind ===
+    'locator'` and falls back to the original `renderMapView()` otherwise,
+    instead of forking the file. The on-shape label (area name + centroid
+    x/y + node count, required by this phase's acceptance criteria) and its
+    zoom-independent sizing (`fontSize: 12.5 / scale`, recentered via
+    `offsetX`/`offsetY`) were added directly inside `renderMapBoard()`, so
+    Director's legacy Map view picked up the same on-shape labels as a
+    side effect — left as-is since it's a strict improvement and keeps the
+    two Map surfaces visually consistent. Rescaling Circle/Line/Text
+    children on zoom (both the canvas wheel handler and Locator's +/−
+    buttons) was factored into one `rescaleMapLayer(layer, newScale)`
+    helper in `map.js` used by both `map.js`'s own wheel handler and
+    `zoomLocator()` in `src/renderer/mod/locator.js`, instead of duplicating
+    the rescale logic per call site. The distance grid (`24px = 10 km`) is
+    scoped to Locator only via a `.map-whiteboard.locator-board` compound
+    selector in `style.css` — a plain `.locator-board{background-image:…}`
+    rule was tried first but lost the cascade to the pre-existing
+    `.map-whiteboard{background:var(--raised)}` shorthand (equal
+    specificity, later in file, `background` resets `background-image`),
+    so it had to be bumped to match specificity rather than reordering the
+    file.
+11. **Phase 8 build notes (implemented):** same generalize-don't-replace
+    call as Phase 7 — `timeline` gained a nullable `module_ref` via
+    `migrateTimelineV3` (identical table-rebuild shape to `migrateMapV3`),
+    since `getTimelines`/`getEventsByHashtag`/`hashtag.js`'s timeline join
+    all filter by `project_id` in a `WHERE` clause rather than an
+    `INNER JOIN` that would break on a NULL, and `timeline_event`/
+    `timeline_date` never reference `project_id` at all. A Chronicler
+    module owns any number of timeline "lines" directly (new
+    `getModuleTimelines`/`createModuleTimeline` in `src/db/timeline.js`,
+    scoped by `module_ref` the same way Director's project-scoped
+    `getTimelines`/`createTimeline` already worked) rather than nesting a
+    single container row, matching how a Director project also owns
+    several timelines side by side. `src/renderer/timeline.js`'s existing
+    true-time-scale SVG graph was split into a standalone
+    `buildTimelineGraphHtml(evs, tlid, color)` (previously inlined in
+    `renderTimelineDetail`) plus the already-reusable
+    `bindTimelineGraphInteractions(tlid)` (it only ever depended on DOM
+    ids and `timelineGraphState[tlid]`, never `S.project`) — Chronicler's
+    Down-line view calls both directly instead of duplicating the SVG
+    generation, the same reuse shape as Locator sharing `map.js`. A month/
+    year ruler (`buildTimelineRulerSvg`, tick step switches from month to
+    year past a 4-year span to avoid overdraw) was added to that shared
+    builder to satisfy the Goal's "month ruler on the axis" line, so
+    Director's legacy Timeline view picked up the same ruler as a side
+    effect — left in, same reasoning as Phase 7's on-shape map labels
+    flowing back into Director's Map. One-line and Compare Parallel are
+    new, lighter builders in `src/renderer/mod/chronicler.js` that plot
+    on flat axis lines instead of the zigzag layout, but stay on the same
+    SVG id/dataset contract (`data-start-ts`, `.tl-ruler-tick`, etc.) so
+    `bindTimelineGraphInteractions` drives their pan/wheel-zoom for free;
+    `updateTimelineGraphX()` gained two more rescale cases (`.tl-ruler-*`,
+    `.tl-cmp-link`) to keep ruler ticks and Compare's dashed connectors
+    correctly positioned through a zoom. A "shared event" in Compare
+    Parallel is defined as two events with the same `start_at` id (the
+    `timeline_date` row `getOrCreateDate` already dedupes identical dates
+    to) — the natural, no-extra-schema definition of "the same moment"
+    across two lines. Event modals are Chronicler-specific
+    (`openChroniclerEventModal` etc.) rather than reusing Director's
+    `openEventModal`/`openTimelineModal`: those are wired to
+    `S.project`/`S.timeline` and to the project-scoped Object↔Event and
+    Timeline↔Timeline relation systems (`relation_obtl`/`relation_tltl`),
+    which — like Classifier's own relation gap documented in item 8 above
+    — were out of scope for a module-scoped timeline; Chronicler's modals
+    cover name/dates/color/story only.
 
 ---
 
@@ -565,8 +602,20 @@ module            id, nexus_ref, parent_id (NULL = Major; set = Minor, one level
                   name, kind TEXT CHECK(kind IN ('collector','manager','inspector',
                   'classifier','locator','chronicler','wanderer','narrator','author',
                   'scribe','drafter','viewer','connector','sketcher','designer')),
-                  icon TEXT, icon_color→use_color, color→use_color,
-                  display_order INT, pinned INT DEFAULT 0
+                  icon TEXT, icon_color→use_color, color→use_color, description TEXT,
+                  cat_type TEXT('object'|'element'|'character'), display_order INT, pinned INT DEFAULT 0
+                  -- description (added in Phase 4): free-text "Module detail spec"
+                  -- field, [[wikilink]]-indexed under key kind `module_<id>` (below)
+                  -- cat_type (added in Phase 5): meaningful only for kind='classifier'
+classifier_object     id, module_ref→module, name, color→use_color, note TEXT, display_order
+classifier_template   id, module_ref→module, object_ref→classifier_object NULL,
+                       description, attribute_type, levelable INT, has_condition INT, display_order
+                       -- object_ref NULL = shared category template; set = the one
+                       -- private attribute a Character-type object may carry
+classifier_attribute  id, object_ref→classifier_object, template_ref→classifier_template,
+                       attribute_value TEXT   (UNIQUE object_ref+template_ref)
+                       -- Phase 5: parallel to object_category/object_template/object/
+                       -- object_attribute rather than reusing them — see Section C item 8
 module_attribute  id, module_ref→module, attr_name, attr_value, display_order   -- free-form "+"
 module_ui         id, module_ref, ui_key, ui_value                              -- ":" incl. active view
 module_hashtag    module_ref, hashtag_id  (UNIQUE pair)
@@ -595,7 +644,7 @@ custom_theme      id, name UNIQUE, palette TEXT(JSON: 10 tokens)
 | Author | `write_book`, `write_chapter` + `module_ref` |
 | Scribe (chat) | `write_note`/`write_chat` shape, generalized |
 | Drafter | `note` (markdown) + `module_ref` |
-| Classifier | `object_category` + `cat_type TEXT('object'|'element'|'character')`; `object_template` + `levelable INT`, `has_condition INT`; per-character custom attribute = one `object_template` row scoped by `object_ref` |
+| Classifier | *(not generalized — see Section E.1's `classifier_object`/`classifier_template`/`classifier_attribute` and Section C item 8 for why)* |
 | Links | `wiki_link` — new source/target key kind `module_<id>` |
 | Tags | `hashtag` + new `module_hashtag` |
 
@@ -607,6 +656,12 @@ api.module:   getTree(nx) · get(id) · create(data) · update(id,data) · delet
               getAttrs/upsertAttr/deleteAttr · getUi/setUi
               getTags/setTags · getLinks(id)            (wiki-backed)
               getVersions(id)/restoreVersion(id,seq)
+api.classifier: setCatType(id,catType) · getObjects/getObject/createObject/updateObject/
+              updateObjectNote/deleteObject · getTemplates/getObjectTemplates/
+              createTemplate/updateTemplate/deleteTemplate/countObjectTemplates ·
+              getAttrs(objectId)/upsertAttr(objectId,templateId,value)
+              -- Phase 5, not in the original Section E.3 draft (added when
+              -- Classifier got its own tables instead of reusing object.*)
 api.searchlink: query(nx, text, scope('vault'|'siblings'|'subtree'), kind)
 api.importdock: importFolder() · list(nx) · linkFile(id,key,useAsImage) · readFile(id)
 api.sketch:   pages/strokes CRUD · exportPng(moduleId,pageNo)

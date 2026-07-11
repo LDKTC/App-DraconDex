@@ -783,6 +783,156 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .nexus-item .btn-icon .icon{width:14px;height:14px}
 .nexus-count{font-size:11px;color:var(--t3);background:var(--hover);border-radius:10px;padding:1px 8px;flex-shrink:0}
 
+/* ═══ V3 MODULE SYSTEM — Nexus nest hub (progress.md Phases 1-3) ═══ */
+.hub-toggle{
+	width:26px;height:26px;border:none;border-radius:5px;background:transparent;
+	color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;
+	margin-left:2px;-webkit-app-region:no-drag;
+}
+.hub-toggle:hover{background:var(--hover);color:var(--t1)}
+.hub-toggle .icon{width:16px;height:16px}
+.hub-toggle.active{color:var(--t1);background:var(--raised)}
+
+.module-rail-tool.rail-sep{width:28px;height:0;border-top:1px solid var(--border);margin:5px 0}
+.nav-btn.module-rail-item{position:relative}
+.mdot{position:absolute;right:5px;bottom:5px;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--surface)}
+
+.acc-head{
+	display:flex;align-items:center;gap:7px;padding:8px 10px;font-size:10.5px;font-weight:700;
+	letter-spacing:.06em;text-transform:uppercase;color:var(--t2);border-bottom:1px solid var(--border);
+	cursor:pointer;
+}
+.acc-head:hover{color:var(--t1)}
+.acc-head .chev{width:9px;height:9px;flex-shrink:0}
+.acc-head .act{margin-left:auto;display:flex;gap:4px}
+.acc-head .act .btn-i{width:22px;height:22px;padding:2px}
+.acc-body{padding:2px 0 8px}
+.acc-collapsed{border-bottom:1px solid var(--border)}
+
+.li .kicon{display:flex;align-items:center;flex-shrink:0}
+.li .kicon .icon{width:15px;height:15px;stroke-width:2.2}
+.li .kind{margin-left:auto;font-size:9px;color:var(--t3);border:1px solid var(--border);
+	border-radius:3px;padding:0 4px;letter-spacing:.03em;flex-shrink:0}
+.li .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li.indent1{padding-left:26px}
+.li.indent2{padding-left:42px}
+.tree-chev{width:9px;height:9px;stroke-width:3;color:var(--t3);flex-shrink:0}
+.grip{color:var(--t3);font-size:10px;letter-spacing:-1px;opacity:0;cursor:grab;flex-shrink:0}
+.li:hover .grip{opacity:.7}
+.li.sel{background:var(--raised);color:var(--t1)}
+
+/* Module Inspector dock (progress.md Phase 4) */
+.module-builder{display:flex;gap:0;margin:-18px -22px;min-height:calc(100% + 36px)}
+.module-main{flex:1;min-width:0;padding:18px 22px}
+.module-inspector{width:290px;flex-shrink:0;border-left:1px solid var(--border);background:var(--surface);padding-bottom:14px}
+.insp-head{padding:10px 14px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;
+	letter-spacing:.06em;text-transform:uppercase;color:var(--t2);display:flex;align-items:center;gap:7px}
+.insp-label{padding:10px 14px 4px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3)}
+.prop{display:flex;align-items:center;gap:8px;padding:5px 14px;font-size:12px}
+.prop .pk{width:88px;color:var(--t3);flex-shrink:0}
+.prop .pv{flex:1;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prop .pv.ghost{color:var(--t3);font-style:italic}
+.prop .acts{margin-left:auto}
+.insp-desc-wrap{padding:4px 14px 8px}
+.insp-desc-wrap textarea{width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
+	padding:7px 9px;color:var(--t1);font-size:12px;font-family:inherit;resize:vertical}
+.insp-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px 14px 10px;align-items:center}
+.insp-attr:hover .acts{display:flex}
+.insp-attr .acts{display:none;gap:2px}
+.htag{font-size:10.5px;border:1px solid var(--border);border-radius:9px;padding:1px 8px;color:var(--t2);background:transparent;cursor:default}
+.htag.lk{border-color:var(--accent);color:var(--accentH);cursor:pointer}
+.htag.lk:hover{background:var(--hover)}
+
+/* Icon Collection picker (progress.md Phase 5) */
+.ipk-tabs{display:flex;gap:6px;margin-bottom:10px}
+.ipk-tab{padding:5px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--raised);
+	color:var(--t2);font-size:12px;font-family:inherit;cursor:pointer}
+.ipk-tab:hover{background:var(--hover);color:var(--t1)}
+.ipk-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.ipk-tab-disabled{opacity:.4;cursor:default}
+.ipk-tab-disabled:hover{background:var(--raised);color:var(--t2)}
+.ipk-symbol{font-size:17px}
+.ipk-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:180px;overflow-y:auto;margin-bottom:10px}
+.ipk-cell{width:36px;height:36px;border:1px solid var(--border);border-radius:var(--rs);background:var(--raised);
+	color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
+.ipk-cell:hover{background:var(--hover);color:var(--t1)}
+.ipk-cell.sel{border-color:var(--accent);background:rgba(99,102,241,.15);color:var(--t1)}
+.ipk-color-row,.ipk-preview-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ipk-color-row .pk,.ipk-preview-row .pk{width:60px;flex-shrink:0;color:var(--t3);font-size:11.5px}
+.ipk-colors{display:flex;flex-wrap:wrap;gap:6px}
+.ipk-colors .cswatch{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.ipk-colors .cswatch.sel{border-color:var(--t1)}
+.kicon-glyph{font-size:14px;line-height:1}
+
+/* Classifier type picker (progress.md Phase 5) */
+.typegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.typecard{border:1px solid var(--border);border-radius:var(--r);padding:11px;cursor:pointer}
+.typecard:hover{border-color:var(--t3)}
+.typecard.sel{border-color:var(--accent);background:rgba(99,102,241,.08)}
+.typecard h5{font-size:12.5px;margin-bottom:3px;display:flex;gap:6px;align-items:center}
+.typecard h5 .icon{width:14px;height:14px}
+.typecard p{font-size:10.5px;color:var(--t3);line-height:1.45}
+.togglerow{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t2);margin-top:7px}
+.tg{width:26px;height:14px;border-radius:7px;background:var(--raised);border:1px solid var(--border);position:relative;flex-shrink:0}
+.tg.on{background:var(--accent);border-color:var(--accent)}
+.tg::after{content:'';position:absolute;top:1px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--t2)}
+.tg.on::after{left:auto;right:2px;background:#fff}
+
+/* Classifier views (progress.md Phase 5) */
+.classifier-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.viewbar{display:inline-flex;align-items:center;gap:0;margin-left:auto;border:1px solid var(--border);
+	border-radius:var(--rs);overflow:hidden;background:var(--surface)}
+.viewbar .vlbl{font-size:10px;color:var(--t3);padding:0 8px}
+.viewbar .vitem{font-size:10.5px;color:var(--t2);padding:5px 10px;border-left:1px solid var(--border);cursor:pointer}
+.viewbar .vitem:hover{background:var(--hover);color:var(--t1)}
+.viewbar .vitem.act{background:var(--accent);color:#fff;font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle}
+.cls-table-wrap{overflow-x:auto}
+.cls-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.cls-table th{color:var(--t3);text-align:left;font-weight:600;font-size:11px;letter-spacing:.04em;
+	text-transform:uppercase;padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.cls-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--t2)}
+.cls-table td:first-child{color:var(--t1);white-space:nowrap}
+.cls-cell:focus{outline:1px solid var(--accent);outline-offset:-1px;background:var(--raised)}
+.cls-rowacts{display:flex;gap:2px;white-space:nowrap}
+.cls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.cls-card{border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center;cursor:pointer;background:var(--surface)}
+.cls-card:hover{background:var(--hover)}
+.cls-card-dot{width:26px;height:26px;border-radius:50%;margin:0 auto 8px}
+.cls-card-name{font-size:12.5px;color:var(--t1)}
+.cls-listdetail{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;min-height:260px}
+.cls-list{width:200px;flex-shrink:0;border-right:1px solid var(--border);padding:6px}
+.cls-detail{flex:1;padding:14px 16px;min-width:0}
+.cls-relation-wrap{position:relative;min-height:260px;border:1px solid var(--border);border-radius:var(--r);
+	background-image:linear-gradient(rgba(46,46,63,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(46,46,63,.35) 1px,transparent 1px);
+	background-size:24px 24px}
+.cls-reldot{position:absolute;width:110px;padding:8px;border:1.5px solid;border-radius:var(--r);
+	background:var(--surface);font-size:11.5px;color:var(--t1);text-align:center}
+
+/* Manager view (progress.md Phase 6) */
+.mgr-card{display:flex;flex-direction:column;align-items:center;gap:4px}
+.mgr-card-icon{display:flex;align-items:center;justify-content:center}
+.mgr-card-icon .icon{width:22px;height:22px}
+.mgr-card-count{font-size:10px;color:var(--t3)}
+
+/* Canvas chrome: pan/zoom hint pill + zoom control (progress.md Phase 7,
+   cross-cutting per Section A.3 #6 — every canvas/graph kind gets these) */
+.chint{position:absolute;left:14px;bottom:14px;z-index:3;font-size:10.5px;color:var(--t3);
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:4px 10px}
+.czoom{position:absolute;right:14px;bottom:14px;z-index:3;display:flex;align-items:center;gap:7px;
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:4px 8px}
+.zbtn{width:18px;height:18px;border:1px solid var(--border);border-radius:4px;display:inline-flex;
+	align-items:center;justify-content:center;color:var(--t2);font-size:12px;background:var(--raised);cursor:pointer}
+.zbtn:hover{background:var(--hover);color:var(--t1)}
+.zlvl{color:var(--t1);font-size:11px;min-width:34px;text-align:center}
+
+/* Locator (progress.md Phase 7) */
+.locator-scalelbl{margin-left:auto;font-size:11px;color:var(--t3)}
+.map-whiteboard.locator-board{
+	background-image:linear-gradient(rgba(255,255,255,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.11) 1px,transparent 1px),
+		linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+	background-size:120px 120px,120px 120px,24px 24px,24px 24px}
+
 /* ═══ MARKDOWN EDITOR (mdeditor.js — Scribe notes, object notes) ═══ */
 .scribe-editor{display:flex;flex-direction:column;height:100%;min-height:0}
 .mded-head{display:flex;align-items:center;gap:10px;padding:4px 2px 8px;border-bottom:1px solid var(--border);margin-bottom:8px}
