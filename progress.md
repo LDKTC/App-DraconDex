@@ -51,7 +51,7 @@ chrome and theme system — no new design system.
 
 **M4 — Content kinds**
 - [x] Phase 11 — Book "Author"
-- [ ] Phase 12 — Chat "Scribe"
+- [x] Phase 12 — Chat "Scribe"
 - [ ] Phase 13 — Doc "Drafter"
 - [ ] Phase 14 — Analys "Viewer" / Relation "Connector"
 
@@ -152,18 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 12 — Chat "Scribe"
-- **Goal:** chat-style note page; one session (note) records messages as
-  bubbles with timestamps.
-- **Panel:** builder. **Reference:** chat UI.
-- **Reuses:** `.li` session list, `toast()`; `write_note`/`write_chat`
-  pattern generalized.
-- **New:** bubble renderer (no precedent in codebase).
-- **Files:** `src/renderer/mod/chatscribe.js`, `src/db/module.js`.
-- **Depends:** 4, E; naming decision C1. **Views (2):** Chat · Transcript.
-- **Acceptance:** send messages → bubbles with time; sessions listed; search
-  finds message text via Search Link.
 
 ### Phase 13 — Doc "Drafter"
 - **Goal:** blank `.md`-like page for general notes.
@@ -343,7 +331,8 @@ user-visible string goes through `t('key')` in **all 18 locales**
    markdown-notes Scribe module is functionally Doc "Drafter" and takes that
    name; the *new* chat-bubble kind takes "Scribe", exactly as Plan.md
    assigns. The Classic↔Unique name mode (Phase 22) further reduces
-   ambiguity. **Revisit gate:** confirm with user before starting Phase 12/13.
+   ambiguity. **Gate passed:** user approved the M4-M6 plan carrying this
+   naming; Phases 12/13 are built on it.
 2. **Director/Navigator/Hero/Writer** do not remain fixed modules — they
    migrate into Artisan as templates (Phase 23). *(User-confirmed.)*
 3. **Scribe (chat) and Sage** stay **pinned** app-level tools on the rail /

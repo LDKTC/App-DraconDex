@@ -31,6 +31,7 @@ const RESOLVERS = [
   ['write', (d, n, nx) => d.prepare(`SELECT id FROM write_project WHERE (? IS NULL OR nexus_ref=?) AND project_name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'write_'],
   ['module', (d, n, nx) => d.prepare(`SELECT id FROM module WHERE (? IS NULL OR nexus_ref=?) AND name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'module_'],
   ['bchp',  (d, n, nx) => d.prepare(`SELECT ch.id FROM book_chapter ch JOIN module m ON ch.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?) AND ch.name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'bchp_'],
+  ['chss',  (d, n, nx) => d.prepare(`SELECT s.id FROM chat_session s JOIN module m ON s.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?) AND s.name=? COLLATE NOCASE`).get(nx, nx, n)?.id, 'chss_'],
 ];
 
 function resolveWikiName(rawName, nexusId) {
@@ -111,6 +112,14 @@ function rebuildWikiIndex() {
   for (const r of d.prepare(`SELECT ch.id, ch.chapter_content, m.nexus_ref FROM book_chapter ch JOIN module m ON ch.module_ref=m.id WHERE ch.chapter_content LIKE '%[[%'`).all()) {
     reindexWikiLinks(`bchp_${r.id}`, r.chapter_content, r.nexus_ref);
   }
+  for (const r of d.prepare(`
+    SELECT s.id, m.nexus_ref, COALESCE(GROUP_CONCAT(g.message, char(10)), '') AS content
+    FROM chat_session s JOIN module m ON s.module_ref=m.id
+    JOIN chat_message g ON g.session_ref=s.id
+    GROUP BY s.id HAVING content LIKE '%[[%'
+  `).all()) {
+    reindexWikiLinks(`chss_${r.id}`, r.content, r.nexus_ref);
+  }
 }
 
 // ── Key hydration ───────────────────────────────────────────────────────────
@@ -130,6 +139,7 @@ const KEY_LOOKUPS = {
   write: { sql: `SELECT id, project_name AS name FROM write_project WHERE id=?`, type: 'project', module: 'writer' },
   module: { sql: `SELECT id, name FROM module WHERE id=?`, type: 'module', module: 'hub' },
   bchp:  { sql: `SELECT id, name FROM book_chapter WHERE id=?`,               type: 'chapter',   module: 'author' },
+  chss:  { sql: `SELECT id, name FROM chat_session WHERE id=?`,               type: 'chat',      module: 'scribe' },
 };
 
 function resolveEntityKeys(keys) {
@@ -188,6 +198,7 @@ function quickIndex(nexusId) {
   add(`SELECT id, project_name AS name, NULL AS color_code FROM write_project WHERE (? IS NULL OR nexus_ref=?)`, 'write_', 'project', 'writer');
   add(`SELECT m.id, m.name, uc.color_code FROM module m LEFT JOIN use_color uc ON uc.id=m.color WHERE (? IS NULL OR m.nexus_ref=?)`, 'module_', 'module', 'hub');
   add(`SELECT ch.id, ch.name, NULL AS color_code FROM book_chapter ch JOIN module m ON ch.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?)`, 'bchp_', 'chapter', 'author');
+  add(`SELECT s.id, s.name, NULL AS color_code FROM chat_session s JOIN module m ON s.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?)`, 'chss_', 'chat', 'scribe');
   return out;
 }
 
@@ -226,6 +237,7 @@ function getGraph(nexusId) {
   run(`SELECT e.id, c.game_ref FROM game_col_element e JOIN game_collection c ON e.collection_ref=c.id JOIN game_project g ON c.game_ref=g.id WHERE (? IS NULL OR g.nexus_ref=?)`, r => addEdge(`gel_${r.id}`, `game_${r.game_ref}`));
   run(`SELECT ch.id, s.project_id FROM write_chapter ch JOIN write_book b ON ch.book_id=b.id JOIN write_series s ON b.series_id=s.id JOIN write_project p ON s.project_id=p.id WHERE (? IS NULL OR p.nexus_ref=?)`, r => addEdge(`wchp_${r.id}`, `write_${r.project_id}`));
   run(`SELECT ch.id, ch.module_ref FROM book_chapter ch JOIN module m ON ch.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?)`, r => addEdge(`bchp_${r.id}`, `module_${r.module_ref}`));
+  run(`SELECT s.id, s.module_ref FROM chat_session s JOIN module m ON s.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?)`, r => addEdge(`chss_${r.id}`, `module_${r.module_ref}`));
   // cross-module project links
   run(`SELECT wn.world_ref, wn.project_ref FROM world_novel wn JOIN world_project w ON wn.world_ref=w.id WHERE (? IS NULL OR w.nexus_ref=?)`, r => addEdge(`world_${r.world_ref}`, `proj_${r.project_ref}`));
   run(`SELECT gl.game_ref, gl.project_ref FROM game_novel_link gl JOIN game_project g ON gl.game_ref=g.id WHERE (? IS NULL OR g.nexus_ref=?)`, r => addEdge(`game_${r.game_ref}`, `proj_${r.project_ref}`));
@@ -352,6 +364,10 @@ function getEntityPath(key) {
         const r = d.prepare(`SELECT module_ref FROM book_chapter WHERE id=?`).get(id);
         return r && { kind: 'bchp', moduleId: r.module_ref, chapterId: id };
       }
+      case 'chss': {
+        const r = d.prepare(`SELECT module_ref FROM chat_session WHERE id=?`).get(id);
+        return r && { kind: 'chss', moduleId: r.module_ref, sessionId: id };
+      }
     }
   } catch (_) {}
   return null;
@@ -384,6 +400,22 @@ const CONTENT_SOURCES = {
   wchp: { get: `SELECT chapter_content AS c FROM write_chapter WHERE id=?`, set: `UPDATE write_chapter SET chapter_content=?, update_at=datetime('now') WHERE id=?` },
   module: { get: `SELECT description AS c FROM module WHERE id=?`, set: `UPDATE module SET description=?, update_at=datetime('now') WHERE id=?` },
   bchp: { get: `SELECT chapter_content AS c FROM book_chapter WHERE id=?`, set: `UPDATE book_chapter SET chapter_content=?, update_at=datetime('now') WHERE id=?` },
+  // Chat "Scribe" sessions: the indexed content is the concatenation of the
+  // session's chat_message rows, so the rename rewrite runs per message row
+  // (rewrite: below) instead of through a single get/set column pair.
+  chss: {
+    rewrite: (d, sessionId, apply) => {
+      let any = false;
+      for (const g of d.prepare(`SELECT id, message FROM chat_message WHERE session_ref=?`).all(sessionId)) {
+        const next = apply(g.message);
+        if (next === g.message) continue;
+        d.prepare(`UPDATE chat_message SET message=? WHERE id=?`).run(next, g.id);
+        any = true;
+      }
+      if (!any) return null;
+      return d.prepare(`SELECT COALESCE(GROUP_CONCAT(message, char(10)), '') AS c FROM chat_message WHERE session_ref=?`).get(sessionId)?.c ?? '';
+    },
+  },
 };
 
 function renameWikiTarget(targetKey, oldName, newName) {
@@ -398,6 +430,11 @@ function renameWikiTarget(targetKey, oldName, newName) {
     const src = m && CONTENT_SOURCES[m[1]];
     if (!src) continue;
     const id = Number(m[2]);
+    if (src.rewrite) {
+      const next = src.rewrite(d, id, (c) => String(c || '').replace(re, (_, ns, tail) => `[[${ns}${newName}${tail}`));
+      if (next !== null) { reindexWikiLinks(r.src_key, next, r.nexus_ref); changed++; }
+      continue;
+    }
     const row = d.prepare(src.get).get(id);
     if (!row || !row.c) continue;
     const next = row.c.replace(re, (_, ns, tail) => `[[${ns}${newName}${tail}`);

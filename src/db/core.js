@@ -933,6 +933,26 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Chat "Scribe" (Phase 12). A Scribe module holds chat sessions
+    -- ("1 session = 1 note", mockup 06); each session is a stream of
+    -- timestamped bubble messages. Session content (the concatenated
+    -- messages) is wikilink-indexed under the chss_<id> key kind.
+    CREATE TABLE IF NOT EXISTS chat_session (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      session_order INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_message (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_ref INTEGER NOT NULL REFERENCES chat_session(id) ON DELETE CASCADE,
+      message TEXT NOT NULL,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Category "Classifier" (Phase 5). A Classifier module IS its category --
     -- one 'classifier'-kind module row owns one set of objects/templates.
     -- Deliberately a *parallel* schema rather than reusing Director's

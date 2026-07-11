@@ -19,6 +19,7 @@ const classifier = require('./src/db/classifier');
 const wanderer  = require('./src/db/wanderer');
 const narrator  = require('./src/db/narrator');
 const author    = require('./src/db/author');
+const chatscribe = require('./src/db/chatscribe');
 
 module.exports = {
   ...core,
@@ -41,4 +42,5 @@ module.exports = {
   ...wanderer,
   ...narrator,
   ...author,
+  ...chatscribe,
 };

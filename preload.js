@@ -88,6 +88,16 @@ contextBridge.exposeInMainWorld('api', {
     updateContent: (id,c)    => inv('author:updateContent', id,c),
     deleteChapter: (id)      => inv('author:deleteChapter', id),
   },
+  chatscribe: {
+    getSessions:   (mref)    => inv('chatscribe:getSessions', mref),
+    createSession: (mref,n)  => inv('chatscribe:createSession', mref,n),
+    renameSession: (id,n)    => inv('chatscribe:renameSession', id,n),
+    deleteSession: (id)      => inv('chatscribe:deleteSession', id),
+    getMessages:   (sref)    => inv('chatscribe:getMessages', sref),
+    createMessage: (sref,t)  => inv('chatscribe:createMessage', sref,t),
+    updateMessage: (id,t)    => inv('chatscribe:updateMessage', id,t),
+    deleteMessage: (id)      => inv('chatscribe:deleteMessage', id),
+  },
   wiki: {
     resolve:    (name,nx)  => inv('wiki:resolve', name,nx),
     backlinks:  (key)      => inv('wiki:backlinks', key),

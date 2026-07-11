@@ -185,6 +185,16 @@ h('author:renameChapter',  (id,n)      => db.renameBookChapter(id,n));
 h('author:updateContent',  (id,c)      => db.updateBookChapterContent(id,c));
 h('author:deleteChapter',  (id)        => db.deleteBookChapter(id));
 
+// Chat "Scribe" (v3 Phase 12) — sessions + bubble messages
+h('chatscribe:getSessions',   (mref)   => db.getChatSessions(mref));
+h('chatscribe:createSession', (mref,n) => db.createChatSession(mref,n));
+h('chatscribe:renameSession', (id,n)   => db.renameChatSession(id,n));
+h('chatscribe:deleteSession', (id)     => db.deleteChatSession(id));
+h('chatscribe:getMessages',   (sref)   => db.getChatMessages(sref));
+h('chatscribe:createMessage', (sref,t) => db.createChatMessage(sref,t));
+h('chatscribe:updateMessage', (id,t)   => db.updateChatMessage(id,t));
+h('chatscribe:deleteMessage', (id)     => db.deleteChatMessage(id));
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));
