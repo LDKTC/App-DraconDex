@@ -1251,6 +1251,7 @@ function renderNexusHome() {
   }
   if (S.activeModuleNode?.kind === 'author' && typeof mountAuthorEditor === 'function') mountAuthorEditor();
   if (S.activeModuleNode?.kind === 'scribe' && typeof mountChatScribe === 'function') mountChatScribe();
+  if (S.activeModuleNode?.kind === 'drafter' && typeof mountDrafterEditor === 'function') mountDrafterEditor(S.activeModuleNode);
 }
 
 function renderNexusPicker() {

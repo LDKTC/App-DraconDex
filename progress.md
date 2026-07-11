@@ -52,7 +52,7 @@ chrome and theme system — no new design system.
 **M4 — Content kinds**
 - [x] Phase 11 — Book "Author"
 - [x] Phase 12 — Chat "Scribe"
-- [ ] Phase 13 — Doc "Drafter"
+- [x] Phase 13 — Doc "Drafter"
 - [ ] Phase 14 — Analys "Viewer" / Relation "Connector"
 
 **M5 — New kinds**
@@ -152,15 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 13 — Doc "Drafter"
-- **Goal:** blank `.md`-like page for general notes.
-- **Panel:** builder. **Reference:** Obsidian blank note.
-- **Reuses:** `markdown.js`/`mdeditor.js` — functionally the *existing*
-  Scribe module under the new name (see C1).
-- **Files:** `src/renderer/mod/drafter.js` (thin wrapper), `src/db/scribe.js`.
-- **Depends:** 4; C1. **Views (2):** Edit · Read (Ctrl+E toggle).
-- **Acceptance:** markdown + [[wikilinks]] render; backlinks update.
 
 ### Phase 14 — Analys "Viewer" / Relation "Connector"
 - **Goal:** two read-only kinds bound to a **saved filter**: Viewer shows the

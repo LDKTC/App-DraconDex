@@ -311,6 +311,7 @@ const KIND_MAIN_BUILDER = {
   narrator: () => typeof buildNarratorMainHtml === 'function' && buildNarratorMainHtml,
   author: () => typeof buildAuthorMainHtml === 'function' && buildAuthorMainHtml,
   scribe: () => typeof buildChatScribeMainHtml === 'function' && buildChatScribeMainHtml,
+  drafter: () => typeof buildDrafterMainHtml === 'function' && buildDrafterMainHtml,
 };
 
 function buildModuleDetailHtml(m) {
