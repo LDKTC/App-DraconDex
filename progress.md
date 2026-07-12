@@ -61,7 +61,7 @@ chrome and theme system — no new design system.
 
 **M6 — Hub utilities**
 - [x] Phase 17 — Sage Hut section
-- [ ] Phase 18 — Import Dock section (file↔linker · viewers)
+- [x] Phase 18 — Import Dock section (file↔linker · viewers)
 
 **M7 — Shell & system**
 - [ ] Phase 19 — Builder shell (tabs · ◀▶ history · split 2/4)
@@ -152,22 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 18 — Import Dock section
-- **Goal:** import from a folder; imported files list in the hub section.
-  **Image files link to a linker (nest item) and can be set as that item's
-  display image** (shown on cards / List+Detail / Grid). **Image and
-  document files open in the builder** as read-only viewer tabs (image
-  viewer with zoom; document reader for .md/.docx — editing an imported doc
-  converts it into a Drafter). UI copy: the action is labeled plainly
-  "นำเข้าโฟลเดอร์".
-- **Reuses:** `#btn-import-db` flow as starting point, `toast()`/`uiConfirm()`.
-- **New:** `import_file` table incl. `linker_key` + `use_as_image`;
-  file-viewer tabs.
-- **Files:** `src/renderer/hub.js`, `src/renderer/mod/fileviewer.js`,
-  `src/db/module.js`, `main.js` (fs access).
-- **Depends:** 2, 19. **Acceptance:** import a folder; link an image to a
-  Character → its card shows the image; open .png/.md in builder tabs.
 
 ### Phase 19 — Builder shell
 - **Goal:** the builder's chrome: tab strip (relocated from the title bar,
@@ -276,7 +260,12 @@ user-visible string goes through `t('key')` in **all 18 locales**
    hub — not instantiable kinds. *(Working decision, drafted in Phases
    12/17.)*
 4. **Data migration** is in scope as Phase 24 (lazy, non-destructive).
-5. All mockup-iteration decisions (icons in tree rows, notation-only
+5. **Deferred from M4–M6** (picked up by Phases 19/20): editing an
+   imported doc (docx) converting it into a Drafter waits for Phase 19's
+   builder viewer tabs — the file viewer says so in its hint line; and
+   Sketcher/Designer "drag from Search Link to pin" waits for Phase 20 —
+   both kinds pin module links through a quickIndex picker modal for now.
+6. All mockup-iteration decisions (icons in tree rows, notation-only
    symbols, unique names + name mode, tag links, multi-node areas, true
    time scale, pan/zoom, module links, multi-view counts, open/move rules,
    free-form attributes, Search Link scopes, nav history, version control,

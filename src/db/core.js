@@ -984,6 +984,23 @@ function initDB() {
       create_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Import Dock (Phase 18). Files imported from a folder, listed in the
+    -- hub section. linker_key optionally binds a file to a nest entity
+    -- (module_5, cobj_3, ...); use_as_image marks an image file as that
+    -- entity's display picture (cards / List+Detail / Grid).
+    CREATE TABLE IF NOT EXISTS import_file (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_type TEXT,
+      file_size INTEGER NOT NULL DEFAULT 0,
+      folder TEXT,
+      linker_key TEXT,
+      use_as_image INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Graph "Designer" (Phase 16). Free-form diagram: shaped nodes
     -- (box/circle/diamond/text) at (x,y), optionally standing in for a
     -- vault entity via linker_key, and labeled directed edges.

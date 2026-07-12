@@ -2480,3 +2480,30 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 	border-radius:10px;padding:2px 8px;max-width:150px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .sh-node:hover{color:var(--accentH);border-color:var(--accent)}
 .sh-node .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+/* Import Dock section + file viewer (Phase 18, mockup 29) */
+.dock-folder{display:flex;align-items:center;gap:6px;margin-top:8px}
+.dock-folder .cnt{margin-left:auto;font-weight:400}
+.dock-ficon{font-size:12px;color:var(--t3)}
+.dock-png,.dock-jpg,.dock-jpeg,.dock-gif,.dock-webp,.dock-svg{color:#38bdf8}
+.dock-md{color:#34d399}
+.dock-docx{color:#facc15}
+.dock-chip{margin-left:auto;flex-shrink:0;font-size:9.5px;border:1px solid var(--border);border-radius:8px;
+	padding:1px 7px;color:var(--accentH);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dock-chip.ghost{color:var(--t3)}
+.fv-wrap{min-height:0}
+.fv-imgwrap{height:520px;overflow:auto;display:flex;align-items:center;justify-content:center;
+	border:1px solid var(--border);border-radius:var(--r);
+	background-image:linear-gradient(45deg,rgba(90,90,114,.12) 25%,transparent 25%,transparent 75%,rgba(90,90,114,.12) 75%),linear-gradient(45deg,rgba(90,90,114,.12) 25%,transparent 25%,transparent 75%,rgba(90,90,114,.12) 75%);
+	background-size:24px 24px;background-position:0 0,12px 12px}
+.fv-imgwrap img{max-width:80%;max-height:80%;transition:transform .12s}
+.fv-pre{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+	padding:14px 16px;font-size:12.5px;color:var(--t2);white-space:pre-wrap;max-height:520px;overflow:auto}
+.fv-foot{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-size:12px}
+.fv-foot .pk{color:var(--t3)}
+.fv-useimg{display:flex;align-items:center;gap:5px;color:var(--t2);font-size:11.5px}
+.disp-thumb{display:block;height:64px;border-radius:var(--rs);overflow:hidden;margin-bottom:8px;background:var(--raised)}
+.disp-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.disp-thumb:has(img:not([src])){display:none}
+.disp-thumb.disp-empty{display:none}

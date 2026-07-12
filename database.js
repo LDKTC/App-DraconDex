@@ -23,6 +23,7 @@ const chatscribe = require('./src/db/chatscribe');
 const viewer    = require('./src/db/viewer');
 const sketcher  = require('./src/db/sketcher');
 const designer  = require('./src/db/designer');
+const importdock = require('./src/db/importdock');
 
 module.exports = {
   ...core,
@@ -49,4 +50,5 @@ module.exports = {
   ...viewer,
   ...sketcher,
   ...designer,
+  ...importdock,
 };

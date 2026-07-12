@@ -120,6 +120,16 @@ contextBridge.exposeInMainWorld('api', {
     deletePin:    (id)           => inv('sketcher:deletePin', id),
     exportPng:    (n,dataUrl)    => inv('sketcher:exportPng', n,dataUrl),
   },
+  importdock: {
+    list:          (nx)     => inv('importdock:list', nx),
+    add:           (nx,fs2) => inv('importdock:add', nx,fs2),
+    setLinker:     (id,k)   => inv('importdock:setLinker', id,k),
+    setUseAsImage: (id,on)  => inv('importdock:setUseAsImage', id,on),
+    delete:        (id)     => inv('importdock:delete', id),
+    displayImages: (nx)     => inv('importdock:displayImages', nx),
+    pickFolder:    ()       => inv('importdock:pickFolder'),
+    readFile:      (id)     => inv('importdock:readFile', id),
+  },
   sagehut: {
     stats:      (nx) => inv('sagehut:stats', nx),
     linkerList: (nx) => inv('sagehut:linkerList', nx),

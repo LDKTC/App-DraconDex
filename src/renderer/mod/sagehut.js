@@ -21,6 +21,7 @@ async function openSageTab(tab) {
     api.wiki.getGraph(S.nexus.id),
   ]);
   S.sageHut = { tab, stats, linkRows, graph };
+  S.filePreview = null;
   S.activeModuleNode = null;
   renderNexusHome();
 }

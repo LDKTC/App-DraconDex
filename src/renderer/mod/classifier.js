@@ -100,6 +100,7 @@ function renderClassifierGrid(m, d) {
     const col = o.color_code || '#6366f1';
     return `
     <div class="cls-card" style="border-top:3px solid ${x(col)}" onclick="openClassifierObjectModal(${m.id},${o.id})">
+      <span class="disp-thumb"><img data-display-key="cobj_${o.id}" alt=""></span>
       <span class="cls-card-icon" style="border-color:${x(col)};color:${x(col)}">${icon}</span>
       <div class="cls-card-name">${x(o.name)}</div>
     </div>`;

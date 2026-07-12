@@ -215,6 +215,53 @@ h('sketcher:getPins',      (pref)       => db.getSketchPins(pref));
 h('sketcher:addPin',       (pref,k,px,py) => db.createSketchPin(pref,k,px,py));
 h('sketcher:movePin',      (id,px,py)   => db.moveSketchPin(id,px,py));
 h('sketcher:deletePin',    (id)         => db.deleteSketchPin(id));
+// Import Dock (v3 Phase 18) — folder import, file<->linker, viewers
+const IMPORT_EXTS = new Set(['png','jpg','jpeg','gif','webp','svg','md','txt','docx']);
+h('importdock:list',          (nx)     => db.getImportFiles(nx));
+h('importdock:add',           (nx,fs2) => db.addImportFiles(nx,fs2));
+h('importdock:setLinker',     (id,k)   => db.setImportLinker(id,k));
+h('importdock:setUseAsImage', (id,on)  => db.setImportUseAsImage(id,on));
+h('importdock:delete',        (id)     => db.deleteImportFile(id));
+h('importdock:displayImages', (nx)     => db.getDisplayImages(nx));
+h('importdock:pickFolder', async () => {
+  const win = BrowserWindow.getFocusedWindow();
+  const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
+  if (res.canceled || !res.filePaths?.length) return { canceled: true };
+  const root = res.filePaths[0];
+  const files = [];
+  const walk = (dir) => {
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, ent.name);
+      if (ent.isDirectory()) { walk(p); continue; }
+      const ext = path.extname(ent.name).slice(1).toLowerCase();
+      if (!IMPORT_EXTS.has(ext)) continue;
+      files.push({
+        name: ent.name, path: p, type: ext,
+        size: fs.statSync(p).size,
+        folder: path.basename(root) + (path.dirname(p) === root ? '' : '/' + path.relative(root, path.dirname(p)).replace(/\\/g, '/')),
+      });
+    }
+  };
+  walk(root);
+  return { folder: path.basename(root), files };
+});
+// Content is only served for files already registered in import_file.
+h('importdock:readFile', (id) => {
+  const f = db.getImportFile(id);
+  if (!f) return null;
+  const ext = (f.file_type || '').toLowerCase();
+  try {
+    if (['png','jpg','jpeg','gif','webp','svg'].includes(ext)) {
+      const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+      return { kind: 'image', dataUrl: `data:${mime};base64,${fs.readFileSync(f.file_path).toString('base64')}` };
+    }
+    if (ext === 'md' || ext === 'txt') return { kind: ext, text: fs.readFileSync(f.file_path, 'utf8') };
+    return { kind: 'binary' };
+  } catch (e) {
+    return { kind: 'error', message: String(e.message || e) };
+  }
+});
+
 // Sage Hut (v3 Phase 17) — vault analytics
 h('sagehut:stats',      (nx) => db.sageHutStats(nx));
 h('sagehut:linkerList', (nx) => db.sageHutLinkerList(nx));

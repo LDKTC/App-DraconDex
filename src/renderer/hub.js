@@ -107,7 +107,9 @@ function buildHubHtml() {
     ${buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
       `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal()" title="${t('createMajorModule')}">${I.plus}</button>`)}
     ${buildAccSection('sage', t('sageHut'), buildSageHutRows())}
-    ${buildAccSection('dock', t('importDock'), `<div class="empty" style="padding:24px 10px"><p>${t('importDockComingSoon')}</p></div>`)}
+    ${buildAccSection('dock', t('importDock'),
+      typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
+      `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`)}
     ${buildAccSection('legacy', t('legacyModules'), legacyRows)}
   </div>`;
 }

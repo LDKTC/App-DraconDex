@@ -51,6 +51,7 @@ function buildManagerMainHtml(m) {
 function renderManagerCards(children, counts) {
   return `<div class="cls-grid">${children.map(c => `
     <div class="cls-card mgr-card" onclick="openModuleNode(${c.id})">
+      <span class="disp-thumb"><img data-display-key="module_${c.id}" alt=""></span>
       <div class="mgr-card-icon" style="color:${x(c.icon_color_code || c.color_code || 'var(--accent)')}">${moduleIconHtml(c)}</div>
       <div class="cls-card-name">${x(c.name)}</div>
       <span class="kind">${x(KIND_LABEL[c.kind] || c.kind)}</span>
