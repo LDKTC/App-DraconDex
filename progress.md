@@ -60,7 +60,7 @@ chrome and theme system — no new design system.
 - [x] Phase 16 — Graph "Designer"
 
 **M6 — Hub utilities**
-- [ ] Phase 17 — Sage Hut section
+- [x] Phase 17 — Sage Hut section
 - [ ] Phase 18 — Import Dock section (file↔linker · viewers)
 
 **M7 — Shell & system**
@@ -152,18 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 17 — Sage Hut section
-- **Goal:** global analytics across the vault, as a hub accordion section
-  expanding into its 4 existing views; opening one renders analytics in the
-  builder (summary tiles + per-module bars).
-- **Reference:** VS Code Output/Problems panel.
-- **Reuses:** `sage.js` tabs/rendering wholesale.
-- **New:** entry point relocated from nav rail into the hub accordion.
-- **Files:** `src/renderer/hub.js`, `src/renderer/sage.js`.
-- **Depends:** 2. **Views (4):** Data size · Object amount · Linker list ·
-  Linker graph.
-- **Acceptance:** the four rows open in the builder as tabs; counts match DB.
 
 ### Phase 18 — Import Dock section
 - **Goal:** import from a folder; imported files list in the hub section.

@@ -106,10 +106,29 @@ function buildHubHtml() {
   return `<div id="hub-body">
     ${buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
       `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal()" title="${t('createMajorModule')}">${I.plus}</button>`)}
-    ${buildAccSection('sage', t('sageHut'), `<div class="li" onclick="selectModule('sage')">${I.sage}<span class="name">${t('sage')}</span></div>`)}
+    ${buildAccSection('sage', t('sageHut'), buildSageHutRows())}
     ${buildAccSection('dock', t('importDock'), `<div class="empty" style="padding:24px 10px"><p>${t('importDockComingSoon')}</p></div>`)}
     ${buildAccSection('legacy', t('legacyModules'), legacyRows)}
   </div>`;
+}
+
+// ═══ SAGE HUT SECTION (Phase 17) ═══════════════════════════════════════
+// Four analytics rows (mockup 25); each opens the Sage Hut page in the
+// builder with that view active (openSageTab lives in mod/sagehut.js).
+// Count badges appear once the stats have been loaded this session.
+function buildSageHutRows() {
+  const st = S.sageHut?.stats;
+  const rows = [
+    ['dataSize', t('sageDataSize'), I.sage, st ? fmtBytes(st.bytes) : ''],
+    ['objectAmount', t('sageObjectAmount'), I.layer, st ? String(st.objects) : ''],
+    ['linkerList', t('sageLinkerList'), I.list, st ? String(st.links) : ''],
+    ['linkerGraph', t('sageLinkerGraph'), I.relation, ''],
+  ];
+  return rows.map(([tab, label, icon, badge]) => `
+    <div class="li${!S.activeModuleNode && S.sageHut?.tab === tab ? ' sel' : ''}" onclick="openSageTab('${tab}')">
+      <span class="kicon">${icon}</span><span class="name">${x(label)}</span>
+      ${badge ? `<span class="cnt" data-no-i18n>${x(badge)}</span>` : ''}
+    </div>`).join('');
 }
 
 function buildAccSection(key, label, bodyHtml, actHtml = '') {

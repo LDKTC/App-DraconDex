@@ -120,6 +120,10 @@ contextBridge.exposeInMainWorld('api', {
     deletePin:    (id)           => inv('sketcher:deletePin', id),
     exportPng:    (n,dataUrl)    => inv('sketcher:exportPng', n,dataUrl),
   },
+  sagehut: {
+    stats:      (nx) => inv('sagehut:stats', nx),
+    linkerList: (nx) => inv('sagehut:linkerList', nx),
+  },
   designer: {
     getNodes:   (mref)              => inv('designer:getNodes', mref),
     createNode: (mref,s,px,py,tx,c,k) => inv('designer:createNode', mref,s,px,py,tx,c,k),

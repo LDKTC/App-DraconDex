@@ -1236,11 +1236,14 @@ function renderNexusHome() {
       <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
     </div>
     ${buildHubHtml()}`;
-  q('#main-inner').innerHTML = S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode) : `<div class="empty" style="margin-top:80px">
+  q('#main-inner').innerHTML = S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode)
+    : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
+    : `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
     <h3>${x(S.nexus.name)}</h3>
     <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;
+  if (!S.activeModuleNode && S.sageHut && typeof mountSageHutGraph === 'function') mountSageHutGraph();
   if (S.activeModuleNode?.kind === 'inspector' && typeof mountDetailEditor === 'function') mountDetailEditor(S.activeModuleNode);
   if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
   if (S.activeModuleNode?.kind === 'chronicler' && typeof mountChroniclerGraph === 'function') mountChroniclerGraph();

@@ -215,6 +215,10 @@ h('sketcher:getPins',      (pref)       => db.getSketchPins(pref));
 h('sketcher:addPin',       (pref,k,px,py) => db.createSketchPin(pref,k,px,py));
 h('sketcher:movePin',      (id,px,py)   => db.moveSketchPin(id,px,py));
 h('sketcher:deletePin',    (id)         => db.deleteSketchPin(id));
+// Sage Hut (v3 Phase 17) — vault analytics
+h('sagehut:stats',      (nx) => db.sageHutStats(nx));
+h('sagehut:linkerList', (nx) => db.sageHutLinkerList(nx));
+
 // Graph "Designer" (v3 Phase 16) — diagram nodes + labeled edges
 h('designer:getNodes',   (mref)             => db.getDesignNodes(mref));
 h('designer:createNode', (mref,s,px,py,tx,c,k) => db.createDesignNode(mref,s,px,py,tx,c,k));
