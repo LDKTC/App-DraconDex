@@ -295,6 +295,8 @@ async function openModuleNode(id) {
   if (m.kind === 'narrator' && typeof loadNarratorData === 'function') loaders.push(loadNarratorData(m));
   if (m.kind === 'author' && typeof loadAuthorData === 'function') loaders.push(loadAuthorData(m));
   if (m.kind === 'scribe' && typeof loadChatScribeData === 'function') loaders.push(loadChatScribeData(m));
+  if (m.kind === 'viewer' && typeof loadViewerData === 'function') loaders.push(loadViewerData(m));
+  if (m.kind === 'connector' && typeof loadConnectorData === 'function') loaders.push(loadConnectorData(m));
   await Promise.all(loaders);
   if (S.activeModuleNode?.id === id) renderNexusHome();
 }
@@ -312,6 +314,8 @@ const KIND_MAIN_BUILDER = {
   author: () => typeof buildAuthorMainHtml === 'function' && buildAuthorMainHtml,
   scribe: () => typeof buildChatScribeMainHtml === 'function' && buildChatScribeMainHtml,
   drafter: () => typeof buildDrafterMainHtml === 'function' && buildDrafterMainHtml,
+  viewer: () => typeof buildViewerMainHtml === 'function' && buildViewerMainHtml,
+  connector: () => typeof buildConnectorMainHtml === 'function' && buildConnectorMainHtml,
 };
 
 function buildModuleDetailHtml(m) {

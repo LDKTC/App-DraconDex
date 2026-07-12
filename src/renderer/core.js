@@ -1252,6 +1252,7 @@ function renderNexusHome() {
   if (S.activeModuleNode?.kind === 'author' && typeof mountAuthorEditor === 'function') mountAuthorEditor();
   if (S.activeModuleNode?.kind === 'scribe' && typeof mountChatScribe === 'function') mountChatScribe();
   if (S.activeModuleNode?.kind === 'drafter' && typeof mountDrafterEditor === 'function') mountDrafterEditor(S.activeModuleNode);
+  if (S.activeModuleNode?.kind === 'connector' && typeof mountConnectorBoard === 'function') mountConnectorBoard();
 }
 
 function renderNexusPicker() {
@@ -1458,14 +1459,15 @@ async function openEntityByKey(key) {
       S.writeSeries = p.seriesId; S.writeBook = p.bookId; S.writeChapter = p.chapterId;
       await renderWriterView();
     }
-  } else if (p.kind === 'module' || p.kind === 'bchp' || p.kind === 'chss') {
+  } else if (p.kind === 'module' || p.kind === 'bchp' || p.kind === 'chss' || p.kind === 'cobj') {
     S.activeModule = null; S.view = 'nexus';
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
     updateTopNavButton();
-    // Author chapter / Scribe session links land on the module with that
-    // chapter/session selected (the kind's load fn consumes the pending id).
+    // Author chapter / Scribe session / Classifier object links land on the
+    // module with that item selected (the kind's load fn consumes it).
     if (p.kind === 'bchp') S.pendingAuthorChapter = p.chapterId;
     if (p.kind === 'chss') S.pendingChatSession = p.sessionId;
+    if (p.kind === 'cobj') S.classifierSelectedObject = p.objectId;
     await openModuleNode(p.moduleId);
   }
   trackRecentEntity(key);

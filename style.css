@@ -2370,3 +2370,47 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .drafter-hint{font-size:11px;color:var(--t3);margin:2px 0 10px}
 .mded-fmtbar{display:flex;gap:4px;padding:6px 0}
 .mded-fmtbar .btn{min-width:30px;font-size:11px;font-weight:700;color:var(--t2)}
+
+/* Analys "Viewer" / Relation "Connector" (Phase 14, mockups 14/32/33/15) */
+.vw-filterlabel{font-size:11px;color:var(--t3)}
+.vw-chip{font-size:10.5px;color:var(--accentH);border:1px solid var(--accent);border-radius:10px;padding:2px 9px}
+.vw-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.vw-table th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--t3);
+	padding:8px 10px;border-bottom:1px solid var(--border)}
+.vw-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--t2)}
+.vw-table tbody tr{cursor:pointer}
+.vw-table tbody tr:hover td{background:var(--raised)}
+.vw-table .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.vw-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.vw-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+	padding:10px 12px;cursor:pointer}
+.vw-card:hover{background:var(--raised)}
+.vw-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.vw-card-name{font-size:13px;font-weight:650}
+.vw-card-kind{font-size:10px;color:var(--t3);flex-shrink:0}
+.vw-card-src{font-size:10.5px;color:var(--t3);margin-top:4px}
+.vw-card-time{font-size:11px;color:var(--t2);margin-top:2px}
+.vw-card-tags{margin-top:6px}
+.vw-board{display:flex;gap:12px;align-items:flex-start;overflow-x:auto;padding-bottom:8px}
+.vw-col{min-width:230px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px}
+.vw-col-head{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--accentH);
+	padding:2px 4px 8px}
+.vw-col-head .cnt{color:var(--t3)}
+.vw-col-card{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
+	padding:8px 10px;margin-bottom:8px;cursor:pointer}
+.vw-col-card:hover{border-color:var(--accent)}
+.vw-kindchecks{display:flex;flex-wrap:wrap;gap:8px}
+.vw-kc{font-size:12px;color:var(--t2);display:flex;align-items:center;gap:4px}
+.vw-groupby{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);color:var(--t1);padding:3px 6px}
+.cn-wrap{position:relative}
+.cn-board{height:600px}
+#cn-graph{position:relative;width:1600px;height:1100px;transform-origin:0 0}
+#cn-edges{position:absolute;inset:0;pointer-events:none}
+.cn-node{position:absolute;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:grab;user-select:none;width:52px}
+.cn-circle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;
+	border:2px solid var(--accent);background:var(--surface);color:var(--t2)}
+.cn-name{font-size:11px;color:var(--t1);white-space:nowrap}
+.cn-edge-label{font-size:9.5px;color:var(--accentH);background:var(--surface);border:1px solid var(--border);
+	border-radius:8px;padding:1px 6px;text-align:center;width:max-content;max-width:138px;margin:0 auto;
+	overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cn-count{font-size:10.5px;color:var(--t3);margin-left:8px}

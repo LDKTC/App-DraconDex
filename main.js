@@ -195,6 +195,13 @@ h('chatscribe:createMessage', (sref,t) => db.createChatMessage(sref,t));
 h('chatscribe:updateMessage', (id,t)   => db.updateChatMessage(id,t));
 h('chatscribe:deleteMessage', (id)     => db.deleteChatMessage(id));
 
+// Analys "Viewer" / Relation "Connector" (v3 Phase 14)
+h('viewer:index',          (nx)         => db.viewerIndex(nx));
+h('viewer:getRelations',   (nx)         => db.getEntityRelations(nx));
+h('viewer:createRelation', (nx,f,tk,l)  => db.createEntityRelation(nx,f,tk,l));
+h('viewer:updateRelation', (id,l)       => db.updateEntityRelation(id,l));
+h('viewer:deleteRelation', (id)         => db.deleteEntityRelation(id));
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));

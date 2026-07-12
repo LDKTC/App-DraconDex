@@ -98,6 +98,13 @@ contextBridge.exposeInMainWorld('api', {
     updateMessage: (id,t)    => inv('chatscribe:updateMessage', id,t),
     deleteMessage: (id)      => inv('chatscribe:deleteMessage', id),
   },
+  viewer: {
+    index:          (nx)        => inv('viewer:index', nx),
+    getRelations:   (nx)        => inv('viewer:getRelations', nx),
+    createRelation: (nx,f,tk,l) => inv('viewer:createRelation', nx,f,tk,l),
+    updateRelation: (id,l)      => inv('viewer:updateRelation', id,l),
+    deleteRelation: (id)        => inv('viewer:deleteRelation', id),
+  },
   wiki: {
     resolve:    (name,nx)  => inv('wiki:resolve', name,nx),
     backlinks:  (key)      => inv('wiki:backlinks', key),

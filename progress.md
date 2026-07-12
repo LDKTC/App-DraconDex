@@ -53,7 +53,7 @@ chrome and theme system — no new design system.
 - [x] Phase 11 — Book "Author"
 - [x] Phase 12 — Chat "Scribe"
 - [x] Phase 13 — Doc "Drafter"
-- [ ] Phase 14 — Analys "Viewer" / Relation "Connector"
+- [x] Phase 14 — Analys "Viewer" / Relation "Connector"
 
 **M5 — New kinds**
 - [ ] Phase 15 — Drawing "Sketcher"
@@ -152,20 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 14 — Analys "Viewer" / Relation "Connector"
-- **Goal:** two read-only kinds bound to a **saved filter**: Viewer shows the
-  filtered list; Connector shows its relation graph. Filters update live
-  when source data changes.
-- **Panel:** builder. **Reference:** VS Code search results / scoped graph.
-- **Reuses:** `search.js` filtering, `relation.js` engine.
-- **New:** persistent saved-filter modules (`saved_filter` def JSON).
-- **Files:** `src/renderer/mod/viewer.js`, `src/renderer/mod/connector.js`,
-  `src/db/module.js`.
-- **Depends:** 4, E. **Views — Viewer (3):** Table · Cards · Board (grouped
-  by source module; switchable to tag/kind). **Connector (2):** Graph · Edge list.
-- **Acceptance:** edit an object matched by the filter → Viewer updates on
-  next open; Board groups match source modules; Connector renders labeled edges.
 
 ### Phase 15 — Drawing "Sketcher"  *(new kind)*
 - **Goal:** freehand canvas: **pen + eraser** (color/stroke-width picker),
@@ -412,7 +398,10 @@ user-visible string goes through `t('key')` in **all 18 locales**
    names, not a real relationship graph — Classifier objects have no
    relation-type system of their own yet (Director's `relation`/
    `relation_obob` tables are project-scoped, not usable here), and building
-   one was out of scope for this phase; revisit alongside Phase 14
+   one was out of scope for this phase. *(Resolved in Phase 14: classifier
+   objects joined the wiki index as the `cobj` key kind, and the new
+   `entity_relation` table + Relation "Connector" carry labeled key->key
+   relations between any vault entities.)*
    (Connector) or a future phase if per-category relationships are wanted.
    `classifier_attribute` values are edited inline (contenteditable table
    cells / detail-panel fields) with no version history yet — same

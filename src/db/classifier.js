@@ -1,5 +1,6 @@
 'use strict';
 const { getDB } = require('./core');
+const wiki = require('./wiki');
 
 // ═══ Category "Classifier" (Phase 5) ══════════════════════════════════
 // A 'classifier'-kind module row IS the category; classifier_object rows
@@ -21,20 +22,39 @@ const getObject = (id) => getDB().prepare(`
   SELECT o.*, uc.color_code FROM classifier_object o LEFT JOIN use_color uc ON uc.id = o.color WHERE o.id=?
 `).get(id);
 
+// Objects are wikilink targets/sources under the cobj_<id> key kind
+// (added in Phase 14 — [[Name]] typed before this resolved to nothing).
+const nexusOfObjectRow = (id) => getDB().prepare(`
+  SELECT m.nexus_ref FROM classifier_object o JOIN module m ON o.module_ref=m.id WHERE o.id=?
+`).get(id)?.nexus_ref ?? null;
+
 function createObject(moduleRef, name, colorId) {
   const d = getDB();
   const maxOrder = d.prepare(`SELECT COALESCE(MAX(display_order),-1) AS m FROM classifier_object WHERE module_ref=?`).get(moduleRef).m;
-  return d.prepare(`INSERT INTO classifier_object (module_ref, name, color, display_order) VALUES (?,?,?,?)`)
+  const id = d.prepare(`INSERT INTO classifier_object (module_ref, name, color, display_order) VALUES (?,?,?,?)`)
     .run(moduleRef, name, colorId || null, maxOrder + 1).lastInsertRowid;
+  wiki.resolveDanglingLinks(name, nexusOfObjectRow(id));
+  return id;
 }
 
-const updateObject = (id, name, colorId) =>
-  getDB().prepare(`UPDATE classifier_object SET name=?, color=?, update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
+const updateObject = (id, name, colorId) => {
+  const cur = getDB().prepare(`SELECT name FROM classifier_object WHERE id=?`).get(id);
+  const r = getDB().prepare(`UPDATE classifier_object SET name=?, color=?, update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
+  if (cur && cur.name !== name) wiki.renameWikiTarget(`cobj_${id}`, cur.name, name);
+  return r;
+};
 
-const updateObjectNote = (id, note) =>
-  getDB().prepare(`UPDATE classifier_object SET note=?, update_at=datetime('now') WHERE id=?`).run(note, id);
+const updateObjectNote = (id, note) => {
+  const r = getDB().prepare(`UPDATE classifier_object SET note=?, update_at=datetime('now') WHERE id=?`).run(note, id);
+  wiki.reindexWikiLinks(`cobj_${id}`, note, nexusOfObjectRow(id));
+  return r;
+};
 
-const deleteObject = (id) => getDB().prepare(`DELETE FROM classifier_object WHERE id=?`).run(id);
+const deleteObject = (id) => {
+  const r = getDB().prepare(`DELETE FROM classifier_object WHERE id=?`).run(id);
+  getDB().prepare(`DELETE FROM wiki_link WHERE src_key=?`).run(`cobj_${id}`);
+  return r;
+};
 
 // ── Templates ───────────────────────────────────────────────────────────
 // Shared (object_ref NULL) — every object in the category gets these.

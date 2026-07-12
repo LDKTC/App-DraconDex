@@ -953,6 +953,19 @@ function initDB() {
       create_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Relation "Connector" (Phase 14). Labeled key->key relations between
+    -- any two vault entities (cobj_3, module_5, bchp_1, ...), authored from
+    -- the Connector's graph; the entities themselves stay read-only.
+    CREATE TABLE IF NOT EXISTS entity_relation (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      from_key TEXT NOT NULL,
+      to_key TEXT NOT NULL,
+      label TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(from_key, to_key, label)
+    );
+
     -- Category "Classifier" (Phase 5). A Classifier module IS its category --
     -- one 'classifier'-kind module row owns one set of objects/templates.
     -- Deliberately a *parallel* schema rather than reusing Director's
