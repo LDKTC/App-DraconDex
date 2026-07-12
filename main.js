@@ -215,6 +215,17 @@ h('sketcher:getPins',      (pref)       => db.getSketchPins(pref));
 h('sketcher:addPin',       (pref,k,px,py) => db.createSketchPin(pref,k,px,py));
 h('sketcher:movePin',      (id,px,py)   => db.moveSketchPin(id,px,py));
 h('sketcher:deletePin',    (id)         => db.deleteSketchPin(id));
+// Graph "Designer" (v3 Phase 16) — diagram nodes + labeled edges
+h('designer:getNodes',   (mref)             => db.getDesignNodes(mref));
+h('designer:createNode', (mref,s,px,py,tx,c,k) => db.createDesignNode(mref,s,px,py,tx,c,k));
+h('designer:updateNode', (id,s,tx,c)        => db.updateDesignNode(id,s,tx,c));
+h('designer:moveNode',   (id,px,py)         => db.moveDesignNode(id,px,py));
+h('designer:deleteNode', (id)               => db.deleteDesignNode(id));
+h('designer:getEdges',   (mref)             => db.getDesignEdges(mref));
+h('designer:createEdge', (mref,f,tk,l)      => db.createDesignEdge(mref,f,tk,l));
+h('designer:updateEdge', (id,l)             => db.updateDesignEdgeLabel(id,l));
+h('designer:deleteEdge', (id)               => db.deleteDesignEdge(id));
+
 h('sketcher:exportPng', async (name, dataUrl) => {
   const win = BrowserWindow.getFocusedWindow();
   const res = await dialog.showSaveDialog(win, {

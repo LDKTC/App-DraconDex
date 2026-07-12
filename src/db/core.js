@@ -984,6 +984,32 @@ function initDB() {
       create_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Graph "Designer" (Phase 16). Free-form diagram: shaped nodes
+    -- (box/circle/diamond/text) at (x,y), optionally standing in for a
+    -- vault entity via linker_key, and labeled directed edges.
+    CREATE TABLE IF NOT EXISTS design_node (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      shape TEXT NOT NULL DEFAULT 'box' CHECK(shape IN ('box','circle','diamond','text')),
+      x REAL NOT NULL DEFAULT 0,
+      y REAL NOT NULL DEFAULT 0,
+      node_text TEXT,
+      color TEXT,
+      linker_key TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS design_edge (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      from_ref INTEGER NOT NULL REFERENCES design_node(id) ON DELETE CASCADE,
+      to_ref INTEGER NOT NULL REFERENCES design_node(id) ON DELETE CASCADE,
+      label TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(from_ref, to_ref)
+    );
+
     -- Relation "Connector" (Phase 14). Labeled key->key relations between
     -- any two vault entities (cobj_3, module_5, bchp_1, ...), authored from
     -- the Connector's graph; the entities themselves stay read-only.

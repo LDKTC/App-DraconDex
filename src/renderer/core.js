@@ -1257,6 +1257,7 @@ function renderNexusHome() {
     mountSketcherBoard();
     mountSketcherExtras();
   }
+  if (S.activeModuleNode?.kind === 'designer' && typeof mountDesignerBoard === 'function') mountDesignerBoard();
 }
 
 function renderNexusPicker() {

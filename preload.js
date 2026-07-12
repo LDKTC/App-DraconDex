@@ -120,6 +120,17 @@ contextBridge.exposeInMainWorld('api', {
     deletePin:    (id)           => inv('sketcher:deletePin', id),
     exportPng:    (n,dataUrl)    => inv('sketcher:exportPng', n,dataUrl),
   },
+  designer: {
+    getNodes:   (mref)              => inv('designer:getNodes', mref),
+    createNode: (mref,s,px,py,tx,c,k) => inv('designer:createNode', mref,s,px,py,tx,c,k),
+    updateNode: (id,s,tx,c)         => inv('designer:updateNode', id,s,tx,c),
+    moveNode:   (id,px,py)          => inv('designer:moveNode', id,px,py),
+    deleteNode: (id)                => inv('designer:deleteNode', id),
+    getEdges:   (mref)              => inv('designer:getEdges', mref),
+    createEdge: (mref,f,tk,l)       => inv('designer:createEdge', mref,f,tk,l),
+    updateEdge: (id,l)              => inv('designer:updateEdge', id,l),
+    deleteEdge: (id)                => inv('designer:deleteEdge', id),
+  },
   wiki: {
     resolve:    (name,nx)  => inv('wiki:resolve', name,nx),
     backlinks:  (key)      => inv('wiki:backlinks', key),

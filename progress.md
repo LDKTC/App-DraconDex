@@ -57,7 +57,7 @@ chrome and theme system — no new design system.
 
 **M5 — New kinds**
 - [x] Phase 15 — Drawing "Sketcher"
-- [ ] Phase 16 — Graph "Designer"
+- [x] Phase 16 — Graph "Designer"
 
 **M6 — Hub utilities**
 - [ ] Phase 17 — Sage Hut section
@@ -152,20 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 16 — Graph "Designer"  *(new kind)*
-- **Goal:** free-form diagram builder: shape palette (box/circle/diamond/
-  text), labeled edges with arrowheads, drag-to-arrange, double-click text
-  edit, module links pinnable as diagram nodes.
-- **Panel:** builder full canvas.
-- **Reuses:** canvas chrome; edge rendering patterns from `relation.js`.
-- **New:** `design_node`(shape, x, y, text, color, linker_key) +
-  `design_edge`(from, to, label).
-- **Files:** `src/renderer/mod/designer.js`, `src/db/module.js`.
-- **Depends:** 4, E. **Views (Major-level, 4):** Canvas · Outline · Matrix ·
-  (optional) Presentation.
-- **Acceptance:** build a 5-node flowchart with labeled edges incl. a
-  diamond condition; pin a module link node; layout persists.
 
 ### Phase 17 — Sage Hut section
 - **Goal:** global analytics across the vault, as a hub accordion section

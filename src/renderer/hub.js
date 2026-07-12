@@ -298,6 +298,7 @@ async function openModuleNode(id) {
   if (m.kind === 'viewer' && typeof loadViewerData === 'function') loaders.push(loadViewerData(m));
   if (m.kind === 'connector' && typeof loadConnectorData === 'function') loaders.push(loadConnectorData(m));
   if (m.kind === 'sketcher' && typeof loadSketcherData === 'function') loaders.push(loadSketcherData(m));
+  if (m.kind === 'designer' && typeof loadDesignerData === 'function') loaders.push(loadDesignerData(m));
   await Promise.all(loaders);
   if (S.activeModuleNode?.id === id) renderNexusHome();
 }
@@ -318,6 +319,7 @@ const KIND_MAIN_BUILDER = {
   viewer: () => typeof buildViewerMainHtml === 'function' && buildViewerMainHtml,
   connector: () => typeof buildConnectorMainHtml === 'function' && buildConnectorMainHtml,
   sketcher: () => typeof buildSketcherMainHtml === 'function' && buildSketcherMainHtml,
+  designer: () => typeof buildDesignerMainHtml === 'function' && buildDesignerMainHtml,
 };
 
 function buildModuleDetailHtml(m) {

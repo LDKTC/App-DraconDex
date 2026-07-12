@@ -22,6 +22,7 @@ const author    = require('./src/db/author');
 const chatscribe = require('./src/db/chatscribe');
 const viewer    = require('./src/db/viewer');
 const sketcher  = require('./src/db/sketcher');
+const designer  = require('./src/db/designer');
 
 module.exports = {
   ...core,
@@ -47,4 +48,5 @@ module.exports = {
   ...chatscribe,
   ...viewer,
   ...sketcher,
+  ...designer,
 };

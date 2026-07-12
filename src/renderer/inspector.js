@@ -78,6 +78,7 @@ function inspectorViewLabel(m, ui) {
   if (m.kind === 'viewer') return (typeof VIEWER_VIEW_LABEL !== 'undefined' && VIEWER_VIEW_LABEL[v]) || 'Table';
   if (m.kind === 'connector') return (typeof CONNECTOR_VIEW_LABEL !== 'undefined' && CONNECTOR_VIEW_LABEL[v]) || 'Graph';
   if (m.kind === 'sketcher') return (typeof SKETCHER_VIEW_LABEL !== 'undefined' && SKETCHER_VIEW_LABEL[v]) || 'Canvas';
+  if (m.kind === 'designer') return (typeof DESIGNER_VIEW_LABEL !== 'undefined' && DESIGNER_VIEW_LABEL[v]) || 'Canvas';
   if (m.kind === 'locator') return 'Canvas';
   if (m.kind === 'inspector') return 'Note';
   return '—';
