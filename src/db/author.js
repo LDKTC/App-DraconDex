@@ -4,6 +4,7 @@
 // kind on every save (same flow as Writer chapters / Scribe notes).
 const { getDB } = require('./core');
 const wiki = require('./wiki');
+const versions = require('./versions');
 
 const nexusOfChapter = (id) => getDB().prepare(`
   SELECT m.nexus_ref FROM book_chapter ch JOIN module m ON ch.module_ref = m.id WHERE ch.id = ?
@@ -23,16 +24,25 @@ const createBookChapter = (moduleRef, name) => {
 };
 
 const renameBookChapter = (id, name) => {
-  const cur = getDB().prepare(`SELECT name FROM book_chapter WHERE id=?`).get(id);
+  const cur = getDB().prepare(`SELECT name, module_ref FROM book_chapter WHERE id=?`).get(id);
   const r = getDB().prepare(`UPDATE book_chapter SET name=?, update_at=datetime('now') WHERE id=?`).run(name, id);
-  if (cur && cur.name !== name) wiki.renameWikiTarget(`bchp_${id}`, cur.name, name);
+  if (cur && cur.name !== name) {
+    wiki.renameWikiTarget(`bchp_${id}`, cur.name, name);
+    versions.recordVersion(cur.module_ref, 'chapterName', `${cur.name} → ${name}`,
+      { op: 'authorChapterName', args: { chapterId: id, name: cur.name } });
+  }
   return r;
 };
 
 const updateBookChapterContent = (id, content) => {
+  const cur = getDB().prepare(`SELECT name, module_ref, chapter_content FROM book_chapter WHERE id=?`).get(id);
   const r = getDB().prepare(`UPDATE book_chapter SET chapter_content=?, update_at=datetime('now') WHERE id=?`)
     .run(content, id);
   wiki.reindexWikiLinks(`bchp_${id}`, content, nexusOfChapter(id));
+  if (cur && (cur.chapter_content ?? '') !== (content ?? '')) {
+    versions.recordVersion(cur.module_ref, 'chapter', cur.name,
+      { op: 'authorChapterContent', args: { chapterId: id, content: cur.chapter_content ?? '' } });
+  }
   return r;
 };
 

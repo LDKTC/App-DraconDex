@@ -262,6 +262,12 @@ h('importdock:readFile', (id) => {
   }
 });
 
+// Version control (v3 Phase 21)
+h('versions:list',    (mref) => db.listVersions(mref));
+h('versions:restore', (id)   => db.restoreVersion(id));
+h('setting:get',      (k)    => db.getAppSetting(k));
+h('setting:set',      (k,v)  => db.setAppSetting(k,v));
+
 // Sage Hut (v3 Phase 17) — vault analytics
 h('sagehut:stats',      (nx) => db.sageHutStats(nx));
 h('sagehut:linkerList', (nx) => db.sageHutLinkerList(nx));

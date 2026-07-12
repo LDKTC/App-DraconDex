@@ -66,7 +66,7 @@ chrome and theme system — no new design system.
 **M7 — Shell & system**
 - [x] Phase 19 — Builder shell (tabs · ◀▶ history · split 2/4)
 - [x] Phase 20 — Search Link overlay
-- [ ] Phase 21 — Version control
+- [x] Phase 21 — Version control
 - [ ] Phase 22 — Settings expansion (module names · font size · custom themes)
 - [ ] Phase 23 — Artisan template migration
 - [ ] Phase 24 — Legacy data migration
@@ -152,21 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 21 — Version control
-- **Goal:** record every edit per module (attribute edits, object
-  add/delete, template changes, notes, tags) into a **Version History**
-  panel with **Restore** (restore creates a new version — never overwrites).
-  Retention defaults to **50 versions/module**, user-adjustable in Settings;
-  oldest pruned beyond the limit.
-- **Reuses:** Inspector dock chrome (Phase 4).
-- **New:** `module_version`(module_ref, seq, action, payload JSON,
-  create_at); write hooks in `src/db/module.js` mutations.
-- **Files:** `src/renderer/versions.js`, `src/db/module.js`, `preload.js`,
-  `main.js`.
-- **Depends:** 4, E. **Acceptance:** edit an attribute → v(n+1) appears with
-  a diff summary; Restore of v(n-2) creates v(n+2) with old values; the 51st
-  version prunes the 1st.
 
 ### Phase 22 — Settings expansion
 - **Goal:** four additions to the settings menu:

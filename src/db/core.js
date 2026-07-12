@@ -984,6 +984,27 @@ function initDB() {
       create_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Version control (Phase 21). Every hooked edit records a version row
+    -- per module: action code + human detail + a JSON restore payload
+    -- (the before-state). Restore re-applies that payload through a
+    -- whitelisted op (src/db/versions.js) and records a NEW version —
+    -- history is never overwritten. Retention comes from app_setting
+    -- 'versionLimit' (default 50), oldest pruned beyond it.
+    CREATE TABLE IF NOT EXISTS module_version (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      seq INTEGER NOT NULL,
+      action TEXT NOT NULL,
+      detail TEXT,
+      payload TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS app_setting (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+
     -- Import Dock (Phase 18). Files imported from a folder, listed in the
     -- hub section. linker_key optionally binds a file to a nest entity
     -- (module_5, cobj_3, ...); use_as_image marks an image file as that

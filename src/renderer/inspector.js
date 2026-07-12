@@ -17,6 +17,10 @@ async function loadInspectorData(moduleId) {
 }
 
 function buildInspectorHtml(m) {
+  // Version History panel replaces the inspector dock while open (Phase 21).
+  if (S.versionPanel?.moduleId === m.id && typeof buildVersionPanelHtml === 'function') {
+    return buildVersionPanelHtml(m);
+  }
   const d = (S.inspectorData && S.inspectorData.moduleId === m.id) ? S.inspectorData : { attrs: [], tags: [], links: { outgoing: [], backlinks: [] }, ui: {} };
   return `<aside class="module-inspector">
     <div class="insp-head">${I.fields}<span>${t('moduleInspector')} — ${x(m.name)}</span></div>
@@ -58,8 +62,7 @@ function buildInspectorHtml(m) {
     <div class="prop"><span class="pk" data-no-i18n>View</span><span class="pv" data-no-i18n>${x(inspectorViewLabel(m, d.ui))}</span></div>
 
     <div class="insp-label">${t('versionHistory')}</div>
-    <div class="prop"><span class="pv ghost">${t('versionHistoryComingSoon')}</span></div>
-    <button class="btn btn-s" style="margin:4px 14px 14px;width:calc(100% - 28px)" onclick="toast(t('versionHistoryComingSoon'))">${I.info} ${t('versionHistory')}</button>
+    <button class="btn btn-s" style="margin:4px 14px 14px;width:calc(100% - 28px)" onclick="openVersionPanel(${m.id})">${I.timeline} ${t('versionHistory')}</button>
   </aside>`;
 }
 

@@ -1,6 +1,7 @@
 'use strict';
 const { getDB } = require('./core');
 const wiki = require('./wiki');
+const versions = require('./versions');
 
 const nexusOfModule = (id) => getDB().prepare(`SELECT nexus_ref FROM module WHERE id=?`).get(id)?.nexus_ref ?? null;
 
@@ -49,8 +50,13 @@ function updateModule(id, data) {
 // Free text with [[wikilinks]] — reindexed on every save, same as object
 // notes / Scribe notes (src/db/director.js updateObjectNote, src/db/scribe.js).
 function updateModuleDescription(id, description) {
+  const prev = getDB().prepare(`SELECT description FROM module WHERE id=?`).get(id)?.description ?? '';
   getDB().prepare(`UPDATE module SET description=?, update_at=datetime('now') WHERE id=?`).run(description, id);
   wiki.reindexWikiLinks(`module_${id}`, description, nexusOfModule(id));
+  if (prev !== (description ?? '')) {
+    versions.recordVersion(id, 'note', String(prev).slice(0, 60),
+      { op: 'moduleDescription', args: { id, value: prev } });
+  }
 }
 
 const deleteModule = (id) => getDB().prepare(`DELETE FROM module WHERE id=?`).run(id);
@@ -76,15 +82,27 @@ const getModuleAttrs = (moduleId) =>
 function upsertModuleAttr(moduleId, attrId, name, value) {
   const d = getDB();
   if (attrId) {
+    const prev = d.prepare(`SELECT * FROM module_attribute WHERE id=?`).get(attrId);
     d.prepare(`UPDATE module_attribute SET attr_name=?, attr_value=?, update_at=datetime('now') WHERE id=?`).run(name, value, attrId);
+    if (prev) versions.recordVersion(moduleId, 'attr', `${prev.attr_name}: ${prev.attr_value ?? ''} → ${value ?? ''}`,
+      { op: 'moduleAttr', args: { moduleId, attrId, name: prev.attr_name, value: prev.attr_value } });
     return attrId;
   }
   const maxOrder = d.prepare(`SELECT COALESCE(MAX(display_order),-1) AS m FROM module_attribute WHERE module_ref=?`).get(moduleId).m;
-  return d.prepare(`INSERT INTO module_attribute (module_ref, attr_name, attr_value, display_order) VALUES (?,?,?,?)`)
+  const newId = d.prepare(`INSERT INTO module_attribute (module_ref, attr_name, attr_value, display_order) VALUES (?,?,?,?)`)
     .run(moduleId, name, value, maxOrder + 1).lastInsertRowid;
+  versions.recordVersion(moduleId, 'attr', `+ ${name}`,
+    { op: 'moduleAttrDelete', args: { attrId: newId } });
+  return newId;
 }
 
-const deleteModuleAttr = (id) => getDB().prepare(`DELETE FROM module_attribute WHERE id=?`).run(id);
+function deleteModuleAttr(id) {
+  const prev = getDB().prepare(`SELECT * FROM module_attribute WHERE id=?`).get(id);
+  const r = getDB().prepare(`DELETE FROM module_attribute WHERE id=?`).run(id);
+  if (prev) versions.recordVersion(prev.module_ref, 'attrDel', prev.attr_name,
+    { op: 'moduleAttr', args: { moduleId: prev.module_ref, attrId: null, name: prev.attr_name, value: prev.attr_value } });
+  return r;
+}
 
 function getModuleUi(moduleId) {
   const rows = getDB().prepare(`SELECT ui_key, ui_value FROM module_ui WHERE module_ref=?`).all(moduleId);
@@ -104,6 +122,9 @@ const getModuleTags = (moduleId) => getDB().prepare(`
 
 function setModuleTags(moduleId, tags) {
   const d = getDB();
+  const prev = d.prepare(`SELECT hashtag_id FROM module_hashtag WHERE module_ref=?`).all(moduleId).map(r => r.hashtag_id);
+  versions.recordVersion(moduleId, 'tags', null,
+    { op: 'moduleTags', args: { moduleId, tagIds: prev } });
   d.prepare(`DELETE FROM module_hashtag WHERE module_ref=?`).run(moduleId);
   const ins = d.prepare(`INSERT INTO module_hashtag (module_ref, hashtag_id) VALUES (?,?)`);
   for (const t of (tags || [])) ins.run(moduleId, t);

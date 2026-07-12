@@ -24,6 +24,7 @@ const viewer    = require('./src/db/viewer');
 const sketcher  = require('./src/db/sketcher');
 const designer  = require('./src/db/designer');
 const importdock = require('./src/db/importdock');
+const versions  = require('./src/db/versions');
 
 module.exports = {
   ...core,
@@ -51,4 +52,5 @@ module.exports = {
   ...sketcher,
   ...designer,
   ...importdock,
+  ...versions,
 };
