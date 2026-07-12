@@ -120,6 +120,10 @@ contextBridge.exposeInMainWorld('api', {
     deletePin:    (id)           => inv('sketcher:deletePin', id),
     exportPng:    (n,dataUrl)    => inv('sketcher:exportPng', n,dataUrl),
   },
+  migrate: {
+    list: (target)       => inv('migrate:list', target),
+    run:  (nx,target,id) => inv('migrate:run', nx,target,id),
+  },
   versions: {
     list:    (mref) => inv('versions:list', mref),
     restore: (id)   => inv('versions:restore', id),

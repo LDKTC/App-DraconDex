@@ -268,6 +268,10 @@ h('versions:restore', (id)   => db.restoreVersion(id));
 h('setting:get',      (k)    => db.getAppSetting(k));
 h('setting:set',      (k,v)  => db.setAppSetting(k,v));
 
+// Legacy -> v3 migration (v3 Phase 24)
+h('migrate:list',   (target)        => db.listLegacyProjects(target));
+h('migrate:run',    (nx,target,id)  => db.migrateLegacy(nx,target,id));
+
 // Sage Hut (v3 Phase 17) — vault analytics
 h('sagehut:stats',      (nx) => db.sageHutStats(nx));
 h('sagehut:linkerList', (nx) => db.sageHutLinkerList(nx));

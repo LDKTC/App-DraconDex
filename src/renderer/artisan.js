@@ -274,8 +274,43 @@ function renderArtisanMain() {
       <button class="btn btn-p" style="margin-top:10px;width:100%" onclick="event.stopPropagation();openArtisanCreateModal('${tpl.id}')">${I.plus} ${t('artisanCreate')}</button>
     </div>`;
   }
-  h += `</div>`;
+  h += `</div>
+  <div class="detail-head" style="border-left:4px solid var(--border);padding-left:12px;margin-top:22px">
+    <h2 style="margin:0;font-size:1.05em">${t('artMigrateSection')}</h2>
+  </div>
+  <div id="art-migrate-list" class="hlist" style="max-width:560px"><div class="empty" style="padding:14px"><p>…</p></div></div>`;
   q('#main-inner').innerHTML = h;
+  fillArtisanMigrateList(S.artisanTarget);
+}
+
+// Legacy projects of this target, each importable as a v3 structure
+// (Phase 24 — lazy, non-destructive; original rows stay).
+async function fillArtisanMigrateList(target) {
+  const el = q('#art-migrate-list');
+  if (!el) return;
+  const rows = await api.migrate.list(target);
+  if (S.artisanTarget !== target || !q('#art-migrate-list')) return;
+  el.innerHTML = rows.length ? rows.map(r => `
+    <div class="li">
+      <span class="name">${x(r.name)}</span>
+      <button class="btn btn-s btn-sm" onclick="runArtisanMigration('${target}',${r.id},this)">${t('artMigrateBtn')}</button>
+    </div>`).join('') : `<div class="empty" style="padding:14px"><p>${t('artMigrateEmpty')}</p></div>`;
+}
+
+async function runArtisanMigration(target, legacyId, btn) {
+  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
+  if (btn) btn.disabled = true;
+  try {
+    const res = await api.migrate.run(S.nexus.id, target, legacyId);
+    const c = res.counts || {};
+    toast(`${t('artMigrateDone')} — ${c.modules} modules · ${c.objects} objects · ${c.events} events · ${c.chapters} chapters · ${c.dialogues} dialogues`, 'ok');
+    await returnToNexus();
+    await reloadModuleTree();
+    if (res.id) await openModuleNode(res.id);
+  } catch (e) {
+    toast(t('vRestoreFailed'), 'error');
+    if (btn) btn.disabled = false;
+  }
 }
 
 // ═══ CREATE MODAL ═════════════════════════════════════

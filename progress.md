@@ -69,7 +69,7 @@ chrome and theme system — no new design system.
 - [x] Phase 21 — Version control
 - [x] Phase 22 — Settings expansion (module names · font size · custom themes)
 - [x] Phase 23 — Artisan template migration
-- [ ] Phase 24 — Legacy data migration
+- [x] Phase 24 — Legacy data migration
 
 ---
 
@@ -152,16 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 24 — Legacy data migration
-- **Goal:** map existing rows (project / world_project / game_project /
-  write_project trees) onto Major/Minor instances created from their Artisan
-  templates. Migration runs **lazily at template-instantiation time**;
-  legacy modules stay readable until the user migrates/removes them.
-- **Files:** new `src/db/migrate_v3.js`, `main.js`.
-- **Depends:** 23. **Acceptance:** a legacy Navigator world converts into a
-  Manager Major with its categories as Classifiers, maps as Locators,
-  timelines as Chroniclers; original rows preserved until confirmed.
 
 ---
 

@@ -28,7 +28,13 @@ function adaptDb(rawDb) {
       run: (...args) => exec('run', args),
     };
   };
+  // Reentrant: a transaction opened inside another (e.g. the Phase 24
+  // migration calling save paths that reindex wikilinks transactionally)
+  // joins the outer one instead of issuing a nested BEGIN.
+  let txDepth = 0;
   rawDb.transaction = (fn) => (...args) => {
+    if (txDepth > 0) return fn(...args);
+    txDepth++;
     rawDb.exec('BEGIN');
     try {
       const result = fn(...args);
@@ -37,6 +43,8 @@ function adaptDb(rawDb) {
     } catch (e) {
       try { rawDb.exec('ROLLBACK'); } catch (_) {}
       throw e;
+    } finally {
+      txDepth--;
     }
   };
   return rawDb;

@@ -25,6 +25,7 @@ const sketcher  = require('./src/db/sketcher');
 const designer  = require('./src/db/designer');
 const importdock = require('./src/db/importdock');
 const versions  = require('./src/db/versions');
+const migrate   = require('./src/db/migrate_v3');
 
 module.exports = {
   ...core,
@@ -53,4 +54,5 @@ module.exports = {
   ...designer,
   ...importdock,
   ...versions,
+  ...migrate,
 };
