@@ -2415,8 +2415,11 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 	overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cn-count{font-size:calc(10.5px * var(--fsc,1));color:var(--t3);margin-left:8px}
 
-/* Drawing "Sketcher" (Phase 15, mockup 28) */
-.sk-board{height:600px;background-image:radial-gradient(rgba(90,90,114,.25) 1px,transparent 1px);background-size:22px 22px}
+/* Drawing "Sketcher" (Phase 15, mockup 28) — the canvas is a fixed dark
+   drawing surface (like the Gallery/Export thumbnails' #0b0b10), not the
+   ambient app theme: pen strokes include near-white (#f8fafc), which would
+   vanish against a light theme's background otherwise. */
+.sk-board{height:600px;background:#0b0b10;background-image:radial-gradient(rgba(255,255,255,.08) 1px,transparent 1px);background-size:22px 22px}
 #sk-stage{position:relative;transform-origin:0 0}
 #sk-canvas{position:absolute;inset:0;cursor:crosshair;touch-action:none}
 .sk-tools{position:absolute;left:14px;top:14px;z-index:4;display:flex;align-items:center;gap:6px;
