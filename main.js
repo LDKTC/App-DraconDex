@@ -202,6 +202,30 @@ h('viewer:createRelation', (nx,f,tk,l)  => db.createEntityRelation(nx,f,tk,l));
 h('viewer:updateRelation', (id,l)       => db.updateEntityRelation(id,l));
 h('viewer:deleteRelation', (id)         => db.deleteEntityRelation(id));
 
+// Drawing "Sketcher" (v3 Phase 15) — pages, strokes, pins, PNG export
+h('sketcher:getPages',     (mref)       => db.getSketchPages(mref));
+h('sketcher:createPage',   (mref,n)     => db.createSketchPage(mref,n));
+h('sketcher:renamePage',   (id,n)       => db.renameSketchPage(id,n));
+h('sketcher:movePage',     (id,dir)     => db.moveSketchPage(id,dir));
+h('sketcher:deletePage',   (id)         => db.deleteSketchPage(id));
+h('sketcher:getStrokes',   (pref)       => db.getSketchStrokes(pref));
+h('sketcher:addStroke',    (pref,c,w,pts) => db.createSketchStroke(pref,c,w,pts));
+h('sketcher:deleteStroke', (id)         => db.deleteSketchStroke(id));
+h('sketcher:getPins',      (pref)       => db.getSketchPins(pref));
+h('sketcher:addPin',       (pref,k,px,py) => db.createSketchPin(pref,k,px,py));
+h('sketcher:movePin',      (id,px,py)   => db.moveSketchPin(id,px,py));
+h('sketcher:deletePin',    (id)         => db.deleteSketchPin(id));
+h('sketcher:exportPng', async (name, dataUrl) => {
+  const win = BrowserWindow.getFocusedWindow();
+  const res = await dialog.showSaveDialog(win, {
+    defaultPath: `${name || 'sketch'}.png`,
+    filters: [{ name: 'PNG', extensions: ['png'] }],
+  });
+  if (res.canceled || !res.filePath) return { canceled: true };
+  fs.writeFileSync(res.filePath, Buffer.from(String(dataUrl).split(',')[1] || '', 'base64'));
+  return { saved: res.filePath };
+});
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));
@@ -209,6 +233,7 @@ h('wiki:outgoing',     (key)       => db.getOutgoingLinks(key));
 h('wiki:quickIndex',   (nx)        => db.quickIndex(nx));
 h('wiki:entityPath',   (key)       => db.getEntityPath(key));
 h('wiki:rebuild',      ()          => db.rebuildWikiIndex());
+h('wiki:resolveKeys',  (keys)      => db.resolveEntityKeys(keys));
 h('wiki:explorerTree', (nx)        => db.explorerTree(nx));
 h('wiki:getGraph',     (nx)        => db.getGraph(nx));
 h('wiki:renameTarget', (key,o,n)   => db.renameWikiTarget(key,o,n));

@@ -1253,6 +1253,10 @@ function renderNexusHome() {
   if (S.activeModuleNode?.kind === 'scribe' && typeof mountChatScribe === 'function') mountChatScribe();
   if (S.activeModuleNode?.kind === 'drafter' && typeof mountDrafterEditor === 'function') mountDrafterEditor(S.activeModuleNode);
   if (S.activeModuleNode?.kind === 'connector' && typeof mountConnectorBoard === 'function') mountConnectorBoard();
+  if (S.activeModuleNode?.kind === 'sketcher' && typeof mountSketcherBoard === 'function') {
+    mountSketcherBoard();
+    mountSketcherExtras();
+  }
 }
 
 function renderNexusPicker() {

@@ -137,7 +137,7 @@ function mountConnectorBoard() {
     el.addEventListener('pointerdown', (ev) => {
       if (ev.button !== 0) return;
       ev.preventDefault();
-      el.setPointerCapture(ev.pointerId);
+      try { el.setPointerCapture(ev.pointerId); } catch (_) {}
       const zoom = connectorZoom[d.moduleId] || 1;
       const sx = ev.clientX, sy = ev.clientY, ox = p.x, oy = p.y;
       let moved = false;

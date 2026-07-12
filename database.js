@@ -21,6 +21,7 @@ const narrator  = require('./src/db/narrator');
 const author    = require('./src/db/author');
 const chatscribe = require('./src/db/chatscribe');
 const viewer    = require('./src/db/viewer');
+const sketcher  = require('./src/db/sketcher');
 
 module.exports = {
   ...core,
@@ -45,4 +46,5 @@ module.exports = {
   ...author,
   ...chatscribe,
   ...viewer,
+  ...sketcher,
 };

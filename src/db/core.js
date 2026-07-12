@@ -953,6 +953,37 @@ function initDB() {
       create_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Drawing "Sketcher" (Phase 15). Freehand canvas pages: strokes are
+    -- polylines (points = JSON [x,y,x,y,...]) drawn with pen; the eraser
+    -- deletes whole strokes (never pixels). Pins are module-link chips
+    -- anchored on the canvas by wiki key (linker_key).
+    CREATE TABLE IF NOT EXISTS sketch_page (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      page_order INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS sketch_stroke (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_ref INTEGER NOT NULL REFERENCES sketch_page(id) ON DELETE CASCADE,
+      color TEXT,
+      width REAL NOT NULL DEFAULT 3,
+      points TEXT NOT NULL,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS sketch_pin (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_ref INTEGER NOT NULL REFERENCES sketch_page(id) ON DELETE CASCADE,
+      linker_key TEXT NOT NULL,
+      x REAL NOT NULL DEFAULT 0,
+      y REAL NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Relation "Connector" (Phase 14). Labeled key->key relations between
     -- any two vault entities (cobj_3, module_5, bchp_1, ...), authored from
     -- the Connector's graph; the entities themselves stay read-only.

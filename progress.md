@@ -56,7 +56,7 @@ chrome and theme system — no new design system.
 - [x] Phase 14 — Analys "Viewer" / Relation "Connector"
 
 **M5 — New kinds**
-- [ ] Phase 15 — Drawing "Sketcher"
+- [x] Phase 15 — Drawing "Sketcher"
 - [ ] Phase 16 — Graph "Designer"
 
 **M6 — Hub utilities**
@@ -152,20 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 15 — Drawing "Sketcher"  *(new kind)*
-- **Goal:** freehand canvas: **pen + eraser** (color/stroke-width picker),
-  handwriting notes, multiple pages, pan/zoom, **module links pinnable as
-  nodes** on the canvas (drag from Search Link), and **export to PNG**.
-- **Panel:** builder full canvas.
-- **Reuses:** canvas pan/zoom chrome (7/8), Search Link (20) for pinning.
-- **New:** stroke capture/render; PNG export via `toDataURL`/`nativeImage`.
-- **Files:** `src/renderer/mod/sketcher.js`, `src/db/module.js`
-  (`sketch_page`/`sketch_stroke`), `main.js` (export dialog).
-- **Depends:** 4, E. **Views (Major-level, 4):** Canvas · Pages · Gallery ·
-  Export preview.
-- **Acceptance:** draw, erase (strokes only), page 2 of 3, pin `[[อาริน]]`
-  node, export produces a PNG file.
 
 ### Phase 16 — Graph "Designer"  *(new kind)*
 - **Goal:** free-form diagram builder: shape palette (box/circle/diamond/
