@@ -68,7 +68,7 @@ chrome and theme system — no new design system.
 - [x] Phase 20 — Search Link overlay
 - [x] Phase 21 — Version control
 - [x] Phase 22 — Settings expansion (module names · font size · custom themes)
-- [ ] Phase 23 — Artisan template migration
+- [x] Phase 23 — Artisan template migration
 - [ ] Phase 24 — Legacy data migration
 
 ---
@@ -152,21 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 23 — Artisan template migration
-- **Goal:** Director (novel), Navigator (world), Hero (game), Writer (write)
-  stop being fixed top-level modules and become **built-in templates** in
-  Artisan, carrying their schemas/default attributes from
-  `src/db/director.js` / `navigator.js` / `hero.js` / `writer.js`. Creating
-  a Major module via Classifier (Phase 5) can start from one, pre-filled.
-- **Reuses:** all four modules' DB schema + `src/db/artisan.js` create-from-
-  template transactions — no data model thrown away, only entry points change.
-- **New:** template registration so the four appear beside user-authored
-  templates; Classifier hookup instantiating Major/Minor sets from a template.
-- **Files:** `src/renderer/artisan.js`, `src/db/artisan.js`,
-  `src/renderer/mod/classifier.js`.
-- **Depends:** 5. **Acceptance:** new Major from "Navigator" template gets
-  the world-style categories/attributes; old fixed nav-rail buttons gone.
 
 ### Phase 24 — Legacy data migration
 - **Goal:** map existing rows (project / world_project / game_project /

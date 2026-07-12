@@ -137,6 +137,76 @@ function artisanTemplates(target) {
   return [];
 }
 
+// ═══ v3 STRUCTURE TEMPLATES (Phase 23) ═════════════════════════════════
+// The four legacy fixed modules as built-in Nexus-nest templates: each
+// scaffolds a Manager Major + pre-filled Minors through
+// api.artisan.createV3. Names run through t() at call time — the rows
+// become user data in the current language.
+function artisanV3Spec(target, name, colorId) {
+  const f = (key, type, levelable) => ({ name: t(key), type: type || 'text', levelable: !!levelable });
+  const stat = (nm) => ({ name: nm, type: 'number', levelable: true });
+  const minors = [];
+  if (target === 'director') {
+    minors.push(
+      { kind: 'classifier', catType: 'character', name: t('worldChars'),
+        templates: [f('artFldRole'), f('artFldAge'), f('artFldPersonality', 'textarea'), f('artFldGoal')] },
+      { kind: 'classifier', name: t('artLocations'), templates: [f('artFldDescription', 'textarea'), f('artFldHistory', 'textarea')] },
+      { kind: 'classifier', name: t('gameItems'), templates: [f('artFldDescription', 'textarea'), f('artFldOwner')] },
+      { kind: 'chronicler', name: t('artMainTimeline') },
+      { kind: 'drafter', name: t('artFldPremise') },
+    );
+  } else if (target === 'navigator') {
+    minors.push(
+      { kind: 'classifier', catType: 'character', name: t('worldChars'),
+        templates: [f('artFldRole'), f('artFldAge'), f('artFldPersonality', 'textarea'), f('artFldGoal')] },
+      { kind: 'classifier', name: t('artLocations'), templates: [f('artFldDescription', 'textarea'), f('artFldHistory', 'textarea')] },
+      { kind: 'classifier', name: t('artFactions'), templates: [f('artFldDescription', 'textarea'), f('artFldGoal')] },
+      { kind: 'locator', name: t('kcMap') },
+      { kind: 'chronicler', name: t('kcTimeline') },
+      { kind: 'drafter', name: t('worldOverview') },
+    );
+  } else if (target === 'hero') {
+    minors.push(
+      { kind: 'classifier', catType: 'character', name: t('gameChars'),
+        templates: [stat('HP'), stat('MP'), stat('ATK'), stat('DEF'), f('artFldRole'), f('artFldBackstory', 'textarea')] },
+      { kind: 'classifier', name: t('gameItems'), templates: [f('artFldDescription', 'textarea'), f('artFldEffect')] },
+      { kind: 'narrator', name: t('artMainStory') },
+    );
+  } else if (target === 'writer') {
+    minors.push(
+      { kind: 'author', name, chapters: [1, 2, 3].map(n => `${t('artChapter')} ${n}`) },
+      { kind: 'drafter', name: t('artIdeas') },
+    );
+  }
+  return { name, colorId: colorId || null, minors };
+}
+
+async function createArtisanV3(target) {
+  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
+  const name = q('#art-name').value.trim();
+  if (!name) return;
+  const colorId = q('#sel-color')?.value || null;
+  const res = await api.artisan.createV3(S.nexus.id, artisanV3Spec(target, name, colorId));
+  if (!res?.id) return;
+  closeModal();
+  toast(t('artisanCreated'), 'ok');
+  await returnToNexus();
+  await reloadModuleTree();
+  await openModuleNode(res.id);
+}
+
+async function openArtisanV3Modal(target) {
+  const tg = ARTISAN_TARGETS.find(a => a.id === target);
+  openModal(`${t(tg.labelKey)} — ${t('artV3Card')}`, `
+    <div class="fg"><label>${t('name')} *</label><input id="art-name"></div>
+    <div class="fg"><label>${t('color')}</label>${await colorPicker()}</div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="createArtisanV3('${target}')">${t('artisanCreate')}</button>
+    </div>`);
+  setTimeout(() => q('#art-name').focus(), 60);
+}
+
 // ═══ ENTRY / ROUTING ══════════════════════════════════
 function renderArtisanView() {
   S.view = 'artisan';
@@ -147,6 +217,15 @@ function renderArtisanView() {
       <span style="display:flex;align-items:center">${I[tg.icon]}</span>
       <span class="name" style="flex:1">${t(tg.labelKey)}</span>
       <span class="cs-count">${artisanTemplates(tg.id).length}</span>
+    </div>`;
+  }
+  // The legacy fixed modules moved off the hub into here (Phase 23) —
+  // still reachable until their data is migrated (Phase 24).
+  h += `<div class="ph" style="margin-top:14px"><h4>${t('artLegacySection')}</h4></div>`;
+  for (const tg of ARTISAN_TARGETS) {
+    h += `<div class="li" onclick="selectModule('${tg.id}')" style="display:flex;align-items:center;gap:8px">
+      <span style="display:flex;align-items:center">${I[tg.icon]}</span>
+      <span class="name" style="flex:1">${t(tg.labelKey)}</span>
     </div>`;
   }
   q('#left-panel-inner').innerHTML = h;
@@ -170,6 +249,19 @@ function renderArtisanMain() {
     <h2 style="margin:0;font-size:1.1em">${t(tg.labelKey)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${t('artisanPickTemplate')}</span></h2>
   </div>
   <div class="artisan-grid">`;
+  // Built-in v3 structure card first (Phase 23) — creates a Nexus-nest
+  // Major/Minor set instead of a legacy project.
+  const v3Spec = artisanV3Spec(S.artisanTarget, '·');
+  h += `<div class="artisan-card artisan-v3" onclick="openArtisanV3Modal('${S.artisanTarget}')">
+    <div class="artisan-card-head">
+      <span class="artisan-card-icon">${I[tg.icon]}</span>
+      <h4>${t('artV3Card')} <span class="kind-chip" data-no-i18n>v3</span></h4>
+    </div>
+    <p>${t('artV3CardD')}</p>
+    <div class="artisan-inc">${t('artisanIncludes')}</div>
+    <div class="artisan-inc-list">${v3Spec.minors.map(mn => `<span class="artisan-chip">${x(mn.name)} <small data-no-i18n>${x(kindLabel(mn.kind))}</small></span>`).join('')}</div>
+    <button class="btn btn-p" style="margin-top:10px;width:100%" onclick="event.stopPropagation();openArtisanV3Modal('${S.artisanTarget}')">${I.plus} ${t('artisanCreate')}</button>
+  </div>`;
   for (const tpl of artisanTemplates(S.artisanTarget)) {
     h += `<div class="artisan-card" onclick="openArtisanCreateModal('${tpl.id}')">
       <div class="artisan-card-head">

@@ -631,6 +631,7 @@ h('artisan:createNovel', (base,spec) => db.artisanCreateNovel(base,spec));
 h('artisan:createWorld', (base,spec) => db.artisanCreateWorld(base,spec));
 h('artisan:createGame',  (base,spec) => db.artisanCreateGame(base,spec));
 h('artisan:createWrite', (base,spec) => db.artisanCreateWrite(base,spec));
+h('artisan:createV3',    (nx,spec)   => db.createV3Structure(nx,spec));
 
 // Sage / Analytics
 h('sage:getDataSize',    () => db.getDataSize());

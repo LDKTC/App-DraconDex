@@ -101,12 +101,10 @@ function toggleMajorExpand(id) {
 }
 
 function buildHubHtml() {
-  // Director/Navigator/Hero/Writer left the nav rail (Phase 1 — the rail's
-  // pinned set is only Scribe/Sage/Import Dock/Artisan); they stay reachable
-  // from this hub section until Phase 23 migrates them into Artisan.
-  const legacyRows = [
-    ['director', I.director], ['navigator', I.navigator], ['hero', I.hero], ['writer', I.writer],
-  ].map(([k, icon]) => `<div class="li" onclick="selectModule('${k}')"><span class="kicon">${icon}</span><span class="name">${t(k)}</span></div>`).join('');
+  // Director/Navigator/Hero/Writer migrated into Artisan (Phase 23): the
+  // hub carries no legacy section anymore — the four legacy views stay
+  // reachable from Artisan's sidebar until their data is migrated
+  // (Phase 24).
   return `<div id="hub-body">
     ${buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
       `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal()" title="${t('createMajorModule')}">${I.plus}</button>`)}
@@ -114,7 +112,6 @@ function buildHubHtml() {
     ${buildAccSection('dock', t('importDock'),
       typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
       `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`)}
-    ${buildAccSection('legacy', t('legacyModules'), legacyRows)}
   </div>`;
 }
 
@@ -259,6 +256,11 @@ async function moduleFormModal(existing, parentId) {
   const startKind = existing?.kind || 'manager';
   openModal(title, `
     <div class="fg"><label>${t('name')} *</label><input id="mm-name" value="${x(existing?.name || '')}"></div>
+    ${!existing && !parentId ? `<div class="fg"><label>${t('artStartTemplate')}</label>
+      <select id="mm-template">
+        <option value="">${t('artNoTemplate')}</option>
+        ${['director','navigator','hero','writer'].map(tg => `<option value="${tg}">${t(tg)} — ${t('artV3Card')}</option>`).join('')}
+      </select></div>` : ''}
     <div class="fg"><label>${t('moduleKind')}</label><select id="mm-kind" ${existing ? 'disabled' : ''} onchange="toggleClassifierFieldsVisibility()">${kindOptions}</select></div>
     <div id="mm-cattype-wrap" style="display:${startKind === 'classifier' ? '' : 'none'}">${buildCatTypePicker(existing?.cat_type)}</div>
     <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing?.icon || null, existing?.color || null, existing?.name || '', existing ? (kindLabel(existing.kind)) : '')}</div>
@@ -273,6 +275,18 @@ async function moduleFormModal(existing, parentId) {
 async function submitModuleForm(existingId, parentId) {
   const name = q('#mm-name').value.trim();
   if (!name) return;
+  // "เริ่มจาก template" (Phase 23): scaffold the whole Major/Minor set
+  // through Artisan's v3 structure builder instead of one bare module.
+  const tplTarget = q('#mm-template')?.value;
+  if (!existingId && !parentId && tplTarget) {
+    if (typeof artisanV3Spec !== 'function') await loadModule('src/renderer/artisan.js');
+    const res = await api.artisan.createV3(S.nexus.id, artisanV3Spec(tplTarget, name, q('#sel-color').value || null));
+    closeModal();
+    await reloadModuleTree();
+    toast(t('artisanCreated'), 'ok');
+    if (res?.id) openModuleNode(res.id);
+    return;
+  }
   const kind = q('#mm-kind').value;
   const colorId = q('#sel-color').value || null;
   const icon = getIconPickerValue() || null;

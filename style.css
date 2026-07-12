@@ -2593,3 +2593,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .ctm-pv-main i{display:block;height:9px;border-radius:3px}
 .ctm-pv-main .w60{width:60%}.ctm-pv-main .w80{width:80%}.ctm-pv-main .w40{width:40%}
 .ctm-pv-btn{width:70px;height:18px!important;border-radius:5px!important;margin-top:auto}
+
+/* Artisan v3 templates (Phase 23) */
+.artisan-card.artisan-v3{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.artisan-chip small{color:var(--t3);margin-left:3px}

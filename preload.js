@@ -485,6 +485,7 @@ contextBridge.exposeInMainWorld('api', {
     createWorld: (base,spec) => inv('artisan:createWorld', base,spec),
     createGame:  (base,spec) => inv('artisan:createGame', base,spec),
     createWrite: (base,spec) => inv('artisan:createWrite', base,spec),
+    createV3:    (nx,spec)   => inv('artisan:createV3', nx,spec),
   },
   sage: {
     getDataSize:     () => inv('sage:getDataSize'),
