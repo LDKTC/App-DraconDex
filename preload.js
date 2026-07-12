@@ -153,6 +153,7 @@ contextBridge.exposeInMainWorld('api', {
     entityPath: (key)      => inv('wiki:entityPath', key),
     rebuild:    ()         => inv('wiki:rebuild'),
     resolveKeys: (keys)    => inv('wiki:resolveKeys', keys),
+    linkCounts:  (nx)      => inv('wiki:linkCounts', nx),
     explorerTree: (nx)     => inv('wiki:explorerTree', nx),
     getGraph:   (nx)       => inv('wiki:getGraph', nx),
     renameTarget: (key,o,n) => inv('wiki:renameTarget', key,o,n),

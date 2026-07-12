@@ -65,7 +65,7 @@ chrome and theme system — no new design system.
 
 **M7 — Shell & system**
 - [x] Phase 19 — Builder shell (tabs · ◀▶ history · split 2/4)
-- [ ] Phase 20 — Search Link overlay
+- [x] Phase 20 — Search Link overlay
 - [ ] Phase 21 — Version control
 - [ ] Phase 22 — Settings expansion (module names · font size · custom themes)
 - [ ] Phase 23 — Artisan template migration
@@ -153,19 +153,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
 
-### Phase 20 — Search Link overlay
-- **Goal:** extend Ctrl+P into an overlay popup searching **everything**
-  (modules, objects, events, dialogues, notes, chapters, tags) with
-  **scope filters** — whole vault / same folder + same level only / current
-  subtree (lower levels) — plus a kind filter. Enter opens in the builder;
-  Ctrl+Enter inserts the result as `[[link]]`; results show path breadcrumb
-  + kind badge + link count.
-- **Reuses:** `quickswitch.js`, `wiki.quickIndex`, `searchAll()`.
-- **New:** scope filtering against the module tree; insert-as-link action.
-- **Files:** `src/renderer/quickswitch.js`, `src/db/wiki.js`, `src/db/module.js`.
-- **Depends:** 3, E. **Acceptance:** query with scope "same folder/level"
-  excludes deeper items; Ctrl+Enter inserts a working wikilink at the caret.
-
 ### Phase 21 — Version control
 - **Goal:** record every edit per module (attribute edits, object
   add/delete, template changes, notes, tags) into a **Version History**
@@ -249,8 +236,8 @@ user-visible string goes through `t('key')` in **all 18 locales**
 5. **Deferred from M4–M6** (picked up by Phases 19/20): editing an
    imported doc (docx) converting it into a Drafter waits for Phase 19's
    builder viewer tabs — the file viewer says so in its hint line; and
-   Sketcher/Designer "drag from Search Link to pin" waits for Phase 20 —
-   both kinds pin module links through a quickIndex picker modal for now.
+   Sketcher/Designer pin-from-Search-Link *(done in Phase 20: the overlay's
+   📌 action / Alt+Enter pins the result onto the open canvas)*.
 6. All mockup-iteration decisions (icons in tree rows, notation-only
    symbols, unique names + name mode, tag links, multi-node areas, true
    time scale, pan/zoom, module links, multi-view counts, open/move rules,

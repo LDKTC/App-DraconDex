@@ -176,6 +176,15 @@ const getOutgoingLinks = (srcKey) => {
     : { key: null, name: r.target_text, type: 'unresolved', module: null });
 };
 
+// target_key -> incoming [[link]] count, for the Search Link result rows.
+function getLinkCounts(nexusId) {
+  const rows = getDB().prepare(`
+    SELECT target_key k, COUNT(*) c FROM wiki_link
+    WHERE target_key IS NOT NULL AND (? IS NULL OR nexus_ref=?) GROUP BY target_key
+  `).all(nexusId ?? null, nexusId ?? null);
+  return Object.fromEntries(rows.map(r => [r.k, r.c]));
+}
+
 // ── Quick index: every linkable entity in a vault ───────────────────────────
 // Feeds the quick switcher, the [[ autocomplete and the renderer's sync
 // wikilink-resolution cache.
@@ -463,5 +472,5 @@ module.exports = {
   resolveWikiName, reindexWikiLinks, rebuildWikiIndex,
   nexusOfNote, nexusOfObject, nexusOfChapter,
   getBacklinks, getOutgoingLinks, resolveEntityKeys,
-  quickIndex, getEntityPath, explorerTree, getGraph,
+  quickIndex, getEntityPath, explorerTree, getGraph, getLinkCounts,
 };
