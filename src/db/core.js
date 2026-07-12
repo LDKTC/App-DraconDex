@@ -28,7 +28,13 @@ function adaptDb(rawDb) {
       run: (...args) => exec('run', args),
     };
   };
+  // Reentrant: a transaction opened inside another (e.g. the Phase 24
+  // migration calling save paths that reindex wikilinks transactionally)
+  // joins the outer one instead of issuing a nested BEGIN.
+  let txDepth = 0;
   rawDb.transaction = (fn) => (...args) => {
+    if (txDepth > 0) return fn(...args);
+    txDepth++;
     rawDb.exec('BEGIN');
     try {
       const result = fn(...args);
@@ -37,6 +43,8 @@ function adaptDb(rawDb) {
     } catch (e) {
       try { rawDb.exec('ROLLBACK'); } catch (_) {}
       throw e;
+    } finally {
+      txDepth--;
     }
   };
   return rawDb;
@@ -864,6 +872,201 @@ function initDB() {
       module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
       hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
       UNIQUE(module_ref, hashtag_id)
+    );
+
+    -- TimeMap "Wanderer" (Phase 9). A Link pin placed on the referenced
+    -- Locator's map at (x,y); event_ref picks which Chronicler event sets
+    -- the pin's displayed time. The wanderer's chosen Locator/Chronicler
+    -- pair lives in module_ui (keys mapModule/timelineModule), so this row
+    -- only carries the pin itself. area_ref optionally anchors the pin to
+    -- an area for future use; deleting the event or area clears the ref
+    -- instead of dropping the pin.
+    CREATE TABLE IF NOT EXISTS map_event (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      event_ref INTEGER REFERENCES timeline_event(id) ON DELETE SET NULL,
+      area_ref INTEGER REFERENCES map_area(id) ON DELETE SET NULL,
+      label TEXT,
+      x REAL NOT NULL DEFAULT 0,
+      y REAL NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Story "Narrator" (Phase 10). Module-scoped mirrors of the legacy
+    -- game_story board (game_dialogue/game_conversation/game_storyline):
+    -- Dialogue nodes at (x,y) on the route board, directed edges between
+    -- them, and ordered conversation lines inside each node. Parallel
+    -- schema, same reasoning as Classifier (progress.md Section C).
+    CREATE TABLE IF NOT EXISTS story_dialogue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      color INTEGER REFERENCES use_color(id),
+      pos_x REAL NOT NULL DEFAULT 0,
+      pos_y REAL NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS story_edge (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      from_ref INTEGER NOT NULL REFERENCES story_dialogue(id) ON DELETE CASCADE,
+      to_ref INTEGER NOT NULL REFERENCES story_dialogue(id) ON DELETE CASCADE,
+      label TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(from_ref, to_ref)
+    );
+
+    CREATE TABLE IF NOT EXISTS story_talk (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dialogue_ref INTEGER NOT NULL REFERENCES story_dialogue(id) ON DELETE CASCADE,
+      speaker TEXT,
+      talk_sentence TEXT,
+      talk_order INTEGER NOT NULL DEFAULT 0,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Book "Author" (Phase 11). An Author module IS a book; its chapters
+    -- carry the long-form markdown content (wikilink-indexed under the
+    -- bchp_<id> key kind — see src/db/wiki.js).
+    CREATE TABLE IF NOT EXISTS book_chapter (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      chapter_content TEXT,
+      chapter_order INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Chat "Scribe" (Phase 12). A Scribe module holds chat sessions
+    -- ("1 session = 1 note", mockup 06); each session is a stream of
+    -- timestamped bubble messages. Session content (the concatenated
+    -- messages) is wikilink-indexed under the chss_<id> key kind.
+    CREATE TABLE IF NOT EXISTS chat_session (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      session_order INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_message (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_ref INTEGER NOT NULL REFERENCES chat_session(id) ON DELETE CASCADE,
+      message TEXT NOT NULL,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Drawing "Sketcher" (Phase 15). Freehand canvas pages: strokes are
+    -- polylines (points = JSON [x,y,x,y,...]) drawn with pen; the eraser
+    -- deletes whole strokes (never pixels). Pins are module-link chips
+    -- anchored on the canvas by wiki key (linker_key).
+    CREATE TABLE IF NOT EXISTS sketch_page (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      page_order INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS sketch_stroke (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_ref INTEGER NOT NULL REFERENCES sketch_page(id) ON DELETE CASCADE,
+      color TEXT,
+      width REAL NOT NULL DEFAULT 3,
+      points TEXT NOT NULL,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS sketch_pin (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_ref INTEGER NOT NULL REFERENCES sketch_page(id) ON DELETE CASCADE,
+      linker_key TEXT NOT NULL,
+      x REAL NOT NULL DEFAULT 0,
+      y REAL NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Version control (Phase 21). Every hooked edit records a version row
+    -- per module: action code + human detail + a JSON restore payload
+    -- (the before-state). Restore re-applies that payload through a
+    -- whitelisted op (src/db/versions.js) and records a NEW version —
+    -- history is never overwritten. Retention comes from app_setting
+    -- 'versionLimit' (default 50), oldest pruned beyond it.
+    CREATE TABLE IF NOT EXISTS module_version (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      seq INTEGER NOT NULL,
+      action TEXT NOT NULL,
+      detail TEXT,
+      payload TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS app_setting (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+
+    -- Import Dock (Phase 18). Files imported from a folder, listed in the
+    -- hub section. linker_key optionally binds a file to a nest entity
+    -- (module_5, cobj_3, ...); use_as_image marks an image file as that
+    -- entity's display picture (cards / List+Detail / Grid).
+    CREATE TABLE IF NOT EXISTS import_file (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_type TEXT,
+      file_size INTEGER NOT NULL DEFAULT 0,
+      folder TEXT,
+      linker_key TEXT,
+      use_as_image INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Graph "Designer" (Phase 16). Free-form diagram: shaped nodes
+    -- (box/circle/diamond/text) at (x,y), optionally standing in for a
+    -- vault entity via linker_key, and labeled directed edges.
+    CREATE TABLE IF NOT EXISTS design_node (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      shape TEXT NOT NULL DEFAULT 'box' CHECK(shape IN ('box','circle','diamond','text')),
+      x REAL NOT NULL DEFAULT 0,
+      y REAL NOT NULL DEFAULT 0,
+      node_text TEXT,
+      color TEXT,
+      linker_key TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS design_edge (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+      from_ref INTEGER NOT NULL REFERENCES design_node(id) ON DELETE CASCADE,
+      to_ref INTEGER NOT NULL REFERENCES design_node(id) ON DELETE CASCADE,
+      label TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(from_ref, to_ref)
+    );
+
+    -- Relation "Connector" (Phase 14). Labeled key->key relations between
+    -- any two vault entities (cobj_3, module_5, bchp_1, ...), authored from
+    -- the Connector's graph; the entities themselves stay read-only.
+    CREATE TABLE IF NOT EXISTS entity_relation (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      from_key TEXT NOT NULL,
+      to_key TEXT NOT NULL,
+      label TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(from_key, to_key, label)
     );
 
     -- Category "Classifier" (Phase 5). A Classifier module IS its category --

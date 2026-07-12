@@ -7,25 +7,31 @@
 // History entry point (the real history is Phase 21).
 
 async function loadInspectorData(moduleId) {
-  const [attrs, tags, links] = await Promise.all([
+  const [attrs, tags, links, ui] = await Promise.all([
     api.module.getAttrs(moduleId),
     api.module.getTags(moduleId),
     api.module.getLinks(moduleId),
+    api.module.getUi(moduleId),
   ]);
-  S.inspectorData = { moduleId, attrs, tags, links };
+  S.inspectorData = { moduleId, attrs, tags, links, ui };
 }
 
 function buildInspectorHtml(m) {
-  const d = (S.inspectorData && S.inspectorData.moduleId === m.id) ? S.inspectorData : { attrs: [], tags: [], links: { outgoing: [], backlinks: [] } };
+  // Version History panel replaces the inspector dock while open (Phase 21).
+  if (S.versionPanel?.moduleId === m.id && typeof buildVersionPanelHtml === 'function') {
+    return buildVersionPanelHtml(m);
+  }
+  const d = (S.inspectorData && S.inspectorData.moduleId === m.id) ? S.inspectorData : { attrs: [], tags: [], links: { outgoing: [], backlinks: [] }, ui: {} };
   return `<aside class="module-inspector">
     <div class="insp-head">${I.fields}<span>${t('moduleInspector')} — ${x(m.name)}</span></div>
 
     <div class="insp-label">${t('moduleDetailSpec')}</div>
-    <div class="prop"><span class="pk">${t('moduleKind')}</span><span class="pv">${x(KIND_LABEL[m.kind] || m.kind)}</span></div>
+    <div class="prop"><span class="pk">${t('moduleKind')}</span><span class="pv" data-no-i18n>${x(kindLabel(m.kind))}</span></div>
     <div class="insp-desc-wrap">
       <textarea id="insp-desc" rows="3" placeholder="${t('addDetail')}"
         onblur="saveModuleDescription(${m.id})">${x(m.description || '')}</textarea>
     </div>
+    <div class="prop"><span class="pk">${t('tagLink')}</span></div>
     <div class="insp-chips">
       ${d.tags.map(tg => `<span class="htag" style="border-color:${x(tg.color_code || '#6366f1')};color:${x(tg.color_code || '#6366f1')}">#${x(tg.tag_name)}</span>`).join('')}
       <button class="btn btn-g btn-i" onclick="openModuleTagModal(${m.id})" title="${t('tagLink')}">${I.plus}</button>
@@ -53,10 +59,32 @@ function buildInspectorHtml(m) {
     ).join('') : `<span class="pv ghost">${t('noBacklinks')}</span>`}</div>
 
     <div class="insp-label">${t('moduleUiSpec')}</div>
-    <div class="prop"><span class="pv ghost">${t('versionHistoryComingSoon')}</span></div>
+    <div class="prop"><span class="pk" data-no-i18n>View</span><span class="pv" data-no-i18n>${x(inspectorViewLabel(m, d.ui))}</span></div>
 
-    <button class="btn btn-s" style="margin:10px 14px 14px;width:calc(100% - 28px)" onclick="toast(t('versionHistoryComingSoon'))">${I.info} ${t('versionHistory')}</button>
+    <div class="insp-label">${t('versionHistory')}</div>
+    <button class="btn btn-s" style="margin:4px 14px 14px;width:calc(100% - 28px)" onclick="openVersionPanel(${m.id})">${I.timeline} ${t('versionHistory')}</button>
   </aside>`;
+}
+
+// The active multi-view pattern (A.3 #4) shown in the UI-spec section —
+// resolved through each kind's view-label dict when its renderer is loaded.
+function inspectorViewLabel(m, ui) {
+  const v = ui?.activeView || ui?.view;
+  if (m.kind === 'classifier') return (typeof CLASSIFIER_VIEW_LABEL !== 'undefined' && CLASSIFIER_VIEW_LABEL[v]) || 'Table';
+  if (m.kind === 'manager') return (typeof MANAGER_VIEW_LABEL !== 'undefined' && MANAGER_VIEW_LABEL[v]) || 'Cards';
+  if (m.kind === 'chronicler') return (typeof CHRONICLER_VIEW_LABEL !== 'undefined' && CHRONICLER_VIEW_LABEL[v]) || 'One-line';
+  if (m.kind === 'wanderer') return (typeof WANDERER_VIEW_LABEL !== 'undefined' && WANDERER_VIEW_LABEL[v]) || 'Dual';
+  if (m.kind === 'narrator') return (typeof NARRATOR_VIEW_LABEL !== 'undefined' && NARRATOR_VIEW_LABEL[v]) || 'Board';
+  if (m.kind === 'author') return (typeof AUTHOR_VIEW_LABEL !== 'undefined' && AUTHOR_VIEW_LABEL[v]) || 'Editor';
+  if (m.kind === 'scribe') return (typeof CHATSCRIBE_VIEW_LABEL !== 'undefined' && CHATSCRIBE_VIEW_LABEL[v]) || 'Chat';
+  if (m.kind === 'drafter') return (typeof DRAFTER_VIEW_LABEL !== 'undefined' && DRAFTER_VIEW_LABEL[v]) || 'Edit';
+  if (m.kind === 'viewer') return (typeof VIEWER_VIEW_LABEL !== 'undefined' && VIEWER_VIEW_LABEL[v]) || 'Table';
+  if (m.kind === 'connector') return (typeof CONNECTOR_VIEW_LABEL !== 'undefined' && CONNECTOR_VIEW_LABEL[v]) || 'Graph';
+  if (m.kind === 'sketcher') return (typeof SKETCHER_VIEW_LABEL !== 'undefined' && SKETCHER_VIEW_LABEL[v]) || 'Canvas';
+  if (m.kind === 'designer') return (typeof DESIGNER_VIEW_LABEL !== 'undefined' && DESIGNER_VIEW_LABEL[v]) || 'Canvas';
+  if (m.kind === 'locator') return 'Canvas';
+  if (m.kind === 'inspector') return 'Note';
+  return '—';
 }
 
 async function saveModuleDescription(moduleId) {

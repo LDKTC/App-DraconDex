@@ -23,19 +23,20 @@ async function loadLocatorData(m) {
 function buildLocatorMainHtml(m) {
   if (!S.map) return `<div class="empty" style="margin-top:40px"><p>${t('nestEmpty')}</p></div>`;
   return `
-  <div class="rel-toolbar">
-    <button class="btn btn-i ${S.mapTool === 'create' ? 'btn-p' : 'btn-s'}" onclick="setMapTool('create')" title="${t('locatorToolCreate')}">${I.plus}</button>
-    <button class="btn btn-i ${S.mapTool === 'delete' ? 'btn-p' : 'btn-s'}" onclick="setMapTool('delete')" title="${t('locatorToolDelete')}">${I.delete}</button>
-    <button class="btn btn-i ${S.mapTool === 'move' ? 'btn-p' : 'btn-s'}" onclick="setMapTool('move')" title="${t('locatorToolMove')}">${I.move}</button>
-    <span class="locator-scalelbl">24px = 10 km</span>
-  </div>
   <div id="map-board" class="map-whiteboard locator-board">
     <div id="map-konva-container" style="width:100%;height:100%"></div>
+    <div class="ctoolbar-float">
+      <button class="btn btn-i ${S.mapTool === 'move' ? 'btn-p' : 'btn-s'}" onclick="setMapTool('move')" title="${t('locatorToolMove')}">${I.move}</button>
+      <button class="btn btn-i ${S.mapTool === 'create' ? 'btn-p' : 'btn-s'}" onclick="setMapTool('create')" title="${t('locatorToolCreate')}">${I.plus}</button>
+      <button class="btn btn-i ${S.mapTool === 'delete' ? 'btn-p' : 'btn-s'}" onclick="setMapTool('delete')" title="${t('locatorToolDelete')}">${I.delete}</button>
+    </div>
     <div class="chint">${t('locatorPanHint')}</div>
     <div class="czoom">
       <span class="zbtn" onclick="zoomLocator(-1)">−</span>
       <span class="zlvl" id="locator-zoom-lvl">100%</span>
       <span class="zbtn" onclick="zoomLocator(1)">+</span>
+      <span class="zsep"></span>
+      <span class="locator-scalelbl" data-no-i18n>24px = 10 km</span>
     </div>
   </div>
   <div class="rel-underboard">

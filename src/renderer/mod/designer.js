@@ -1,0 +1,399 @@
+'use strict';
+// ═══ Graph "Designer" (progress.md Phase 16) ═══════════════════════════
+// Free-form diagram builder (mockup docs/mockups/31-designer.png): shape
+// palette (box/circle/diamond/text), drag-to-arrange with persisted
+// positions, labeled arrow edges via a click-to-connect tool,
+// double-click text edit, and module-link nodes (linker_key) that click
+// through to their entity. Views: Canvas · Outline · Matrix. Board
+// interaction chrome mirrors the Narrator/Connector boards.
+
+const DESIGNER_VIEWS = ['canvas', 'outline', 'matrix'];
+const DESIGNER_VIEW_LABEL = { canvas: 'Canvas', outline: 'Outline', matrix: 'Matrix' };
+const DG_W = 2000, DG_H = 1400;
+const DG_COLORS = ['#2dd4bf', '#38bdf8', '#facc15', '#f87171', '#a78bfa', '#f8fafc'];
+const DG_SHAPES = ['box', 'circle', 'diamond', 'text'];
+const DG_SHAPE_GLYPH = { box: '▭', circle: '○', diamond: '◇', text: 'T' };
+
+const dgState = { zoom: {}, edgeFrom: null }; // render-only
+
+async function loadDesignerData(m) {
+  const [nodes, edges, ui] = await Promise.all([
+    api.designer.getNodes(m.id),
+    api.designer.getEdges(m.id),
+    api.module.getUi(m.id),
+  ]);
+  const pinKeys = nodes.filter(n => n.linker_key).map(n => n.linker_key);
+  const ents = pinKeys.length ? await api.wiki.resolveKeys(pinKeys) : [];
+  const byKey = new Map(ents.map(e2 => [e2.key, e2]));
+  for (const n of nodes) n.entity = n.linker_key ? (byKey.get(n.linker_key) || null) : null;
+  const view = DESIGNER_VIEWS.includes(ui.activeView) ? ui.activeView : 'canvas';
+  S.designerData = { moduleId: m.id, nodes, edges, view };
+}
+
+async function setDesignerView(view) {
+  const d = S.designerData;
+  d.view = view;
+  dgState.edgeFrom = null;
+  await api.module.setUi(d.moduleId, 'activeView', view);
+  if (S.inspectorData?.moduleId === d.moduleId) S.inspectorData.ui = { ...S.inspectorData.ui, activeView: view };
+  renderNexusHome();
+}
+
+const dgNodeName = (n) => n.entity ? n.entity.name : (n.node_text || '—');
+
+function buildDesignerMainHtml(m) {
+  const d = (S.designerData && S.designerData.moduleId === m.id) ? S.designerData : null;
+  if (!d) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
+  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+    ${DESIGNER_VIEWS.map(v => `<span class="vitem${v === d.view ? ' act' : ''}" onclick="setDesignerView('${v}')" data-no-i18n>${DESIGNER_VIEW_LABEL[v]}</span>`).join('')}
+  </div>`;
+  const toolbar = `<div class="classifier-toolbar">${viewBar}</div>`;
+  if (d.view === 'outline') return toolbar + buildDesignerOutlineHtml(d);
+  if (d.view === 'matrix') return toolbar + buildDesignerMatrixHtml(d);
+  return `${toolbar}
+    <div class="cn-wrap">
+      <div id="dg-board" class="nar-board sk-board">
+        <div id="dg-stage" style="width:${DG_W}px;height:${DG_H}px;position:relative;transform-origin:0 0">
+          <svg id="dg-edges" width="${DG_W}" height="${DG_H}" viewBox="0 0 ${DG_W} ${DG_H}"></svg>
+        </div>
+      </div>
+      <div class="sk-tools" data-no-i18n>
+        ${DG_SHAPES.map(s => `<button class="btn btn-g btn-i" onclick="addDesignNode('${s}')" title="${s}">${DG_SHAPE_GLYPH[s]}</button>`).join('')}
+        <span class="zsep"></span>
+        <button class="btn btn-g btn-i${dgState.edgeFrom !== null ? ' act' : ''}" onclick="startDesignEdge()" title="${t('edgeTool')}">↦</button>
+        <button class="btn btn-g btn-i" onclick="openDesignPinModal()" title="${t('pinModuleLink')}">🔗</button>
+      </div>
+      <div class="chint" data-no-i18n>${t('designerHint')}</div>
+      <div class="czoom" data-no-i18n>
+        <button class="btn btn-g btn-i" onclick="designerZoomBy(-0.15)">−</button>
+        <span id="dg-zoom-label">100%</span>
+        <button class="btn btn-g btn-i" onclick="designerZoomBy(0.15)">＋</button>
+        <span class="cn-count">${d.nodes.length} nodes · ${d.edges.length} edges</span>
+      </div>
+    </div>`;
+}
+
+// ── Canvas mounting ─────────────────────────────────────────────────────
+function mountDesignerBoard() {
+  const d = S.designerData;
+  if (!d || S.activeModuleNode?.id !== d.moduleId || d.view !== 'canvas') return;
+  const board = q('#dg-board'), stage = q('#dg-stage'), svg = q('#dg-edges');
+  if (!board || !stage || !svg) return;
+
+  const zoomOf = () => dgState.zoom[d.moduleId] || 1;
+  stage.style.transform = `scale(${zoomOf()})`;
+  const lbl = q('#dg-zoom-label');
+  if (lbl) lbl.textContent = `${Math.round(zoomOf() * 100)}%`;
+
+  const byId = new Map(d.nodes.map(n => [n.id, n]));
+  const drawEdges = () => {
+    let html = `<defs><marker id="dg-arrow" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--t3)"></path></marker></defs>`;
+    for (const e2 of d.edges) {
+      const a = byId.get(e2.from_ref), b = byId.get(e2.to_ref);
+      if (!a || !b) continue;
+      // trim the line to stop at the node's rough radius so the arrow shows
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const rA = a.shape === 'circle' ? 55 : 34, rB = b.shape === 'circle' ? 55 : 38;
+      const ax = a.x + dx / len * rA, ay = a.y + dy / len * rA;
+      const bx2 = b.x - dx / len * rB, by2 = b.y - dy / len * rB;
+      html += `<line x1="${ax}" y1="${ay}" x2="${bx2}" y2="${by2}" stroke="var(--t3)"
+        stroke-width="1.6" marker-end="url(#dg-arrow)" opacity="0.9"></line>`;
+      if (e2.label) {
+        const mx = (ax + bx2) / 2, my = (ay + by2) / 2;
+        html += `<foreignObject x="${mx - 60}" y="${my - 11}" width="120" height="22">
+          <div class="cn-edge-label dg-edge-label" xmlns="http://www.w3.org/1999/xhtml" data-edge="${e2.id}">${x(e2.label || '')}</div></foreignObject>`;
+      }
+    }
+    svg.innerHTML = html;
+  };
+  drawEdges();
+  // edge label double-click -> edit
+  svg.addEventListener('dblclick', (ev) => {
+    const el = ev.target.closest('.dg-edge-label');
+    if (el) openDesignEdgeModal(Number(el.dataset.edge));
+  });
+
+  stage.querySelectorAll('.dg-node').forEach(el => el.remove());
+  for (const n of d.nodes) {
+    const el = document.createElement('div');
+    el.className = `dg-node dg-${n.shape}${n.linker_key ? ' dg-pin' : ''}${dgState.edgeFrom === n.id ? ' edge-from' : ''}`;
+    el.style.left = `${n.x}px`;
+    el.style.top = `${n.y}px`;
+    const col = n.color || DG_COLORS[1];
+    if (n.shape === 'diamond') {
+      el.innerHTML = `<span class="dg-diamond-box" style="border-color:${x(col)}"></span><span class="dg-label" style="color:${x(col)}" data-no-i18n>${x(dgNodeName(n))}</span>`;
+    } else if (n.linker_key) {
+      el.style.borderColor = col;
+      el.innerHTML = `<span data-no-i18n>[[${x(dgNodeName(n))}]]</span><small data-no-i18n>${x(n.entity ? n.entity.type : '?')}</small>`;
+    } else {
+      el.style.borderColor = n.shape === 'text' ? 'transparent' : col;
+      el.innerHTML = `<span class="dg-label" style="color:${x(col)}" data-no-i18n>${x(n.node_text || '')}</span>`;
+    }
+    el.addEventListener('dblclick', (ev) => {
+      ev.stopPropagation();
+      openDesignNodeModal(n.id);
+    });
+    el.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      // edge tool: first click picks the source, second the target
+      if (dgState.edgeFrom !== null && dgState.edgeFrom !== n.id) {
+        const from = dgState.edgeFrom;
+        dgState.edgeFrom = null;
+        openDesignEdgeModal(null, from, n.id);
+        return;
+      }
+      try { el.setPointerCapture(ev.pointerId); } catch (_) {}
+      const sx = ev.clientX, sy = ev.clientY, ox = n.x, oy = n.y;
+      let moved = false;
+      const mv = (e3) => {
+        const dx = (e3.clientX - sx) / zoomOf(), dy = (e3.clientY - sy) / zoomOf();
+        if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+        n.x = ox + dx; n.y = oy + dy;
+        el.style.left = `${n.x}px`;
+        el.style.top = `${n.y}px`;
+        drawEdges();
+      };
+      const up = async () => {
+        el.removeEventListener('pointermove', mv);
+        el.removeEventListener('pointerup', up);
+        if (moved) await api.designer.moveNode(n.id, n.x, n.y);
+        else if (dgState.edgeFrom === n.id) { /* stays armed */ }
+        else if (n.linker_key) openEntityByKey(n.linker_key);
+      };
+      el.addEventListener('pointermove', mv);
+      el.addEventListener('pointerup', up);
+    });
+    stage.appendChild(el);
+  }
+
+  // center viewport on nodes
+  if (!board.dataset.scrolled) {
+    board.dataset.scrolled = '1';
+    if (d.nodes.length) {
+      const mx = d.nodes.reduce((a, n) => a + n.x, 0) / d.nodes.length;
+      const my = d.nodes.reduce((a, n) => a + n.y, 0) / d.nodes.length;
+      board.scrollLeft = Math.max(0, mx * zoomOf() - board.clientWidth / 2);
+      board.scrollTop = Math.max(0, my * zoomOf() - board.clientHeight / 2);
+    } else {
+      board.scrollLeft = DG_W / 2 - board.clientWidth / 2;
+      board.scrollTop = DG_H / 2 - board.clientHeight / 2;
+    }
+  }
+
+  board.addEventListener('contextmenu', (e2) => e2.preventDefault());
+  board.addEventListener('pointerdown', (e2) => {
+    if (e2.button !== 2) return;
+    board.classList.add('is-panning');
+    const sx = e2.clientX + board.scrollLeft, sy = e2.clientY + board.scrollTop;
+    const mv = (e3) => { board.scrollLeft = sx - e3.clientX; board.scrollTop = sy - e3.clientY; };
+    const up = () => {
+      board.classList.remove('is-panning');
+      window.removeEventListener('pointermove', mv);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', mv);
+    window.addEventListener('pointerup', up);
+  });
+  board.addEventListener('wheel', (e2) => {
+    if (!e2.ctrlKey) return;
+    e2.preventDefault();
+    designerZoomBy(e2.deltaY < 0 ? 0.1 : -0.1);
+  }, { passive: false });
+}
+
+function designerZoomBy(dz) {
+  const d = S.designerData;
+  if (!d) return;
+  const z = Math.min(2.5, Math.max(0.3, (dgState.zoom[d.moduleId] || 1) + dz));
+  dgState.zoom[d.moduleId] = z;
+  const stage = q('#dg-stage');
+  if (stage) stage.style.transform = `scale(${z})`;
+  const lbl = q('#dg-zoom-label');
+  if (lbl) lbl.textContent = `${Math.round(z * 100)}%`;
+}
+
+// ── Palette actions ─────────────────────────────────────────────────────
+function designViewportCenter() {
+  const d = S.designerData;
+  const board = q('#dg-board');
+  const zoom = dgState.zoom[d.moduleId] || 1;
+  return {
+    x: board ? (board.scrollLeft + board.clientWidth / 2) / zoom : DG_W / 2,
+    y: board ? (board.scrollTop + board.clientHeight / 2) / zoom : DG_H / 2,
+  };
+}
+
+async function addDesignNode(shape) {
+  const d = S.designerData;
+  const c = designViewportCenter();
+  const jitter = () => (Math.random() - 0.5) * 60;
+  const color = DG_COLORS[(d.nodes.length) % (DG_COLORS.length - 1)];
+  const id = await api.designer.createNode(d.moduleId, shape, c.x + jitter(), c.y + jitter(), '', color, null);
+  await openModuleNode(d.moduleId);
+  openDesignNodeModal(id);
+}
+
+function startDesignEdge() {
+  const d = S.designerData;
+  dgState.edgeFrom = dgState.edgeFrom === null ? -1 : null; // -1 = armed, no source yet
+  if (dgState.edgeFrom === -1 && d.nodes.length) {
+    toast(t('narratorPickTarget'));
+    // arm on the next node click: first click = source
+    dgState.edgeFrom = null;
+    dgArmEdgePick();
+  } else {
+    renderNexusHome();
+  }
+}
+
+// First node clicked becomes the edge source (the node pointerdown handler
+// completes the pair on the second click).
+function dgArmEdgePick() {
+  const stage = q('#dg-stage');
+  if (!stage) return;
+  const once = (ev) => {
+    const el = ev.target.closest('.dg-node');
+    if (!el) { stage.removeEventListener('pointerdown', once, true); return; }
+    const d = S.designerData;
+    const idx = [...stage.querySelectorAll('.dg-node')].indexOf(el);
+    const n = d.nodes[idx];
+    if (n) {
+      dgState.edgeFrom = n.id;
+      el.classList.add('edge-from');
+    }
+    stage.removeEventListener('pointerdown', once, true);
+  };
+  stage.addEventListener('pointerdown', once, true);
+}
+
+// ── Node / edge / pin modals ────────────────────────────────────────────
+function openDesignNodeModal(id) {
+  const d = S.designerData;
+  const n = d.nodes.find(nn => nn.id === id);
+  if (!n) return;
+  openModal(t('moduleEdit'), `
+    <div class="fg"><label>${t('content')}</label><input id="dn-text" value="${x(n.node_text || '')}" ${n.linker_key ? 'disabled' : ''}></div>
+    <div class="fg"><label data-no-i18n>Shape</label>
+      <select id="dn-shape" data-no-i18n ${n.linker_key ? 'disabled' : ''}>${DG_SHAPES.map(s =>
+        `<option value="${s}" ${n.shape === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+    <div class="fg"><label data-no-i18n>Color</label>
+      <div class="vw-kindchecks">${DG_COLORS.map(c =>
+        `<span class="sk-swatch${(n.color || '') === c ? ' act' : ''}" style="background:${c}" onclick="document.querySelectorAll('#modal .sk-swatch').forEach(e=>e.classList.remove('act'));this.classList.add('act');this.dataset.sel='1'" data-color="${c}"></span>`).join('')}
+      </div></div>
+    <div class="mfoot">
+      <button class="btn btn-d" onclick="deleteDesignNodeRow(${n.id})">${t('delete')}</button>
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="submitDesignNode(${n.id})">${t('save')}</button>
+    </div>`);
+  setTimeout(() => q('#dn-text')?.focus(), 60);
+}
+
+async function submitDesignNode(id) {
+  const d = S.designerData;
+  const n = d.nodes.find(nn => nn.id === id);
+  if (!n) return;
+  const text = q('#dn-text')?.value ?? n.node_text;
+  const shape = q('#dn-shape')?.value || n.shape;
+  const colorEl = document.querySelector('#modal .sk-swatch.act');
+  const color = colorEl ? colorEl.dataset.color : n.color;
+  await api.designer.updateNode(id, shape, text, color);
+  closeModal();
+  await openModuleNode(d.moduleId);
+  toast(t('saved'), 'ok');
+}
+
+async function deleteDesignNodeRow(id) {
+  if (!await uiConfirm(t('moduleDeleteConfirm'))) return;
+  await api.designer.deleteNode(id);
+  closeModal();
+  await openModuleNode(S.designerData.moduleId);
+  toast(t('deleted'), 'ok');
+}
+
+function openDesignEdgeModal(edgeId, fromId = null, toId = null) {
+  const d = S.designerData;
+  const e2 = edgeId ? d.edges.find(ee => ee.id === edgeId) : null;
+  openModal(e2 ? t('moduleEdit') : t('edgeTool'), `
+    <div class="fg"><label>${t('edgeLabel')}</label><input id="de-label" value="${x(e2?.label || '')}"></div>
+    <div class="mfoot">
+      ${e2 ? `<button class="btn btn-d" onclick="deleteDesignEdgeRow(${e2.id})">${t('delete')}</button>` : ''}
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="submitDesignEdge(${edgeId ?? 'null'},${fromId ?? 'null'},${toId ?? 'null'})">${e2 ? t('save') : t('create')}</button>
+    </div>`);
+  setTimeout(() => q('#de-label').focus(), 60);
+}
+
+async function submitDesignEdge(edgeId, fromId, toId) {
+  const d = S.designerData;
+  const label = q('#de-label').value.trim();
+  if (edgeId) await api.designer.updateEdge(edgeId, label);
+  else if (fromId && toId) await api.designer.createEdge(d.moduleId, fromId, toId, label);
+  closeModal();
+  await openModuleNode(d.moduleId);
+  toast(edgeId ? t('saved') : t('created'), 'ok');
+}
+
+async function deleteDesignEdgeRow(id) {
+  await api.designer.deleteEdge(id);
+  closeModal();
+  await openModuleNode(S.designerData.moduleId);
+  toast(t('deleted'), 'ok');
+}
+
+async function openDesignPinModal() {
+  const d = S.designerData;
+  const ix = await api.wiki.quickIndex(S.nexus.id);
+  openModal(t('pinModuleLink'), `
+    <div class="fg"><label>${t('moduleLink')}</label>
+      <select id="dgp-key">${ix.map(e2 =>
+        `<option value="${x(e2.key)}">${x(e2.name)} (${x(e2.type)})</option>`).join('')}
+      </select></div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="submitDesignPin()">${t('create')}</button>
+    </div>`);
+}
+
+async function submitDesignPin() {
+  const d = S.designerData;
+  const key = q('#dgp-key').value;
+  if (!key) return;
+  const c = designViewportCenter();
+  await api.designer.createNode(d.moduleId, 'box', c.x, c.y + 80, '', DG_COLORS[1], key);
+  closeModal();
+  await openModuleNode(d.moduleId);
+  toast(t('created'), 'ok');
+}
+
+// ── Outline view ────────────────────────────────────────────────────────
+function buildDesignerOutlineHtml(d) {
+  const byId = new Map(d.nodes.map(n => [n.id, n]));
+  const rows = d.nodes.map(n => {
+    const out = d.edges.filter(e2 => e2.from_ref === n.id);
+    return `<div class="au-outline-sec">
+      <div class="au-outline-ch" onclick="setDesignerView('canvas')" data-no-i18n>${DG_SHAPE_GLYPH[n.shape]} ${x(dgNodeName(n))}</div>
+      ${out.map(e2 => `<div class="au-outline-h" style="padding-left:18px" data-no-i18n>→ ${x(e2.label || '·')} → ${x(dgNodeName(byId.get(e2.to_ref) || {}))}</div>`).join('')
+        || `<div class="au-outline-h ghost" data-no-i18n>—</div>`}
+    </div>`;
+  }).join('');
+  return `<div class="au-outline">${rows || `<div class="empty"><p>${t('nestEmpty')}</p></div>`}</div>`;
+}
+
+// ── Matrix view ─────────────────────────────────────────────────────────
+function buildDesignerMatrixHtml(d) {
+  if (!d.nodes.length) return `<div class="empty" style="margin-top:30px"><p>${t('nestEmpty')}</p></div>`;
+  const label = new Map();
+  for (const e2 of d.edges) label.set(`${e2.from_ref}-${e2.to_ref}`, e2.label || '·');
+  const head = `<tr><th></th>${d.nodes.map(n => `<th data-no-i18n>${x(dgNodeName(n))}</th>`).join('')}</tr>`;
+  const rows = d.nodes.map(a => `<tr><th data-no-i18n>${x(dgNodeName(a))}</th>
+    ${d.nodes.map(b => {
+      const l = a.id === b.id ? '' : label.get(`${a.id}-${b.id}`);
+      return `<td data-no-i18n class="${l ? 'dg-mx-hit' : ''}">${x(l || '')}</td>`;
+    }).join('')}</tr>`).join('');
+  return `<div style="overflow-x:auto"><table class="vw-table dg-matrix">${head}${rows}</table></div>`;
+}

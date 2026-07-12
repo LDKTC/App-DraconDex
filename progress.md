@@ -20,6 +20,19 @@ chrome and theme system — no new design system.
 
 ## Master checklist
 
+> 2026-07-11 — Phases 1–8 re-aligned to the approved mockups
+> (`docs/mockups/`): title bar carries no tabs (vault label + hub toggle
+> only), a minimal builder tab strip hosts all open tabs (name + kind badge
+> + ×; ◀/▶ history and splits remain Phase 19), module headers show the
+> kind chip + tag/🔗-link chips, the Inspector gained Tag link / UI-spec
+> view / Version-history sections, the status bar shows the
+> `Major › Minor` breadcrumb + type badge, the rail's create tool is
+> accent-styled and the four legacy fixed modules moved off the rail into a
+> hub "Legacy modules" section (until Phase 23), Chronicler defaults to
+> One-line with alternating event labels and Down-line became the vertical
+> line + event list layout, and Locator's tools float on the canvas with
+> the scale label in the zoom pill.
+
 **M1 — Foundation**
 - [x] Phase 1 — Dynamic module toolbar (nav rail)
 - [x] Phase 2 — Hub panel shell (accordion + title-bar hub toggle)
@@ -33,30 +46,30 @@ chrome and theme system — no new design system.
 **M3 — Graph kinds**
 - [x] Phase 7 — Map "Locator"
 - [x] Phase 8 — Timeline "Chronicler"
-- [ ] Phase 9 — TimeMap "Wanderer"
-- [ ] Phase 10 — Story "Narrator"
+- [x] Phase 9 — TimeMap "Wanderer"
+- [x] Phase 10 — Story "Narrator"
 
 **M4 — Content kinds**
-- [ ] Phase 11 — Book "Author"
-- [ ] Phase 12 — Chat "Scribe"
-- [ ] Phase 13 — Doc "Drafter"
-- [ ] Phase 14 — Analys "Viewer" / Relation "Connector"
+- [x] Phase 11 — Book "Author"
+- [x] Phase 12 — Chat "Scribe"
+- [x] Phase 13 — Doc "Drafter"
+- [x] Phase 14 — Analys "Viewer" / Relation "Connector"
 
 **M5 — New kinds**
-- [ ] Phase 15 — Drawing "Sketcher"
-- [ ] Phase 16 — Graph "Designer"
+- [x] Phase 15 — Drawing "Sketcher"
+- [x] Phase 16 — Graph "Designer"
 
 **M6 — Hub utilities**
-- [ ] Phase 17 — Sage Hut section
-- [ ] Phase 18 — Import Dock section (file↔linker · viewers)
+- [x] Phase 17 — Sage Hut section
+- [x] Phase 18 — Import Dock section (file↔linker · viewers)
 
 **M7 — Shell & system**
-- [ ] Phase 19 — Builder shell (tabs · ◀▶ history · split 2/4)
-- [ ] Phase 20 — Search Link overlay
-- [ ] Phase 21 — Version control
-- [ ] Phase 22 — Settings expansion (module names · font size · custom themes)
-- [ ] Phase 23 — Artisan template migration
-- [ ] Phase 24 — Legacy data migration
+- [x] Phase 19 — Builder shell (tabs · ◀▶ history · split 2/4)
+- [x] Phase 20 — Search Link overlay
+- [x] Phase 21 — Version control
+- [x] Phase 22 — Settings expansion (module names · font size · custom themes)
+- [x] Phase 23 — Artisan template migration
+- [x] Phase 24 — Legacy data migration
 
 ---
 
@@ -140,225 +153,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
 
-### Phase 9 — TimeMap "Wanderer"
-- **Goal:** Map + Timeline dual graph. A **MapEvent** references one existing
-  Locator and one Chronicler, places a Link item on the map, and chooses
-  which Event sets its displayed time.
-- **Panel:** builder split view (map pane above/beside timeline pane).
-- **Reference:** VS Code split editor (two synced panes).
-- **Reuses:** Phase 7 + 8 renderers composed.
-- **New:** the sync/link layer (`map_event` table).
-- **Files:** `src/renderer/mod/wanderer.js`, `src/db/module.js`.
-- **Depends:** 7, 8. **Views (2–3):** Dual · Map only · Timeline only.
-- **Acceptance:** place a Link on the map bound to an event → selecting the
-  event highlights it on the timeline and shows its time on the map pin.
-
-### Phase 10 — Story "Narrator"
-- **Goal:** story-route board; **Dialogue** nodes hold stored Conversation
-  content and connect into branching routes (node-and-edge board).
-- **Panel:** builder full board. **Reference:** Obsidian Canvas + graph engine.
-- **Reuses:** `relation.js` engine; `game_story`/`game_dialogue`/
-  `game_conversation` structures generalized.
-- **New:** Dialogue node type with embedded conversation editor.
-- **Files:** `src/renderer/mod/narrator.js`, `src/db/module.js`.
-- **Depends:** 4, E. **Views (2–3):** Board · Route list · Conversation reader.
-- **Acceptance:** build a 2-branch route; each node stores/edits conversation
-  text; drag nodes to arrange; edges have arrowheads.
-
-### Phase 11 — Book "Author"
-- **Goal:** long-form novel storage; **Chapter** splits content into
-  sections. Chapter list column + document editor.
-- **Panel:** builder document view with chapter list.
-- **Reference:** Obsidian long-form editing + VS Code outline.
-- **Reuses:** `markdown.js`/`mdeditor.js` directly; Writer's Book→Chapter
-  model (`src/db/writer.js`) carried over.
-- **New:** none structurally — reframed as a module kind.
-- **Files:** `src/renderer/mod/author.js`, `src/db/writer.js`.
-- **Depends:** 4, E. **Views (2–3):** Editor · Outline · Reading.
-- **Acceptance:** add chapters, write with wikilinks, word count in status bar.
-
-### Phase 12 — Chat "Scribe"
-- **Goal:** chat-style note page; one session (note) records messages as
-  bubbles with timestamps.
-- **Panel:** builder. **Reference:** chat UI.
-- **Reuses:** `.li` session list, `toast()`; `write_note`/`write_chat`
-  pattern generalized.
-- **New:** bubble renderer (no precedent in codebase).
-- **Files:** `src/renderer/mod/chatscribe.js`, `src/db/module.js`.
-- **Depends:** 4, E; naming decision C1. **Views (2):** Chat · Transcript.
-- **Acceptance:** send messages → bubbles with time; sessions listed; search
-  finds message text via Search Link.
-
-### Phase 13 — Doc "Drafter"
-- **Goal:** blank `.md`-like page for general notes.
-- **Panel:** builder. **Reference:** Obsidian blank note.
-- **Reuses:** `markdown.js`/`mdeditor.js` — functionally the *existing*
-  Scribe module under the new name (see C1).
-- **Files:** `src/renderer/mod/drafter.js` (thin wrapper), `src/db/scribe.js`.
-- **Depends:** 4; C1. **Views (2):** Edit · Read (Ctrl+E toggle).
-- **Acceptance:** markdown + [[wikilinks]] render; backlinks update.
-
-### Phase 14 — Analys "Viewer" / Relation "Connector"
-- **Goal:** two read-only kinds bound to a **saved filter**: Viewer shows the
-  filtered list; Connector shows its relation graph. Filters update live
-  when source data changes.
-- **Panel:** builder. **Reference:** VS Code search results / scoped graph.
-- **Reuses:** `search.js` filtering, `relation.js` engine.
-- **New:** persistent saved-filter modules (`saved_filter` def JSON).
-- **Files:** `src/renderer/mod/viewer.js`, `src/renderer/mod/connector.js`,
-  `src/db/module.js`.
-- **Depends:** 4, E. **Views — Viewer (3):** Table · Cards · Board (grouped
-  by source module; switchable to tag/kind). **Connector (2):** Graph · Edge list.
-- **Acceptance:** edit an object matched by the filter → Viewer updates on
-  next open; Board groups match source modules; Connector renders labeled edges.
-
-### Phase 15 — Drawing "Sketcher"  *(new kind)*
-- **Goal:** freehand canvas: **pen + eraser** (color/stroke-width picker),
-  handwriting notes, multiple pages, pan/zoom, **module links pinnable as
-  nodes** on the canvas (drag from Search Link), and **export to PNG**.
-- **Panel:** builder full canvas.
-- **Reuses:** canvas pan/zoom chrome (7/8), Search Link (20) for pinning.
-- **New:** stroke capture/render; PNG export via `toDataURL`/`nativeImage`.
-- **Files:** `src/renderer/mod/sketcher.js`, `src/db/module.js`
-  (`sketch_page`/`sketch_stroke`), `main.js` (export dialog).
-- **Depends:** 4, E. **Views (Major-level, 4):** Canvas · Pages · Gallery ·
-  Export preview.
-- **Acceptance:** draw, erase (strokes only), page 2 of 3, pin `[[อาริน]]`
-  node, export produces a PNG file.
-
-### Phase 16 — Graph "Designer"  *(new kind)*
-- **Goal:** free-form diagram builder: shape palette (box/circle/diamond/
-  text), labeled edges with arrowheads, drag-to-arrange, double-click text
-  edit, module links pinnable as diagram nodes.
-- **Panel:** builder full canvas.
-- **Reuses:** canvas chrome; edge rendering patterns from `relation.js`.
-- **New:** `design_node`(shape, x, y, text, color, linker_key) +
-  `design_edge`(from, to, label).
-- **Files:** `src/renderer/mod/designer.js`, `src/db/module.js`.
-- **Depends:** 4, E. **Views (Major-level, 4):** Canvas · Outline · Matrix ·
-  (optional) Presentation.
-- **Acceptance:** build a 5-node flowchart with labeled edges incl. a
-  diamond condition; pin a module link node; layout persists.
-
-### Phase 17 — Sage Hut section
-- **Goal:** global analytics across the vault, as a hub accordion section
-  expanding into its 4 existing views; opening one renders analytics in the
-  builder (summary tiles + per-module bars).
-- **Reference:** VS Code Output/Problems panel.
-- **Reuses:** `sage.js` tabs/rendering wholesale.
-- **New:** entry point relocated from nav rail into the hub accordion.
-- **Files:** `src/renderer/hub.js`, `src/renderer/sage.js`.
-- **Depends:** 2. **Views (4):** Data size · Object amount · Linker list ·
-  Linker graph.
-- **Acceptance:** the four rows open in the builder as tabs; counts match DB.
-
-### Phase 18 — Import Dock section
-- **Goal:** import from a folder; imported files list in the hub section.
-  **Image files link to a linker (nest item) and can be set as that item's
-  display image** (shown on cards / List+Detail / Grid). **Image and
-  document files open in the builder** as read-only viewer tabs (image
-  viewer with zoom; document reader for .md/.docx — editing an imported doc
-  converts it into a Drafter). UI copy: the action is labeled plainly
-  "นำเข้าโฟลเดอร์".
-- **Reuses:** `#btn-import-db` flow as starting point, `toast()`/`uiConfirm()`.
-- **New:** `import_file` table incl. `linker_key` + `use_as_image`;
-  file-viewer tabs.
-- **Files:** `src/renderer/hub.js`, `src/renderer/mod/fileviewer.js`,
-  `src/db/module.js`, `main.js` (fs access).
-- **Depends:** 2, 19. **Acceptance:** import a folder; link an image to a
-  Character → its card shows the image; open .png/.md in builder tabs.
-
-### Phase 19 — Builder shell
-- **Goal:** the builder's chrome: tab strip (relocated from the title bar,
-  per-pane), **◀/▶ navigation history** (browser-style stack, per pane),
-  and **split 2 (1×2) / split 4 (2×2)** layouts where each pane holds its
-  own tabs.
-- **Reference:** VS Code editor groups.
-- **Reuses:** existing tab state (`S.projectTabs`/`S.entityTabs` merged into
-  one builder-tab model), Ctrl+W / Ctrl+Tab shortcuts.
-- **New:** pane manager; history stack; split commands.
-- **Files:** new `src/renderer/builder.js`, `src/renderer/core.js`
-  (`renderProjectTabs` removed from title bar), `index.html`, `style.css`.
-- **Depends:** 2. **Acceptance:** open 3 modules → tabs in builder; back
-  button returns to previous page; split 4 shows four independent panes.
-
-### Phase 20 — Search Link overlay
-- **Goal:** extend Ctrl+P into an overlay popup searching **everything**
-  (modules, objects, events, dialogues, notes, chapters, tags) with
-  **scope filters** — whole vault / same folder + same level only / current
-  subtree (lower levels) — plus a kind filter. Enter opens in the builder;
-  Ctrl+Enter inserts the result as `[[link]]`; results show path breadcrumb
-  + kind badge + link count.
-- **Reuses:** `quickswitch.js`, `wiki.quickIndex`, `searchAll()`.
-- **New:** scope filtering against the module tree; insert-as-link action.
-- **Files:** `src/renderer/quickswitch.js`, `src/db/wiki.js`, `src/db/module.js`.
-- **Depends:** 3, E. **Acceptance:** query with scope "same folder/level"
-  excludes deeper items; Ctrl+Enter inserts a working wikilink at the caret.
-
-### Phase 21 — Version control
-- **Goal:** record every edit per module (attribute edits, object
-  add/delete, template changes, notes, tags) into a **Version History**
-  panel with **Restore** (restore creates a new version — never overwrites).
-  Retention defaults to **50 versions/module**, user-adjustable in Settings;
-  oldest pruned beyond the limit.
-- **Reuses:** Inspector dock chrome (Phase 4).
-- **New:** `module_version`(module_ref, seq, action, payload JSON,
-  create_at); write hooks in `src/db/module.js` mutations.
-- **Files:** `src/renderer/versions.js`, `src/db/module.js`, `preload.js`,
-  `main.js`.
-- **Depends:** 4, E. **Acceptance:** edit an attribute → v(n+1) appears with
-  a diff summary; Restore of v(n-2) creates v(n+2) with old values; the 51st
-  version prunes the 1st.
-
-### Phase 22 — Settings expansion
-- **Goal:** four additions to the settings menu:
-  1. **Module names: Classic ↔ Unique** — swaps displayed type names between
-     Folder/Project/Detail/Category/Map/Timeline/TimeMap/Story/Book/Chat/
-     Doc/Analys/Relation/Drawing/Graph and Collector/Manager/Inspector/
-     Classifier/Locator/Chronicler/Wanderer/Narrator/Author/Scribe/Drafter/
-     Viewer/Connector/Sketcher/Designer.
-  2. **Font size** slider — scales text only (`--font-scale` on root; icons
-     and layout untouched), alongside the existing whole-UI size slider.
-  3. **Custom themes** — editor ("+ สร้างธีมเอง"): pick all 10 palette tokens
-     with live preview, name it, save; appears in the theme list; edit /
-     delete / import palette. Rainbow's special `style.css` rules must keep
-     applying to all new v3 chrome.
-  4. **Version limit** number input (Phase 21).
-- **Reuses:** `renderSettingsMenu()`, `setUiSetting()`, `getThemePalettes()`,
-  `UI_THEME_OPTIONS`.
-- **New:** `custom_theme` storage (settings JSON or table) applied as inline
-  CSS vars; both name sets in all 18 locales.
-- **Files:** `src/renderer/core.js`, `src/renderer/i18n.js`, `style.css`,
-  `src/db/module.js`.
-- **Depends:** —. **Acceptance:** toggling name mode relabels nest badges,
-  tabs, Inspector and status bar instantly; font slider changes text only;
-  a saved custom theme survives restart and renders the shell correctly.
-
-### Phase 23 — Artisan template migration
-- **Goal:** Director (novel), Navigator (world), Hero (game), Writer (write)
-  stop being fixed top-level modules and become **built-in templates** in
-  Artisan, carrying their schemas/default attributes from
-  `src/db/director.js` / `navigator.js` / `hero.js` / `writer.js`. Creating
-  a Major module via Classifier (Phase 5) can start from one, pre-filled.
-- **Reuses:** all four modules' DB schema + `src/db/artisan.js` create-from-
-  template transactions — no data model thrown away, only entry points change.
-- **New:** template registration so the four appear beside user-authored
-  templates; Classifier hookup instantiating Major/Minor sets from a template.
-- **Files:** `src/renderer/artisan.js`, `src/db/artisan.js`,
-  `src/renderer/mod/classifier.js`.
-- **Depends:** 5. **Acceptance:** new Major from "Navigator" template gets
-  the world-style categories/attributes; old fixed nav-rail buttons gone.
-
-### Phase 24 — Legacy data migration
-- **Goal:** map existing rows (project / world_project / game_project /
-  write_project trees) onto Major/Minor instances created from their Artisan
-  templates. Migration runs **lazily at template-instantiation time**;
-  legacy modules stay readable until the user migrates/removes them.
-- **Files:** new `src/db/migrate_v3.js`, `main.js`.
-- **Depends:** 23. **Acceptance:** a legacy Navigator world converts into a
-  Manager Major with its categories as Classifiers, maps as Locators,
-  timelines as Chroniclers; original rows preserved until confirmed.
-
 ---
 
 ## Section C — Decisions (resolved)
@@ -367,14 +161,20 @@ user-visible string goes through `t('key')` in **all 18 locales**
    markdown-notes Scribe module is functionally Doc "Drafter" and takes that
    name; the *new* chat-bubble kind takes "Scribe", exactly as Plan.md
    assigns. The Classic↔Unique name mode (Phase 22) further reduces
-   ambiguity. **Revisit gate:** confirm with user before starting Phase 12/13.
+   ambiguity. **Gate passed:** user approved the M4-M6 plan carrying this
+   naming; Phases 12/13 are built on it.
 2. **Director/Navigator/Hero/Writer** do not remain fixed modules — they
    migrate into Artisan as templates (Phase 23). *(User-confirmed.)*
 3. **Scribe (chat) and Sage** stay **pinned** app-level tools on the rail /
    hub — not instantiable kinds. *(Working decision, drafted in Phases
    12/17.)*
 4. **Data migration** is in scope as Phase 24 (lazy, non-destructive).
-5. All mockup-iteration decisions (icons in tree rows, notation-only
+5. **Deferred from M4–M6** (picked up by Phases 19/20): editing an
+   imported doc (docx) converting it into a Drafter waits for Phase 19's
+   builder viewer tabs — the file viewer says so in its hint line; and
+   Sketcher/Designer pin-from-Search-Link *(done in Phase 20: the overlay's
+   📌 action / Alt+Enter pins the result onto the open canvas)*.
+6. All mockup-iteration decisions (icons in tree rows, notation-only
    symbols, unique names + name mode, tag links, multi-node areas, true
    time scale, pan/zoom, module links, multi-view counts, open/move rules,
    free-form attributes, Search Link scopes, nav history, version control,
@@ -456,7 +256,10 @@ user-visible string goes through `t('key')` in **all 18 locales**
    names, not a real relationship graph — Classifier objects have no
    relation-type system of their own yet (Director's `relation`/
    `relation_obob` tables are project-scoped, not usable here), and building
-   one was out of scope for this phase; revisit alongside Phase 14
+   one was out of scope for this phase. *(Resolved in Phase 14: classifier
+   objects joined the wiki index as the `cobj` key kind, and the new
+   `entity_relation` table + Relation "Connector" carry labeled key->key
+   relations between any vault entities.)*
    (Connector) or a future phase if per-category relationships are wanted.
    `classifier_attribute` values are edited inline (contenteditable table
    cells / detail-panel fields) with no version history yet — same

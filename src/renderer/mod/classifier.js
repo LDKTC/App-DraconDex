@@ -41,6 +41,7 @@ async function loadClassifierData(m) {
 async function setClassifierView(moduleId, view) {
   S.classifierView = view;
   await api.module.setUi(moduleId, 'activeView', view);
+  if (S.inspectorData?.moduleId === moduleId) S.inspectorData.ui = { ...S.inspectorData.ui, activeView: view };
   renderNexusHome();
 }
 
@@ -92,18 +93,26 @@ async function saveClassifierAttrCell(el) {
 
 // ── Grid Collection view ────────────────────────────────────────────────
 function renderClassifierGrid(m, d) {
-  return `<div class="cls-grid">${d.objects.map(o => `
-    <div class="cls-card" onclick="openClassifierObjectModal(${m.id},${o.id})">
-      <div class="cls-card-dot" style="background:${x(o.color_code || '#6366f1')}"></div>
+  // Mockup 21: card with a color top border and a circled, tinted object
+  // icon; character-type classifiers use the person glyph.
+  const icon = m.cat_type === 'character' ? I.person : I.item;
+  return `<div class="cls-grid">${d.objects.map(o => {
+    const col = o.color_code || '#6366f1';
+    return `
+    <div class="cls-card" style="border-top:3px solid ${x(col)}" onclick="openClassifierObjectModal(${m.id},${o.id})">
+      <span class="disp-thumb"><img data-display-key="cobj_${o.id}" alt=""></span>
+      <span class="cls-card-icon" style="border-color:${x(col)};color:${x(col)}">${icon}</span>
       <div class="cls-card-name">${x(o.name)}</div>
-    </div>`).join('')}</div>`;
+    </div>`;
+  }).join('')}</div>`;
 }
 
 // ── List + Detail view ──────────────────────────────────────────────────
 function renderClassifierListDetail(m, d) {
   const sel = d.objects.find(o => o.id === S.classifierSelectedObject) || d.objects[0];
+  const rowIcon = m.cat_type === 'character' ? I.person : I.item;
   const list = d.objects.map(o => `<div class="li${sel && o.id === sel.id ? ' sel' : ''}" onclick="selectClassifierObject(${o.id})">
-    <span class="dot" style="background:${x(o.color_code || '#6366f1')}"></span><span class="name">${x(o.name)}</span></div>`).join('');
+    <span class="kicon" style="color:${x(o.color_code || '#6366f1')}">${rowIcon}</span><span class="name">${x(o.name)}</span></div>`).join('');
   const detail = sel ? renderClassifierObjectDetail(m, sel) : '';
   return `<div class="cls-listdetail"><div class="cls-list">${list}</div><div class="cls-detail">${detail}</div></div>`;
 }

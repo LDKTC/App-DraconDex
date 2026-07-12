@@ -16,6 +16,16 @@ const sage      = require('./src/db/sage');
 const artisan   = require('./src/db/artisan');
 const module_   = require('./src/db/module');
 const classifier = require('./src/db/classifier');
+const wanderer  = require('./src/db/wanderer');
+const narrator  = require('./src/db/narrator');
+const author    = require('./src/db/author');
+const chatscribe = require('./src/db/chatscribe');
+const viewer    = require('./src/db/viewer');
+const sketcher  = require('./src/db/sketcher');
+const designer  = require('./src/db/designer');
+const importdock = require('./src/db/importdock');
+const versions  = require('./src/db/versions');
+const migrate   = require('./src/db/migrate_v3');
 
 module.exports = {
   ...core,
@@ -35,4 +45,14 @@ module.exports = {
   ...artisan,
   ...module_,
   ...classifier,
+  ...wanderer,
+  ...narrator,
+  ...author,
+  ...chatscribe,
+  ...viewer,
+  ...sketcher,
+  ...designer,
+  ...importdock,
+  ...versions,
+  ...migrate,
 };

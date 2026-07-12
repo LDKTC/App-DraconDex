@@ -48,7 +48,13 @@ function findModuleNode(id) {
 async function reloadModuleTree() {
   S.moduleTree = S.nexus ? await api.module.getTree(S.nexus.id) : [];
   S.activeModuleNode = S.activeModuleNode ? findModuleNode(S.activeModuleNode.id) : null;
+  // prune builder tabs pointing at deleted modules
+  for (const pane of (S.builder?.panes || [])) {
+    pane.tabs = pane.tabs.filter(k => !k.startsWith('module:') || !!findModuleNode(Number(k.slice(7))));
+    if (pane.active && !pane.tabs.includes(pane.active)) pane.active = pane.tabs[0] || null;
+  }
   renderModuleRail();
+  renderProjectTabs();
   if (S.view === 'nexus' && !S.activeModule) renderNexusHome();
 }
 
@@ -60,15 +66,26 @@ function renderModuleRail() {
   if (!S.nexus) return;
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
-  let html = `<button class="nav-btn module-rail-tool" title="${t('createMajorModule')}" onclick="openMajorModuleModal()">${I.plus}</button>`;
+  let html = `<button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="openMajorModuleModal()">${I.plus}</button>`;
   if (S.moduleTree.length) html += `<div class="rail-sep module-rail-tool"></div>`;
   for (const m of S.moduleTree) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
-    html += `<button class="nav-btn module-rail-item${active}" title="${x(m.name)}" onclick="openModuleNode(${m.id})">
+    const col = m.icon_color_code || m.color_code || '#6366f1';
+    html += `<button class="nav-btn module-rail-item${active}" style="color:${x(col)}" title="${x(m.name)}" onclick="openModuleNode(${m.id})">
       ${moduleIconHtml(m)}<span class="mdot" style="background:${x(m.color_code || '#6366f1')}"></span>
     </button>`;
   }
+  // Pinned Import Dock tool (mockup 01's pinned cluster) — jumps to the hub
+  // section; the section's real content is Phase 18.
+  html += `<div class="rail-sep module-rail-tool"></div>
+    <button class="nav-btn module-rail-tool" title="${t('importDock')}" onclick="openImportDockSection()">${I.import}</button>`;
   anchor.insertAdjacentHTML('afterend', html);
+}
+
+function openImportDockSection() {
+  setLeftPanelCollapsed(false);
+  if (!S.hubOpen.dock) { S.hubOpen.dock = true; localStorage.setItem(HUB_OPEN_KEY, JSON.stringify(S.hubOpen)); }
+  renderNexusHome();
 }
 
 // ═══ HUB PANEL — accordion shell (Phase 2) + Nexus nest tree (Phase 3) ═
@@ -84,12 +101,37 @@ function toggleMajorExpand(id) {
 }
 
 function buildHubHtml() {
+  // Director/Navigator/Hero/Writer migrated into Artisan (Phase 23): the
+  // hub carries no legacy section anymore — the four legacy views stay
+  // reachable from Artisan's sidebar until their data is migrated
+  // (Phase 24).
   return `<div id="hub-body">
     ${buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
       `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal()" title="${t('createMajorModule')}">${I.plus}</button>`)}
-    ${buildAccSection('sage', t('sageHut'), `<div class="li" onclick="selectModule('sage')">${I.sage}<span class="name">${t('sage')}</span></div>`)}
-    ${buildAccSection('dock', t('importDock'), `<div class="empty" style="padding:24px 10px"><p>${t('importDockComingSoon')}</p></div>`)}
+    ${buildAccSection('sage', t('sageHut'), buildSageHutRows())}
+    ${buildAccSection('dock', t('importDock'),
+      typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
+      `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`)}
   </div>`;
+}
+
+// ═══ SAGE HUT SECTION (Phase 17) ═══════════════════════════════════════
+// Four analytics rows (mockup 25); each opens the Sage Hut page in the
+// builder with that view active (openSageTab lives in mod/sagehut.js).
+// Count badges appear once the stats have been loaded this session.
+function buildSageHutRows() {
+  const st = S.sageHut?.stats;
+  const rows = [
+    ['dataSize', t('sageDataSize'), I.sage, st ? fmtBytes(st.bytes) : ''],
+    ['objectAmount', t('sageObjectAmount'), I.layer, st ? String(st.objects) : ''],
+    ['linkerList', t('sageLinkerList'), I.list, st ? String(st.links) : ''],
+    ['linkerGraph', t('sageLinkerGraph'), I.relation, ''],
+  ];
+  return rows.map(([tab, label, icon, badge]) => `
+    <div class="li${!S.activeModuleNode && S.sageHut?.tab === tab ? ' sel' : ''}" onclick="openSageTab('${tab}')">
+      <span class="kicon">${icon}</span><span class="name">${x(label)}</span>
+      ${badge ? `<span class="cnt" data-no-i18n>${x(badge)}</span>` : ''}
+    </div>`).join('');
 }
 
 function buildAccSection(key, label, bodyHtml, actHtml = '') {
@@ -129,7 +171,7 @@ function buildNestRow(m, depth) {
     ${grip}${chev}
     <span class="kicon" style="color:${x(col)}">${moduleIconHtml(m)}</span>
     <span class="name">${x(m.name)}</span>
-    <span class="kind">${x(KIND_LABEL[m.kind] || m.kind)}</span>
+    <span class="kind">${x(kindLabel(m.kind))}</span>
     <span class="acts">
       ${depth === 0 ? `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id})" title="${t('addMinorModule')}">${I.plus}</button>` : ''}
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openModuleEditModal(${m.id})" title="${t('moduleEdit')}">${I.edit}</button>
@@ -209,14 +251,19 @@ function toggleClassifierFieldsVisibility() {
 }
 
 async function moduleFormModal(existing, parentId) {
-  const kindOptions = MODULE_KINDS.map(k => `<option value="${k}" ${existing?.kind === k ? 'selected' : ''}>${KIND_LABEL[k]}</option>`).join('');
+  const kindOptions = MODULE_KINDS.map(k => `<option value="${k}" ${existing?.kind === k ? 'selected' : ''}>${kindLabel(k)}</option>`).join('');
   const title = existing ? t('moduleEdit') : (parentId ? t('minorModuleNew') : t('majorModuleNew'));
   const startKind = existing?.kind || 'manager';
   openModal(title, `
     <div class="fg"><label>${t('name')} *</label><input id="mm-name" value="${x(existing?.name || '')}"></div>
+    ${!existing && !parentId ? `<div class="fg"><label>${t('artStartTemplate')}</label>
+      <select id="mm-template">
+        <option value="">${t('artNoTemplate')}</option>
+        ${['director','navigator','hero','writer'].map(tg => `<option value="${tg}">${t(tg)} — ${t('artV3Card')}</option>`).join('')}
+      </select></div>` : ''}
     <div class="fg"><label>${t('moduleKind')}</label><select id="mm-kind" ${existing ? 'disabled' : ''} onchange="toggleClassifierFieldsVisibility()">${kindOptions}</select></div>
     <div id="mm-cattype-wrap" style="display:${startKind === 'classifier' ? '' : 'none'}">${buildCatTypePicker(existing?.cat_type)}</div>
-    <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing?.icon || null, existing?.color || null, existing?.name || '', existing ? (KIND_LABEL[existing.kind] || existing.kind) : '')}</div>
+    <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing?.icon || null, existing?.color || null, existing?.name || '', existing ? (kindLabel(existing.kind)) : '')}</div>
     <div class="mfoot">
       ${existing ? `<button class="btn btn-d" onclick="deleteModuleNode(${existing.id})">${t('delete')}</button>` : ''}
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
@@ -228,6 +275,18 @@ async function moduleFormModal(existing, parentId) {
 async function submitModuleForm(existingId, parentId) {
   const name = q('#mm-name').value.trim();
   if (!name) return;
+  // "เริ่มจาก template" (Phase 23): scaffold the whole Major/Minor set
+  // through Artisan's v3 structure builder instead of one bare module.
+  const tplTarget = q('#mm-template')?.value;
+  if (!existingId && !parentId && tplTarget) {
+    if (typeof artisanV3Spec !== 'function') await loadModule('src/renderer/artisan.js');
+    const res = await api.artisan.createV3(S.nexus.id, artisanV3Spec(tplTarget, name, q('#sel-color').value || null));
+    closeModal();
+    await reloadModuleTree();
+    toast(t('artisanCreated'), 'ok');
+    if (res?.id) openModuleNode(res.id);
+    return;
+  }
   const kind = q('#mm-kind').value;
   const colorId = q('#sel-color').value || null;
   const icon = getIconPickerValue() || null;
@@ -262,6 +321,8 @@ async function openModuleNode(id) {
   if (!m) return;
   if (m.kind === 'collector') { if (m.parent_id == null) toggleMajorExpand(id); return; }
   S.activeModuleNode = m;
+  upsertModuleTab(id);
+  updateStatusBar({ item: null, words: null, saveState: null });
   renderModuleRail();
   renderNexusHome();
   const loaders = [loadInspectorData(id)];
@@ -269,6 +330,14 @@ async function openModuleNode(id) {
   if (m.kind === 'manager' && typeof loadManagerData === 'function') loaders.push(loadManagerData(m));
   if (m.kind === 'locator' && typeof loadLocatorData === 'function') loaders.push(loadLocatorData(m));
   if (m.kind === 'chronicler' && typeof loadChroniclerData === 'function') loaders.push(loadChroniclerData(m));
+  if (m.kind === 'wanderer' && typeof loadWandererData === 'function') loaders.push(loadWandererData(m));
+  if (m.kind === 'narrator' && typeof loadNarratorData === 'function') loaders.push(loadNarratorData(m));
+  if (m.kind === 'author' && typeof loadAuthorData === 'function') loaders.push(loadAuthorData(m));
+  if (m.kind === 'scribe' && typeof loadChatScribeData === 'function') loaders.push(loadChatScribeData(m));
+  if (m.kind === 'viewer' && typeof loadViewerData === 'function') loaders.push(loadViewerData(m));
+  if (m.kind === 'connector' && typeof loadConnectorData === 'function') loaders.push(loadConnectorData(m));
+  if (m.kind === 'sketcher' && typeof loadSketcherData === 'function') loaders.push(loadSketcherData(m));
+  if (m.kind === 'designer' && typeof loadDesignerData === 'function') loaders.push(loadDesignerData(m));
   await Promise.all(loaders);
   if (S.activeModuleNode?.id === id) renderNexusHome();
 }
@@ -281,6 +350,15 @@ const KIND_MAIN_BUILDER = {
   inspector: () => typeof buildDetailMainHtml === 'function' && buildDetailMainHtml,
   locator: () => typeof buildLocatorMainHtml === 'function' && buildLocatorMainHtml,
   chronicler: () => typeof buildChroniclerMainHtml === 'function' && buildChroniclerMainHtml,
+  wanderer: () => typeof buildWandererMainHtml === 'function' && buildWandererMainHtml,
+  narrator: () => typeof buildNarratorMainHtml === 'function' && buildNarratorMainHtml,
+  author: () => typeof buildAuthorMainHtml === 'function' && buildAuthorMainHtml,
+  scribe: () => typeof buildChatScribeMainHtml === 'function' && buildChatScribeMainHtml,
+  drafter: () => typeof buildDrafterMainHtml === 'function' && buildDrafterMainHtml,
+  viewer: () => typeof buildViewerMainHtml === 'function' && buildViewerMainHtml,
+  connector: () => typeof buildConnectorMainHtml === 'function' && buildConnectorMainHtml,
+  sketcher: () => typeof buildSketcherMainHtml === 'function' && buildSketcherMainHtml,
+  designer: () => typeof buildDesignerMainHtml === 'function' && buildDesignerMainHtml,
 };
 
 function buildModuleDetailHtml(m) {
@@ -289,12 +367,21 @@ function buildModuleDetailHtml(m) {
   const mainHtml = builder ? builder(m) : `<div class="empty" style="margin-top:40px">
         <div class="ei" style="color:${x(col)}">${moduleIconHtml(m)}</div>
         <h3>${x(m.name)}</h3>
-        <p>${x(KIND_LABEL[m.kind] || m.kind)}</p>
+        <p>${x(kindLabel(m.kind))}</p>
       </div>`;
+  // Header per the approved mockups: name + kind chip, then a chips row of
+  // tag links and the 🔗 link-count chip (A.3 #1-2). Chip data comes from
+  // the inspector load that openModuleNode already awaited.
+  const d = (S.inspectorData && S.inspectorData.moduleId === m.id) ? S.inspectorData : null;
+  const tagChips = (d?.tags || []).map(tg =>
+    `<span class="htag" style="border-color:${x(tg.color_code || '#6366f1')};color:${x(tg.color_code || '#6366f1')}">#${x(tg.tag_name)}</span>`).join('');
+  const linkCount = d ? (d.links.outgoing.length + d.links.backlinks.length) : 0;
+  const linkChip = `<span class="htag lk" data-no-i18n title="${t('moduleLink')}">🔗 ${linkCount} links</span>`;
   return `<div class="module-builder">
     <div class="module-main">
-      <div class="detail-head" style="border-left:4px solid ${x(col)};padding-left:12px">
-        <h2 style="margin:0;font-size:1.1em">${x(m.name)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${x(KIND_LABEL[m.kind] || m.kind)}</span></h2>
+      <div class="detail-head module-head" style="border-left:4px solid ${x(col)};padding-left:12px">
+        <h2 style="margin:0;font-size:1.15em">${x(m.name)} <span class="kind-chip" data-no-i18n>${x(kindLabel(m.kind))}${m.kind === 'classifier' && m.cat_type ? ` · ${m.cat_type.charAt(0).toUpperCase()}${m.cat_type.slice(1)}` : ''}</span></h2>
+        <div class="mtags">${tagChips}${linkChip}<button class="btn btn-g btn-i" onclick="openModuleTagModal(${m.id})" title="${t('tagLink')}">${I.plus}</button></div>
       </div>
       ${mainHtml}
     </div>

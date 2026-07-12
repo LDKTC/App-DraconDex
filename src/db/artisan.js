@@ -77,6 +77,40 @@ const artisanCreateWrite = (base, spec) => {
   return tx();
 };
 
+// ═══ v3 structure templates (Phase 23) ═════════════════════════════════
+// The four legacy fixed modules live on as built-in Artisan templates:
+// one transaction creates a Manager Major + the target's pre-filled
+// Minors (classifier templates / author chapters / drafter seed). The
+// spec comes localized from the renderer — scaffolded rows are user data.
+function createV3Structure(nexusId, spec) {
+  const d = require('./core').getDB();
+  const module_ = require('./module');
+  const classifier = require('./classifier');
+  const author = require('./author');
+  const tx = d.transaction(() => {
+    const majorId = module_.createModule({
+      nexus_ref: nexusId, parent_id: null, name: spec.name, kind: 'manager',
+      color: spec.colorId || null, icon_color: spec.colorId || null,
+    });
+    for (const mn of spec.minors || []) {
+      const mid = module_.createModule({
+        nexus_ref: nexusId, parent_id: majorId, name: mn.name, kind: mn.kind,
+        cat_type: mn.kind === 'classifier' ? (mn.catType || 'object') : null,
+      });
+      if (mn.kind === 'classifier') {
+        for (const tf of (mn.templates || [])) {
+          classifier.createTemplate(mid, tf.name, tf.type || 'text', !!tf.levelable, false, null);
+        }
+      }
+      if (mn.kind === 'author') for (const ch of (mn.chapters || [])) author.createBookChapter(mid, ch);
+      if (mn.kind === 'drafter' && mn.content) module_.updateModuleDescription(mid, mn.content);
+    }
+    return majorId;
+  });
+  return { id: tx() };
+}
+
 module.exports = {
   artisanCreateNovel, artisanCreateWorld, artisanCreateGame, artisanCreateWrite,
+  createV3Structure,
 };

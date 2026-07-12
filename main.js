@@ -157,6 +157,147 @@ h('classifier:countObjectTemplates', (oref)             => db.countObjectTemplat
 h('classifier:getAttrs',          (oid)                 => db.getAttrs(oid));
 h('classifier:upsertAttr',        (oid,tid,v)           => db.upsertAttr(oid,tid,v));
 
+// TimeMap "Wanderer" (v3 Phase 9) — MapEvent Link pins
+h('wanderer:list',   (mref)                 => db.getMapEvents(mref));
+h('wanderer:create', (mref,ev,lb,px,py,ar)  => db.createMapEvent(mref,ev,lb,px,py,ar));
+h('wanderer:update', (id,ev,lb,px,py)       => db.updateMapEvent(id,ev,lb,px,py));
+h('wanderer:delete', (id)                   => db.deleteMapEvent(id));
+
+// Story "Narrator" (v3 Phase 10) — Dialogue route board
+h('narrator:getDialogues',   (mref)             => db.getDialogues(mref));
+h('narrator:createDialogue', (mref,n,c,px,py)   => db.createDialogue(mref,n,c,px,py));
+h('narrator:updateDialogue', (id,n,c)           => db.updateDialogue(id,n,c));
+h('narrator:updateDialoguePos', (id,px,py)      => db.updateDialoguePos(id,px,py));
+h('narrator:deleteDialogue', (id)               => db.deleteDialogue(id));
+h('narrator:getEdges',       (mref)             => db.getEdges(mref));
+h('narrator:createEdge',     (mref,f,to,lb)     => db.createEdge(mref,f,to,lb));
+h('narrator:updateEdgeLabel',(id,lb)            => db.updateEdgeLabel(id,lb));
+h('narrator:deleteEdge',     (id)               => db.deleteEdge(id));
+h('narrator:getTalks',       (did)              => db.getTalks(did));
+h('narrator:createTalk',     (did,sp,tx)        => db.createTalk(did,sp,tx));
+h('narrator:updateTalk',     (id,sp,tx)         => db.updateTalk(id,sp,tx));
+h('narrator:deleteTalk',     (id)               => db.deleteTalk(id));
+
+// Book "Author" (v3 Phase 11) — chapters
+h('author:getChapters',    (mref)      => db.getBookChapters(mref));
+h('author:createChapter',  (mref,n)    => db.createBookChapter(mref,n));
+h('author:renameChapter',  (id,n)      => db.renameBookChapter(id,n));
+h('author:updateContent',  (id,c)      => db.updateBookChapterContent(id,c));
+h('author:deleteChapter',  (id)        => db.deleteBookChapter(id));
+
+// Chat "Scribe" (v3 Phase 12) — sessions + bubble messages
+h('chatscribe:getSessions',   (mref)   => db.getChatSessions(mref));
+h('chatscribe:createSession', (mref,n) => db.createChatSession(mref,n));
+h('chatscribe:renameSession', (id,n)   => db.renameChatSession(id,n));
+h('chatscribe:deleteSession', (id)     => db.deleteChatSession(id));
+h('chatscribe:getMessages',   (sref)   => db.getChatMessages(sref));
+h('chatscribe:createMessage', (sref,t) => db.createChatMessage(sref,t));
+h('chatscribe:updateMessage', (id,t)   => db.updateChatMessage(id,t));
+h('chatscribe:deleteMessage', (id)     => db.deleteChatMessage(id));
+
+// Analys "Viewer" / Relation "Connector" (v3 Phase 14)
+h('viewer:index',          (nx)         => db.viewerIndex(nx));
+h('viewer:getRelations',   (nx)         => db.getEntityRelations(nx));
+h('viewer:createRelation', (nx,f,tk,l)  => db.createEntityRelation(nx,f,tk,l));
+h('viewer:updateRelation', (id,l)       => db.updateEntityRelation(id,l));
+h('viewer:deleteRelation', (id)         => db.deleteEntityRelation(id));
+
+// Drawing "Sketcher" (v3 Phase 15) — pages, strokes, pins, PNG export
+h('sketcher:getPages',     (mref)       => db.getSketchPages(mref));
+h('sketcher:createPage',   (mref,n)     => db.createSketchPage(mref,n));
+h('sketcher:renamePage',   (id,n)       => db.renameSketchPage(id,n));
+h('sketcher:movePage',     (id,dir)     => db.moveSketchPage(id,dir));
+h('sketcher:deletePage',   (id)         => db.deleteSketchPage(id));
+h('sketcher:getStrokes',   (pref)       => db.getSketchStrokes(pref));
+h('sketcher:addStroke',    (pref,c,w,pts) => db.createSketchStroke(pref,c,w,pts));
+h('sketcher:deleteStroke', (id)         => db.deleteSketchStroke(id));
+h('sketcher:getPins',      (pref)       => db.getSketchPins(pref));
+h('sketcher:addPin',       (pref,k,px,py) => db.createSketchPin(pref,k,px,py));
+h('sketcher:movePin',      (id,px,py)   => db.moveSketchPin(id,px,py));
+h('sketcher:deletePin',    (id)         => db.deleteSketchPin(id));
+// Import Dock (v3 Phase 18) — folder import, file<->linker, viewers
+const IMPORT_EXTS = new Set(['png','jpg','jpeg','gif','webp','svg','md','txt','docx']);
+h('importdock:list',          (nx)     => db.getImportFiles(nx));
+h('importdock:add',           (nx,fs2) => db.addImportFiles(nx,fs2));
+h('importdock:setLinker',     (id,k)   => db.setImportLinker(id,k));
+h('importdock:setUseAsImage', (id,on)  => db.setImportUseAsImage(id,on));
+h('importdock:delete',        (id)     => db.deleteImportFile(id));
+h('importdock:displayImages', (nx)     => db.getDisplayImages(nx));
+h('importdock:pickFolder', async () => {
+  const win = BrowserWindow.getFocusedWindow();
+  const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
+  if (res.canceled || !res.filePaths?.length) return { canceled: true };
+  const root = res.filePaths[0];
+  const files = [];
+  const walk = (dir) => {
+    for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, ent.name);
+      if (ent.isDirectory()) { walk(p); continue; }
+      const ext = path.extname(ent.name).slice(1).toLowerCase();
+      if (!IMPORT_EXTS.has(ext)) continue;
+      files.push({
+        name: ent.name, path: p, type: ext,
+        size: fs.statSync(p).size,
+        folder: path.basename(root) + (path.dirname(p) === root ? '' : '/' + path.relative(root, path.dirname(p)).replace(/\\/g, '/')),
+      });
+    }
+  };
+  walk(root);
+  return { folder: path.basename(root), files };
+});
+// Content is only served for files already registered in import_file.
+h('importdock:readFile', (id) => {
+  const f = db.getImportFile(id);
+  if (!f) return null;
+  const ext = (f.file_type || '').toLowerCase();
+  try {
+    if (['png','jpg','jpeg','gif','webp','svg'].includes(ext)) {
+      const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+      return { kind: 'image', dataUrl: `data:${mime};base64,${fs.readFileSync(f.file_path).toString('base64')}` };
+    }
+    if (ext === 'md' || ext === 'txt') return { kind: ext, text: fs.readFileSync(f.file_path, 'utf8') };
+    return { kind: 'binary' };
+  } catch (e) {
+    return { kind: 'error', message: String(e.message || e) };
+  }
+});
+
+// Version control (v3 Phase 21)
+h('versions:list',    (mref) => db.listVersions(mref));
+h('versions:restore', (id)   => db.restoreVersion(id));
+h('setting:get',      (k)    => db.getAppSetting(k));
+h('setting:set',      (k,v)  => db.setAppSetting(k,v));
+
+// Legacy -> v3 migration (v3 Phase 24)
+h('migrate:list',   (target)        => db.listLegacyProjects(target));
+h('migrate:run',    (nx,target,id)  => db.migrateLegacy(nx,target,id));
+
+// Sage Hut (v3 Phase 17) — vault analytics
+h('sagehut:stats',      (nx) => db.sageHutStats(nx));
+h('sagehut:linkerList', (nx) => db.sageHutLinkerList(nx));
+
+// Graph "Designer" (v3 Phase 16) — diagram nodes + labeled edges
+h('designer:getNodes',   (mref)             => db.getDesignNodes(mref));
+h('designer:createNode', (mref,s,px,py,tx,c,k) => db.createDesignNode(mref,s,px,py,tx,c,k));
+h('designer:updateNode', (id,s,tx,c)        => db.updateDesignNode(id,s,tx,c));
+h('designer:moveNode',   (id,px,py)         => db.moveDesignNode(id,px,py));
+h('designer:deleteNode', (id)               => db.deleteDesignNode(id));
+h('designer:getEdges',   (mref)             => db.getDesignEdges(mref));
+h('designer:createEdge', (mref,f,tk,l)      => db.createDesignEdge(mref,f,tk,l));
+h('designer:updateEdge', (id,l)             => db.updateDesignEdgeLabel(id,l));
+h('designer:deleteEdge', (id)               => db.deleteDesignEdge(id));
+
+h('sketcher:exportPng', async (name, dataUrl) => {
+  const win = BrowserWindow.getFocusedWindow();
+  const res = await dialog.showSaveDialog(win, {
+    defaultPath: `${name || 'sketch'}.png`,
+    filters: [{ name: 'PNG', extensions: ['png'] }],
+  });
+  if (res.canceled || !res.filePath) return { canceled: true };
+  fs.writeFileSync(res.filePath, Buffer.from(String(dataUrl).split(',')[1] || '', 'base64'));
+  return { saved: res.filePath };
+});
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));
@@ -164,6 +305,8 @@ h('wiki:outgoing',     (key)       => db.getOutgoingLinks(key));
 h('wiki:quickIndex',   (nx)        => db.quickIndex(nx));
 h('wiki:entityPath',   (key)       => db.getEntityPath(key));
 h('wiki:rebuild',      ()          => db.rebuildWikiIndex());
+h('wiki:resolveKeys',  (keys)      => db.resolveEntityKeys(keys));
+h('wiki:linkCounts',   (nx)        => db.getLinkCounts(nx));
 h('wiki:explorerTree', (nx)        => db.explorerTree(nx));
 h('wiki:getGraph',     (nx)        => db.getGraph(nx));
 h('wiki:renameTarget', (key,o,n)   => db.renameWikiTarget(key,o,n));
@@ -492,6 +635,7 @@ h('artisan:createNovel', (base,spec) => db.artisanCreateNovel(base,spec));
 h('artisan:createWorld', (base,spec) => db.artisanCreateWorld(base,spec));
 h('artisan:createGame',  (base,spec) => db.artisanCreateGame(base,spec));
 h('artisan:createWrite', (base,spec) => db.artisanCreateWrite(base,spec));
+h('artisan:createV3',    (nx,spec)   => db.createV3Structure(nx,spec));
 
 // Sage / Analytics
 h('sage:getDataSize',    () => db.getDataSize());

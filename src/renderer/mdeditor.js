@@ -46,6 +46,13 @@ function createMarkdownEditor(container, opts) {
     saveTimer: null,
   };
 
+  // Optional markdown format bar (opts.toolbar — mockup 13's B/I/H1… row).
+  // Buttons act on the live textarea, so they only do anything in edit mode.
+  const FMT_ACTIONS = [
+    ['B', '**', '**', false], ['I', '*', '*', false],
+    ['H1', '# ', '', true], ['H2', '## ', '', true],
+    ['"', '> ', '', true], ['•—', '- ', '', true], ['[[]]', '[[', ']]', false],
+  ];
   container.innerHTML = `
     <div class="mded-head">
       <span class="mded-title">${x(opts.title || '')}</span>
@@ -53,12 +60,33 @@ function createMarkdownEditor(container, opts) {
       <button class="btn btn-s btn-sm mded-links-toggle" title="${t('backlinks')}">🔗</button>
       <button class="btn btn-s btn-sm mded-toggle" title="Ctrl+E"></button>
     </div>
+    ${opts.toolbar ? `<div class="mded-fmtbar" data-no-i18n>${FMT_ACTIONS.map((a, i) =>
+      `<button class="btn btn-s btn-sm" data-fmt="${i}">${a[0]}</button>`).join('')}</div>` : ''}
     <div class="mded-cols">
       <div class="mded-body"></div>
       <div class="mded-linkspanel" style="display:none"></div>
     </div>`;
   const body = container.querySelector('.mded-body');
   const saveState = container.querySelector('.mded-save-state');
+  container.querySelector('.mded-fmtbar')?.addEventListener('mousedown', (e) => {
+    const btn = e.target.closest('[data-fmt]');
+    if (!btn) return;
+    e.preventDefault(); // keep the textarea's selection alive
+    const ta = body.querySelector('.mded-text');
+    if (!ta) return;
+    const [, pre, post, linePrefix] = FMT_ACTIONS[Number(btn.dataset.fmt)];
+    const s = ta.selectionStart, en = ta.selectionEnd;
+    if (linePrefix) {
+      const ls = ta.value.lastIndexOf('\n', s - 1) + 1;
+      ta.value = ta.value.slice(0, ls) + pre + ta.value.slice(ls);
+      ta.selectionStart = s + pre.length; ta.selectionEnd = en + pre.length;
+    } else {
+      ta.value = ta.value.slice(0, s) + pre + ta.value.slice(s, en) + post + ta.value.slice(en);
+      ta.selectionStart = s + pre.length; ta.selectionEnd = en + pre.length;
+    }
+    ta.dispatchEvent(new Event('input'));
+    ta.focus();
+  });
   const toggleBtn = container.querySelector('.mded-toggle');
   const linksBtn = container.querySelector('.mded-links-toggle');
   const linksPanel = container.querySelector('.mded-linkspanel');
