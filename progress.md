@@ -64,7 +64,7 @@ chrome and theme system — no new design system.
 - [x] Phase 18 — Import Dock section (file↔linker · viewers)
 
 **M7 — Shell & system**
-- [ ] Phase 19 — Builder shell (tabs · ◀▶ history · split 2/4)
+- [x] Phase 19 — Builder shell (tabs · ◀▶ history · split 2/4)
 - [ ] Phase 20 — Search Link overlay
 - [ ] Phase 21 — Version control
 - [ ] Phase 22 — Settings expansion (module names · font size · custom themes)
@@ -152,20 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 19 — Builder shell
-- **Goal:** the builder's chrome: tab strip (relocated from the title bar,
-  per-pane), **◀/▶ navigation history** (browser-style stack, per pane),
-  and **split 2 (1×2) / split 4 (2×2)** layouts where each pane holds its
-  own tabs.
-- **Reference:** VS Code editor groups.
-- **Reuses:** existing tab state (`S.projectTabs`/`S.entityTabs` merged into
-  one builder-tab model), Ctrl+W / Ctrl+Tab shortcuts.
-- **New:** pane manager; history stack; split commands.
-- **Files:** new `src/renderer/builder.js`, `src/renderer/core.js`
-  (`renderProjectTabs` removed from title bar), `index.html`, `style.css`.
-- **Depends:** 2. **Acceptance:** open 3 modules → tabs in builder; back
-  button returns to previous page; split 4 shows four independent panes.
 
 ### Phase 20 — Search Link overlay
 - **Goal:** extend Ctrl+P into an overlay popup searching **everything**

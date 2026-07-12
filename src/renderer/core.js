@@ -712,20 +712,11 @@ function renderProjectTabs(){
       <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
     </button>
   `).join('');
-  const modTabs = S.moduleTabs.map(id => {
-    const m = typeof findModuleNode === 'function' ? findModuleNode(id) : null;
-    if(!m) return '';
-    const active = !S.activeModule && S.activeModuleNode?.id === id;
-    return `
-    <button class="project-tab module-tab ${active?'active':''}" onclick="openModuleNode(${m.id})" title="${x(m.name)}">
-      <span class="tab-dot" style="background:${x(m.color_code || '#6366f1')}"></span>
-      <span class="tab-name">${x(m.name)}</span>
-      <span class="ek" data-no-i18n>${x(KIND_LABEL?.[m.kind] || m.kind)}</span>
-      <span class="tab-close" onclick="event.stopPropagation();closeModuleTab(${m.id})" title="${t('closeTab')}">&times;</span>
-    </button>`;
-  }).join('');
-  el.innerHTML = dirTabs + entTabs + modTabs;
-  el.classList.toggle('empty', !el.innerHTML.trim());
+  // v3 module tabs live per-pane in the builder (Phase 19 — builder.js);
+  // this strip keeps only legacy Director/entity tabs + the split buttons.
+  const split = typeof builderSplitButtonsHtml === 'function' && S.nexus ? builderSplitButtonsHtml() : '';
+  el.innerHTML = dirTabs + entTabs + `<span class="bt-spacer"></span>` + split;
+  el.classList.toggle('empty', !(dirTabs + entTabs + split).trim());
   document.title = S.project ? `${S.project.name} - DraconDex` : 'DraconDex';
 }
 
@@ -734,26 +725,17 @@ function updateTitlebarVault(){
   if(el) el.textContent = S.nexus ? `${S.nexus.name} — DraconDex` : 'DraconDex';
 }
 
-// v3 module tabs (minimal builder tab strip — the visual part of Phase 19;
-// ◀/▶ history and split panes stay in Phase 19 proper).
+// v3 module tabs are pane-scoped now (Phase 19): opening a module books it
+// into the focused builder pane's tab row + history stack.
 function upsertModuleTab(id){
-  if(!S.moduleTabs.includes(id)) S.moduleTabs.push(id);
+  if (typeof builderNavigate === 'function') builderNavigate({ kind: 'module', id });
   renderProjectTabs();
 }
 
-async function closeModuleTab(id){
-  const idx = S.moduleTabs.indexOf(id);
-  if(idx < 0) return;
-  S.moduleTabs.splice(idx, 1);
-  if(S.activeModuleNode?.id === id && !S.activeModule){
-    const next = S.moduleTabs[idx] ?? S.moduleTabs[idx - 1];
-    if(next != null){ await openModuleNode(next); return; }
-    S.activeModuleNode = null;
-    renderModuleRail();
-    renderNexusHome();
-    updateStatusBar({ item: null, words: null, saveState: null });
-  }
-  renderProjectTabs();
+// Legacy views rewrite #main-inner wholesale — drop the builder grid so
+// their layout isn't trapped inside it (panes rebuild on return to nexus).
+function leaveBuilderGrid(){
+  q('#main-inner')?.classList.remove('builder-grid','bl-1','bl-2','bl-4');
 }
 
 function upsertEntityTab(entity, type, module) {
@@ -1202,6 +1184,7 @@ async function switchView(v) {
     konvaStage = null;
   }
   q('#main-inner')?.classList.toggle('relation-main', v === 'relation');
+  if (v !== 'nexus') leaveBuilderGrid();
   updateTopNavButton();
   if      (v==='nexus')           renderNexusHome();
   else if (v==='projects')        { if(S.project) renderProject(); else { renderSidebar(); renderWelcome(); } }
@@ -1236,7 +1219,16 @@ function renderNexusHome() {
       <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
     </div>
     ${buildHubHtml()}`;
-  q('#main-inner').innerHTML = S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode)
+  // The whole main area is the builder pane grid (Phase 19) — the focused
+  // pane shows the current page (built from the S.* page mirrors below),
+  // unfocused panes keep their previous live DOM.
+  renderBuilderPanes(buildBuilderPageHtml, runBuilderMounts);
+}
+
+// The focused pane's page, from the global page mirrors — precedence:
+// module > file preview > sage hut > vault welcome.
+function buildBuilderPageHtml() {
+  return S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode)
     : (S.filePreview && typeof buildFileViewerHtml === 'function') ? buildFileViewerHtml()
     : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
     : `<div class="empty" style="margin-top:80px">
@@ -1244,6 +1236,10 @@ function renderNexusHome() {
     <h3>${x(S.nexus.name)}</h3>
     <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;
+}
+
+// Post-DOM hooks for the focused pane's page.
+function runBuilderMounts() {
   if (!S.activeModuleNode && !S.filePreview && S.sageHut && typeof mountSageHutGraph === 'function') mountSageHutGraph();
   if (typeof hydrateDisplayImages === 'function') hydrateDisplayImages();
   if (S.activeModuleNode?.kind === 'inspector' && typeof mountDetailEditor === 'function') mountDetailEditor(S.activeModuleNode);
@@ -1266,6 +1262,7 @@ function renderNexusHome() {
 }
 
 function renderNexusPicker() {
+  leaveBuilderGrid();
   q('#left-panel-inner').innerHTML = `
     <div class="ph"><h4>${t('nexus')}</h4>
       <button class="btn btn-p btn-sm" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
@@ -1299,6 +1296,9 @@ function clearWorkspaceTabs() {
   S.world = null; S.game = null; S.write = null;
   S.scribeNote = null; S.scribeOpenFolders = new Set();
   S.moduleTree = []; S.activeModuleNode = null; S.moduleTabs = [];
+  S.builder = null; S.filePreview = null; S.sageHut = null; S.importFiles = undefined;
+  S.displayImageCache = null;
+  q('#main-inner')?.querySelectorAll(':scope > .bpane').forEach(el => el.remove());
   renderProjectTabs();
 }
 
@@ -1374,6 +1374,7 @@ async function delNexus(id) {
 
 function selectModule(name) {
   if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); renderNexusHome(); return; }
+  leaveBuilderGrid();
   S.activeModule = name;
   if (name === 'director') {
     S.view = 'projects';
@@ -1531,6 +1532,9 @@ function updateStatusBar(patch = {}) {
     parts.push(`<span class="sb-item sb-crumb">${crumb}</span>`);
     parts.push(`<span class="sb-badge" data-no-i18n>${mNode.parent_id != null ? 'Minor' : 'Major'} · ${x(KIND_LABEL?.[mNode.kind] || mNode.kind)}</span>`);
   }
+  if (S.builder && S.builder.layout > 1 && S.view === 'nexus' && !S.activeModule) {
+    parts.push(`<span class="sb-badge" data-no-i18n>Split ${S.builder.layout}</span>`);
+  }
   if (_statusState.item) parts.push(`<span class="sb-item">${x(_statusState.item)}</span>`);
   const right = [];
   if (_statusState.words != null) right.push(`<span class="sb-item">${_statusState.words} ${t('words')}</span>`);
@@ -1555,14 +1559,19 @@ function bindGlobalShortcuts() {
       return;
     }
     if (modalOpen) return;
-    if (key === 'w') { // close active tab
+    if (key === 'w') { // close active tab (builder pane tab in nexus view)
       e.preventDefault();
-      if (S.activeEntityTabKey) await closeEntityTab(S.activeEntityTabKey);
+      if (!S.activeModule && S.view === 'nexus' && typeof builderCloseActiveTab === 'function') await builderCloseActiveTab();
+      else if (S.activeEntityTabKey) await closeEntityTab(S.activeEntityTabKey);
       else if (S.activeProjectTabId != null && S.activeModule === 'director') await closeProjectTab(S.activeProjectTabId);
       return;
     }
-    if (key === 'tab') { // cycle tabs (project tabs then entity tabs)
+    if (key === 'tab') { // cycle tabs (focused pane in nexus view, else legacy)
       e.preventDefault();
+      if (!S.activeModule && S.view === 'nexus' && typeof builderCycleTab === 'function') {
+        await builderCycleTab(e.shiftKey ? -1 : 1);
+        return;
+      }
       const ring = [
         ...S.projectTabs.map(tb => ({ kind: 'proj', id: tb.id })),
         ...S.entityTabs.map(tb => ({ kind: 'ent', key: tb.key })),

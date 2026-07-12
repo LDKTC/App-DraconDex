@@ -48,7 +48,11 @@ function findModuleNode(id) {
 async function reloadModuleTree() {
   S.moduleTree = S.nexus ? await api.module.getTree(S.nexus.id) : [];
   S.activeModuleNode = S.activeModuleNode ? findModuleNode(S.activeModuleNode.id) : null;
-  S.moduleTabs = (S.moduleTabs || []).filter(id => !!findModuleNode(id));
+  // prune builder tabs pointing at deleted modules
+  for (const pane of (S.builder?.panes || [])) {
+    pane.tabs = pane.tabs.filter(k => !k.startsWith('module:') || !!findModuleNode(Number(k.slice(7))));
+    if (pane.active && !pane.tabs.includes(pane.active)) pane.active = pane.tabs[0] || null;
+  }
   renderModuleRail();
   renderProjectTabs();
   if (S.view === 'nexus' && !S.activeModule) renderNexusHome();

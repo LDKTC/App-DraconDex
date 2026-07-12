@@ -73,6 +73,7 @@ async function openImportFile(id) {
   S.filePreview = { ...f, content, zoom: 1 };
   S.sageHut = null;
   S.activeModuleNode = null;
+  if (typeof builderNavigate === 'function') builderNavigate({ kind: 'file', id });
   renderNexusHome();
 }
 
@@ -96,7 +97,11 @@ function buildFileViewerHtml() {
   } else if (c.kind === 'error') {
     body = `<div class="empty" style="margin-top:30px"><p data-no-i18n>${x(c.message || '')}</p></div>`;
   } else {
-    body = `<div class="empty" style="margin-top:30px"><p>${t('importDocxLater')}</p></div>`;
+    // Binary docs (docx): no in-app reader — offer converting into a
+    // Drafter module linked to this file (text extraction is out of scope,
+    // per the Phase 18/19 deferral note).
+    body = `<div class="empty" style="margin-top:30px"><p>${t('importDocxLater')}</p>
+      <button class="btn btn-p" style="margin-top:10px" onclick="createDrafterFromFile(${f.id})">${I.plus} ${t('createAsDrafter')}</button></div>`;
   }
   const isImage = c.kind === 'image';
   const linkerChip = f.entity
@@ -179,6 +184,20 @@ async function deleteImportFileRow(id) {
   S.displayImageCache = null;
   renderNexusHome();
   toast(t('deleted'), 'ok');
+}
+
+// docx → Drafter: creates an empty Drafter module named after the file and
+// links the file to it (content stays in the source file — no docx parsing).
+async function createDrafterFromFile(id) {
+  const f = (S.importFiles || []).find(v => v.id === id);
+  if (!f) return;
+  const name = f.file_name.replace(/\.[^.]+$/, '');
+  const moduleId = await api.module.create({ nexus_ref: S.nexus.id, parent_id: null, name, kind: 'drafter' });
+  await api.importdock.setLinker(id, `module_${moduleId}`);
+  S.importFiles = undefined;
+  await reloadModuleTree();
+  await openModuleNode(moduleId);
+  toast(t('created'), 'ok');
 }
 
 // ── Display-image lookup for cards/grids ────────────────────────────────

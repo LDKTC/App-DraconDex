@@ -2507,3 +2507,27 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .disp-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .disp-thumb:has(img:not([src])){display:none}
 .disp-thumb.disp-empty{display:none}
+
+/* Builder shell (Phase 19, mockups 16/17) — pane grid, per-pane tabs, nav */
+#main-inner.builder-grid{display:grid;padding:0;gap:0;overflow:hidden}
+#main-inner.bl-1{grid-template-columns:1fr;grid-template-rows:1fr}
+#main-inner.bl-2{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
+#main-inner.bl-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.bpane{display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.bpane:last-child{border-right:none}
+.bpane.focused{box-shadow:inset 0 2px 0 var(--accent)}
+.bpane-head{display:flex;align-items:center;gap:4px;padding:4px 8px;border-bottom:1px solid var(--border);
+	background:var(--surface);flex-shrink:0;overflow:hidden}
+.bpane-head .bnav{padding:2px 7px;font-size:10px}
+.bpane-head .bnav:disabled{opacity:.35;pointer-events:none}
+.bpane-tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;flex:1}
+.bpane-tabs::-webkit-scrollbar{height:4px}
+.bpane-tabs .project-tab{flex-shrink:0}
+.bpane-tabs .project-tab.pane-active{background:var(--raised)}
+.bpane-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px;min-width:0;position:relative}
+#main-inner.bl-2 .bpane-body,#main-inner.bl-4 .bpane-body{padding:14px}
+#builder-tabs .bt-spacer{flex:1}
+#builder-tabs .bsplit{display:flex;gap:2px;align-items:center;flex-shrink:0}
+#builder-tabs .bsplit .btn{padding:2px 7px;font-size:11px}
+#builder-tabs .bsplit .btn.act{background:var(--accent);color:#fff}
+#main-inner.bl-2 .module-inspector,#main-inner.bl-4 .module-inspector{display:none}
