@@ -174,7 +174,7 @@ function buildNestRow(m, depth) {
     ${grip}${chev}
     <span class="kicon" style="color:${x(col)}">${moduleIconHtml(m)}</span>
     <span class="name">${x(m.name)}</span>
-    <span class="kind">${x(KIND_LABEL[m.kind] || m.kind)}</span>
+    <span class="kind">${x(kindLabel(m.kind))}</span>
     <span class="acts">
       ${depth === 0 ? `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id})" title="${t('addMinorModule')}">${I.plus}</button>` : ''}
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openModuleEditModal(${m.id})" title="${t('moduleEdit')}">${I.edit}</button>
@@ -254,14 +254,14 @@ function toggleClassifierFieldsVisibility() {
 }
 
 async function moduleFormModal(existing, parentId) {
-  const kindOptions = MODULE_KINDS.map(k => `<option value="${k}" ${existing?.kind === k ? 'selected' : ''}>${KIND_LABEL[k]}</option>`).join('');
+  const kindOptions = MODULE_KINDS.map(k => `<option value="${k}" ${existing?.kind === k ? 'selected' : ''}>${kindLabel(k)}</option>`).join('');
   const title = existing ? t('moduleEdit') : (parentId ? t('minorModuleNew') : t('majorModuleNew'));
   const startKind = existing?.kind || 'manager';
   openModal(title, `
     <div class="fg"><label>${t('name')} *</label><input id="mm-name" value="${x(existing?.name || '')}"></div>
     <div class="fg"><label>${t('moduleKind')}</label><select id="mm-kind" ${existing ? 'disabled' : ''} onchange="toggleClassifierFieldsVisibility()">${kindOptions}</select></div>
     <div id="mm-cattype-wrap" style="display:${startKind === 'classifier' ? '' : 'none'}">${buildCatTypePicker(existing?.cat_type)}</div>
-    <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing?.icon || null, existing?.color || null, existing?.name || '', existing ? (KIND_LABEL[existing.kind] || existing.kind) : '')}</div>
+    <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing?.icon || null, existing?.color || null, existing?.name || '', existing ? (kindLabel(existing.kind)) : '')}</div>
     <div class="mfoot">
       ${existing ? `<button class="btn btn-d" onclick="deleteModuleNode(${existing.id})">${t('delete')}</button>` : ''}
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
@@ -353,7 +353,7 @@ function buildModuleDetailHtml(m) {
   const mainHtml = builder ? builder(m) : `<div class="empty" style="margin-top:40px">
         <div class="ei" style="color:${x(col)}">${moduleIconHtml(m)}</div>
         <h3>${x(m.name)}</h3>
-        <p>${x(KIND_LABEL[m.kind] || m.kind)}</p>
+        <p>${x(kindLabel(m.kind))}</p>
       </div>`;
   // Header per the approved mockups: name + kind chip, then a chips row of
   // tag links and the 🔗 link-count chip (A.3 #1-2). Chip data comes from
@@ -366,7 +366,7 @@ function buildModuleDetailHtml(m) {
   return `<div class="module-builder">
     <div class="module-main">
       <div class="detail-head module-head" style="border-left:4px solid ${x(col)};padding-left:12px">
-        <h2 style="margin:0;font-size:1.15em">${x(m.name)} <span class="kind-chip" data-no-i18n>${x(KIND_LABEL[m.kind] || m.kind)}${m.kind === 'classifier' && m.cat_type ? ` · ${m.cat_type.charAt(0).toUpperCase()}${m.cat_type.slice(1)}` : ''}</span></h2>
+        <h2 style="margin:0;font-size:1.15em">${x(m.name)} <span class="kind-chip" data-no-i18n>${x(kindLabel(m.kind))}${m.kind === 'classifier' && m.cat_type ? ` · ${m.cat_type.charAt(0).toUpperCase()}${m.cat_type.slice(1)}` : ''}</span></h2>
         <div class="mtags">${tagChips}${linkChip}<button class="btn btn-g btn-i" onclick="openModuleTagModal(${m.id})" title="${t('tagLink')}">${I.plus}</button></div>
       </div>
       ${mainHtml}

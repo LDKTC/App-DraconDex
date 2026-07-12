@@ -26,7 +26,7 @@ function buildInspectorHtml(m) {
     <div class="insp-head">${I.fields}<span>${t('moduleInspector')} — ${x(m.name)}</span></div>
 
     <div class="insp-label">${t('moduleDetailSpec')}</div>
-    <div class="prop"><span class="pk">${t('moduleKind')}</span><span class="pv" data-no-i18n>${x(KIND_LABEL[m.kind] || m.kind)}</span></div>
+    <div class="prop"><span class="pk">${t('moduleKind')}</span><span class="pv" data-no-i18n>${x(kindLabel(m.kind))}</span></div>
     <div class="insp-desc-wrap">
       <textarea id="insp-desc" rows="3" placeholder="${t('addDetail')}"
         onblur="saveModuleDescription(${m.id})">${x(m.description || '')}</textarea>

@@ -132,7 +132,7 @@ function builderTabMeta(key) {
   if (ref.kind === 'module') {
     const m = findModuleNode(ref.id);
     if (!m) return null;
-    return { name: m.name, badge: KIND_LABEL[m.kind] || m.kind, color: m.color_code || 'var(--accent)' };
+    return { name: m.name, badge: kindLabel(m.kind), color: m.color_code || 'var(--accent)' };
   }
   if (ref.kind === 'file') {
     const f = (S.importFiles || []).find(v => v.id === ref.id) || (S.filePreview?.id === ref.id ? S.filePreview : null);

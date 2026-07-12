@@ -54,7 +54,7 @@ function renderManagerCards(children, counts) {
       <span class="disp-thumb"><img data-display-key="module_${c.id}" alt=""></span>
       <div class="mgr-card-icon" style="color:${x(c.icon_color_code || c.color_code || 'var(--accent)')}">${moduleIconHtml(c)}</div>
       <div class="cls-card-name">${x(c.name)}</div>
-      <span class="kind">${x(KIND_LABEL[c.kind] || c.kind)}</span>
+      <span class="kind">${x(kindLabel(c.kind))}</span>
       <span class="mgr-card-count">${(counts.get(c.id) || 0)} ${t('moduleAttribute')}</span>
     </div>`).join('')}</div>`;
 }
@@ -63,7 +63,7 @@ function renderManagerList(children) {
   return children.map(c => `<div class="li" onclick="openModuleNode(${c.id})">
     <span class="kicon" style="color:${x(c.icon_color_code || c.color_code || 'var(--accent)')}">${moduleIconHtml(c)}</span>
     <span class="name">${x(c.name)}</span>
-    <span class="kind">${x(KIND_LABEL[c.kind] || c.kind)}</span>
+    <span class="kind">${x(kindLabel(c.kind))}</span>
   </div>`).join('');
 }
 
@@ -72,7 +72,7 @@ function renderManagerTable(children, counts) {
   for (const c of children) {
     html += `<tr onclick="openModuleNode(${c.id})" style="cursor:pointer">
       <td><span class="dot" style="background:${x(c.color_code || '#6366f1')}"></span>${x(c.name)}</td>
-      <td>${x(KIND_LABEL[c.kind] || c.kind)}</td>
+      <td>${x(kindLabel(c.kind))}</td>
       <td>${counts.get(c.id) || 0}</td>
     </tr>`;
   }

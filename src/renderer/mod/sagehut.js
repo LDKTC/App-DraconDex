@@ -63,7 +63,7 @@ function buildSageHutBarsHtml(d, bySize) {
     ${rows.map(m => {
       const v = bySize ? m.bytes : m.items;
       return `<div class="sh-bar-row" onclick="openModuleNode(${m.id})">
-        <span class="sh-bar-name" data-no-i18n>${x(m.name)} (${KIND_LABEL[m.kind] || m.kind})</span>
+        <span class="sh-bar-name" data-no-i18n>${x(m.name)} (${kindLabel(m.kind)})</span>
         <span class="sh-bar-track"><span class="sh-bar-fill" style="width:${Math.max(2, Math.round(v / max * 100))}%;background:${x(m.color_code || 'var(--accent)')}"></span></span>
         <span class="sh-bar-val" data-no-i18n>${bySize ? fmtBytes(v) : v}</span>
       </div>`;

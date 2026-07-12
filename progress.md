@@ -67,7 +67,7 @@ chrome and theme system — no new design system.
 - [x] Phase 19 — Builder shell (tabs · ◀▶ history · split 2/4)
 - [x] Phase 20 — Search Link overlay
 - [x] Phase 21 — Version control
-- [ ] Phase 22 — Settings expansion (module names · font size · custom themes)
+- [x] Phase 22 — Settings expansion (module names · font size · custom themes)
 - [ ] Phase 23 — Artisan template migration
 - [ ] Phase 24 — Legacy data migration
 
@@ -152,30 +152,6 @@ Depends · Views · i18n · Acceptance**. "Files" lists the main touch points;
 `src/renderer/mod/` is a new folder for per-kind renderers. Every
 user-visible string goes through `t('key')` in **all 18 locales**
 (`UI_LANGUAGE_OPTIONS` in `src/renderer/core.js`).
-
-### Phase 22 — Settings expansion
-- **Goal:** four additions to the settings menu:
-  1. **Module names: Classic ↔ Unique** — swaps displayed type names between
-     Folder/Project/Detail/Category/Map/Timeline/TimeMap/Story/Book/Chat/
-     Doc/Analys/Relation/Drawing/Graph and Collector/Manager/Inspector/
-     Classifier/Locator/Chronicler/Wanderer/Narrator/Author/Scribe/Drafter/
-     Viewer/Connector/Sketcher/Designer.
-  2. **Font size** slider — scales text only (`--font-scale` on root; icons
-     and layout untouched), alongside the existing whole-UI size slider.
-  3. **Custom themes** — editor ("+ สร้างธีมเอง"): pick all 10 palette tokens
-     with live preview, name it, save; appears in the theme list; edit /
-     delete / import palette. Rainbow's special `style.css` rules must keep
-     applying to all new v3 chrome.
-  4. **Version limit** number input (Phase 21).
-- **Reuses:** `renderSettingsMenu()`, `setUiSetting()`, `getThemePalettes()`,
-  `UI_THEME_OPTIONS`.
-- **New:** `custom_theme` storage (settings JSON or table) applied as inline
-  CSS vars; both name sets in all 18 locales.
-- **Files:** `src/renderer/core.js`, `src/renderer/i18n.js`, `style.css`,
-  `src/db/module.js`.
-- **Depends:** —. **Acceptance:** toggling name mode relabels nest badges,
-  tabs, Inspector and status bar instantly; font slider changes text only;
-  a saved custom theme survives restart and renders the shell correctly.
 
 ### Phase 23 — Artisan template migration
 - **Goal:** Director (novel), Navigator (world), Hero (game), Writer (write)

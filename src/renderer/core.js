@@ -63,6 +63,8 @@ const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','
 const UI_SIZE_MIN = 50;
 const UI_SIZE_MAX = 200;
 const UI_SIZE_STEP = 5;
+// The 10 palette tokens a custom theme overrides (mockup 27).
+const CUSTOM_THEME_TOKENS = ['--bg','--surface','--raised','--hover','--border','--t1','--t2','--t3','--accent','--accentH'];
 
 function loadUiSettings(){
   let saved = {};
@@ -72,7 +74,32 @@ function loadUiSettings(){
   const language = UI_LANGUAGE_OPTIONS.includes(saved.language) ? saved.language : 'th';
   const savedSize = Number(saved.size);
   const size = Number.isFinite(savedSize) ? Math.min(UI_SIZE_MAX, Math.max(UI_SIZE_MIN, savedSize)) : 100;
-  return { theme, language, size };
+  const nameMode = saved.nameMode === 'classic' ? 'classic' : 'unique';
+  const savedFont = Number(saved.fontScale);
+  const fontScale = Number.isFinite(savedFont) ? Math.min(130, Math.max(80, Math.round(savedFont))) : 100;
+  const customThemes = Array.isArray(saved.customThemes) ? saved.customThemes : [];
+  // a saved custom theme wins over the built-in whitelist check above
+  const theme2 = String(saved.theme || '').startsWith('custom:') &&
+    customThemes.some(ct => `custom:${ct.id}` === saved.theme) ? saved.theme : theme;
+  return { theme: theme2, language, size, nameMode, fontScale, customThemes };
+}
+
+// Kind display names (Phase 22): the Unique set (KIND_LABEL, locale-
+// invariant by design — A.3 #7) or the localized Classic set, switched by
+// the Settings nameMode toggle. Every DISPLAY call site goes through this.
+const KIND_CLASSIC_KEY = {
+  collector: 'kcFolder', manager: 'kcProject', inspector: 'kcDetail',
+  classifier: 'kcCategory', locator: 'kcMap', chronicler: 'kcTimeline',
+  wanderer: 'kcTimeMap', narrator: 'kcStory', author: 'kcBook',
+  scribe: 'kcChat', drafter: 'kcDoc', viewer: 'kcAnalys',
+  connector: 'kcRelation', sketcher: 'kcDrawing', designer: 'kcGraph',
+};
+function kindLabel(kind) {
+  if (S.settings?.nameMode === 'classic') {
+    const k = KIND_CLASSIC_KEY[kind];
+    if (k && L.en[k]) return t(k);
+  }
+  return (typeof KIND_LABEL !== 'undefined' && KIND_LABEL[kind]) || kind;
 }
 
 const S = {
@@ -288,7 +315,16 @@ function saveUiSettings(){
 }
 
 function applyUiSettings(){
-  document.body.dataset.theme = S.settings.theme;
+  // custom themes (Phase 22): data-theme 'custom' + the 10 palette tokens
+  // as inline CSS vars; built-ins clear them and use style.css rules.
+  const custom = String(S.settings.theme).startsWith('custom:')
+    ? (S.settings.customThemes || []).find(ct => `custom:${ct.id}` === S.settings.theme) : null;
+  document.body.dataset.theme = custom ? 'custom' : S.settings.theme;
+  for (const tok of CUSTOM_THEME_TOKENS) {
+    if (custom && custom.vars?.[tok]) document.body.style.setProperty(tok, custom.vars[tok]);
+    else document.body.style.removeProperty(tok);
+  }
+  document.documentElement.style.setProperty('--fsc', String((S.settings.fontScale || 100) / 100));
   document.documentElement.lang = S.settings.language;
   const scale = S.settings.size / 100;
   document.documentElement.style.setProperty('--ui-scale', String(scale));
@@ -303,7 +339,13 @@ function applyUiSettings(){
 }
 
 function setUiSetting(key, value){
-  if(key === 'theme' && !UI_THEME_OPTIONS.includes(value)) return;
+  const isCustomTheme = String(value).startsWith('custom:') &&
+    (S.settings.customThemes || []).some(ct => `custom:${ct.id}` === value);
+  if(key === 'theme' && !UI_THEME_OPTIONS.includes(value) && !isCustomTheme) return;
+  if(key === 'nameMode' && !['unique','classic'].includes(value)) return;
+  if(key === 'fontScale'){
+    value = Math.min(130, Math.max(80, Math.round(Number(value) || 100)));
+  }
   if(key === 'language' && !UI_LANGUAGE_OPTIONS.includes(value)) return;
   if(key === 'size'){
     value = Number(value);
@@ -317,7 +359,19 @@ function setUiSetting(key, value){
   translateStaticChrome();
   renderProjectTabs();
   if(key === 'language') switchView(S.view || 'projects');
+  // the name-mode toggle relabels nest badges / tabs / inspector / status
+  // bar instantly (Phase 22 acceptance)
+  if(key === 'nameMode' && S.view === 'nexus' && !S.activeModule){ renderNexusHome(); updateStatusBar({}); }
   toast(t('applied'),'ok');
+}
+
+function setFontScaleFromSlider(value){
+  const v = Math.min(130, Math.max(80, Math.round(Number(value) || 100)));
+  S.settings.fontScale = v;
+  saveUiSettings();
+  document.documentElement.style.setProperty('--fsc', String(v / 100));
+  const el = q('#settings-font-value');
+  if(el) el.textContent = `${v}%`;
 }
 
 function setUiSizeFromSlider(value){
@@ -371,6 +425,21 @@ function renderSettingsMenu(){
         ${active?'<span class="theme-check">✓</span>':''}
       </button>`;
   }).join('');
+  const customOptions = (S.settings.customThemes || []).map(ct => {
+    const key = `custom:${ct.id}`;
+    const active = S.settings.theme === key;
+    const swatches = ['--bg','--raised','--accent','--accentH','--t1'].map(tok =>
+      `<i style="background:${x(ct.vars?.[tok] || '#000')}"></i>`).join('');
+    return `<button type="button" class="theme-item${active?' active':''}" onclick="setUiSetting('theme','${key}')" title="${x(ct.name)}">
+        <span class="theme-swatches">${swatches}</span>
+        <span class="theme-name" data-no-i18n>${x(ct.name)}</span>
+        <span class="theme-tools">
+          <span class="theme-tool" onclick="event.stopPropagation();openCustomThemeModal('${ct.id}')" title="${t('edit')}">✎</span>
+          <span class="theme-tool" onclick="event.stopPropagation();deleteCustomTheme('${ct.id}')" title="${t('delete')}">×</span>
+        </span>
+        ${active?'<span class="theme-check">✓</span>':''}
+      </button>`;
+  }).join('');
   const languageOptions = UI_LANGUAGE_OPTIONS.map(lang =>
     `<option value="${lang}" ${S.settings.language===lang?'selected':''}>${LANGUAGE_LABELS[lang]}</option>`
   ).join('');
@@ -382,8 +451,9 @@ function renderSettingsMenu(){
     <div class="settings-group">
       <div class="settings-label">${t('theme')}</div>
       <div class="theme-list">
-        ${themeOptions}
+        ${themeOptions}${customOptions}
       </div>
+      <button class="btn btn-s" style="margin-top:8px;width:100%" onclick="openCustomThemeModal()">${I.plus} ${t('customThemeNew')}</button>
     </div>
     <div class="settings-group">
       <div class="settings-label">${t('language')}</div>
@@ -399,7 +469,164 @@ function renderSettingsMenu(){
       <input class="settings-slider" type="range" min="${UI_SIZE_MIN}" max="${UI_SIZE_MAX}" step="${UI_SIZE_STEP}" value="${S.settings.size}" oninput="updateUiSizeLabel(this.value)" onchange="setUiSizeFromSlider(this.value)">
       <div class="settings-slider-scale"><span>${UI_SIZE_MIN}%</span><span>100%</span><span>${UI_SIZE_MAX}%</span></div>
     </div>
+    <div class="settings-group">
+      <div class="settings-label settings-label-row">
+        <span>${t('fontSize')}</span>
+        <span id="settings-font-value">${S.settings.fontScale || 100}%</span>
+      </div>
+      <input class="settings-slider" type="range" min="80" max="130" step="5" value="${S.settings.fontScale || 100}" oninput="setFontScaleFromSlider(this.value)">
+      <div class="settings-slider-scale"><span>80%</span><span>100%</span><span>130%</span></div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">${t('moduleNameMode')}</div>
+      <div class="name-mode-seg">
+        <button class="btn ${S.settings.nameMode !== 'classic' ? 'btn-p' : 'btn-s'}" onclick="setUiSetting('nameMode','unique')" data-no-i18n>Unique</button>
+        <button class="btn ${S.settings.nameMode === 'classic' ? 'btn-p' : 'btn-s'}" onclick="setUiSetting('nameMode','classic')" data-no-i18n>Classic</button>
+      </div>
+      <div class="settings-hint">${t('moduleNameModeHint')}</div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">${t('versionLimit')}</div>
+      <input class="settings-number" type="number" min="1" max="500" value="${S.versionLimitCache ?? 50}"
+        onchange="setVersionLimit(this.value)">
+    </div>
   `;
+}
+
+async function setVersionLimit(v){
+  const n = Math.min(500, Math.max(1, Math.round(Number(v) || 50)));
+  S.versionLimitCache = n;
+  await api.setting.set('versionLimit', n);
+  toast(t('applied'),'ok');
+}
+
+// ═══ CUSTOM THEME EDITOR (Phase 22, mockup 27) ═════════════════════════
+function currentPaletteVars(){
+  const cs = getComputedStyle(document.body);
+  const out = {};
+  for (const tok of CUSTOM_THEME_TOKENS) out[tok] = (cs.getPropertyValue(tok) || '#000000').trim();
+  return out;
+}
+
+function openCustomThemeModal(id = null){
+  const ct = id ? (S.settings.customThemes || []).find(c => c.id === id) : null;
+  const vars = ct ? { ...ct.vars } : currentPaletteVars();
+  const rows = CUSTOM_THEME_TOKENS.map(tok => `
+    <div class="ctm-row">
+      <span class="ctm-tok" data-no-i18n>${tok}</span>
+      <input type="color" class="ctm-color" data-tok="${tok}" value="${x(toHex6(vars[tok]))}" oninput="ctmSync(this)">
+      <input class="ctm-hex" data-tok="${tok}" value="${x(toHex6(vars[tok]))}" oninput="ctmSyncHex(this)" data-no-i18n>
+    </div>`).join('');
+  openModal(`🎨 Custom Theme — ${t('customThemeNew')}`, `
+    <div class="ctm-grid">
+      <div>
+        <div class="fg"><label>${t('name')} *</label><input id="ctm-name" value="${x(ct?.name || '')}"></div>
+        <div class="settings-label" style="padding:0 0 6px" data-no-i18n>Palette (10)</div>
+        <div class="ctm-rows">${rows}</div>
+      </div>
+      <div>
+        <div class="settings-label" style="padding:0 0 6px" data-no-i18n>Preview</div>
+        <div class="ctm-preview" id="ctm-preview">
+          <div class="ctm-pv-side"><i class="ctm-pv-acc"></i><i></i><i></i></div>
+          <div class="ctm-pv-main"><i class="w60"></i><i class="w80"></i><i class="w40"></i><i class="ctm-pv-btn"></i></div>
+        </div>
+        <div class="settings-hint">${t('customThemeHint')}</div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="importCustomPalette()">${t('customThemeImport')}</button>
+      <button class="btn btn-s" onclick="exportCustomPalette()">${t('customThemeExport')}</button>
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveCustomTheme(${id ? `'${id}'` : 'null'})">${t('save')}</button>
+    </div>`);
+  ctmPaint();
+}
+
+const toHex6 = (c) => {
+  const v = String(c || '').trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v;
+  if (/^#[0-9a-fA-F]{3}$/.test(v)) return '#' + [...v.slice(1)].map(ch => ch + ch).join('');
+  return '#000000';
+};
+
+function ctmVars(){
+  const out = {};
+  document.querySelectorAll('#modal .ctm-color').forEach(el => { out[el.dataset.tok] = el.value; });
+  return out;
+}
+
+function ctmSync(colorEl){
+  const hex = document.querySelector(`#modal .ctm-hex[data-tok="${colorEl.dataset.tok}"]`);
+  if (hex) hex.value = colorEl.value;
+  ctmPaint();
+}
+
+function ctmSyncHex(hexEl){
+  if (!/^#[0-9a-fA-F]{6}$/.test(hexEl.value.trim())) return;
+  const color = document.querySelector(`#modal .ctm-color[data-tok="${hexEl.dataset.tok}"]`);
+  if (color) color.value = hexEl.value.trim();
+  ctmPaint();
+}
+
+function ctmPaint(){
+  const pv = q('#ctm-preview');
+  if (!pv) return;
+  const v = ctmVars();
+  pv.style.background = v['--bg'];
+  pv.style.borderColor = v['--border'];
+  pv.querySelector('.ctm-pv-side').style.background = v['--surface'];
+  pv.querySelectorAll('.ctm-pv-side i:not(.ctm-pv-acc)').forEach(el => el.style.background = v['--raised']);
+  pv.querySelector('.ctm-pv-acc').style.background = v['--accent'];
+  pv.querySelectorAll('.ctm-pv-main i:not(.ctm-pv-btn)').forEach(el => el.style.background = v['--t3']);
+  pv.querySelector('.ctm-pv-btn').style.background = v['--accent'];
+}
+
+function saveCustomTheme(id){
+  const name = q('#ctm-name').value.trim();
+  if (!name) return;
+  const vars = ctmVars();
+  S.settings.customThemes = S.settings.customThemes || [];
+  let ct = id ? S.settings.customThemes.find(c => c.id === id) : null;
+  if (!ct) {
+    ct = { id: String(Date.now()), name, vars };
+    S.settings.customThemes.push(ct);
+  } else {
+    ct.name = name;
+    ct.vars = vars;
+  }
+  closeModal();
+  setUiSetting('theme', `custom:${ct.id}`);
+}
+
+function deleteCustomTheme(id){
+  S.settings.customThemes = (S.settings.customThemes || []).filter(c => c.id !== id);
+  if (S.settings.theme === `custom:${id}`) S.settings.theme = 'midnight';
+  saveUiSettings();
+  applyUiSettings();
+  renderSettingsMenu();
+  toast(t('deleted'),'ok');
+}
+
+function exportCustomPalette(){
+  const json = JSON.stringify(ctmVars());
+  navigator.clipboard?.writeText(json);
+  toast(t('customThemeCopied'),'ok');
+}
+
+async function importCustomPalette(){
+  const raw = prompt(t('customThemeImport'));
+  if (!raw) return;
+  try {
+    const vars = JSON.parse(raw);
+    for (const tok of CUSTOM_THEME_TOKENS) {
+      if (!vars[tok]) continue;
+      const color = document.querySelector(`#modal .ctm-color[data-tok="${tok}"]`);
+      const hex = document.querySelector(`#modal .ctm-hex[data-tok="${tok}"]`);
+      if (color) color.value = toHex6(vars[tok]);
+      if (hex) hex.value = toHex6(vars[tok]);
+    }
+    ctmPaint();
+  } catch (_) { toast(t('vRestoreFailed'), 'error'); }
 }
 
 function toggleSettingsMenu(force){
@@ -407,6 +634,12 @@ function toggleSettingsMenu(force){
   const btn = q('#settings-menu-btn');
   if(!menu || !btn) return;
   const open = typeof force === 'boolean' ? force : menu.classList.contains('hidden');
+  if(open && S.versionLimitCache === undefined && typeof api !== 'undefined' && api.setting){
+    api.setting.get('versionLimit').then(v => {
+      S.versionLimitCache = Number(v) >= 1 ? Number(v) : 50;
+      renderSettingsMenu();
+    }).catch(() => {});
+  }
   menu.classList.toggle('hidden', !open);
   btn.classList.toggle('active', open);
   btn.setAttribute('aria-expanded', String(open));
@@ -1530,7 +1763,7 @@ function updateStatusBar(patch = {}) {
     const major = mNode.parent_id != null && typeof findModuleNode === 'function' ? findModuleNode(mNode.parent_id) : null;
     const crumb = major ? `${x(major.name)} › <b>${x(mNode.name)}</b>` : `<b>${x(mNode.name)}</b>`;
     parts.push(`<span class="sb-item sb-crumb">${crumb}</span>`);
-    parts.push(`<span class="sb-badge" data-no-i18n>${mNode.parent_id != null ? 'Minor' : 'Major'} · ${x(KIND_LABEL?.[mNode.kind] || mNode.kind)}</span>`);
+    parts.push(`<span class="sb-badge" data-no-i18n>${mNode.parent_id != null ? 'Minor' : 'Major'} · ${x(kindLabel(mNode.kind))}</span>`);
   }
   if (S.builder && S.builder.layout > 1 && S.view === 'nexus' && !S.activeModule) {
     parts.push(`<span class="sb-badge" data-no-i18n>Split ${S.builder.layout}</span>`);

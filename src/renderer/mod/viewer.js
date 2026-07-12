@@ -143,7 +143,7 @@ function buildViewerBoardHtml(d) {
     let gk, gl;
     if (d.groupBy === 'kind') { gk = it.kind; gl = VIEWER_KIND_LABEL[it.kind] || it.kind; }
     else if (d.groupBy === 'tag') { gk = (it.tags || [])[0] || '—'; gl = gk === '—' ? '—' : `#${gk}`; }
-    else { gk = `m${it.moduleId}`; gl = `${it.moduleName} (${KIND_LABEL[it.moduleKind] || it.moduleKind})`; }
+    else { gk = `m${it.moduleId}`; gl = `${it.moduleName} (${kindLabel(it.moduleKind)})`; }
     if (!groups.has(gk)) groups.set(gk, { label: gl, items: [] });
     groups.get(gk).items.push(it);
   }
@@ -180,7 +180,7 @@ function openSavedFilterModal(which) {
       </div></div>
     <div class="fg"><label data-no-i18n>Module</label>
       <select id="vf-mods" multiple size="5">${mods.map(mm =>
-        `<option value="${mm.id}" ${def.moduleIds.includes(mm.id) ? 'selected' : ''}>${x(mm.name)} (${KIND_LABEL[mm.kind] || mm.kind})</option>`).join('')}
+        `<option value="${mm.id}" ${def.moduleIds.includes(mm.id) ? 'selected' : ''}>${x(mm.name)} (${kindLabel(mm.kind)})</option>`).join('')}
       </select></div>
     <div class="fg"><label data-no-i18n>Tag</label><input id="vf-tag" value="${x(def.tag)}" placeholder="#tag"></div>
     <div class="mfoot">
