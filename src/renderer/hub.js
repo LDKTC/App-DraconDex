@@ -53,13 +53,22 @@ function moduleIconHtml(m) {
   return I[KIND_ICON[m.kind]] || I.layer;
 }
 
-function findModuleNode(id) {
-  for (const m of S.moduleTree) {
+function findModuleNode(id, nodes = S.moduleTree) {
+  for (const m of nodes) {
     if (m.id === id) return m;
-    const c = (m.children || []).find(ch => ch.id === id);
-    if (c) return c;
+    if (m.children?.length) {
+      const found = findModuleNode(id, m.children);
+      if (found) return found;
+    }
   }
   return null;
+}
+
+// True if `targetId` is `node` itself or nested anywhere under it — used to
+// block a drag-drop that would nest a module inside its own subtree.
+function isSelfOrDescendant(node, targetId) {
+  if (node.id === targetId) return true;
+  return (node.children || []).some(c => isSelfOrDescendant(c, targetId));
 }
 
 async function reloadModuleTree() {
@@ -122,14 +131,21 @@ function buildHubHtml() {
   // hub carries no legacy section anymore — the four legacy views stay
   // reachable from Artisan's sidebar until their data is migrated
   // (Phase 24).
-  return `<div id="hub-body">
-    ${buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
-      `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>`)}
-    ${buildAccSection('sage', t('sageHut'), buildSageHutRows())}
-    ${buildAccSection('dock', t('importDock'),
-      typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
-      `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`)}
-  </div>`;
+  const sections = [
+    { key: 'nest', html: buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
+        `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>`) },
+    { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows()) },
+    { key: 'dock', html: buildAccSection('dock', t('importDock'),
+        typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
+        `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`) },
+  ];
+  // VS Code container-fold behavior (Plan part1 #2): toggled-off sections
+  // sink to the bottom, stacking against each other and against whatever
+  // sits below the hub (nexus-vault-head), while open sections keep their
+  // original relative order at the top. Array#sort is stable, so within
+  // each open/collapsed group the original order survives.
+  sections.sort((a, b) => (S.hubOpen[b.key] ? 1 : 0) - (S.hubOpen[a.key] ? 1 : 0));
+  return `<div id="hub-body">${sections.map(s => s.html).join('')}</div>`;
 }
 
 // ═══ SAGE HUT SECTION (Phase 17) ═══════════════════════════════════════
@@ -163,62 +179,91 @@ function buildAccSection(key, label, bodyHtml, actHtml = '') {
 
 function buildNestTreeHtml() {
   if (!S.moduleTree.length) return `<div class="empty" style="padding:24px 10px"><p>${t('nestEmpty')}</p></div>`;
-  let html = '';
-  for (const m of S.moduleTree) html += buildNestRow(m, 0) + buildNestChildren(m);
-  return html;
+  return S.moduleTree.map(m => buildNestRow(m, 0, null)).join('');
 }
 
-function buildNestChildren(major) {
-  if (!major.children?.length || S.moduleCollapsed.has(major.id)) return '';
-  return major.children.map(c => buildNestRow(c, 1)).join('');
-}
-
-function buildNestRow(m, depth) {
+function buildNestRow(m, depth, parentId) {
   const sel = S.activeModuleNode?.id === m.id ? ' sel' : '';
   const col = m.icon_color_code || m.color_code || 'var(--accent)';
-  const hasChildren = depth === 0 && m.children?.length;
+  const hasChildren = m.children?.length > 0;
+  const collapsed = S.moduleCollapsed.has(m.id);
   const chev = hasChildren
-    ? `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" onclick="event.stopPropagation();toggleMajorExpand(${m.id})"><polyline points="${S.moduleCollapsed.has(m.id) ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>`
+    ? `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" onclick="event.stopPropagation();toggleMajorExpand(${m.id})"><polyline points="${collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>`
     : '';
-  const grip = depth === 0 ? `<span class="grip" draggable="true" ondragstart="onNestDragStart(event,${m.id})">⠿</span>` : '';
+  const grip = `<span class="grip" draggable="true" ondragstart="onNestDragStart(event,${m.id},${parentId ?? 'null'})">⠿</span>`;
   const openable = m.kind !== 'collector';
-  const rowClick = openable ? `openModuleNode(${m.id})` : (hasChildren ? `toggleMajorExpand(${m.id})` : '');
   const renaming = S.renamingModuleId === m.id;
-  return `<div class="li${depth ? ` indent${depth}` : ''}${sel}" ${depth === 0 ? `ondragover="onNestDragOver(event)" ondrop="onNestDrop(event,${m.id})"` : ''}
-      onclick="${renaming ? '' : rowClick}">
+  // IDE-style depth indentation (Plan part1 #4/#4-2) — capped visually past
+  // a few levels so very deep nesting doesn't run the row text off-panel;
+  // the tree itself still nests as deep as the drop rules allow.
+  const indentCls = depth ? ` indent${Math.min(depth, 5)}` : '';
+  const childrenHtml = (hasChildren && !collapsed) ? m.children.map(c => buildNestRow(c, depth + 1, m.id)).join('') : '';
+  return `<div class="li${indentCls}${sel}"
+      ondragover="onNestDragOver(event,this)" ondragleave="onNestDragLeave(event,this)" ondrop="onNestDrop(event,${m.id},${parentId ?? 'null'},this)"
+      onclick="${renaming ? '' : `scheduleRowOpen(${m.id})`}">
     ${grip}${chev}
     <span class="kicon" style="color:${x(col)}" onclick="event.stopPropagation();openModuleIconPopup(${m.id},this)">${moduleIconHtml(m)}</span>
     ${renaming
       ? `<input id="rename-nest-${m.id}" class="rename-input" value="${x(m.name)}" onclick="event.stopPropagation()" onblur="saveModuleRename(${m.id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value=${x(JSON.stringify(m.name))};this.blur();}">`
-      : `<span class="name" ondblclick="event.stopPropagation();startRenameModule(${m.id})">${x(m.name)}</span>`}
+      : `<span class="name" ondblclick="event.stopPropagation();cancelRowOpen();startRenameModule(${m.id})">${x(m.name)}</span>`}
     <span class="kind">${x(kindLabel(m.kind))}</span>
     <span class="acts">
-      ${depth === 0 ? `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id},this)" title="${t('addMinorModule')}">${I.plus}</button>` : ''}
+      <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id},this)" title="${t('addMinorModule')}">${I.plus}</button>
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openModuleEditModal(${m.id})" title="${t('moduleEdit')}">${I.edit}</button>
     </span>
-  </div>`;
+  </div>${childrenHtml}`;
 }
 
-// ═══ Drag-reorder — Majors only (Phase 3) ═════════════════════════════
-function onNestDragStart(ev, id) {
-  S.dragMajorId = id;
+// ═══ Drag-reorder / reparent — any depth (Plan part1 #4/#4-2) ═════════
+// Dropping on the top/bottom quarter of a row reorders the dragged module
+// as that row's sibling there; the middle half nests it as that row's
+// child instead. A top-level module can be dropped anywhere (reorder or
+// nest); a module that already has a parent is locked to it — it can only
+// reorder among its own siblings (top/bottom of a row sharing that same
+// parent), never nest into a row or jump to a different parent.
+function onNestDragStart(ev, id, parentId) {
+  S.dragNest = { id, parentId };
   ev.dataTransfer.effectAllowed = 'move';
+  ev.stopPropagation();
 }
-function onNestDragOver(ev) {
-  if (S.dragMajorId != null) ev.preventDefault();
+function nestDropZone(ev, row) {
+  const r = row.getBoundingClientRect();
+  const frac = (ev.clientY - r.top) / r.height;
+  return frac < 0.25 ? 'before' : frac > 0.75 ? 'after' : 'in';
 }
-async function onNestDrop(ev, targetId) {
+function onNestDragOver(ev, row) {
+  if (!S.dragNest) return;
   ev.preventDefault();
-  const dragId = S.dragMajorId;
-  S.dragMajorId = null;
-  if (dragId == null || dragId === targetId) return;
-  const ids = S.moduleTree.map(m => m.id);
-  const from = ids.indexOf(dragId);
-  const to = ids.indexOf(targetId);
-  if (from < 0 || to < 0) return;
-  ids.splice(from, 1);
-  ids.splice(to, 0, dragId);
-  await api.module.reorder(S.nexus.id, ids);
+  ev.stopPropagation();
+  row.classList.remove('drop-before', 'drop-after', 'drop-in');
+  row.classList.add(`drop-${nestDropZone(ev, row)}`);
+}
+function onNestDragLeave(ev, row) {
+  row.classList.remove('drop-before', 'drop-after', 'drop-in');
+}
+async function onNestDrop(ev, targetId, targetParentId, row) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  row.classList.remove('drop-before', 'drop-after', 'drop-in');
+  const drag = S.dragNest;
+  S.dragNest = null;
+  if (!drag || drag.id === targetId) return;
+  const dragNode = findModuleNode(drag.id);
+  if (!dragNode || isSelfOrDescendant(dragNode, targetId)) return;
+  let zone = nestDropZone(ev, row);
+  const isLockedToParent = drag.parentId != null;
+  if (isLockedToParent) {
+    if (targetParentId !== drag.parentId) return; // can't leave its parent
+    if (zone === 'in') zone = 'after'; // and can't nest — reorder only
+  }
+  const newParentId = zone === 'in' ? targetId : targetParentId;
+  if (zone === 'in') S.moduleCollapsed.delete(targetId);
+  const siblings = (newParentId == null ? S.moduleTree : findModuleNode(newParentId)?.children || [])
+    .map(m => m.id).filter(id => id !== drag.id);
+  if (zone === 'before') siblings.splice(siblings.indexOf(targetId), 0, drag.id);
+  else if (zone === 'after') siblings.splice(siblings.indexOf(targetId) + 1, 0, drag.id);
+  else siblings.push(drag.id);
+  await api.module.move(S.nexus.id, drag.id, newParentId, siblings);
   await reloadModuleTree();
 }
 
@@ -434,6 +479,25 @@ async function deleteModuleNode(id) {
   if (S.activeModuleNode?.id === id) S.activeModuleNode = null;
   await reloadModuleTree();
   toast(t('deleted'), 'ok');
+}
+
+// A Nest row's single click (open) and its name's double click (rename)
+// are the same physical gesture for their first ~250ms — a dblclick is
+// preceded by two ordinary 'click' events, so opening the module
+// immediately on click would fire (and flash the module open) before the
+// browser even recognizes the dblclick. Deferring the open lets the
+// rename's dblclick handler cancel it first (Plan part1 #5 — this was the
+// "click meant for the rename box lands on the module's body button" bug:
+// the leaked open made startRenameModule think the module was already
+// active and focus the header's rename box instead of the Nest row's).
+let _rowOpenTimer = null;
+function scheduleRowOpen(id) {
+  clearTimeout(_rowOpenTimer);
+  _rowOpenTimer = setTimeout(() => { _rowOpenTimer = null; openModuleNode(id); }, 250);
+}
+function cancelRowOpen() {
+  clearTimeout(_rowOpenTimer);
+  _rowOpenTimer = null;
 }
 
 // ═══ Open a module — minimal placeholder content + the Module Inspector

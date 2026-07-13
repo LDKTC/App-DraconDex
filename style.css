@@ -786,7 +786,16 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 /* NEXUS VAULT PICKER */
 .nexus-vault-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .nexus-vault-head h4{display:flex;align-items:center;gap:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nexus-vault-name{cursor:pointer;border-radius:var(--rs)}
+.nexus-vault-name:hover{color:var(--accent)}
 .nexus-vault-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--accent);display:inline-block}
+
+/* Workspace switcher — dropdown of every Nexus, opened above the vault-head
+   name (hub.js's positionPopupNear flips it upward near the panel bottom) */
+.nexus-switcher-popup{width:220px;max-height:300px;overflow-y:auto;padding:6px}
+.nexus-switcher-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rs);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nexus-switcher-item:hover{background:var(--hover)}
+.nexus-switcher-item.active{color:var(--accent)}
 .nexus-item .btn-icon{opacity:0;border:none;background:none;color:var(--t3);cursor:pointer;padding:2px;border-radius:var(--rs);display:flex;align-items:center}
 .nexus-item:hover .btn-icon{opacity:1}
 .nexus-item .btn-icon:hover{color:var(--t1);background:var(--hover)}
@@ -828,10 +837,19 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .li .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .li.indent1{padding-left:26px}
 .li.indent2{padding-left:42px}
+.li.indent3{padding-left:58px}
+.li.indent4{padding-left:74px}
+.li.indent5{padding-left:90px}
 .tree-chev{width:9px;height:9px;stroke-width:3;color:var(--t3);flex-shrink:0}
 .grip{color:var(--t3);font-size:calc(10px * var(--fsc,1));letter-spacing:-1px;opacity:0;cursor:grab;flex-shrink:0}
 .li:hover .grip{opacity:.7}
 .li.sel{background:var(--raised);color:var(--t1)}
+/* Nest-tree drag-drop feedback (Plan part1 #4) — top/bottom quarter of a
+   row previews a sibling reorder there, the middle half previews nesting
+   the dragged module as that row's child. */
+.li.drop-before{box-shadow:inset 0 2px 0 0 var(--accent)}
+.li.drop-after{box-shadow:inset 0 -2px 0 0 var(--accent)}
+.li.drop-in{outline:1px dashed var(--accent);outline-offset:-2px;background:var(--hover)}
 
 /* Module Inspector dock (progress.md Phase 4) */
 .module-builder{display:flex;gap:0;margin:-18px -22px;min-height:calc(100% + 36px)}
@@ -864,7 +882,7 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .ipk-tab-disabled{opacity:.4;cursor:default}
 .ipk-tab-disabled:hover{background:var(--raised);color:var(--t2)}
 .ipk-symbol{font-size:calc(17px * var(--fsc,1))}
-.ipk-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:180px;overflow-y:auto;margin-bottom:10px}
+.ipk-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:10px}
 .ipk-cell{width:36px;height:36px;border:1px solid var(--border);border-radius:var(--rs);background:var(--raised);
 	color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:calc(16px * var(--fsc,1))}
 .ipk-cell:hover{background:var(--hover);color:var(--t1)}
@@ -904,7 +922,11 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .kli-text{display:flex;flex-direction:column;gap:1px;min-width:0}
 .kli-name{font-size:calc(12.5px * var(--fsc,1));color:var(--t1)}
 .kli-desc{font-size:calc(10.5px * var(--fsc,1));color:var(--t3);line-height:1.35}
-.icon-edit-popup{padding:12px;width:280px}
+/* Plan part1 #6 — the whole popup is one docked, vertically scrollable
+   container (mouse-wheel scrolls it) instead of just the icon grid having
+   its own short, separately-scrolling inner box; this also keeps the
+   popup from growing past the viewport when there are many symbols/colors. */
+.icon-edit-popup{padding:12px;width:280px;max-height:min(72vh,520px);overflow-y:auto}
 
 /* Inline rename (double-click a module name in the Nest row or its open
    detail header) */
@@ -913,6 +935,14 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 	color:var(--t1);font:inherit;padding:1px 5px;min-width:0;
 }
 .li .rename-input{flex:1}
+/* Rename-mode focus lock (Plan part1 #5) — pointer-events:none kills every
+   :hover highlight app-wide (nothing left for the cursor to "land on"),
+   while the active rename box keeps working normally: typing needs no
+   pointer-events, and a click to place the caret only needs it re-enabled
+   on the input itself. Clicking anywhere else still blurs the input
+   (falls through to <body>), so click-outside-to-save/cancel still works. */
+body.renaming-lock *{pointer-events:none}
+body.renaming-lock .rename-input{pointer-events:auto}
 
 .togglerow{display:flex;align-items:center;gap:8px;font-size:calc(11px * var(--fsc,1));color:var(--t2);margin-top:7px}
 .tg{width:26px;height:14px;border-radius:7px;background:var(--raised);border:1px solid var(--border);position:relative;flex-shrink:0}
@@ -1124,6 +1154,8 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 }
 #app.left-panel-collapsed #left-panel{width:0;border-right-color:transparent}
 #left-panel-inner{flex:1;overflow-y:auto;padding:10px 8px}
+#left-panel-foot{flex-shrink:0;border-top:1px solid var(--border);padding:8px}
+#left-panel-foot:empty{display:none}
 
 /* MAIN */
 #main-area{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
@@ -1898,20 +1930,6 @@ textarea.table-inline-input{resize:vertical}
 #search-input:focus {
   border-color: var(--accent);
 }
-.left-panel-toggle{
-	width:30px;height:32px;border:1px solid var(--border);border-radius:var(--r);
-	background:var(--raised);color:var(--t2);cursor:pointer;font-size:calc(18px * var(--fsc,1));line-height:1;
-	display:flex;align-items:center;justify-content:center;flex-shrink:0;
-}
-.left-panel-toggle:hover{background:var(--hover);color:var(--t1)}
-.left-panel-peek{
-	position:absolute;left:var(--nav);top:58px;width:24px;height:46px;z-index:30;
-	border:1px solid var(--border);border-left:none;border-radius:0 var(--r) var(--r) 0;
-	background:var(--surface);color:var(--t1);cursor:pointer;font-size:calc(18px * var(--fsc,1));font-weight:700;
-	display:none;align-items:center;justify-content:center;box-shadow:4px 8px 18px rgba(0,0,0,.3);
-}
-.left-panel-peek:hover{background:var(--hover);color:#fff}
-#app.left-panel-collapsed .left-panel-peek{display:flex}
 .search-sec {
   margin-bottom: 14px;
 }

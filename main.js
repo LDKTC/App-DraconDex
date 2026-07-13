@@ -40,7 +40,7 @@ app.on('second-instance', () => {
 });
 
 
-function createWindow() {
+function createWindow(bootstrapNexusId) {
   const win = new BrowserWindow({
     width: 1280, height: 800,
     minWidth: 960, minHeight: 600,
@@ -54,7 +54,7 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
-  win.loadFile('index.html');
+  win.loadFile('index.html', bootstrapNexusId ? { search: `nexus=${bootstrapNexusId}` } : undefined);
 }
 
 app.whenReady().then(() => {
@@ -129,7 +129,7 @@ h('module:create',      (data)        => db.createModule(data));
 h('module:update',      (id,data)     => db.updateModule(id,data));
 h('module:updateDescription', (id,d)  => db.updateModuleDescription(id,d));
 h('module:delete',      (id)          => db.deleteModule(id));
-h('module:reorder',     (nx,ids)      => db.reorderMajors(nx,ids));
+h('module:move',        (nx,id,parentId,ids) => db.moveModule(nx,id,parentId,ids));
 h('module:count',       (nx)          => db.countModules(nx));
 h('module:getAttrs',    (id)          => db.getModuleAttrs(id));
 h('module:upsertAttr',  (id,aid,n,v)  => db.upsertModuleAttr(id,aid,n,v));
@@ -659,3 +659,8 @@ h('window:close', () => {
   const win = BrowserWindow.getFocusedWindow();
   if (win) win.close();
 });
+// Workspace switcher (Hub's nexus-vault-head dropdown) — opens a second
+// window bootstrapped directly into the chosen Nexus. Same running process
+// and data dir as the first window, so the single-instance lock above
+// (which only guards against a second OS process) doesn't apply here.
+h('window:openNexus', (nexusId) => { createWindow(nexusId); });

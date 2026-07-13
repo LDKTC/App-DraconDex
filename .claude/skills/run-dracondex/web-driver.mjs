@@ -97,7 +97,7 @@ await page.addInitScript(`
 `);
 
 await page.goto('file://' + path.join(root, 'index.html'));
-await page.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph', { timeout: 15000 });
+await page.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body', { timeout: 15000 });
 console.log('[web-driver] app ready');
 
 // ── Command loop (same vocabulary as driver.mjs) ───────────────────────────

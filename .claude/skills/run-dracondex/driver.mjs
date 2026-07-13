@@ -61,8 +61,9 @@ const app = await electron.launch({
 const win = await app.firstWindow();
 await win.waitForLoadState('domcontentloaded');
 // Renderer builds the UI at DOMContentLoaded; the vault picker (nexus items or
-// its empty state) or module tiles are the ready signal.
-await win.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph', { timeout: 15000 });
+// its empty state), module tiles, or a populated Hub (#hub-body — the Nest
+// tree may have real rows, not just the .empty state) are the ready signal.
+await win.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body', { timeout: 15000 });
 console.log('[driver] app ready');
 
 let failed = false;

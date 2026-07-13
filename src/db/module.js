@@ -12,17 +12,20 @@ const SEL = `
   LEFT JOIN use_color ic ON ic.id = m.icon_color
 `;
 
-// Majors (parent_id NULL) ordered by display_order, each carrying its Minors
-// (locked one level, ordered by display_order then id).
+// Root modules (parent_id NULL) each carrying their descendants, recursively,
+// at any depth (Plan part1 #4/#4-2 — a module can be nested arbitrarily deep,
+// not just the old fixed Major/Minor two levels), ordered by display_order
+// then id within each parent.
 function getTree(nexusRef) {
   const rows = getDB().prepare(`${SEL} WHERE m.nexus_ref = ? ORDER BY m.parent_id IS NOT NULL, m.display_order, m.id`).all(nexusRef);
-  const minorsByParent = new Map();
+  const childrenByParent = new Map();
   for (const r of rows) {
-    if (r.parent_id == null) continue;
-    if (!minorsByParent.has(r.parent_id)) minorsByParent.set(r.parent_id, []);
-    minorsByParent.get(r.parent_id).push(r);
+    const key = r.parent_id ?? null;
+    if (!childrenByParent.has(key)) childrenByParent.set(key, []);
+    childrenByParent.get(key).push(r);
   }
-  return rows.filter(r => r.parent_id == null).map(m => ({ ...m, children: minorsByParent.get(m.id) || [] }));
+  const attach = (m) => ({ ...m, children: (childrenByParent.get(m.id) || []).map(attach) });
+  return (childrenByParent.get(null) || []).map(attach);
 }
 
 const getModule = (id) => getDB().prepare(`${SEL} WHERE m.id = ?`).get(id);
@@ -61,16 +64,22 @@ function updateModuleDescription(id, description) {
 
 const deleteModule = (id) => getDB().prepare(`DELETE FROM module WHERE id=?`).run(id);
 
-// Majors only — dragging a Minor is rejected by the renderer before this is
-// ever called; Minors keep whatever order they were created in.
-function reorderMajors(nexusRef, orderedIds) {
+// Move a module to (possibly the same) parent and write display_order for
+// every child of that parent in the given final order — one call covers
+// both plain sibling reordering (newParentId unchanged) and reparenting
+// (Plan part1 #4: a top-level module dropped onto another module becomes
+// its child). Which moves are legal (top-level modules can go anywhere,
+// nested ones are locked to their current parent) is enforced by the
+// renderer before this is ever called — see hub.js's onNestDrop.
+function moveModule(nexusRef, moduleId, newParentId, orderedSiblingIds) {
   const d = getDB();
-  const tx = d.transaction((ids) => {
-    ids.forEach((id, idx) => {
-      d.prepare(`UPDATE module SET display_order=? WHERE id=? AND nexus_ref=? AND parent_id IS NULL`).run(idx, id, nexusRef);
+  const tx = d.transaction(() => {
+    d.prepare(`UPDATE module SET parent_id=? WHERE id=? AND nexus_ref=?`).run(newParentId, moduleId, nexusRef);
+    orderedSiblingIds.forEach((id, idx) => {
+      d.prepare(`UPDATE module SET display_order=? WHERE id=? AND nexus_ref=?`).run(idx, id, nexusRef);
     });
   });
-  tx(orderedIds);
+  tx();
 }
 
 const countModules = (nexusRef) => getDB().prepare(`SELECT COUNT(*) AS c FROM module WHERE nexus_ref=?`).get(nexusRef).c;
@@ -140,7 +149,7 @@ const getModuleLinks = (moduleId) => ({
 
 module.exports = {
   getTree, getModule, createModule, updateModule, updateModuleDescription, deleteModule,
-  reorderMajors, countModules, nexusOfModule,
+  moveModule, countModules, nexusOfModule,
   getModuleAttrs, upsertModuleAttr, deleteModuleAttr,
   getModuleUi, setModuleUi,
   getModuleTags, setModuleTags,

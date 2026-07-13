@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('api', {
     update:  (id,data)     => inv('module:update', id,data),
     updateDescription: (id,d) => inv('module:updateDescription', id,d),
     delete:  (id)          => inv('module:delete', id),
-    reorder: (nx,ids)      => inv('module:reorder', nx,ids),
+    move:    (nx,id,parentId,ids) => inv('module:move', nx,id,parentId,ids),
     count:   (nx)          => inv('module:count', nx),
     getAttrs:   (id)          => inv('module:getAttrs', id),
     upsertAttr: (id,aid,n,v)  => inv('module:upsertAttr', id,aid,n,v),
@@ -501,5 +501,6 @@ contextBridge.exposeInMainWorld('api', {
     minimize:       () => inv('window:minimize'),
     toggleMaximize: () => inv('window:toggleMaximize'),
     close:          () => inv('window:close'),
+    openNexus:      (nexusId) => inv('window:openNexus', nexusId),
   },
 });

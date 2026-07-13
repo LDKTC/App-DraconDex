@@ -58,6 +58,12 @@ function switchIconPickerTab(tabName) {
   const q1 = q('#ipk-icon-grid'), q2 = q('#ipk-symbol-grid');
   if (q1) q1.style.display = tabName === 'icons' ? '' : 'none';
   if (q2) q2.style.display = tabName === 'symbols' ? '' : 'none';
+  // A search term typed on one tab leaves matching cells `display:none` on
+  // the *other* tab too (filterIconPicker matches any .ipk-cell) — clear it
+  // on every tab switch so the just-shown tab is never blank from a filter
+  // typed before you switched to it.
+  const search = q('#ipk-search');
+  if (search && search.value) { search.value = ''; filterIconPicker(); }
 }
 
 function filterIconPicker() {

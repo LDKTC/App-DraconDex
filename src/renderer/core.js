@@ -153,7 +153,7 @@ const S = {
   wandererData:null,
   hubOpen:loadHubOpen(),
   moduleCollapsed:new Set(),
-  dragMajorId:null,
+  dragNest:null,
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -165,13 +165,19 @@ async function init() {
   S.colors       = await api.color.getAll();
   S.recentColors = await api.color.getRecent();
   S.nexuses      = await api.nexus.getAll();
-  const savedNexusId = Number(localStorage.getItem(NEXUS_ACTIVE_KEY));
+  // A window opened via the workspace switcher (toggleNexusSwitcher →
+  // openNexusWindow) boots straight into a specific Nexus via ?nexus=<id> —
+  // takes priority over the saved active Nexus, and deliberately isn't
+  // written back to localStorage since that key is shared across windows
+  // (same-origin) and writing it here would silently change what the
+  // *other* window restores to on its next reload.
+  const bootstrapNexusId = Number(new URLSearchParams(location.search).get('nexus')) || null;
+  const savedNexusId = bootstrapNexusId || Number(localStorage.getItem(NEXUS_ACTIVE_KEY));
   S.nexus        = S.nexuses.find(n => n.id === savedNexusId) || null;
   S.folders      = await api.folder.getAll();
   S.projects     = await api.project.getAll(null, S.nexus?.id ?? null);
   S.moduleTree   = S.nexus ? await api.module.getTree(S.nexus.id) : [];
   bindWindowChrome();
-  bindLeftPanelToggle();
   bindHubToggle();
   applyLeftPanelState();
   observeUiLanguage();
@@ -284,8 +290,6 @@ function applyLeftPanelState(){
   // #title-left-zone mirrors #nav-sidebar + #left-panel's width so the builder tab
   // strip that follows it in the title bar stays aligned with #main-area below.
   q('#title-tab-bar')?.classList.toggle('left-panel-collapsed', S.leftPanelCollapsed);
-  q('#left-panel-collapse')?.setAttribute('title', S.leftPanelCollapsed ? t('openPanel') : t('collapsePanel'));
-  q('#left-panel-peek')?.setAttribute('title', t('openPanel'));
   q('#hub-toggle-btn')?.classList.toggle('active', !S.leftPanelCollapsed);
   q('#hub-toggle-btn')?.setAttribute('title', t('toggleHub'));
 }
@@ -294,11 +298,6 @@ function setLeftPanelCollapsed(collapsed){
   S.leftPanelCollapsed = !!collapsed;
   localStorage.setItem(LEFT_PANEL_COLLAPSED_KEY, S.leftPanelCollapsed ? '1' : '0');
   applyLeftPanelState();
-}
-
-function bindLeftPanelToggle(){
-  q('#left-panel-collapse')?.addEventListener('click', () => setLeftPanelCollapsed(true));
-  q('#left-panel-peek')?.addEventListener('click', () => setLeftPanelCollapsed(false));
 }
 
 function bindHubToggle(){
@@ -1467,7 +1466,7 @@ async function switchView(v) {
     konvaStage = null;
   }
   q('#main-inner')?.classList.toggle('relation-main', v === 'relation');
-  if (v !== 'nexus') leaveBuilderGrid();
+  if (v !== 'nexus') { leaveBuilderGrid(); const foot = q('#left-panel-foot'); if (foot) foot.innerHTML = ''; }
   updateTopNavButton();
   if      (v==='nexus')           renderNexusHome();
   else if (v==='projects')        { if(S.project) renderProject(); else { renderSidebar(); renderWelcome(); } }
@@ -1490,18 +1489,22 @@ async function switchView(v) {
 function renderNexusHome() {
   S.view = 'nexus';
   S.activeModule = null;
+  // Rename-mode focus lock (Plan part1 #5) — while a module name is being
+  // edited, suppress hover highlighting across the whole app so nothing
+  // else visually competes with the active rename box.
+  document.body.classList.toggle('renaming-lock', S.renamingModuleId != null);
   if (konvaStage) { try { konvaStage.destroy(); } catch(e){} konvaStage = null; }
   document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
   updateTopNavButton();
   q('#main-inner')?.classList.remove('relation-main');
-  if (!S.nexus) { renderNexusPicker(); return; }
+  if (!S.nexus) { const foot = q('#left-panel-foot'); if (foot) foot.innerHTML = ''; renderNexusPicker(); return; }
 
-  q('#left-panel-inner').innerHTML = `
+  q('#left-panel-inner').innerHTML = buildHubHtml();
+  q('#left-panel-foot').innerHTML = `
     <div class="ph nexus-vault-head">
-      <h4><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
+      <h4 class="nexus-vault-name" onclick="toggleNexusSwitcher(event)" title="${t('nexusSwitch')}"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
       <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
-    </div>
-    ${buildHubHtml()}`;
+    </div>`;
   // The whole main area is the builder pane grid (Phase 19) — the focused
   // pane shows the current page (built from the S.* page mirrors below),
   // unfocused panes keep their previous live DOM.
@@ -1542,6 +1545,31 @@ function runBuilderMounts() {
     mountSketcherExtras();
   }
   if (S.activeModuleNode?.kind === 'designer' && typeof mountDesignerBoard === 'function') mountDesignerBoard();
+}
+
+// Workspace switcher — dropdown of every Nexus, opened above the vault-head
+// name pinned at the bottom of the left panel. Picking one opens it in a new
+// window rather than switching in-place (that's still the ⇄ button).
+function toggleNexusSwitcher(e) {
+  e.stopPropagation();
+  if (document.querySelector('.nexus-switcher-popup')) { closeAllPopups(); return; }
+  closeAllPopups();
+  const anchor = e.currentTarget;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup nexus-switcher-popup';
+  pop.innerHTML = S.nexuses.map(n => `
+    <div class="nexus-switcher-item${n.id === S.nexus.id ? ' active' : ''}" onclick="openNexusWindow(${n.id})">
+      <span class="nexus-vault-dot" style="${n.color_code ? `background:${x(n.color_code)}` : ''}"></span>${x(n.name)}
+    </div>`).join('');
+  document.body.appendChild(pop);
+  pop.addEventListener('click', ev => ev.stopPropagation());
+  positionPopupNear(pop, anchor.getBoundingClientRect());
+}
+
+async function openNexusWindow(nexusId) {
+  closeAllPopups();
+  if (nexusId === S.nexus?.id) return;
+  await api.window.openNexus(nexusId);
 }
 
 function renderNexusPicker() {
