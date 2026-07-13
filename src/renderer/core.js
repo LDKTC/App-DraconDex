@@ -280,6 +280,9 @@ function uiConfirm(message, opts = {}) {
 
 function applyLeftPanelState(){
   q('#app')?.classList.toggle('left-panel-collapsed', S.leftPanelCollapsed);
+  // #title-left-zone mirrors #nav-sidebar + #left-panel's width so the builder tab
+  // strip that follows it in the title bar stays aligned with #main-area below.
+  q('#title-tab-bar')?.classList.toggle('left-panel-collapsed', S.leftPanelCollapsed);
   q('#left-panel-collapse')?.setAttribute('title', S.leftPanelCollapsed ? t('openPanel') : t('collapsePanel'));
   q('#left-panel-peek')?.setAttribute('title', t('openPanel'));
   q('#hub-toggle-btn')?.classList.toggle('active', !S.leftPanelCollapsed);
@@ -653,6 +656,7 @@ function toggleSettingsMenu(force){
 
 function translateStaticChrome(){
   q('#settings-menu-btn')?.setAttribute('title', t('settings'));
+  q('#layout-menu-btn')?.setAttribute('title', t('splitLayout'));
   q('#new-project-tab')?.setAttribute('title', t('openProject'));
   q('#win-min')?.setAttribute('title', t('minimize'));
   q('#win-max')?.setAttribute('title', t('maximize'));
@@ -742,6 +746,12 @@ function bindWindowChrome(){
   });
   q('#settings-menu')?.addEventListener('click', e => e.stopPropagation());
   document.addEventListener('click', () => toggleSettingsMenu(false));
+  q('#layout-menu-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleLayoutMenu();
+  });
+  q('#layout-menu')?.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => toggleLayoutMenu(false));
   q('#new-project-tab')?.addEventListener('click', () => {
     returnToProjectList();
   });
@@ -929,34 +939,63 @@ function upsertProjectTab(project){
 // tab used to hide the tabs of every other module, so an open project/world/
 // game/write tab appeared to vanish the moment you switched modules even
 // though its state (S.projectTabs / S.entityTabs) was never cleared.
-// The tab strip lives in the builder (#builder-tabs at the top of
-// #main-area), not the title bar — progress.md decision (o) / mockup 01.
-// It merges legacy Director project tabs, legacy entity tabs and v3 module
-// tabs; the title bar only carries the vault label + hub toggle.
+// The tab strip lives inline in the title bar (#builder-tabs, moved up from a
+// second row below it), left-aligned with #main-area via #title-left-zone.
+// It merges legacy Director project tabs and legacy entity tabs; v3 module
+// tabs stay per-pane (Phase 19 — builder.js). The split-layout control lives
+// next to it as its own #layout-menu-wrap button (renderLayoutMenuBtn below).
 function renderProjectTabs(){
   updateTitlebarVault();
   const el = q('#builder-tabs');
-  if(!el) return;
-  const dirTabs = S.projectTabs.map(tab => `
-    <button class="project-tab ${S.activeModule==='director' && S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
-      <span class="tab-dot" style="background:${tab.color}"></span>
-      <span class="tab-name">${x(tab.name)}</span>
-      <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
-    </button>
-  `).join('');
-  const entTabs = S.entityTabs.map(tab => `
-    <button class="project-tab ${S.activeModule===tab.module && S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab('${tab.key}')" title="${x(tab.name)}">
-      <span class="tab-dot" style="background:${tab.color}"></span>
-      <span class="tab-name">${x(tab.name)}</span>
-      <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
-    </button>
-  `).join('');
-  // v3 module tabs live per-pane in the builder (Phase 19 — builder.js);
-  // this strip keeps only legacy Director/entity tabs + the split buttons.
-  const split = typeof builderSplitButtonsHtml === 'function' && S.nexus ? builderSplitButtonsHtml() : '';
-  el.innerHTML = dirTabs + entTabs + `<span class="bt-spacer"></span>` + split;
-  el.classList.toggle('empty', !(dirTabs + entTabs + split).trim());
+  if(el){
+    const dirTabs = S.projectTabs.map(tab => `
+      <button class="project-tab ${S.activeModule==='director' && S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
+        <span class="tab-dot" style="background:${tab.color}"></span>
+        <span class="tab-name">${x(tab.name)}</span>
+        <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
+      </button>
+    `).join('');
+    const entTabs = S.entityTabs.map(tab => `
+      <button class="project-tab ${S.activeModule===tab.module && S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab('${tab.key}')" title="${x(tab.name)}">
+        <span class="tab-dot" style="background:${tab.color}"></span>
+        <span class="tab-name">${x(tab.name)}</span>
+        <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
+      </button>
+    `).join('');
+    el.innerHTML = dirTabs + entTabs;
+    el.classList.toggle('empty', !(dirTabs + entTabs).trim());
+  }
+  renderLayoutMenuBtn();
   document.title = S.project ? `${S.project.name} - DraconDex` : 'DraconDex';
+}
+
+// Title-bar split-layout picker: one trigger button (shows the active layout's
+// glyph) + an overlay list of the 3 choices, replacing the old inline 3-button
+// row (builderSplitButtonsHtml, builder.js) that used to sit inside #builder-tabs.
+const LAYOUT_GLYPH = { 1: '▢', 2: '◫', 4: '⊞' };
+function renderLayoutMenuBtn(){
+  const wrap = q('#layout-menu-wrap');
+  const btn = q('#layout-menu-btn');
+  const menu = q('#layout-menu');
+  if(!wrap || !btn || !menu) return;
+  wrap.style.display = S.nexus ? '' : 'none';
+  if(!S.nexus) return;
+  const layout = builderState().layout;
+  btn.textContent = LAYOUT_GLYPH[layout] || LAYOUT_GLYPH[1];
+  menu.innerHTML = [1, 2, 4].map(n => `
+    <button class="layout-menu-item${layout === n ? ' act' : ''}" data-no-i18n onclick="builderSetLayout(${n});toggleLayoutMenu(false)">
+      <span>${LAYOUT_GLYPH[n]}</span><span>${n}×</span>
+    </button>`).join('');
+}
+
+function toggleLayoutMenu(force){
+  const menu = q('#layout-menu');
+  const btn = q('#layout-menu-btn');
+  if(!menu || !btn) return;
+  const open = typeof force === 'boolean' ? force : menu.classList.contains('hidden');
+  menu.classList.toggle('hidden', !open);
+  btn.classList.toggle('active', open);
+  btn.setAttribute('aria-expanded', String(open));
 }
 
 function updateTitlebarVault(){
