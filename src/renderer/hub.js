@@ -190,7 +190,7 @@ function buildNestRow(m, depth, parentId) {
   const chev = hasChildren
     ? `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" onclick="event.stopPropagation();toggleMajorExpand(${m.id})"><polyline points="${collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>`
     : '';
-  const grip = `<span class="grip" draggable="true" ondragstart="onNestDragStart(event,${m.id},${parentId ?? 'null'})">⠿</span>`;
+  const grip = `<span class="grip">⠿</span>`;
   const openable = m.kind !== 'collector';
   const renaming = S.renamingModuleId === m.id;
   // IDE-style depth indentation (Plan part1 #4/#4-2) — capped visually past
@@ -198,7 +198,15 @@ function buildNestRow(m, depth, parentId) {
   // the tree itself still nests as deep as the drop rules allow.
   const indentCls = depth ? ` indent${Math.min(depth, 5)}` : '';
   const childrenHtml = (hasChildren && !collapsed) ? m.children.map(c => buildNestRow(c, depth + 1, m.id)).join('') : '';
+  // draggable is on the whole row, not just the grip icon — the grip was
+  // the only draggable="true" element before, but it's a ~10px target
+  // that's invisible until hover, so a real drag started anywhere else on
+  // the row (name, icon, background — what a user would actually grab)
+  // silently did nothing. Off while renaming so dragging can't fight the
+  // rename `<input>` for the mousedown (a draggable ancestor around a text
+  // input makes placing the caret unreliable).
   return `<div class="li${indentCls}${sel}"
+      draggable="${renaming ? 'false' : 'true'}" ondragstart="onNestDragStart(event,${m.id},${parentId ?? 'null'})"
       ondragover="onNestDragOver(event,this)" ondragleave="onNestDragLeave(event,this)" ondrop="onNestDrop(event,${m.id},${parentId ?? 'null'},this)"
       onclick="${renaming ? '' : `scheduleRowOpen(${m.id})`}">
     ${grip}${chev}

@@ -153,6 +153,7 @@ const S = {
   wandererData:null,
   hubOpen:loadHubOpen(),
   moduleCollapsed:new Set(),
+  importFolderCollapsed:new Set(),
   dragNest:null,
 };
 const timelineGraphState = {};

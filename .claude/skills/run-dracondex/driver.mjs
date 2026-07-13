@@ -10,6 +10,7 @@
 // Commands:
 //   ss <name>              screenshot -> tmp-driver-data/shots/<name>.png
 //   click <selector>       click first match (Playwright selector syntax)
+//   dragto <src> :: <dst>  real HTML5 drag-and-drop from src to dst
 //   fill <selector> :: <text>   set an input's value
 //   type <text>            type into focused element
 //   press <key>            keyboard key, e.g. Enter, Control+A
@@ -83,6 +84,36 @@ for (const raw of commands) {
         await win.click(rest, { timeout: 5000 });
         console.log(`[click] ${rest}`);
         break;
+      case 'dragto': {
+        // Real HTML5 drag-and-drop via actual mouse.down/move/up (multiple
+        // intermediate moves, like a human drag — not a synthetic
+        // dispatchEvent and not Playwright's single-jump dragAndDrop helper)
+        // — for verifying draggable="true" interactions actually work
+        // end-to-end. Optional third segment picks the vertical fraction of
+        // the target row to drop on (0=top edge, 0.5=center, 1=bottom edge)
+        // to hit a specific drop zone; defaults to center.
+        const [srcSel, dstSel, fracStr] = rest.split(' :: ').map(s => s.trim());
+        const frac = fracStr !== undefined ? parseFloat(fracStr) : 0.5;
+        const src = win.locator(srcSel).first();
+        const dst = win.locator(dstSel).first();
+        const srcBox = await src.boundingBox({ timeout: 5000 });
+        if (!srcBox) throw new Error('dragto: source element not visible');
+        const sx = srcBox.x + srcBox.width / 2, sy = srcBox.y + srcBox.height / 2;
+        await win.mouse.move(sx, sy);
+        // Re-measure the destination AFTER hovering the source — hovering a
+        // row can reveal its .acts buttons and grow its height, shifting
+        // rows below it, which would stale a box measured before this move.
+        const dstBox = await dst.boundingBox({ timeout: 5000 });
+        if (!dstBox) throw new Error('dragto: destination element not visible');
+        const dx = dstBox.x + dstBox.width / 2, dy = dstBox.y + dstBox.height * frac;
+        await win.mouse.down();
+        await win.mouse.move(sx + (dx - sx) / 2, sy + (dy - sy) / 2, { steps: 5 });
+        await win.mouse.move(dx, dy, { steps: 5 });
+        await win.mouse.move(dx, dy, { steps: 2 }); // settle so dragover fires on the final target
+        await win.mouse.up();
+        console.log(`[dragto] ${srcSel} -> ${dstSel} @${frac}`);
+        break;
+      }
       case 'fill': {
         const [sel, text] = rest.split(' :: ');
         await win.fill(sel.trim(), text ?? '', { timeout: 5000 });

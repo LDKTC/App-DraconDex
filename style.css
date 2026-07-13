@@ -828,7 +828,7 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .acc-body{padding:2px 0 8px}
 .acc-collapsed{border-bottom:1px solid var(--border)}
 
-.li .kicon{display:flex;align-items:center;flex-shrink:0}
+.li .kicon{display:flex;align-items:center;flex-shrink:0;-webkit-user-drag:none}
 .li .kicon .icon{width:15px;height:15px;stroke-width:2.2}
 .module-head .kicon{display:inline-flex;align-items:center}
 .module-head .kicon .icon{width:18px;height:18px;stroke-width:2.2}
@@ -940,9 +940,15 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
    while the active rename box keeps working normally: typing needs no
    pointer-events, and a click to place the caret only needs it re-enabled
    on the input itself. Clicking anywhere else still blurs the input
-   (falls through to <body>), so click-outside-to-save/cancel still works. */
+   (falls through to <body>), so click-outside-to-save/cancel still works.
+   The whole ANCESTOR CHAIN of the input also needs pointer-events:auto, not
+   just the input — Chromium's mousedown-to-focus handling for a descendant
+   can misfire when any ancestor has pointer-events:none, even though the
+   descendant itself re-enables it, so a click meant to place the caret
+   blurred (and saved/closed) the box instead. */
 body.renaming-lock *{pointer-events:none}
-body.renaming-lock .rename-input{pointer-events:auto}
+body.renaming-lock .rename-input,
+body.renaming-lock *:has(.rename-input){pointer-events:auto}
 
 .togglerow{display:flex;align-items:center;gap:8px;font-size:calc(11px * var(--fsc,1));color:var(--t2);margin-top:7px}
 .tg{width:26px;height:14px;border-radius:7px;background:var(--raised);border:1px solid var(--border);position:relative;flex-shrink:0}
@@ -1197,7 +1203,7 @@ body.renaming-lock .rename-input{pointer-events:auto}
 }
 .li .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .li .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.li .acts{display:none;gap:2px}
+.li .acts{display:none;gap:2px;-webkit-user-drag:none}
 .li:hover .acts{display:flex}
 /* Hovering the char-symbol button shouldn't also highlight the whole row */
 .li:has(> div > .char-sym-btn:hover){background:transparent;color:var(--t2)}
@@ -2562,7 +2568,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .sh-node .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
 
 /* Import Dock section + file viewer (Phase 18, mockup 29) */
-.dock-folder{display:flex;align-items:center;gap:6px;margin-top:8px}
+.dock-folder{display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer}
 .dock-folder .cnt{margin-left:auto;font-weight:400}
 .dock-ficon{font-size:calc(12px * var(--fsc,1));color:var(--t3)}
 .dock-png,.dock-jpg,.dock-jpeg,.dock-gif,.dock-webp,.dock-svg{color:#38bdf8}

@@ -33,12 +33,17 @@ function buildImportDockRows() {
   }
   let html = '';
   let lastFolder = null;
+  let folderCollapsed = false;
   for (const f of files) {
     if (f.folder !== lastFolder) {
       lastFolder = f.folder;
+      folderCollapsed = S.importFolderCollapsed.has(f.folder || '');
       const count = files.filter(v => v.folder === f.folder).length;
-      html += `<div class="au-col-label dock-folder" data-no-i18n>${I.folder || ''} ${x(f.folder || '—')}/<span class="cnt">${count} files</span></div>`;
+      html += `<div class="au-col-label dock-folder" data-no-i18n onclick="toggleImportFolder(${x(JSON.stringify(f.folder || ''))})">
+        <svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="${folderCollapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>
+        ${I.folder || ''} ${x(f.folder || '—')}/<span class="cnt">${count} files</span></div>`;
     }
+    if (folderCollapsed) continue;
     const chip = f.entity
       ? `<span class="dock-chip lk" data-no-i18n>→ ${x(f.entity.name)}</span>`
       : `<span class="dock-chip ghost">${t('notLinked')}</span>`;
@@ -46,9 +51,18 @@ function buildImportDockRows() {
       <span class="dock-ficon dock-${x(f.file_type || 'file')}" data-no-i18n>▤</span>
       <span class="name" data-no-i18n>${x(f.file_name)}${f.use_as_image ? ' ★' : ''}</span>
       ${chip}
+      <span class="acts">
+        <button class="btn btn-g btn-i" onclick="event.stopPropagation();deleteImportFileRow(${f.id})" title="${t('delete')}">${I.delete}</button>
+      </span>
     </div>`;
   }
   return html + importBtn;
+}
+
+function toggleImportFolder(folder) {
+  if (S.importFolderCollapsed.has(folder)) S.importFolderCollapsed.delete(folder);
+  else S.importFolderCollapsed.add(folder);
+  renderNexusHome();
 }
 
 async function importDockPickFolder() {
@@ -180,7 +194,10 @@ async function deleteImportFileRow(id) {
   if (!await uiConfirm(t('moduleDeleteConfirm'))) return;
   await api.importdock.delete(id);
   S.importFiles = undefined;
-  S.filePreview = null;
+  // Only close the open preview if the deleted file IS the one being
+  // previewed — the dock row's own delete button (any row, not just the
+  // open one) shouldn't blow away an unrelated file's open preview.
+  if (S.filePreview?.id === id) S.filePreview = null;
   S.displayImageCache = null;
   renderNexusHome();
   toast(t('deleted'), 'ok');
