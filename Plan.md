@@ -4,6 +4,7 @@
 
 -----
 part 1 Function Edit
+-
     - [ ] แก้ไขhub
        - [ ] 1.class ph nexus-vault-head ควรจะอยู่ด้านล่างสุดของleft panel  
         *เพิ่มระบบ nexus switcher ที่เมื่อกดที่ชื่อnexusนั้น ที่อยู่ด้านล่างสุด จะแสดงdropdown menuขึ้นเหนือชื่อnexusนั้น โดยจะแสดงnexus listทั้งหมดที่มี เมื่อกดที่nexusใดสักอันหนึ่งที่อยู่ในlist จะเปิดnew window โดยwindowนั้นจะเปิดnexus ที่ได้เลือกไ้ว (ระบบWorkspace switcher)
@@ -11,6 +12,7 @@ part 1 Function Edit
         **ระบบพับและเปิดContainer ref จาก Visual studio code  
        - [ ] 3.ปุ่ม พับpanel เปิดpanel บนleftpanelสามารถนำออกได้เลย เพราะมีปุ่มtoggle leftpanel แล้ว
        - [ ] 4.module บนnexus ถ้าเป็นMajor module จะสามารถ
+-
 -----
 
 
