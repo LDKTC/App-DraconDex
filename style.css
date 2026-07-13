@@ -1364,6 +1364,21 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .confirm-msg{font-size:calc(13px * var(--fsc,1));color:var(--t1);line-height:1.5;white-space:pre-wrap}
 .confirm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 
+/* First-run coach-marks guide (src/renderer/guide.js) — theme-token colors only */
+#guide-overlay{position:fixed;inset:0;z-index:1200;pointer-events:none}
+.guide-catch{position:absolute;inset:0;pointer-events:auto}
+.guide-spotlight{position:fixed;border-radius:var(--r);pointer-events:none;
+	box-shadow:0 0 0 9999px rgba(0,0,0,.6),0 0 0 2px var(--accent);
+	transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease}
+.guide-pop{position:fixed;width:280px;max-width:92vw;pointer-events:auto;
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);
+	padding:14px 16px;box-shadow:0 24px 64px rgba(0,0,0,.55);
+	transition:left .18s ease,top .18s ease}
+.guide-pop-title{font-size:calc(14px * var(--fsc,1));font-weight:700;color:var(--t1);margin-bottom:6px}
+.guide-pop-text{font-size:calc(12.5px * var(--fsc,1));color:var(--t2);line-height:1.5}
+.guide-pop-foot{display:flex;gap:6px;align-items:center;margin-top:14px}
+.guide-step{font-size:calc(11px * var(--fsc,1));color:var(--t3)}
+
 /* Modal: separate description (hint callout) from data (labeled sections) */
 .modal-hint{
 	display:flex;gap:8px;align-items:flex-start;

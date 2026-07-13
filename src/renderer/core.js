@@ -182,10 +182,10 @@ async function init() {
   translateStaticChrome();
   renderProjectTabs();
   renderNexusHome();
-  // First-run gate: with zero Nexus, auto-open the create dialog once on startup so
-  // the user makes their first vault before using the app (renderNexusPicker draws
-  // the welcome hero behind it). Only here — not on every re-render or vault switch.
-  if (!S.nexuses.length) openNexusModal();
+  // First-run gate: with zero Nexus, open the Welcome modal on startup (over the
+  // picker hero). "Create later" only closes it, so — since init() runs every launch
+  // and no flag is persisted — it naturally reshows until a Nexus exists.
+  if (!S.nexuses.length) openWelcomeModal();
   bindNav();
   bindWikilinkClicks();
   bindGlobalShortcuts();
@@ -224,6 +224,8 @@ function toast(msg,type='') {
 function openModal(title,body) {
   q('#modal-title').textContent=tr(title);
   q('#modal-body').innerHTML=body;
+  // Reset the ✕ (openWelcomeModal hides it for the required-choice first-run modal).
+  const closeBtn = q('#modal-close'); if(closeBtn) closeBtn.style.display='';
   const overlay = q('#modal-overlay');
   overlay.classList.remove('hidden');
   // make modal focusable and move focus to it so inputs inside become interactive
@@ -1504,20 +1506,20 @@ function runBuilderMounts() {
 
 function renderNexusPicker() {
   leaveBuilderGrid();
-  // First-run onboarding: no Nexus exists at all. Guide the user to create their
-  // first vault (or restore one from a .db backup) before anything else is usable.
-  // The init() gate also auto-opens the create dialog on top of this screen.
+  // First-run onboarding: no Nexus exists at all. The init() gate opens the Welcome
+  // modal on top of this screen; if the user picks "create later" they land here, so
+  // the primary button reopens the same Welcome modal for a consistent entry point.
   if (!S.nexuses.length) {
     q('#left-panel-inner').innerHTML = `
       <div class="ph"><h4>${t('nexus')}</h4>
-        <button class="btn btn-p btn-sm" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
+        <button class="btn btn-p btn-sm" onclick="openWelcomeModal()">+ ${t('nexusNew')}</button>
       </div>`;
     q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
       <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
       <h3>${t('nexusWelcomeTitle')}</h3>
       <p>${t('nexusEmpty')}</p>
       <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-top:18px">
-        <button class="btn btn-p" style="min-width:180px" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
+        <button class="btn btn-p" style="min-width:180px" onclick="openWelcomeModal()">+ ${t('nexusNew')}</button>
         <button class="btn btn-s" style="min-width:180px" onclick="importDatabaseFile()">${t('importDb')}</button>
       </div>
     </div>`;
@@ -1584,6 +1586,33 @@ function closeNexus() {
   updateStatusBar({ item: null, words: null, saveState: null });
 }
 
+// First-run Welcome modal: a required-choice screen shown while no Nexus exists.
+// Offers create / import / "create later" (the low-emphasis skip). The ✕ is hidden so
+// the choice is explicit; "create later" just closes it and the picker hero stays.
+function openWelcomeModal() {
+  openModal(t('wmTitle'), `
+    <div style="text-align:center">
+      <div class="ei" style="margin-bottom:6px"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:44px;width:44px;opacity:.5"></div>
+      <p style="color:var(--t2);margin:0 0 18px">${t('wmText')}</p>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+        <button class="btn btn-p" style="min-width:200px" onclick="welcomeCreateNexus()">${t('wmCreateNew')}</button>
+        <button class="btn btn-s" style="min-width:200px" onclick="closeModal();importDatabaseFile()">${t('wmImport')}</button>
+        <button class="btn btn-g btn-sm" style="margin-top:6px;color:var(--t3)" onclick="closeModal()">${t('wmLater')}</button>
+      </div>
+    </div>`);
+  const closeBtn = q('#modal-close'); if(closeBtn) closeBtn.style.display='none';
+}
+
+// "Create new Nexus" from the Welcome modal: ask whether the user is new, then open the
+// create form. First-time users get the coach-marks guide once the vault is created
+// (createNexusSubmit reads S._guideAfterCreate).
+async function welcomeCreateNexus() {
+  const usedBefore = await uiConfirm(t('usedBeforeAsk'),
+    { okText: t('usedBeforeYes'), cancelText: t('usedBeforeNo'), danger: false });
+  S._guideAfterCreate = !usedBefore;
+  openNexusModal();
+}
+
 async function openNexusModal(id = null) {
   await reloadNexuses();
   const n = id ? S.nexuses.find(v => v.id === id) : null;
@@ -1608,6 +1637,13 @@ async function createNexusSubmit() {
     await reloadNexuses();
     toast(t('nexusCreated'), 'ok');
     await selectNexus(newId);
+    // First-time users (chose "never used" in welcomeCreateNexus) get the coach-marks
+    // tour now that the vault home is rendered and its real UI elements exist.
+    if (S._guideAfterCreate) {
+      S._guideAfterCreate = false;
+      await loadModule('src/renderer/guide.js');
+      if (typeof startNexusGuide === 'function') startNexusGuide();
+    }
   } catch (e) { toast(t('nexusNameTaken'), 'error'); }
 }
 
