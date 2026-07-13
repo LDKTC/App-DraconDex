@@ -30,7 +30,7 @@ async function openSageTab(tab) {
 function buildSageHutHtml() {
   const d = S.sageHut;
   const st = d.stats;
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${SAGEHUT_VIEWS.map(v => `<span class="vitem${v === d.tab ? ' act' : ''}" onclick="openSageTab('${v}')" data-no-i18n>${SAGEHUT_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const tiles = `<div class="sh-tiles">

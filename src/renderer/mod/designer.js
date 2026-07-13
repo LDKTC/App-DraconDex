@@ -44,7 +44,7 @@ const dgNodeName = (n) => n.entity ? n.entity.name : (n.node_text || '—');
 function buildDesignerMainHtml(m) {
   const d = (S.designerData && S.designerData.moduleId === m.id) ? S.designerData : null;
   if (!d) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${DESIGNER_VIEWS.map(v => `<span class="vitem${v === d.view ? ' act' : ''}" onclick="setDesignerView('${v}')" data-no-i18n>${DESIGNER_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">${viewBar}</div>`;

@@ -52,7 +52,7 @@ async function selectSketchPage(id) {
 function buildSketcherMainHtml(m) {
   const d = (S.sketcherData && S.sketcherData.moduleId === m.id) ? S.sketcherData : null;
   if (!d) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${SKETCHER_VIEWS.map(v => `<span class="vitem${v === d.view ? ' act' : ''}" onclick="setSketcherView('${v}')" data-no-i18n>${SKETCHER_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">
