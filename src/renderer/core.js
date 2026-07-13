@@ -1592,7 +1592,7 @@ function closeNexus() {
 function openWelcomeModal() {
   openModal(t('wmTitle'), `
     <div style="text-align:center">
-      <div class="ei" style="margin-bottom:6px"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:44px;width:44px;opacity:.5"></div>
+      <div class="ei" style="margin:0 auto 6px;width:44px"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:44px;width:44px;opacity:.5"></div>
       <p style="color:var(--t2);margin:0 0 18px">${t('wmText')}</p>
       <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
         <button class="btn btn-p" style="min-width:200px" onclick="welcomeCreateNexus()">${t('wmCreateNew')}</button>
