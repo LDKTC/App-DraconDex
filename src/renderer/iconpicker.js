@@ -1,7 +1,9 @@
 'use strict';
 // ═══ Icon Collection picker (progress.md Phase 5) ═════════════════════
-// Modal used by every module create/edit flow (hub.js's moduleFormModal)
-// to pick a module's icon + color, with a live nest-row preview. Two
+// Embedded markup (no modal chrome of its own) used to pick a module's
+// icon + color, with a live nest-row preview — hosted inside hub.js's
+// edit modal (moduleFormModal) or its live-save icon popup
+// (openModuleIconPopup). Two
 // working tabs — Icons (this app's `I.*` SVG dict) and Symbols (the
 // existing `symbol_collection`, already user-extendable via Navigator) —
 // plus a disabled "Uploaded" placeholder feeding off Import Dock (Phase 18).

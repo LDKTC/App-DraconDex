@@ -145,7 +145,7 @@ const S = {
   // alongside the legacy Director/Navigator/Hero/Writer/Scribe/Sage/Artisan
   // modules; see progress.md Section C for the scoping decision.
   moduleTree:[], activeModuleNode:null, inspectorData:null,
-  moduleTabs:[],
+  moduleTabs:[], renamingModuleId:null,
   classifierData:null, classifierView:'table', classifierSelectedObject:null,
   managerData:null, managerView:'cards',
   locatorAreas:null,
@@ -192,6 +192,7 @@ async function init() {
   updateStatusBar();
   document.addEventListener('click', () => {
     document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
+    document.querySelectorAll('.kind-popup').forEach(d => d.remove());
   });
   bindSearch();
 }

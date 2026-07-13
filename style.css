@@ -821,6 +821,8 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 
 .li .kicon{display:flex;align-items:center;flex-shrink:0}
 .li .kicon .icon{width:15px;height:15px;stroke-width:2.2}
+.module-head .kicon{display:inline-flex;align-items:center}
+.module-head .kicon .icon{width:18px;height:18px;stroke-width:2.2}
 .li .kind{margin-left:auto;font-size:calc(9px * var(--fsc,1));color:var(--t3);border:1px solid var(--border);
 	border-radius:3px;padding:0 4px;letter-spacing:.03em;flex-shrink:0}
 .li .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -882,6 +884,36 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .typecard h5{font-size:calc(12.5px * var(--fsc,1));margin-bottom:3px;display:flex;gap:6px;align-items:center}
 .typecard h5 .icon{width:14px;height:14px}
 .typecard p{font-size:calc(10.5px * var(--fsc,1));color:var(--t3);line-height:1.45}
+
+/* Module create-modal kind picker (list of module cards w/ icon+color+desc) */
+.kindgrid{max-height:280px;overflow-y:auto;padding-right:2px}
+.kindgrid.locked .kindcard{cursor:default}
+.kindgrid.locked .kindcard:hover{border-color:var(--accent)}
+
+/* Instant-create / icon-edit popups (position set inline via JS — hub.js's
+   positionPopupNear) — same floating-above-everything z-index as .wlink-float */
+.kind-popup{
+	position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);
+	border-radius:var(--r);box-shadow:0 18px 44px rgba(0,0,0,.42);
+}
+.kind-list-popup{width:280px;max-height:360px;overflow-y:auto;padding:6px}
+.kind-list-item{display:flex;align-items:flex-start;gap:9px;padding:7px 8px;border-radius:var(--rs);cursor:pointer}
+.kind-list-item:hover{background:var(--hover)}
+.kind-list-item .kicon{width:16px;height:16px;flex-shrink:0;margin-top:1px}
+.kind-list-item .kicon .icon{width:16px;height:16px;stroke-width:2.2}
+.kli-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.kli-name{font-size:calc(12.5px * var(--fsc,1));color:var(--t1)}
+.kli-desc{font-size:calc(10.5px * var(--fsc,1));color:var(--t3);line-height:1.35}
+.icon-edit-popup{padding:12px;width:280px}
+
+/* Inline rename (double-click a module name in the Nest row or its open
+   detail header) */
+.rename-input{
+	background:var(--bg);border:1px solid var(--accent);border-radius:var(--rs);
+	color:var(--t1);font:inherit;padding:1px 5px;min-width:0;
+}
+.li .rename-input{flex:1}
+
 .togglerow{display:flex;align-items:center;gap:8px;font-size:calc(11px * var(--fsc,1));color:var(--t2);margin-top:7px}
 .tg{width:26px;height:14px;border-radius:7px;background:var(--raised);border:1px solid var(--border);position:relative;flex-shrink:0}
 .tg.on{background:var(--accent);border-color:var(--accent)}

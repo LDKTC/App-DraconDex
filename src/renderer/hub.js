@@ -23,6 +23,23 @@ const KIND_LABEL = {
   author:'Author', scribe:'Scribe', drafter:'Drafter', viewer:'Viewer', connector:'Connector',
   sketcher:'Sketcher', designer:'Designer',
 };
+// Distinct accent per kind for the create-modal picker cards (buildKindPicker
+// below) — drawn from the app's own seeded color palette (src/db/core.js),
+// not a new hardcoded set, so cards stay theme-safe.
+const KIND_COLOR = {
+  collector:'#64748b', manager:'#6366f1', inspector:'#3b82f6', classifier:'#8b5cf6',
+  locator:'#22c55e', chronicler:'#f97316', wanderer:'#06b6d4', narrator:'#ec4899',
+  author:'#eab308', scribe:'#38bdf8', drafter:'#a78bfa', viewer:'#34d399', connector:'#f43f5e',
+  sketcher:'#fb923c', designer:'#a3e635',
+};
+// i18n key per kind's one-line description on the same cards.
+const KIND_DESC_KEY = {
+  collector:'kindDescCollector', manager:'kindDescManager', inspector:'kindDescInspector',
+  classifier:'kindDescClassifier', locator:'kindDescLocator', chronicler:'kindDescChronicler',
+  wanderer:'kindDescWanderer', narrator:'kindDescNarrator', author:'kindDescAuthor',
+  scribe:'kindDescScribe', drafter:'kindDescDrafter', viewer:'kindDescViewer',
+  connector:'kindDescConnector', sketcher:'kindDescSketcher', designer:'kindDescDesigner',
+};
 
 // Selection made in the Icon Collection picker (Phase 5): `svg:<I-key>` or
 // `sym:<glyph>`, stored verbatim in module.icon. Falls back to the kind's
@@ -66,7 +83,7 @@ function renderModuleRail() {
   if (!S.nexus) return;
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
-  let html = `<button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="openMajorModuleModal()">${I.plus}</button>`;
+  let html = `<button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus}</button>`;
   if (S.moduleTree.length) html += `<div class="rail-sep module-rail-tool"></div>`;
   for (const m of S.moduleTree) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
@@ -107,7 +124,7 @@ function buildHubHtml() {
   // (Phase 24).
   return `<div id="hub-body">
     ${buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
-      `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal()" title="${t('createMajorModule')}">${I.plus}</button>`)}
+      `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>`)}
     ${buildAccSection('sage', t('sageHut'), buildSageHutRows())}
     ${buildAccSection('dock', t('importDock'),
       typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
@@ -166,14 +183,17 @@ function buildNestRow(m, depth) {
   const grip = depth === 0 ? `<span class="grip" draggable="true" ondragstart="onNestDragStart(event,${m.id})">⠿</span>` : '';
   const openable = m.kind !== 'collector';
   const rowClick = openable ? `openModuleNode(${m.id})` : (hasChildren ? `toggleMajorExpand(${m.id})` : '');
+  const renaming = S.renamingModuleId === m.id;
   return `<div class="li${depth ? ` indent${depth}` : ''}${sel}" ${depth === 0 ? `ondragover="onNestDragOver(event)" ondrop="onNestDrop(event,${m.id})"` : ''}
-      onclick="${rowClick}">
+      onclick="${renaming ? '' : rowClick}">
     ${grip}${chev}
-    <span class="kicon" style="color:${x(col)}">${moduleIconHtml(m)}</span>
-    <span class="name">${x(m.name)}</span>
+    <span class="kicon" style="color:${x(col)}" onclick="event.stopPropagation();openModuleIconPopup(${m.id},this)">${moduleIconHtml(m)}</span>
+    ${renaming
+      ? `<input id="rename-nest-${m.id}" class="rename-input" value="${x(m.name)}" onclick="event.stopPropagation()" onblur="saveModuleRename(${m.id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value=${x(JSON.stringify(m.name))};this.blur();}">`
+      : `<span class="name" ondblclick="event.stopPropagation();startRenameModule(${m.id})">${x(m.name)}</span>`}
     <span class="kind">${x(kindLabel(m.kind))}</span>
     <span class="acts">
-      ${depth === 0 ? `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id})" title="${t('addMinorModule')}">${I.plus}</button>` : ''}
+      ${depth === 0 ? `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id},this)" title="${t('addMinorModule')}">${I.plus}</button>` : ''}
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openModuleEditModal(${m.id})" title="${t('moduleEdit')}">${I.edit}</button>
     </span>
   </div>`;
@@ -202,20 +222,136 @@ async function onNestDrop(ev, targetId) {
   await reloadModuleTree();
 }
 
-// ═══ Create / edit / delete (minimal form — the full Classifier wizard +
-// Icon Collection picker is Phase 5) ═══════════════════════════════════
-async function openMajorModuleModal() {
+// ═══ Create (instant, via kind-popup) / edit (still the full form) / delete
+async function openMajorModuleModal(anchor) {
   if (!S.nexus) return;
-  await moduleFormModal(null, null);
+  openKindPopup(null, anchor);
 }
-async function openMinorModuleModal(parentId) {
+async function openMinorModuleModal(parentId, anchor) {
   if (!S.nexus) return;
-  await moduleFormModal(null, parentId);
+  openKindPopup(parentId, anchor);
 }
 async function openModuleEditModal(id) {
   const m = findModuleNode(id);
   if (!m) return;
-  await moduleFormModal(m, m.parent_id);
+  await moduleFormModal(m);
+}
+
+// ═══ Popup plumbing shared by the kind-picker and the icon/color popup ═
+// Closed globally on any outside click — see the `.kind-popup` sweep next
+// to the `.np-dropdown` one in core.js's init().
+function closeAllPopups() {
+  document.querySelectorAll('.kind-popup').forEach(el => el.remove());
+}
+// Place a freshly-appended popup below its anchor button, flipping above
+// and clamping horizontally if it would overflow the viewport — same idea
+// as guide.js's _guidePaint popover placement, generalized for reuse here.
+function positionPopupNear(el, rect) {
+  const pw = el.offsetWidth, ph = el.offsetHeight, gap = 6;
+  let top = rect.bottom + gap;
+  if (top + ph > window.innerHeight - 8) top = Math.max(8, rect.top - ph - gap);
+  let left = rect.left;
+  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+  el.style.top = `${top}px`;
+  el.style.left = `${left}px`;
+}
+
+// ═══ Kind-picker popup — instant create ════════════════════════════════
+function openKindPopup(parentId, anchor) {
+  closeAllPopups();
+  if (!anchor) return;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup kind-list-popup';
+  pop.innerHTML = buildKindListHtml(parentId);
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  positionPopupNear(pop, anchor.getBoundingClientRect());
+}
+
+function buildKindListHtml(parentId) {
+  return MODULE_KINDS.map(k => `
+    <div class="kind-list-item" onclick="quickCreateModule('${k}',${parentId ?? 'null'})">
+      <span class="kicon" style="color:${x(KIND_COLOR[k])}">${I[KIND_ICON[k]]}</span>
+      <span class="kli-text"><span class="kli-name">${x(kindLabel(k))}</span><span class="kli-desc">${t(KIND_DESC_KEY[k])}</span></span>
+    </div>`).join('');
+}
+
+// Classifier needs one more decision (cat_type) before it can be created —
+// swap the popup's content to those 3 cards instead of a second popup, so
+// there's still only ever one `.kind-popup` open at a time.
+function buildCatTypeListHtml(parentId) {
+  const types = [
+    ['object', I.layer, 'catTypeObject', 'catTypeObjectDesc'],
+    ['element', I.relation, 'catTypeElement', 'catTypeElementDesc'],
+    ['character', I.person, 'catTypeCharacter', 'catTypeCharacterDesc'],
+  ];
+  return types.map(([ct, icon, labelKey, descKey]) => `
+    <div class="kind-list-item" onclick="quickCreateModule('classifier',${parentId ?? 'null'},'${ct}')">
+      <span class="kicon">${icon}</span>
+      <span class="kli-text"><span class="kli-name">${t(labelKey)}</span><span class="kli-desc">${t(descKey)}</span></span>
+    </div>`).join('');
+}
+
+async function quickCreateModule(kind, parentId, catType) {
+  const pop = document.querySelector('.kind-popup');
+  if (kind === 'classifier' && !catType) {
+    if (pop) pop.innerHTML = buildCatTypeListHtml(parentId);
+    return;
+  }
+  const name = t('newModuleName').replace('{kind}', kindLabel(kind));
+  const moduleId = await api.module.create({
+    nexus_ref: S.nexus.id, parent_id: parentId, name, kind,
+    color: null, icon_color: null, icon: null,
+    cat_type: kind === 'classifier' ? catType : null,
+  });
+  closeAllPopups();
+  if (parentId != null) S.moduleCollapsed.delete(parentId);
+  await reloadModuleTree();
+  S.renamingModuleId = moduleId;
+  const created = findModuleNode(moduleId);
+  if (created && created.kind !== 'collector') await openModuleNode(moduleId);
+  else renderNexusHome();
+}
+
+// ═══ Inline rename — Nest row + module detail header share one flag ════
+function startRenameModule(id) {
+  S.renamingModuleId = id;
+  renderNexusHome();
+  setTimeout(() => {
+    const el = q(S.activeModuleNode?.id === id ? `#rename-head-${id}` : `#rename-nest-${id}`);
+    el?.focus(); el?.select();
+  }, 30);
+}
+
+async function saveModuleRename(id, value) {
+  const name = value.trim();
+  const m = findModuleNode(id);
+  if (name && m && name !== m.name) await api.module.update(id, { name });
+  S.renamingModuleId = null;
+  await reloadModuleTree();
+}
+
+// ═══ Icon/color quick-popup — live-saves on every pick ═════════════════
+async function openModuleIconPopup(id, anchor) {
+  closeAllPopups();
+  const m = findModuleNode(id);
+  if (!m || !anchor) return;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup icon-edit-popup';
+  pop.innerHTML = await iconPicker(m.icon || null, m.color || null, m.name, kindLabel(m.kind));
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => {
+    e.stopPropagation();
+    if (e.target.closest('.ipk-cell') || e.target.closest('.cswatch')) saveModuleIconLive(id);
+  });
+  positionPopupNear(pop, anchor.getBoundingClientRect());
+}
+
+async function saveModuleIconLive(id) {
+  const icon = getIconPickerValue() || null;
+  const color = q('#sel-color')?.value || null;
+  await api.module.update(id, { icon, color, icon_color: color });
+  await reloadModuleTree();
 }
 
 function buildCatTypePicker(selected) {
@@ -245,63 +381,50 @@ function pickCatType(type) {
   ['object', 'element', 'character'].forEach((k, i) => cards[i]?.classList.toggle('sel', k === type));
 }
 
-function toggleClassifierFieldsVisibility() {
-  const wrap = q('#mm-cattype-wrap');
-  if (wrap) wrap.style.display = q('#mm-kind').value === 'classifier' ? '' : 'none';
+// Edit-modal kind display: read-only, one card, since kind can't change
+// post-creation (db/module.js has no kind-migration path — quickCreateModule
+// is the only place a kind is ever chosen, via the popup card list below).
+function buildKindPicker(kind) {
+  return `<div class="fg">
+    <label>${t('moduleKind')}</label>
+    <div class="typegrid kindgrid locked">
+      <div class="typecard kindcard sel">
+        <h5 style="color:${x(KIND_COLOR[kind])}">${I[KIND_ICON[kind]]} ${x(kindLabel(kind))}</h5>
+        <p>${t(KIND_DESC_KEY[kind])}</p>
+      </div>
+    </div>
+    <input type="hidden" id="mm-kind" value="${kind}">
+  </div>`;
 }
 
-async function moduleFormModal(existing, parentId) {
-  const kindOptions = MODULE_KINDS.map(k => `<option value="${k}" ${existing?.kind === k ? 'selected' : ''}>${kindLabel(k)}</option>`).join('');
-  const title = existing ? t('moduleEdit') : (parentId ? t('minorModuleNew') : t('majorModuleNew'));
-  const startKind = existing?.kind || 'manager';
-  openModal(title, `
-    <div class="fg"><label>${t('name')} *</label><input id="mm-name" value="${x(existing?.name || '')}"></div>
-    ${!existing && !parentId ? `<div class="fg"><label>${t('artStartTemplate')}</label>
-      <select id="mm-template">
-        <option value="">${t('artNoTemplate')}</option>
-        ${['director','navigator','hero','writer'].map(tg => `<option value="${tg}">${t(tg)} — ${t('artV3Card')}</option>`).join('')}
-      </select></div>` : ''}
-    <div class="fg"><label>${t('moduleKind')}</label><select id="mm-kind" ${existing ? 'disabled' : ''} onchange="toggleClassifierFieldsVisibility()">${kindOptions}</select></div>
-    <div id="mm-cattype-wrap" style="display:${startKind === 'classifier' ? '' : 'none'}">${buildCatTypePicker(existing?.cat_type)}</div>
-    <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing?.icon || null, existing?.color || null, existing?.name || '', existing ? (kindLabel(existing.kind)) : '')}</div>
+// Edit-only now — creation is instant via the kind-popup (openKindPopup/
+// quickCreateModule below); "start from template" never belonged here, it's
+// Artisan's own artisanV3Spec/api.artisan.createV3 flow (src/renderer/artisan.js).
+async function moduleFormModal(existing) {
+  openModal(t('moduleEdit'), `
+    <div class="fg"><label>${t('name')} *</label><input id="mm-name" value="${x(existing.name || '')}"></div>
+    ${buildKindPicker(existing.kind)}
+    <div id="mm-cattype-wrap" style="display:${existing.kind === 'classifier' ? '' : 'none'}">${buildCatTypePicker(existing.cat_type)}</div>
+    <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing.icon || null, existing.color || null, existing.name || '', kindLabel(existing.kind))}</div>
     <div class="mfoot">
-      ${existing ? `<button class="btn btn-d" onclick="deleteModuleNode(${existing.id})">${t('delete')}</button>` : ''}
+      <button class="btn btn-d" onclick="deleteModuleNode(${existing.id})">${t('delete')}</button>
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
-      <button class="btn btn-p" onclick="submitModuleForm(${existing ? existing.id : 'null'},${parentId ?? 'null'})">${existing ? t('save') : t('create')}</button>
+      <button class="btn btn-p" onclick="submitModuleForm(${existing.id})">${t('save')}</button>
     </div>`);
   setTimeout(() => q('#mm-name').focus(), 60);
 }
 
-async function submitModuleForm(existingId, parentId) {
+async function submitModuleForm(existingId) {
   const name = q('#mm-name').value.trim();
   if (!name) return;
-  // "เริ่มจาก template" (Phase 23): scaffold the whole Major/Minor set
-  // through Artisan's v3 structure builder instead of one bare module.
-  const tplTarget = q('#mm-template')?.value;
-  if (!existingId && !parentId && tplTarget) {
-    if (typeof artisanV3Spec !== 'function') await loadModule('src/renderer/artisan.js');
-    const res = await api.artisan.createV3(S.nexus.id, artisanV3Spec(tplTarget, name, q('#sel-color').value || null));
-    closeModal();
-    await reloadModuleTree();
-    toast(t('artisanCreated'), 'ok');
-    if (res?.id) openModuleNode(res.id);
-    return;
-  }
   const kind = q('#mm-kind').value;
   const colorId = q('#sel-color').value || null;
   const icon = getIconPickerValue() || null;
-  const catType = kind === 'classifier' ? (q('#mm-cattype')?.value || 'object') : null;
-  let moduleId = existingId;
-  if (existingId) {
-    await api.module.update(existingId, { name, color: colorId, icon_color: colorId, icon });
-    if (kind === 'classifier') await api.classifier.setCatType(existingId, catType);
-  } else {
-    moduleId = await api.module.create({ nexus_ref: S.nexus.id, parent_id: parentId, name, kind, color: colorId, icon_color: colorId, icon, cat_type: catType });
-  }
+  await api.module.update(existingId, { name, color: colorId, icon_color: colorId, icon });
+  if (kind === 'classifier') await api.classifier.setCatType(existingId, q('#mm-cattype')?.value || 'object');
   closeModal();
   await reloadModuleTree();
-  toast(existingId ? t('saved') : t('created'), 'ok');
-  if (!existingId) openModuleNode(moduleId);
+  toast(t('saved'), 'ok');
 }
 
 async function deleteModuleNode(id) {
@@ -377,10 +500,18 @@ function buildModuleDetailHtml(m) {
     `<span class="htag" style="border-color:${x(tg.color_code || '#6366f1')};color:${x(tg.color_code || '#6366f1')}">#${x(tg.tag_name)}</span>`).join('');
   const linkCount = d ? (d.links.outgoing.length + d.links.backlinks.length) : 0;
   const linkChip = `<span class="htag lk" data-no-i18n title="${t('moduleLink')}">🔗 ${linkCount} links</span>`;
+  const renamingHead = S.renamingModuleId === m.id;
+  const nameHtml = renamingHead
+    ? `<input id="rename-head-${m.id}" class="rename-input" style="font-size:1.15em" value="${x(m.name)}" onclick="event.stopPropagation()" onblur="saveModuleRename(${m.id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value=${x(JSON.stringify(m.name))};this.blur();}">`
+    : `<span ondblclick="startRenameModule(${m.id})">${x(m.name)}</span>`;
   return `<div class="module-builder">
     <div class="module-main">
       <div class="detail-head module-head" style="border-left:4px solid ${x(col)};padding-left:12px">
-        <h2 style="margin:0;font-size:1.15em">${x(m.name)} <span class="kind-chip" data-no-i18n>${x(kindLabel(m.kind))}${m.kind === 'classifier' && m.cat_type ? ` · ${m.cat_type.charAt(0).toUpperCase()}${m.cat_type.slice(1)}` : ''}</span></h2>
+        <h2 style="margin:0;font-size:1.15em;display:flex;align-items:center;gap:8px">
+          <span class="kicon" style="color:${x(col)};cursor:pointer" onclick="event.stopPropagation();openModuleIconPopup(${m.id},this)">${moduleIconHtml(m)}</span>
+          ${nameHtml}
+          <span class="kind-chip" data-no-i18n>${x(kindLabel(m.kind))}${m.kind === 'classifier' && m.cat_type ? ` · ${m.cat_type.charAt(0).toUpperCase()}${m.cat_type.slice(1)}` : ''}</span>
+        </h2>
         <div class="mtags">${tagChips}${linkChip}<button class="btn btn-g btn-i" onclick="openModuleTagModal(${m.id})" title="${t('tagLink')}">${I.plus}</button></div>
       </div>
       ${mainHtml}

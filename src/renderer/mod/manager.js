@@ -34,7 +34,7 @@ function buildManagerMainHtml(m) {
     ${MANAGER_VIEWS.map(v => `<span class="vitem${v === view ? ' act' : ''}" onclick="setManagerView(${m.id},'${v}')">${MANAGER_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">
-    <button class="btn btn-p" onclick="openMinorModuleModal(${m.id})">${I.plus} ${t('addMinorModule')}</button>
+    <button class="btn btn-p" onclick="event.stopPropagation();openMinorModuleModal(${m.id},this)">${I.plus} ${t('addMinorModule')}</button>
     ${viewBar}
   </div>`;
   if (!children.length) {
