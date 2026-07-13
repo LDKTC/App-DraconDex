@@ -182,6 +182,10 @@ async function init() {
   translateStaticChrome();
   renderProjectTabs();
   renderNexusHome();
+  // First-run gate: with zero Nexus, open the Welcome modal on startup (over the
+  // picker hero). "Create later" only closes it, so — since init() runs every launch
+  // and no flag is persisted — it naturally reshows until a Nexus exists.
+  if (!S.nexuses.length) openWelcomeModal();
   bindNav();
   bindWikilinkClicks();
   bindGlobalShortcuts();
@@ -220,6 +224,8 @@ function toast(msg,type='') {
 function openModal(title,body) {
   q('#modal-title').textContent=tr(title);
   q('#modal-body').innerHTML=body;
+  // Reset the ✕ (openWelcomeModal hides it for the required-choice first-run modal).
+  const closeBtn = q('#modal-close'); if(closeBtn) closeBtn.style.display='';
   const overlay = q('#modal-overlay');
   overlay.classList.remove('hidden');
   // make modal focusable and move focus to it so inputs inside become interactive
@@ -274,6 +280,9 @@ function uiConfirm(message, opts = {}) {
 
 function applyLeftPanelState(){
   q('#app')?.classList.toggle('left-panel-collapsed', S.leftPanelCollapsed);
+  // #title-left-zone mirrors #nav-sidebar + #left-panel's width so the builder tab
+  // strip that follows it in the title bar stays aligned with #main-area below.
+  q('#title-tab-bar')?.classList.toggle('left-panel-collapsed', S.leftPanelCollapsed);
   q('#left-panel-collapse')?.setAttribute('title', S.leftPanelCollapsed ? t('openPanel') : t('collapsePanel'));
   q('#left-panel-peek')?.setAttribute('title', t('openPanel'));
   q('#hub-toggle-btn')?.classList.toggle('active', !S.leftPanelCollapsed);
@@ -647,6 +656,7 @@ function toggleSettingsMenu(force){
 
 function translateStaticChrome(){
   q('#settings-menu-btn')?.setAttribute('title', t('settings'));
+  q('#layout-menu-btn')?.setAttribute('title', t('splitLayout'));
   q('#new-project-tab')?.setAttribute('title', t('openProject'));
   q('#win-min')?.setAttribute('title', t('minimize'));
   q('#win-max')?.setAttribute('title', t('maximize'));
@@ -736,6 +746,12 @@ function bindWindowChrome(){
   });
   q('#settings-menu')?.addEventListener('click', e => e.stopPropagation());
   document.addEventListener('click', () => toggleSettingsMenu(false));
+  q('#layout-menu-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleLayoutMenu();
+  });
+  q('#layout-menu')?.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => toggleLayoutMenu(false));
   q('#new-project-tab')?.addEventListener('click', () => {
     returnToProjectList();
   });
@@ -923,34 +939,63 @@ function upsertProjectTab(project){
 // tab used to hide the tabs of every other module, so an open project/world/
 // game/write tab appeared to vanish the moment you switched modules even
 // though its state (S.projectTabs / S.entityTabs) was never cleared.
-// The tab strip lives in the builder (#builder-tabs at the top of
-// #main-area), not the title bar — progress.md decision (o) / mockup 01.
-// It merges legacy Director project tabs, legacy entity tabs and v3 module
-// tabs; the title bar only carries the vault label + hub toggle.
+// The tab strip lives inline in the title bar (#builder-tabs, moved up from a
+// second row below it), left-aligned with #main-area via #title-left-zone.
+// It merges legacy Director project tabs and legacy entity tabs; v3 module
+// tabs stay per-pane (Phase 19 — builder.js). The split-layout control lives
+// next to it as its own #layout-menu-wrap button (renderLayoutMenuBtn below).
 function renderProjectTabs(){
   updateTitlebarVault();
   const el = q('#builder-tabs');
-  if(!el) return;
-  const dirTabs = S.projectTabs.map(tab => `
-    <button class="project-tab ${S.activeModule==='director' && S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
-      <span class="tab-dot" style="background:${tab.color}"></span>
-      <span class="tab-name">${x(tab.name)}</span>
-      <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
-    </button>
-  `).join('');
-  const entTabs = S.entityTabs.map(tab => `
-    <button class="project-tab ${S.activeModule===tab.module && S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab('${tab.key}')" title="${x(tab.name)}">
-      <span class="tab-dot" style="background:${tab.color}"></span>
-      <span class="tab-name">${x(tab.name)}</span>
-      <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
-    </button>
-  `).join('');
-  // v3 module tabs live per-pane in the builder (Phase 19 — builder.js);
-  // this strip keeps only legacy Director/entity tabs + the split buttons.
-  const split = typeof builderSplitButtonsHtml === 'function' && S.nexus ? builderSplitButtonsHtml() : '';
-  el.innerHTML = dirTabs + entTabs + `<span class="bt-spacer"></span>` + split;
-  el.classList.toggle('empty', !(dirTabs + entTabs + split).trim());
+  if(el){
+    const dirTabs = S.projectTabs.map(tab => `
+      <button class="project-tab ${S.activeModule==='director' && S.activeProjectTabId===tab.id?'active':''}" onclick="switchProjectTab(${tab.id})" title="${x(tab.name)}">
+        <span class="tab-dot" style="background:${tab.color}"></span>
+        <span class="tab-name">${x(tab.name)}</span>
+        <span class="tab-close" onclick="event.stopPropagation();closeProjectTab(${tab.id})" title="${t('closeTab')}">&times;</span>
+      </button>
+    `).join('');
+    const entTabs = S.entityTabs.map(tab => `
+      <button class="project-tab ${S.activeModule===tab.module && S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab('${tab.key}')" title="${x(tab.name)}">
+        <span class="tab-dot" style="background:${tab.color}"></span>
+        <span class="tab-name">${x(tab.name)}</span>
+        <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
+      </button>
+    `).join('');
+    el.innerHTML = dirTabs + entTabs;
+    el.classList.toggle('empty', !(dirTabs + entTabs).trim());
+  }
+  renderLayoutMenuBtn();
   document.title = S.project ? `${S.project.name} - DraconDex` : 'DraconDex';
+}
+
+// Title-bar split-layout picker: one trigger button (shows the active layout's
+// glyph) + an overlay list of the 3 choices, replacing the old inline 3-button
+// row (builderSplitButtonsHtml, builder.js) that used to sit inside #builder-tabs.
+const LAYOUT_GLYPH = { 1: '▢', 2: '◫', 4: '⊞' };
+function renderLayoutMenuBtn(){
+  const wrap = q('#layout-menu-wrap');
+  const btn = q('#layout-menu-btn');
+  const menu = q('#layout-menu');
+  if(!wrap || !btn || !menu) return;
+  wrap.style.display = S.nexus ? '' : 'none';
+  if(!S.nexus) return;
+  const layout = builderState().layout;
+  btn.textContent = LAYOUT_GLYPH[layout] || LAYOUT_GLYPH[1];
+  menu.innerHTML = [1, 2, 4].map(n => `
+    <button class="layout-menu-item${layout === n ? ' act' : ''}" data-no-i18n onclick="builderSetLayout(${n});toggleLayoutMenu(false)">
+      <span>${LAYOUT_GLYPH[n]}</span><span>${n}×</span>
+    </button>`).join('');
+}
+
+function toggleLayoutMenu(force){
+  const menu = q('#layout-menu');
+  const btn = q('#layout-menu-btn');
+  if(!menu || !btn) return;
+  const open = typeof force === 'boolean' ? force : menu.classList.contains('hidden');
+  menu.classList.toggle('hidden', !open);
+  btn.classList.toggle('active', open);
+  btn.setAttribute('aria-expanded', String(open));
 }
 
 function updateTitlebarVault(){
@@ -1388,6 +1433,10 @@ async function importDatabaseFile(){
     const res = await api.db.importFileMerge();
     if(res?.canceled) return;
     await reloadSidebar();
+    // Refresh the Nexus list so vaults brought in by the merge are visible. In the
+    // no-Nexus onboarding case S.view is 'nexus', so the switchView below routes to
+    // the Nexus picker (now non-empty) for the user to pick which vault to open.
+    await reloadNexuses();
     S.colors = await api.color.getAll();
     S.recentColors = await api.color.getRecent();
     if(S.project?.id) S.project = await api.project.get(S.project.id) || null;
@@ -1496,11 +1545,30 @@ function runBuilderMounts() {
 
 function renderNexusPicker() {
   leaveBuilderGrid();
+  // First-run onboarding: no Nexus exists at all. The init() gate opens the Welcome
+  // modal on top of this screen; if the user picks "create later" they land here, so
+  // the primary button reopens the same Welcome modal for a consistent entry point.
+  if (!S.nexuses.length) {
+    q('#left-panel-inner').innerHTML = `
+      <div class="ph"><h4>${t('nexus')}</h4>
+        <button class="btn btn-p btn-sm" onclick="openWelcomeModal()">+ ${t('nexusNew')}</button>
+      </div>`;
+    q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
+      <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+      <h3>${t('nexusWelcomeTitle')}</h3>
+      <p>${t('nexusEmpty')}</p>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-top:18px">
+        <button class="btn btn-p" style="min-width:180px" onclick="openWelcomeModal()">+ ${t('nexusNew')}</button>
+        <button class="btn btn-s" style="min-width:180px" onclick="importDatabaseFile()">${t('importDb')}</button>
+      </div>
+    </div>`;
+    return;
+  }
   q('#left-panel-inner').innerHTML = `
     <div class="ph"><h4>${t('nexus')}</h4>
       <button class="btn btn-p btn-sm" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
     </div>
-    ${S.nexuses.length ? S.nexuses.map(n => `
+    ${S.nexuses.map(n => `
       <div class="module-item nexus-item" onclick="selectNexus(${n.id})">
         <span class="nexus-vault-dot" style="${n.color_code ? `background:${x(n.color_code)}` : ''}"></span>
         <span class="module-name">${x(n.name)}</span>
@@ -1508,7 +1576,7 @@ function renderNexusPicker() {
         <button class="btn-icon" onclick="event.stopPropagation();openNexusModal(${n.id})" title="${t('edit')}">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
         </button>
-      </div>`).join('') : `<div class="empty"><p>${t('nexusEmpty')}</p></div>`}`;
+      </div>`).join('')}`;
   q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
     <h3>${t('nexusWelcomeTitle')}</h3>
@@ -1557,6 +1625,33 @@ function closeNexus() {
   updateStatusBar({ item: null, words: null, saveState: null });
 }
 
+// First-run Welcome modal: a required-choice screen shown while no Nexus exists.
+// Offers create / import / "create later" (the low-emphasis skip). The ✕ is hidden so
+// the choice is explicit; "create later" just closes it and the picker hero stays.
+function openWelcomeModal() {
+  openModal(t('wmTitle'), `
+    <div style="text-align:center">
+      <div class="ei" style="margin:0 auto 6px;width:44px"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:44px;width:44px;opacity:.5"></div>
+      <p style="color:var(--t2);margin:0 0 18px">${t('wmText')}</p>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+        <button class="btn btn-p" style="min-width:200px" onclick="welcomeCreateNexus()">${t('wmCreateNew')}</button>
+        <button class="btn btn-s" style="min-width:200px" onclick="closeModal();importDatabaseFile()">${t('wmImport')}</button>
+        <button class="btn btn-g btn-sm" style="margin-top:6px;color:var(--t3)" onclick="closeModal()">${t('wmLater')}</button>
+      </div>
+    </div>`);
+  const closeBtn = q('#modal-close'); if(closeBtn) closeBtn.style.display='none';
+}
+
+// "Create new Nexus" from the Welcome modal: ask whether the user is new, then open the
+// create form. First-time users get the coach-marks guide once the vault is created
+// (createNexusSubmit reads S._guideAfterCreate).
+async function welcomeCreateNexus() {
+  const usedBefore = await uiConfirm(t('usedBeforeAsk'),
+    { okText: t('usedBeforeYes'), cancelText: t('usedBeforeNo'), danger: false });
+  S._guideAfterCreate = !usedBefore;
+  openNexusModal();
+}
+
 async function openNexusModal(id = null) {
   await reloadNexuses();
   const n = id ? S.nexuses.find(v => v.id === id) : null;
@@ -1565,7 +1660,8 @@ async function openNexusModal(id = null) {
     <div class="fg"><label>${t('memo')}</label><textarea id="nx-memo">${x(n?.memo || '')}</textarea></div>
     <div class="fg"><label>${t('color')}</label>${await colorPicker(n?.color)}</div>
     <div class="mfoot">
-      ${n ? `<button class="btn btn-d" onclick="delNexus(${id})">${t('delete')}</button>` : ''}
+      ${n ? `<button class="btn btn-d" onclick="delNexus(${id})">${t('delete')}</button>`
+          : `<button class="btn btn-s" onclick="closeModal();importDatabaseFile()">${t('importDb')}</button>`}
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
       <button class="btn btn-p" onclick="${n ? `saveNexus(${id})` : 'createNexusSubmit()'}">${n ? t('save') : t('create')}</button>
     </div>`);
@@ -1580,6 +1676,13 @@ async function createNexusSubmit() {
     await reloadNexuses();
     toast(t('nexusCreated'), 'ok');
     await selectNexus(newId);
+    // First-time users (chose "never used" in welcomeCreateNexus) get the coach-marks
+    // tour now that the vault home is rendered and its real UI elements exist.
+    if (S._guideAfterCreate) {
+      S._guideAfterCreate = false;
+      await loadModule('src/renderer/guide.js');
+      if (typeof startNexusGuide === 'function') startNexusGuide();
+    }
   } catch (e) { toast(t('nexusNameTaken'), 'error'); }
 }
 

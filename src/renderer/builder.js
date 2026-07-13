@@ -11,8 +11,9 @@
 //
 // A "page" is one of: {kind:'module',id} · {kind:'file',id} ·
 // {kind:'sagehut',tab}. Legacy Director/entity tabs stay in the slim
-// global #builder-tabs strip (renderProjectTabs), which also hosts the
-// split-layout buttons.
+// #builder-tabs strip inline in the title bar (renderProjectTabs,
+// core.js); the split-layout picker is its own title-bar button
+// (#layout-menu-wrap, also core.js) driven by builderSetLayout below.
 
 function builderState() {
   if (!S.builder) S.builder = { layout: 1, focused: 0, panes: [builderNewPane()] };
@@ -233,14 +234,6 @@ function builderNeutralizeIds(paneEl) {
     el.dataset.bid = el.id;
     el.removeAttribute('id');
   });
-}
-
-// Split buttons for the global strip (rendered by renderProjectTabs).
-function builderSplitButtonsHtml() {
-  const layout = builderState().layout;
-  return `<span class="bsplit" data-no-i18n title="${t('splitLayout')}">
-    ${[1, 2, 4].map(n => `<button class="btn btn-g btn-i${layout === n ? ' act' : ''}" onclick="builderSetLayout(${n})">${n === 1 ? '▢' : n === 2 ? '◫' : '⊞'}</button>`).join('')}
-  </span>`;
 }
 
 // ── Focused-pane shortcuts (Ctrl+W close tab · Ctrl+Tab cycle) ──────────

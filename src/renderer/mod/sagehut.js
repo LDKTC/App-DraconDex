@@ -8,7 +8,7 @@
 // sageHutLinkerList over the v3 module tables.
 
 const SAGEHUT_VIEWS = ['dataSize', 'objectAmount', 'linkerList', 'linkerGraph'];
-const SAGEHUT_VIEW_LABEL = { dataSize: 'Data size', objectAmount: 'Object amount', linkerList: 'Linker list', linkerGraph: 'Linker graph' };
+const SAGEHUT_VIEW_LABEL = { dataSize: 'Size', objectAmount: 'Objects', linkerList: 'Links', linkerGraph: 'Graph' };
 
 const fmtBytes = (b) => b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB`
   : b >= 1024 ? `${(b / 1024).toFixed(1)} KB` : `${b || 0} B`;
@@ -30,7 +30,7 @@ async function openSageTab(tab) {
 function buildSageHutHtml() {
   const d = S.sageHut;
   const st = d.stats;
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${SAGEHUT_VIEWS.map(v => `<span class="vitem${v === d.tab ? ' act' : ''}" onclick="openSageTab('${v}')" data-no-i18n>${SAGEHUT_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const tiles = `<div class="sh-tiles">

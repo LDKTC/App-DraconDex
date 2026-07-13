@@ -30,7 +30,7 @@ function buildManagerMainHtml(m) {
   const children = m.children || [];
   const counts = (S.managerData && S.managerData.moduleId === m.id) ? S.managerData.attrCounts : new Map();
   const view = S.managerView || 'cards';
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${MANAGER_VIEWS.map(v => `<span class="vitem${v === view ? ' act' : ''}" onclick="setManagerView(${m.id},'${v}')">${MANAGER_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">

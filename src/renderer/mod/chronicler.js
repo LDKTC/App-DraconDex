@@ -10,7 +10,7 @@
 // axis lines instead of the zigzag layout.
 
 const CHRONICLER_VIEWS = ['oneline', 'downline', 'compare'];
-const CHRONICLER_VIEW_LABEL = { oneline: 'One-line', downline: 'Down-line', compare: 'Compare Parallel' };
+const CHRONICLER_VIEW_LABEL = { oneline: 'Oneline', downline: 'Downline', compare: 'Compare' };
 
 function sortChroniclerEvents(evs) {
   return evs.slice().sort((a, b) => {
@@ -56,7 +56,7 @@ function buildChroniclerMainHtml(m) {
   const data = (S.chroniclerData && S.chroniclerData.moduleId === m.id) ? S.chroniclerData : null;
   if (!data) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
   const { timelines, activeId, compareId, view } = data;
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${CHRONICLER_VIEWS.map(v => `<span class="vitem${v === view ? ' act' : ''}" onclick="setChroniclerView('${v}')">${CHRONICLER_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const lineSelect = timelines.length ? `<select id="chr-line-select" onchange="selectChroniclerTimeline(${m.id},this.value)">

@@ -9,7 +9,7 @@
 // (src/db/chatscribe.js + src/db/wiki.js).
 
 const CHATSCRIBE_VIEWS = ['chat', 'transcript'];
-const CHATSCRIBE_VIEW_LABEL = { chat: 'Chat', transcript: 'Transcript' };
+const CHATSCRIBE_VIEW_LABEL = { chat: 'Chat', transcript: 'Log' };
 
 async function loadChatScribeData(m) {
   const [sessions, ui] = await Promise.all([
@@ -63,7 +63,7 @@ function chsDayLabel(createAt) {
 function buildChatScribeMainHtml(m) {
   const d = (S.chatScribeData && S.chatScribeData.moduleId === m.id) ? S.chatScribeData : null;
   if (!d) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${CHATSCRIBE_VIEWS.map(v => `<span class="vitem${v === d.view ? ' act' : ''}" onclick="setChatScribeView('${v}')" data-no-i18n>${CHATSCRIBE_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">

@@ -10,7 +10,7 @@
 // reuses chronicler.js's one-line strip + shared pan/zoom interactions.
 
 const WANDERER_VIEWS = ['dual', 'map', 'timeline'];
-const WANDERER_VIEW_LABEL = { dual: 'Dual', map: 'Map only', timeline: 'Timeline only' };
+const WANDERER_VIEW_LABEL = { dual: 'Dual', map: 'Map', timeline: 'Timeline' };
 
 function wandererModulesOfKind(kind) {
   const out = [];
@@ -80,7 +80,7 @@ function buildWandererMainHtml(m) {
   if (!d) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
   const opt = (list, sel, none) => `<option value="">${none}</option>` +
     list.map(l => `<option value="${l.id}" ${l.id === sel ? 'selected' : ''}>${x(l.name)}</option>`).join('');
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${WANDERER_VIEWS.map(v => `<span class="vitem${v === d.view ? ' act' : ''}" onclick="setWandererView('${v}')">${WANDERER_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">

@@ -9,7 +9,7 @@
 // scope for this phase.
 
 const CLASSIFIER_VIEWS = ['table', 'listDetail', 'relationCat', 'grid'];
-const CLASSIFIER_VIEW_LABEL = { table: 'Table', listDetail: 'List + Detail', relationCat: 'Relation in Cat', grid: 'Grid Collection' };
+const CLASSIFIER_VIEW_LABEL = { table: 'Table', listDetail: 'Detail', relationCat: 'Relation', grid: 'Grid' };
 
 async function loadClassifierData(m) {
   const [objects, templates, ui] = await Promise.all([
@@ -48,7 +48,7 @@ async function setClassifierView(moduleId, view) {
 function buildClassifierMainHtml(m) {
   const d = (S.classifierData && S.classifierData.moduleId === m.id) ? S.classifierData : { objects: [], templates: [] };
   const view = S.classifierView || 'table';
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${CLASSIFIER_VIEWS.map(v => `<span class="vitem${v === view ? ' act' : ''}" onclick="setClassifierView(${m.id},'${v}')">${CLASSIFIER_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">

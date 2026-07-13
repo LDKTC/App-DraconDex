@@ -8,7 +8,7 @@
 // applySavedFilter/openSavedFilterModal with mod/viewer.js.
 
 const CONNECTOR_VIEWS = ['graph', 'edgelist'];
-const CONNECTOR_VIEW_LABEL = { graph: 'Graph', edgelist: 'Edge list' };
+const CONNECTOR_VIEW_LABEL = { graph: 'Graph', edgelist: 'Edges' };
 
 const connectorZoom = {}; // moduleId -> zoom (render-only state)
 
@@ -52,7 +52,7 @@ async function setConnectorView(view) {
 function buildConnectorMainHtml(m) {
   const d = (S.connectorData && S.connectorData.moduleId === m.id) ? S.connectorData : null;
   if (!d) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${CONNECTOR_VIEWS.map(v => `<span class="vitem${v === d.view ? ' act' : ''}" onclick="setConnectorView('${v}')" data-no-i18n>${CONNECTOR_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">

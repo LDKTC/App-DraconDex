@@ -577,6 +577,16 @@ body{
 	display:flex;align-items:center;gap:6px;flex-shrink:0;
 	-webkit-app-region:drag;
 }
+/* Mirrors #nav-sidebar + #left-panel's widths (both static vars) so the builder
+   tab strip that follows lines up with #main-area's left edge below. Tracks the
+   collapsed state via the same class applyLeftPanelState() toggles onto #app. */
+#title-left-zone{
+	width:calc(var(--nav) + var(--sidebar));flex-shrink:0;
+	display:flex;align-items:center;overflow:hidden;height:100%;
+}
+/* +1px: #left-panel keeps its 1px border-right (just transparent) even at
+   width:0 when collapsed, so #main-area's real left edge is nav width + 1px. */
+#title-tab-bar.left-panel-collapsed #title-left-zone{width:calc(var(--nav) + 1px)}
 .tab-brand{
 	width:44px;height:38px;display:flex;align-items:center;justify-content:center;
 	color:var(--t2);flex-shrink:0;
@@ -1363,6 +1373,21 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 #confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);width:360px;max-width:92vw;padding:20px;box-shadow:0 24px 64px rgba(0,0,0,.55)}
 .confirm-msg{font-size:calc(13px * var(--fsc,1));color:var(--t1);line-height:1.5;white-space:pre-wrap}
 .confirm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+
+/* First-run coach-marks guide (src/renderer/guide.js) — theme-token colors only */
+#guide-overlay{position:fixed;inset:0;z-index:1200;pointer-events:none}
+.guide-catch{position:absolute;inset:0;pointer-events:auto}
+.guide-spotlight{position:fixed;border-radius:var(--r);pointer-events:none;
+	box-shadow:0 0 0 9999px rgba(0,0,0,.6),0 0 0 2px var(--accent);
+	transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease}
+.guide-pop{position:fixed;width:280px;max-width:92vw;pointer-events:auto;
+	background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);
+	padding:14px 16px;box-shadow:0 24px 64px rgba(0,0,0,.55);
+	transition:left .18s ease,top .18s ease}
+.guide-pop-title{font-size:calc(14px * var(--fsc,1));font-weight:700;color:var(--t1);margin-bottom:6px}
+.guide-pop-text{font-size:calc(12.5px * var(--fsc,1));color:var(--t2);line-height:1.5}
+.guide-pop-foot{display:flex;gap:6px;align-items:center;margin-top:14px}
+.guide-step{font-size:calc(11px * var(--fsc,1));color:var(--t3)}
 
 /* Modal: separate description (hint callout) from data (labeled sections) */
 .modal-hint{
@@ -2236,17 +2261,19 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 
 /* ═══ v3 redo pass — builder tab strip, title-bar vault label, header chips
    (progress.md mockups 01-33; decisions (o), A.2/A.3) ═══════════════════ */
-.titlebar-vault{font-size:calc(12px * var(--fsc,1));color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}
+.titlebar-vault{font-size:calc(12px * var(--fsc,1));color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+/* Lives inline in #title-tab-bar now (moved from a second row below it), so it
+   needs its own no-drag region and chips shrunk to fit the fixed 38px bar. */
 #builder-tabs{
-	display:flex;align-items:flex-end;gap:2px;min-width:0;flex-shrink:0;
-	background:var(--surface);border-bottom:1px solid var(--border);
-	padding:5px 8px 0;overflow-x:auto;overflow-y:hidden;
+	display:flex;align-items:center;gap:2px;min-width:0;flex-shrink:1;
+	height:100%;overflow-x:auto;overflow-y:hidden;margin-left:-6px;
+	-webkit-app-region:no-drag;
 }
 #builder-tabs.empty{display:none}
 #builder-tabs::-webkit-scrollbar{height:0}
-#builder-tabs .project-tab{background:var(--raised)}
+#builder-tabs .project-tab{background:var(--raised);height:30px;min-width:120px;border-radius:var(--r);border-bottom:1px solid transparent}
 #builder-tabs .project-tab.active{
-	background:var(--bg);border-color:var(--border);color:var(--t1);
+	background:var(--raised);border-color:var(--border);color:var(--t1);
 	box-shadow:inset 0 2px 0 var(--accent);
 }
 #builder-tabs .project-tab .ek{
@@ -2529,11 +2556,33 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .bpane-tabs .project-tab.pane-active{background:var(--raised)}
 .bpane-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px;min-width:0;position:relative}
 #main-inner.bl-2 .bpane-body,#main-inner.bl-4 .bpane-body{padding:14px}
-#builder-tabs .bt-spacer{flex:1}
-#builder-tabs .bsplit{display:flex;gap:2px;align-items:center;flex-shrink:0}
-#builder-tabs .bsplit .btn{padding:2px 7px;font-size:calc(11px * var(--fsc,1))}
-#builder-tabs .bsplit .btn.act{background:var(--accent);color:#fff}
 #main-inner.bl-2 .module-inspector,#main-inner.bl-4 .module-inspector{display:none}
+
+/* Title-bar layout-picker: single trigger button replacing the old 3-button
+   .bsplit row, styled off #settings-menu-wrap / .title-settings-btn / #settings-menu. */
+#layout-menu-wrap{
+	position:relative;height:100%;display:flex;align-items:center;flex-shrink:0;
+	-webkit-app-region:no-drag;
+}
+.title-layout-btn{
+	width:34px;height:34px;border:none;border-radius:var(--r);background:transparent;
+	color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;
+	font-size:calc(15px * var(--fsc,1));font-family:inherit;-webkit-app-region:no-drag;
+}
+.title-layout-btn:hover,.title-layout-btn.active{background:var(--hover);color:var(--t1)}
+#layout-menu{
+	position:absolute;top:38px;right:0;width:130px;background:var(--surface);
+	border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);
+	box-shadow:0 18px 44px rgba(0,0,0,.42);padding:4px;z-index:300;
+}
+#layout-menu.hidden{display:none}
+.layout-menu-item{
+	width:100%;display:flex;align-items:center;gap:8px;padding:7px 8px;
+	border:none;border-radius:var(--rs);background:transparent;color:var(--t2);
+	font-size:calc(12.5px * var(--fsc,1));cursor:pointer;font-family:inherit;text-align:left;
+}
+.layout-menu-item:hover{background:var(--hover);color:var(--t1)}
+.layout-menu-item.act{background:var(--accent);color:#fff}
 
 /* Search Link overlay (Phase 20, mockup 24) */
 #qs-box .qs-inputrow{display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid var(--border)}

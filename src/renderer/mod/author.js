@@ -43,7 +43,7 @@ async function selectAuthorChapter(id) {
 function buildAuthorMainHtml(m) {
   const d = (S.authorData && S.authorData.moduleId === m.id) ? S.authorData : null;
   if (!d) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
-  const viewBar = `<div class="viewbar"><span class="vlbl">View:</span>
+  const viewBar = `<div class="viewbar">
     ${AUTHOR_VIEWS.map(v => `<span class="vitem${v === d.view ? ' act' : ''}" onclick="setAuthorView('${v}')">${AUTHOR_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">
