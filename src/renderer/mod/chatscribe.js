@@ -9,7 +9,7 @@
 // (src/db/chatscribe.js + src/db/wiki.js).
 
 const CHATSCRIBE_VIEWS = ['chat', 'transcript'];
-const CHATSCRIBE_VIEW_LABEL = { chat: 'Chat', transcript: 'Transcript' };
+const CHATSCRIBE_VIEW_LABEL = { chat: 'Chat', transcript: 'Log' };
 
 async function loadChatScribeData(m) {
   const [sessions, ui] = await Promise.all([

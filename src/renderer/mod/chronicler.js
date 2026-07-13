@@ -10,7 +10,7 @@
 // axis lines instead of the zigzag layout.
 
 const CHRONICLER_VIEWS = ['oneline', 'downline', 'compare'];
-const CHRONICLER_VIEW_LABEL = { oneline: 'One-line', downline: 'Down-line', compare: 'Compare Parallel' };
+const CHRONICLER_VIEW_LABEL = { oneline: 'Oneline', downline: 'Downline', compare: 'Compare' };
 
 function sortChroniclerEvents(evs) {
   return evs.slice().sort((a, b) => {

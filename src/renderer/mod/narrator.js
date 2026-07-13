@@ -9,7 +9,7 @@
 // lives in the module-scoped story_* tables (src/db/narrator.js).
 
 const NARRATOR_VIEWS = ['board', 'routes', 'reader'];
-const NARRATOR_VIEW_LABEL = { board: 'Board', routes: 'Route list', reader: 'Conversation reader' };
+const NARRATOR_VIEW_LABEL = { board: 'Board', routes: 'Routes', reader: 'Reader' };
 const narratorZoom = {}; // moduleId -> scale (board zoom persists per module per session)
 
 async function loadNarratorData(m) {

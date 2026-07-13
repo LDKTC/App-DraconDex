@@ -8,7 +8,7 @@
 // sageHutLinkerList over the v3 module tables.
 
 const SAGEHUT_VIEWS = ['dataSize', 'objectAmount', 'linkerList', 'linkerGraph'];
-const SAGEHUT_VIEW_LABEL = { dataSize: 'Data size', objectAmount: 'Object amount', linkerList: 'Linker list', linkerGraph: 'Linker graph' };
+const SAGEHUT_VIEW_LABEL = { dataSize: 'Size', objectAmount: 'Objects', linkerList: 'Links', linkerGraph: 'Graph' };
 
 const fmtBytes = (b) => b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB`
   : b >= 1024 ? `${(b / 1024).toFixed(1)} KB` : `${b || 0} B`;

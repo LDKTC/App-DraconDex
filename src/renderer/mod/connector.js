@@ -8,7 +8,7 @@
 // applySavedFilter/openSavedFilterModal with mod/viewer.js.
 
 const CONNECTOR_VIEWS = ['graph', 'edgelist'];
-const CONNECTOR_VIEW_LABEL = { graph: 'Graph', edgelist: 'Edge list' };
+const CONNECTOR_VIEW_LABEL = { graph: 'Graph', edgelist: 'Edges' };
 
 const connectorZoom = {}; // moduleId -> zoom (render-only state)
 

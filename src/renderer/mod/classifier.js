@@ -9,7 +9,7 @@
 // scope for this phase.
 
 const CLASSIFIER_VIEWS = ['table', 'listDetail', 'relationCat', 'grid'];
-const CLASSIFIER_VIEW_LABEL = { table: 'Table', listDetail: 'List + Detail', relationCat: 'Relation in Cat', grid: 'Grid Collection' };
+const CLASSIFIER_VIEW_LABEL = { table: 'Table', listDetail: 'Detail', relationCat: 'Relation', grid: 'Grid' };
 
 async function loadClassifierData(m) {
   const [objects, templates, ui] = await Promise.all([

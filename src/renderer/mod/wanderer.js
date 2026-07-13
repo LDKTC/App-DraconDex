@@ -10,7 +10,7 @@
 // reuses chronicler.js's one-line strip + shared pan/zoom interactions.
 
 const WANDERER_VIEWS = ['dual', 'map', 'timeline'];
-const WANDERER_VIEW_LABEL = { dual: 'Dual', map: 'Map only', timeline: 'Timeline only' };
+const WANDERER_VIEW_LABEL = { dual: 'Dual', map: 'Map', timeline: 'Timeline' };
 
 function wandererModulesOfKind(kind) {
   const out = [];
