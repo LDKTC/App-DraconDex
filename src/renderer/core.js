@@ -182,6 +182,10 @@ async function init() {
   translateStaticChrome();
   renderProjectTabs();
   renderNexusHome();
+  // First-run gate: with zero Nexus, auto-open the create dialog once on startup so
+  // the user makes their first vault before using the app (renderNexusPicker draws
+  // the welcome hero behind it). Only here — not on every re-render or vault switch.
+  if (!S.nexuses.length) openNexusModal();
   bindNav();
   bindWikilinkClicks();
   bindGlobalShortcuts();
@@ -1388,6 +1392,10 @@ async function importDatabaseFile(){
     const res = await api.db.importFileMerge();
     if(res?.canceled) return;
     await reloadSidebar();
+    // Refresh the Nexus list so vaults brought in by the merge are visible. In the
+    // no-Nexus onboarding case S.view is 'nexus', so the switchView below routes to
+    // the Nexus picker (now non-empty) for the user to pick which vault to open.
+    await reloadNexuses();
     S.colors = await api.color.getAll();
     S.recentColors = await api.color.getRecent();
     if(S.project?.id) S.project = await api.project.get(S.project.id) || null;
@@ -1496,11 +1504,30 @@ function runBuilderMounts() {
 
 function renderNexusPicker() {
   leaveBuilderGrid();
+  // First-run onboarding: no Nexus exists at all. Guide the user to create their
+  // first vault (or restore one from a .db backup) before anything else is usable.
+  // The init() gate also auto-opens the create dialog on top of this screen.
+  if (!S.nexuses.length) {
+    q('#left-panel-inner').innerHTML = `
+      <div class="ph"><h4>${t('nexus')}</h4>
+        <button class="btn btn-p btn-sm" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
+      </div>`;
+    q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
+      <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+      <h3>${t('nexusWelcomeTitle')}</h3>
+      <p>${t('nexusEmpty')}</p>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-top:18px">
+        <button class="btn btn-p" style="min-width:180px" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
+        <button class="btn btn-s" style="min-width:180px" onclick="importDatabaseFile()">${t('importDb')}</button>
+      </div>
+    </div>`;
+    return;
+  }
   q('#left-panel-inner').innerHTML = `
     <div class="ph"><h4>${t('nexus')}</h4>
       <button class="btn btn-p btn-sm" onclick="openNexusModal()">+ ${t('nexusNew')}</button>
     </div>
-    ${S.nexuses.length ? S.nexuses.map(n => `
+    ${S.nexuses.map(n => `
       <div class="module-item nexus-item" onclick="selectNexus(${n.id})">
         <span class="nexus-vault-dot" style="${n.color_code ? `background:${x(n.color_code)}` : ''}"></span>
         <span class="module-name">${x(n.name)}</span>
@@ -1508,7 +1535,7 @@ function renderNexusPicker() {
         <button class="btn-icon" onclick="event.stopPropagation();openNexusModal(${n.id})" title="${t('edit')}">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
         </button>
-      </div>`).join('') : `<div class="empty"><p>${t('nexusEmpty')}</p></div>`}`;
+      </div>`).join('')}`;
   q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
     <h3>${t('nexusWelcomeTitle')}</h3>
@@ -1565,7 +1592,8 @@ async function openNexusModal(id = null) {
     <div class="fg"><label>${t('memo')}</label><textarea id="nx-memo">${x(n?.memo || '')}</textarea></div>
     <div class="fg"><label>${t('color')}</label>${await colorPicker(n?.color)}</div>
     <div class="mfoot">
-      ${n ? `<button class="btn btn-d" onclick="delNexus(${id})">${t('delete')}</button>` : ''}
+      ${n ? `<button class="btn btn-d" onclick="delNexus(${id})">${t('delete')}</button>`
+          : `<button class="btn btn-s" onclick="closeModal();importDatabaseFile()">${t('importDb')}</button>`}
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
       <button class="btn btn-p" onclick="${n ? `saveNexus(${id})` : 'createNexusSubmit()'}">${n ? t('save') : t('create')}</button>
     </div>`);
