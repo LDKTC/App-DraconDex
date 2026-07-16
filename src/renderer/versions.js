@@ -56,7 +56,7 @@ function buildVersionPanelHtml(m) {
       ${v.detail ? `<div class="vh-detail" data-no-i18n>${x(v.detail)}</div>` : ''}
       <div class="vh-time" data-no-i18n>${x(versionRelTime(v.create_at))}</div>
     </div>`).join('');
-  return `<aside class="module-inspector vh-panel">
+  return `<aside class="module-inspector vh-panel" style="width:${S.inspectorWidth}px">
     <div class="insp-head">${I.timeline}<span data-no-i18n>${t('versionHistory').toUpperCase()} — ${x(m.name)}</span>
       <span class="vh-count" data-no-i18n>${d.rows.length} / ${limit}</span>
       <button class="btn btn-g btn-i" onclick="closeVersionPanel()" title="${t('cancel')}">×</button>

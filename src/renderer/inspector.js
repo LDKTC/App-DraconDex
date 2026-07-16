@@ -22,7 +22,7 @@ function buildInspectorHtml(m) {
     return buildVersionPanelHtml(m);
   }
   const d = (S.inspectorData && S.inspectorData.moduleId === m.id) ? S.inspectorData : { attrs: [], tags: [], links: { outgoing: [], backlinks: [] }, ui: {} };
-  return `<aside class="module-inspector">
+  return `<aside class="module-inspector" style="width:${S.inspectorWidth}px">
     <div class="insp-head">${I.fields}<span>${t('moduleInspector')} — ${x(m.name)}</span></div>
 
     <div class="insp-label">${t('moduleDetailSpec')}</div>
@@ -65,6 +65,36 @@ function buildInspectorHtml(m) {
     <button class="btn btn-s" style="margin:4px 14px 14px;width:calc(100% - 28px)" onclick="openVersionPanel(${m.id})">${I.timeline} ${t('versionHistory')}</button>
   </aside>`;
 }
+
+// ═══ Module Inspector resize (Plan part4 #1) ═══════════════════════════
+// Width is persisted in S.inspectorWidth and baked directly into this
+// file's buildInspectorHtml (and versions.js's buildVersionPanelHtml)
+// template strings rather than reapplied to the live DOM node — the dock
+// gets outerHTML-replaced from mod/drafter.js and mod/detail.js after an
+// inline edit saves, which would wipe an inline style set only post-render.
+// Dragging the LEFT edge leftward increases width (the panel's right edge
+// is anchored against the window edge), so the delta is subtracted.
+let inspectorResizeState = null;
+function startInspectorResize(ev) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  const dock = q('.module-inspector');
+  if (!dock) return;
+  inspectorResizeState = { startX: ev.clientX, startWidth: dock.getBoundingClientRect().width };
+  q('#inspector-resize')?.classList.add('is-resizing');
+}
+document.addEventListener('mousemove', (ev) => {
+  if (!inspectorResizeState) return;
+  S.inspectorWidth = Math.max(220, Math.min(500, inspectorResizeState.startWidth - (ev.clientX - inspectorResizeState.startX)));
+  const dock = q('.module-inspector');
+  if (dock) dock.style.width = S.inspectorWidth + 'px';
+});
+document.addEventListener('mouseup', () => {
+  if (!inspectorResizeState) return;
+  inspectorResizeState = null;
+  q('#inspector-resize')?.classList.remove('is-resizing');
+  localStorage.setItem(INSPECTOR_WIDTH_KEY, String(S.inspectorWidth));
+});
 
 // The active multi-view pattern (A.3 #4) shown in the UI-spec section —
 // resolved through each kind's view-label dict when its renderer is loaded.

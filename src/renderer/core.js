@@ -51,6 +51,9 @@ const I = {
 
 const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
+const INSPECTOR_COLLAPSED_KEY = 'novel-manager-inspector-collapsed';
+const LEFT_PANEL_WIDTH_KEY = 'novel-manager-left-panel-width';
+const INSPECTOR_WIDTH_KEY = 'novel-manager-inspector-width';
 const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
 const HUB_OPEN_KEY = 'novel-manager-hub-open';
 
@@ -121,6 +124,9 @@ const S = {
   settings:loadUiSettings(),
   relListHeight:null,
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
+  inspectorCollapsed:localStorage.getItem(INSPECTOR_COLLAPSED_KEY) === '1',
+  leftPanelWidth:Number(localStorage.getItem(LEFT_PANEL_WIDTH_KEY)) || 264,
+  inspectorWidth:Number(localStorage.getItem(INSPECTOR_WIDTH_KEY)) || 290,
   // Navigator module state
   world:null, worldTab:'original', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null, worldHashtagId:null,
   worldOrigCat:null, worldOrigObject:null, worldOrigCatView:'list', worldNovelOpen:new Set(),
@@ -155,6 +161,7 @@ const S = {
   moduleCollapsed:new Set(),
   importFolderCollapsed:new Set(),
   dragNest:null,
+  dragTab:null,   // { key, paneIdx } — tab currently mid-drag in the Builder's split panes
 };
 const timelineGraphState = {};
 let timelineGraphCleanup = null;
@@ -180,7 +187,10 @@ async function init() {
   S.moduleTree   = S.nexus ? await api.module.getTree(S.nexus.id) : [];
   bindWindowChrome();
   bindHubToggle();
+  bindBuilderGridDrop();
   applyLeftPanelState();
+  applyLeftPanelWidth();
+  q('#left-panel-resize')?.setAttribute('title', t('resizePanel'));
   observeUiLanguage();
   removeLegacyDirectorProjectButton();
   buildModuleSubNav();
@@ -189,10 +199,21 @@ async function init() {
   translateStaticChrome();
   renderProjectTabs();
   renderNexusHome();
+  // A window opened via a dragged-out Builder tab (builderPopOutTab) boots
+  // straight into that one tab, with the nav-sidebar/left-panel/hub chrome
+  // hidden (.popup-mode, style.css) — see procress.md Part 3 #2.
+  const popupTabKey = new URLSearchParams(location.search).get('tab');
+  const isPopup = new URLSearchParams(location.search).get('popup') === '1';
+  if (isPopup && popupTabKey) {
+    q('#window-frame')?.classList.add('popup-mode');
+    await builderOpenPage(builderParseKey(popupTabKey));
+    const meta = builderTabMeta(popupTabKey);
+    if (meta) document.title = meta.name;
+  }
   // First-run gate: with zero Nexus, open the Welcome modal on startup (over the
   // picker hero). "Create later" only closes it, so — since init() runs every launch
   // and no flag is persisted — it naturally reshows until a Nexus exists.
-  if (!S.nexuses.length) openWelcomeModal();
+  if (!isPopup && !S.nexuses.length) openWelcomeModal();
   bindNav();
   bindWikilinkClicks();
   bindGlobalShortcuts();
@@ -304,6 +325,36 @@ function setLeftPanelCollapsed(collapsed){
 function bindHubToggle(){
   q('#hub-toggle-btn')?.addEventListener('click', () => setLeftPanelCollapsed(!S.leftPanelCollapsed));
 }
+
+// ═══ Left panel resize (Plan part4 #1) ═════════════════════════════════
+// --sidebar is already a CSS custom property (style.css), not a hardcoded
+// width — #title-left-zone's calc(var(--nav) + var(--sidebar)) stays in
+// sync for free by driving resize through the same var. The collapse
+// toggle above wins regardless of the stored width since
+// #app.left-panel-collapsed #left-panel{width:0} is more specific than
+// #left-panel{width:var(--sidebar)}.
+function applyLeftPanelWidth() {
+  document.documentElement.style.setProperty('--sidebar', S.leftPanelWidth + 'px');
+}
+
+let leftPanelResizeState = null;
+function startLeftPanelResize(ev) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  leftPanelResizeState = { startX: ev.clientX, startWidth: q('#left-panel').getBoundingClientRect().width };
+  q('#left-panel-resize')?.classList.add('is-resizing');
+}
+document.addEventListener('mousemove', (ev) => {
+  if (!leftPanelResizeState) return;
+  S.leftPanelWidth = Math.max(200, Math.min(480, leftPanelResizeState.startWidth + (ev.clientX - leftPanelResizeState.startX)));
+  applyLeftPanelWidth();
+});
+document.addEventListener('mouseup', () => {
+  if (!leftPanelResizeState) return;
+  leftPanelResizeState = null;
+  q('#left-panel-resize')?.classList.remove('is-resizing');
+  localStorage.setItem(LEFT_PANEL_WIDTH_KEY, String(S.leftPanelWidth));
+});
 
 function t(key){
   const lang = S.settings?.language || 'th';
@@ -970,10 +1021,15 @@ function renderProjectTabs(){
   document.title = S.project ? `${S.project.name} - DraconDex` : 'DraconDex';
 }
 
-// Title-bar split-layout picker: one trigger button (shows the active layout's
-// glyph) + an overlay list of the 3 choices, replacing the old inline 3-button
-// row (builderSplitButtonsHtml, builder.js) that used to sit inside #builder-tabs.
-const LAYOUT_GLYPH = { 1: '▢', 2: '◫', 4: '⊞' };
+// Title-bar split-layout picker: one trigger button + an overlay list of
+// named preset shapes (Plan part4 #2 — builderResetToPreset resets the
+// whole tree to a fresh named shape; arbitrary further splitting/closing
+// happens per-pane via buttons in builderPaneHeadHtml, builder.js).
+// Labels are numeric/symbolic ("1×"/"2×"/"3×"), matching the original
+// 3-item menu's own data-no-i18n convention — no new i18n keys needed
+// since there's nothing language-specific to translate. With an arbitrary
+// tree there's no longer a single "current preset" to highlight against,
+// so (unlike the old menu) no item shows an active state.
 function renderLayoutMenuBtn(){
   const wrap = q('#layout-menu-wrap');
   const btn = q('#layout-menu-btn');
@@ -981,11 +1037,16 @@ function renderLayoutMenuBtn(){
   if(!wrap || !btn || !menu) return;
   wrap.style.display = S.nexus ? '' : 'none';
   if(!S.nexus) return;
-  const layout = builderState().layout;
-  btn.textContent = LAYOUT_GLYPH[layout] || LAYOUT_GLYPH[1];
-  menu.innerHTML = [1, 2, 4].map(n => `
-    <button class="layout-menu-item${layout === n ? ' act' : ''}" data-no-i18n onclick="builderSetLayout(${n});toggleLayoutMenu(false)">
-      <span>${LAYOUT_GLYPH[n]}</span><span>${n}×</span>
+  btn.textContent = '⊞';
+  const items = [
+    { name: '1',  glyph: '▢', label: '1×' },
+    { name: '2h', glyph: '◫', label: '2×' },
+    { name: '2v', glyph: '⬓', label: '2×' },
+    { name: '3',  glyph: '⊟', label: '3×' },
+  ];
+  menu.innerHTML = items.map(it => `
+    <button class="layout-menu-item" data-no-i18n onclick="builderResetToPreset('${it.name}');toggleLayoutMenu(false)">
+      <span>${it.glyph}</span><span>${it.label}</span>
     </button>`).join('');
 }
 
@@ -1900,8 +1961,8 @@ function updateStatusBar(patch = {}) {
     parts.push(`<span class="sb-item sb-crumb">${crumb}</span>`);
     parts.push(`<span class="sb-badge" data-no-i18n>${mNode.parent_id != null ? 'Minor' : 'Major'} · ${x(kindLabel(mNode.kind))}</span>`);
   }
-  if (S.builder && S.builder.layout > 1 && S.view === 'nexus' && !S.activeModule) {
-    parts.push(`<span class="sb-badge" data-no-i18n>Split ${S.builder.layout}</span>`);
+  if (S.builder && S.builder.layoutTree.type === 'split' && S.view === 'nexus' && !S.activeModule) {
+    parts.push(`<span class="sb-badge" data-no-i18n>Split ${collectPaneIndices(S.builder.layoutTree).length}</span>`);
   }
   if (_statusState.item) parts.push(`<span class="sb-item">${x(_statusState.item)}</span>`);
   const right = [];

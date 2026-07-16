@@ -572,6 +572,17 @@ body{
 	overflow: hidden;
 }
 #window-frame{height:100%;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+/* Popped-out Builder tab window (Plan part3 #2) — just that tab's content,
+   no Nexus Nest tree / nav rail / settings. Window controls + .title-drag
+   stay so the popup remains movable/closable. */
+#window-frame.popup-mode #nav-sidebar,
+#window-frame.popup-mode #left-panel,
+#window-frame.popup-mode #builder-tabs,
+#window-frame.popup-mode #layout-menu-wrap,
+#window-frame.popup-mode #hub-toggle-btn,
+#window-frame.popup-mode #titlebar-vault,
+#window-frame.popup-mode #settings-menu-wrap,
+#window-frame.popup-mode #status-bar{display:none}
 #title-tab-bar{
 	height:38px;background:var(--bg);border-bottom:1px solid var(--border);
 	display:flex;align-items:center;gap:6px;flex-shrink:0;
@@ -1186,6 +1197,10 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 }
 #app.left-panel-collapsed #left-panel{width:0;border-right-color:transparent}
 #left-panel-inner{flex:1;overflow-y:auto;padding:10px 8px}
+
+.panel-resize-handle{width:5px;flex-shrink:0;cursor:col-resize;background:transparent}
+.panel-resize-handle:hover,.panel-resize-handle.is-resizing{background:var(--accent)}
+#app.left-panel-collapsed #left-panel-resize{display:none}
 #left-panel-foot{flex-shrink:0;border-top:1px solid var(--border);padding:8px}
 #left-panel-foot:empty{display:none}
 
@@ -2632,25 +2647,38 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .disp-thumb:has(img:not([src])){display:none}
 .disp-thumb.disp-empty{display:none}
 
-/* Builder shell (Phase 19, mockups 16/17) — pane grid, per-pane tabs, nav */
+/* Builder shell (Phase 19, mockups 16/17; recursive split tree Plan part4 #2)
+   — arbitrarily nested .bsplit containers, each a 3-track grid (pane / 5px
+   gutter+handle / pane), down to .bpane leaves. */
 #main-inner.builder-grid{display:grid;padding:0;gap:0;overflow:hidden}
-#main-inner.bl-1{grid-template-columns:1fr;grid-template-rows:1fr}
-#main-inner.bl-2{grid-template-columns:1fr 1fr;grid-template-rows:1fr}
-#main-inner.bl-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+#main-inner.builder-grid > .bpane,#main-inner.builder-grid > .bsplit{grid-column:1;grid-row:1}
+.bsplit{display:grid;min-width:0;min-height:0}
 .bpane{display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
-.bpane:last-child{border-right:none}
 .bpane.focused{box-shadow:inset 0 2px 0 var(--accent)}
 .bpane-head{display:flex;align-items:center;gap:4px;padding:4px 8px;border-bottom:1px solid var(--border);
 	background:var(--surface);flex-shrink:0;overflow:hidden}
 .bpane-head .bnav{padding:2px 7px;font-size:calc(10px * var(--fsc,1))}
 .bpane-head .bnav:disabled{opacity:.35;pointer-events:none}
-.bpane-tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;flex:1}
+.bpane-tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;min-height:32px;flex:1}
 .bpane-tabs::-webkit-scrollbar{height:4px}
 .bpane-tabs .project-tab{flex-shrink:0}
 .bpane-tabs .project-tab.pane-active{background:var(--raised)}
+.bpane-tabs .project-tab.tab-drop-before{box-shadow:inset 2px 0 0 0 var(--accent)}
+.bpane-tabs .project-tab.tab-drop-after{box-shadow:inset -2px 0 0 0 var(--accent)}
 .bpane-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px;min-width:0;position:relative}
-#main-inner.bl-2 .bpane-body,#main-inner.bl-4 .bpane-body{padding:14px}
-#main-inner.bl-2 .module-inspector,#main-inner.bl-4 .module-inspector{display:none}
+.bpane-body.drop-left{box-shadow:inset 4px 0 0 0 var(--accent)}
+.bpane-body.drop-right{box-shadow:inset -4px 0 0 0 var(--accent)}
+.bpane-body.drop-top{box-shadow:inset 0 4px 0 0 var(--accent)}
+.bpane-body.drop-bottom{box-shadow:inset 0 -4px 0 0 var(--accent)}
+.bpane-body.drop-center{outline:2px dashed var(--accent);outline-offset:-4px}
+#main-inner.builder-split .bpane-body{padding:14px}
+#main-inner.builder-split .module-inspector,#main-inner.builder-split #inspector-resize{display:none}
+#main-inner.inspector-collapsed .module-inspector{display:none}
+
+.builder-resize-handle{background:transparent}
+.builder-resize-handle:hover,.builder-resize-handle.is-resizing{background:var(--accent)}
+.builder-resize-handle.col{cursor:col-resize}
+.builder-resize-handle.row{cursor:row-resize}
 
 /* Title-bar layout-picker: single trigger button replacing the old 3-button
    .bsplit row, styled off #settings-menu-wrap / .title-settings-btn / #settings-menu. */

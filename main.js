@@ -40,9 +40,9 @@ app.on('second-instance', () => {
 });
 
 
-function createWindow(bootstrapNexusId) {
+function createWindow(bootstrapNexusId, bootstrapTabKey) {
   const win = new BrowserWindow({
-    width: 1280, height: 800,
+    width: bootstrapTabKey ? 900 : 1280, height: bootstrapTabKey ? 650 : 800,
     minWidth: 960, minHeight: 600,
     backgroundColor: '#050506',
     frame: false,
@@ -54,7 +54,10 @@ function createWindow(bootstrapNexusId) {
       nodeIntegration: false,
     },
   });
-  win.loadFile('index.html', bootstrapNexusId ? { search: `nexus=${bootstrapNexusId}` } : undefined);
+  const params = new URLSearchParams();
+  if (bootstrapNexusId) params.set('nexus', bootstrapNexusId);
+  if (bootstrapTabKey) { params.set('tab', bootstrapTabKey); params.set('popup', '1'); }
+  win.loadFile('index.html', params.toString() ? { search: params.toString() } : undefined);
 }
 
 app.whenReady().then(() => {
@@ -658,3 +661,7 @@ h('window:close', () => {
 // and data dir as the first window, so the single-instance lock above
 // (which only guards against a second OS process) doesn't apply here.
 h('window:openNexus', (nexusId) => { createWindow(nexusId); });
+// Same pattern as window:openNexus, but bootstraps a specific Builder tab
+// into a leaner popup window instead of the full app shell — see core.js's
+// init() `popup=1` branch and style.css's `.popup-mode` rules.
+h('window:openBuilderTab', (nexusId, tabKey) => { createWindow(nexusId, tabKey); });

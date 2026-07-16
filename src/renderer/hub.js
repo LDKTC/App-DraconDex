@@ -718,6 +718,7 @@ function buildModuleDetailHtml(m) {
       </div>
       ${mainHtml}
     </div>
+    <div id="inspector-resize" class="panel-resize-handle" onmousedown="startInspectorResize(event)" title="${t('resizePanel')}"></div>
     ${buildInspectorHtml(m)}
   </div>`;
 }

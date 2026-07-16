@@ -496,5 +496,6 @@ contextBridge.exposeInMainWorld('api', {
     toggleMaximize: () => inv('window:toggleMaximize'),
     close:          () => inv('window:close'),
     openNexus:      (nexusId) => inv('window:openNexus', nexusId),
+    openBuilderTab: (nexusId, tabKey) => inv('window:openBuilderTab', nexusId, tabKey),
   },
 });
