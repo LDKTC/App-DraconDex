@@ -47,6 +47,7 @@ const KIND_DESC_KEY = {
 function moduleIconHtml(m) {
   if (m.icon) {
     if (m.icon.startsWith('sym:')) return `<span class="kicon-glyph">${x(m.icon.slice(4))}</span>`;
+    if (m.icon.startsWith('img:')) return `<img src="${x(m.icon.slice(4))}" class="kicon-img-icon" alt="">`;
     const key = m.icon.startsWith('svg:') ? m.icon.slice(4) : m.icon;
     if (I[key]) return I[key];
   }
@@ -92,9 +93,10 @@ function renderModuleRail() {
   if (!S.nexus) return;
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
+  const pinned = S.moduleTree.filter(m => m.pinned);
   let html = `<button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus}</button>`;
-  if (S.moduleTree.length) html += `<div class="rail-sep module-rail-tool"></div>`;
-  for (const m of S.moduleTree) {
+  if (pinned.length) html += `<div class="rail-sep module-rail-tool"></div>`;
+  for (const m of pinned) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
     const col = m.icon_color_code || m.color_code || '#6366f1';
     html += `<button class="nav-btn module-rail-item${active}" style="color:${x(col)}" title="${x(m.name)}" onclick="openModuleNode(${m.id})">
@@ -208,7 +210,7 @@ function buildNestRow(m, depth, parentId) {
   return `<div class="li${indentCls}${sel}"
       draggable="${renaming ? 'false' : 'true'}" ondragstart="onNestDragStart(event,${m.id},${parentId ?? 'null'})"
       ondragover="onNestDragOver(event,this)" ondragleave="onNestDragLeave(event,this)" ondrop="onNestDrop(event,${m.id},${parentId ?? 'null'},this)"
-      onclick="${renaming ? '' : `scheduleRowOpen(${m.id})`}">
+      onclick="${renaming ? '' : `scheduleRowOpen(${m.id})`}" oncontextmenu="openModuleContextMenu(event,${m.id})">
     ${grip}${chev}
     <span class="kicon" style="color:${x(col)}" onclick="event.stopPropagation();openModuleIconPopup(${m.id},this)">${moduleIconHtml(m)}</span>
     ${renaming
@@ -309,6 +311,127 @@ function positionPopupNear(el, rect) {
   el.style.left = `${left}px`;
 }
 
+// Cursor-anchored popup helper — inline onclick= attributes can't close over
+// a live event object once the popup's own click handler runs later, so the
+// last right-click point is stashed on S and read back here.
+function ctxAnchor(ev) {
+  const x = ev ? ev.clientX : (S.ctxMenuPos?.x ?? 0);
+  const y = ev ? ev.clientY : (S.ctxMenuPos?.y ?? 0);
+  return { getBoundingClientRect: () => ({ left: x, top: y, bottom: y, right: x }) };
+}
+
+// ═══ Right-click context menus (Nexus Hub bg / Nest row / Nav-sidebar) ═
+function onHubBackgroundContextMenu(ev) {
+  if (ev.target.closest('.li')) return; // a row handles its own contextmenu (see buildNestRow)
+  ev.preventDefault();
+  openKindPopup(null, ctxAnchor(ev));
+}
+
+function openModuleContextMenu(ev, id) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  closeAllPopups();
+  S.ctxMenuPos = { x: ev.clientX, y: ev.clientY };
+  const m = findModuleNode(id);
+  if (!m) return;
+  const isMajor = m.parent_id == null;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup context-menu-popup';
+  pop.innerHTML = buildModuleContextMenuHtml(id, isMajor, !!m.pinned);
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  positionPopupNear(pop, ctxAnchor(ev).getBoundingClientRect());
+}
+
+function buildModuleContextMenuHtml(id, isMajor, pinned) {
+  let html = '';
+  if (isMajor) {
+    html += buildKindListHtml(null);
+    html += `<div class="ctx-sep"></div>
+      <div class="kind-list-item" onclick="closeAllPopups();openMinorModuleModal(${id},ctxAnchor())"><span class="kli-name">${x(t('addMinorModule'))}</span></div>`;
+  }
+  html += `
+    <div class="kind-list-item" onclick="closeAllPopups();startRenameModule(${id})"><span class="kli-name">${x(t('rename'))}</span></div>
+    <div class="kind-list-item" onclick="closeAllPopups();duplicateModuleNode(${id})"><span class="kli-name">${x(t('duplicate'))}</span></div>
+    <div class="kind-list-item" onclick="openMoveToListInPlace(${id})"><span class="kli-name">${x(t('moveTo'))}</span></div>
+    <div class="kind-list-item" onclick="closeAllPopups();deleteModuleNode(${id})"><span class="kli-name">${x(t('delete'))}</span></div>`;
+  if (isMajor) {
+    html += `<div class="kind-list-item" onclick="closeAllPopups();toggleModulePin(${id})"><span class="kli-name">${x(pinned ? t('unpin') : t('pin'))}</span></div>`;
+  }
+  return html;
+}
+
+function openMoveToListInPlace(id) {
+  const pop = document.querySelector('.kind-popup');
+  if (!pop) return;
+  pop.innerHTML = buildMoveToListHtml(id);
+}
+function flattenModuleTree(nodes, depth, out) {
+  out = out || [];
+  for (const m of nodes) {
+    out.push({ m, depth });
+    if (m.children?.length) flattenModuleTree(m.children, depth + 1, out);
+  }
+  return out;
+}
+function buildMoveToListHtml(id) {
+  const node = findModuleNode(id);
+  if (!node) return '';
+  let html = '';
+  if (node.parent_id != null) {
+    html += `<div class="kind-list-item" onclick="moveModuleTo(${id},null)"><span class="kli-name">${x(t('moveToTopLevel'))}</span></div>`;
+  }
+  const all = flattenModuleTree(S.moduleTree, 0);
+  for (const { m: target, depth } of all) {
+    if (target.id === id || isSelfOrDescendant(node, target.id)) continue;
+    html += `<div class="kind-list-item" style="padding-left:${10 + depth * 14}px" onclick="moveModuleTo(${id},${target.id})"><span class="kli-name">${x(target.name)}</span></div>`;
+  }
+  return html || `<div class="kind-list-item" style="opacity:.6;pointer-events:none"><span class="kli-name">${x(t('moveToNoTargets'))}</span></div>`;
+}
+async function moveModuleTo(id, newParentId) {
+  closeAllPopups();
+  if (!S.nexus) return;
+  const siblings = (newParentId == null ? S.moduleTree : findModuleNode(newParentId)?.children || [])
+    .map(m => m.id).filter(mid => mid !== id);
+  siblings.push(id);
+  await api.module.move(S.nexus.id, id, newParentId, siblings);
+  await reloadModuleTree();
+}
+async function duplicateModuleNode(id) {
+  await api.module.duplicate(id);
+  await reloadModuleTree();
+  toast(t('duplicated'), 'ok');
+}
+
+function openNavSidebarContextMenu(ev) {
+  ev.preventDefault();
+  closeAllPopups();
+  S.ctxMenuPos = { x: ev.clientX, y: ev.clientY };
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup context-menu-popup nav-pin-popup';
+  pop.innerHTML = buildNavPinListHtml();
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  positionPopupNear(pop, ctxAnchor(ev).getBoundingClientRect());
+}
+function buildNavPinListHtml() {
+  if (!S.moduleTree.length) return `<div class="kind-list-item" style="opacity:.6;pointer-events:none"><span class="kli-name">${x(t('nestEmpty'))}</span></div>`;
+  return S.moduleTree.map(m => `
+    <div class="kind-list-item" onclick="toggleNavPinAndRefresh(${m.id})">
+      <span class="kicon" style="color:${x(m.icon_color_code || m.color_code || '#6366f1')}">${moduleIconHtml(m)}</span>
+      <span class="kli-name">${x(m.name)}</span>
+      <span class="ctx-check">${m.pinned ? '✓' : ''}</span>
+    </div>`).join('');
+}
+async function toggleNavPinAndRefresh(id) {
+  const m = findModuleNode(id);
+  if (!m) return;
+  await api.module.update(id, { pinned: m.pinned ? 0 : 1 });
+  await reloadModuleTree();
+  const pop = document.querySelector('.nav-pin-popup');
+  if (pop) pop.innerHTML = buildNavPinListHtml();
+}
+
 // ═══ Kind-picker popup — instant create ════════════════════════════════
 function openKindPopup(parentId, anchor) {
   closeAllPopups();
@@ -384,6 +507,13 @@ async function saveModuleRename(id, value) {
   await reloadModuleTree();
 }
 
+async function toggleModulePin(id) {
+  const m = findModuleNode(id);
+  if (!m) return;
+  await api.module.update(id, { pinned: m.pinned ? 0 : 1 });
+  await reloadModuleTree();
+}
+
 // ═══ Icon/color quick-popup — live-saves on every pick ═════════════════
 async function openModuleIconPopup(id, anchor) {
   closeAllPopups();
@@ -452,7 +582,7 @@ function buildKindPicker(kind) {
 
 // Edit-only now — creation is instant via the kind-popup (openKindPopup/
 // quickCreateModule below); "start from template" never belonged here, it's
-// Artisan's own artisanV3Spec/api.artisan.createV3 flow (src/renderer/artisan.js).
+// Artisan's own artisanV3Spec/startArtisanWizard flow (src/renderer/artisan.js).
 async function moduleFormModal(existing) {
   openModal(t('moduleEdit'), `
     <div class="fg"><label>${t('name')} *</label><input id="mm-name" value="${x(existing.name || '')}"></div>

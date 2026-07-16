@@ -1116,6 +1116,9 @@ function initDB() {
   if (!hasColumn(db, 'module', 'cat_type')) {
     try { db.prepare(`ALTER TABLE module ADD COLUMN cat_type TEXT CHECK(cat_type IN ('object','element','character'))`).run(); } catch (_) {}
   }
+  if (!hasColumn(db, 'module', 'pinned')) {
+    try { db.prepare(`ALTER TABLE module ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0`).run(); } catch (_) {}
+  }
   migrateMapV3(db);
   migrateTimelineV3(db);
 

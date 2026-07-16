@@ -114,6 +114,20 @@ for (const raw of commands) {
         console.log(`[dragto] ${srcSel} -> ${dstSel} @${frac}`);
         break;
       }
+      case 'rclick': {
+        // Real mouse-driven right-click (move + mouse.down/up button:'right')
+        // so it fires a genuine browser `contextmenu` event -- not a synthetic
+        // dispatchEvent -- for context-menu handlers wired via oncontextmenu=.
+        const el = win.locator(rest).first();
+        const box = await el.boundingBox({ timeout: 5000 });
+        if (!box) throw new Error('rclick: element not visible');
+        const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+        await win.mouse.move(cx, cy);
+        await win.mouse.down({ button: 'right' });
+        await win.mouse.up({ button: 'right' });
+        console.log(`[rclick] ${rest} @ ${cx},${cy}`);
+        break;
+      }
       case 'fill': {
         const [sel, text] = rest.split(' :: ');
         await win.fill(sel.trim(), text ?? '', { timeout: 5000 });

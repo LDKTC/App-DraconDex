@@ -1,8 +1,9 @@
 'use strict';
-// Artisan module (v2.8) — create-from-template studio. Pick a target module
-// in the sidebar, pick a template card in the main area, fill in a name and a
-// few basics, and Artisan scaffolds a ready-to-extend base project in that
-// module (categories + fields, timelines, stat templates, series/books/…).
+// Artisan module (v3) — create-from-template studio. Pick a target module
+// in the sidebar, then step through the create wizard (startArtisanWizard):
+// a Manager step followed by one step per Minor (artisanV3Spec), each
+// committing its own module row (plus classifier templates / author
+// chapters / drafter content) before moving to the next.
 // Reached from the nexus tile and from the rail shortcut shown inside each
 // project module (openArtisanFromModule in core.js).
 
@@ -13,135 +14,11 @@ const ARTISAN_TARGETS = [
   { id: 'writer',    icon: 'writer',    labelKey: 'writer' },
 ];
 
-// Templates are built at call time so every name runs through t() in the
-// user's current language — the scaffolded rows become user data.
-function artisanTemplates(target) {
-  const fld = (key, type) => ({ name: t(key), type: type || 'text' });
-  const stat = (name) => ({ name, type: 'num', levelable: true });
-  if (target === 'director') return [
-    { id: 'novel-std', nameKey: 'artTplNovelStd', descKey: 'artTplNovelStdD',
-      preview: [t('worldChars'), t('artLocations'), t('gameItems'), t('artMainTimeline')],
-      build: () => ({
-        categories: [
-          { name: t('worldChars'),   fields: [fld('artFldRole'), fld('artFldAge'), fld('artFldPersonality', 'textarea'), fld('artFldGoal')] },
-          { name: t('artLocations'), fields: [fld('artFldDescription', 'textarea'), fld('artFldHistory', 'textarea')] },
-          { name: t('gameItems'),    fields: [fld('artFldDescription', 'textarea'), fld('artFldOwner')] },
-        ],
-        timelines: [t('artMainTimeline')],
-        descs: [t('artFldPremise')],
-      }) },
-    { id: 'novel-fantasy', nameKey: 'artTplNovelFantasy', descKey: 'artTplNovelFantasyD',
-      preview: [t('worldChars'), t('artLocations'), t('artFactions'), t('artMagic'), t('artCreatures'), t('artMainTimeline')],
-      build: () => ({
-        categories: [
-          { name: t('worldChars'),   fields: [fld('artFldRole'), fld('artFldAge'), fld('artFldPersonality', 'textarea'), fld('artFldGoal'), fld('artFldBackstory', 'textarea')] },
-          { name: t('artLocations'), fields: [fld('artFldDescription', 'textarea'), fld('artFldHistory', 'textarea')] },
-          { name: t('artFactions'),  fields: [fld('artFldDescription', 'textarea'), fld('artFldGoal')] },
-          { name: t('artMagic'),     fields: [fld('artFldDescription', 'textarea'), fld('artFldRules', 'textarea')] },
-          { name: t('artCreatures'), fields: [fld('artFldDescription', 'textarea')] },
-        ],
-        timelines: [t('artMainTimeline')],
-        descs: [t('artFldPremise')],
-      }) },
-    { id: 'novel-mystery', nameKey: 'artTplNovelMystery', descKey: 'artTplNovelMysteryD',
-      preview: [t('worldChars'), t('artLocations'), t('artClues'), t('artMainTimeline')],
-      build: () => ({
-        categories: [
-          { name: t('worldChars'),   fields: [fld('artFldRole'), fld('artFldMotive'), fld('artFldBackstory', 'textarea')] },
-          { name: t('artLocations'), fields: [fld('artFldDescription', 'textarea')] },
-          { name: t('artClues'),     fields: [fld('artFldDescription', 'textarea'), fld('artFldOwner')] },
-        ],
-        timelines: [t('artMainTimeline')],
-        descs: [t('artFldPremise')],
-      }) },
-  ];
-  if (target === 'navigator') return [
-    { id: 'world-std', nameKey: 'artTplWorldStd', descKey: 'artTplWorldStdD',
-      preview: [t('artLocations'), t('artFactions'), t('worldOverview'), t('artFldRules'), t('artFldHistory')],
-      build: () => ({
-        categories: [
-          { name: t('artLocations'), fields: [fld('artFldDescription', 'textarea'), fld('artFldHistory', 'textarea')] },
-          { name: t('artFactions'),  fields: [fld('artFldDescription', 'textarea'), fld('artFldGoal')] },
-        ],
-        descs: [t('worldOverview'), t('artFldRules'), t('artFldHistory')],
-      }) },
-    { id: 'world-fantasy', nameKey: 'artTplWorldFantasy', descKey: 'artTplWorldFantasyD',
-      preview: [t('artLocations'), t('artFactions'), t('artMagic'), t('artCreatures'), t('worldOverview')],
-      build: () => ({
-        categories: [
-          { name: t('artLocations'), fields: [fld('artFldDescription', 'textarea'), fld('artFldHistory', 'textarea')] },
-          { name: t('artFactions'),  fields: [fld('artFldDescription', 'textarea'), fld('artFldGoal')] },
-          { name: t('artMagic'),     fields: [fld('artFldDescription', 'textarea'), fld('artFldRules', 'textarea')] },
-          { name: t('artCreatures'), fields: [fld('artFldDescription', 'textarea')] },
-        ],
-        descs: [t('worldOverview'), t('artFldHistory')],
-      }) },
-    { id: 'world-scifi', nameKey: 'artTplWorldScifi', descKey: 'artTplWorldScifiD',
-      preview: [t('artLocations'), t('artFactions'), t('artTech'), t('worldOverview')],
-      build: () => ({
-        categories: [
-          { name: t('artLocations'), fields: [fld('artFldDescription', 'textarea'), fld('artFldHistory', 'textarea')] },
-          { name: t('artFactions'),  fields: [fld('artFldDescription', 'textarea'), fld('artFldGoal')] },
-          { name: t('artTech'),      fields: [fld('artFldDescription', 'textarea'), fld('artFldRules', 'textarea')] },
-        ],
-        descs: [t('worldOverview'), t('artFldHistory')],
-      }) },
-  ];
-  if (target === 'hero') return [
-    { id: 'game-rpg', nameKey: 'artTplGameRpg', descKey: 'artTplGameRpgD',
-      preview: ['HP / MP / ATK / DEF', t('gameItems'), t('artSkills'), t('artMainStory')],
-      build: () => ({
-        charFields: [stat('HP'), stat('MP'), stat('ATK'), stat('DEF'), fld('artFldRole'), fld('artFldBackstory', 'textarea')],
-        collections: [
-          { name: t('gameItems'), fields: [fld('artFldDescription', 'textarea'), fld('artFldEffect')] },
-          { name: t('artSkills'), fields: [fld('artFldDescription', 'textarea'), fld('artFldEffect')] },
-        ],
-        stories: [t('artMainStory')],
-      }) },
-    { id: 'game-vn', nameKey: 'artTplGameVn', descKey: 'artTplGameVnD',
-      preview: [t('gameChars'), t('artMainStory')],
-      build: () => ({
-        charFields: [fld('artFldRole'), fld('artFldAppearance', 'textarea'), fld('artFldPersonality', 'textarea'), fld('artFldBackstory', 'textarea')],
-        collections: [],
-        stories: [t('artMainStory')],
-      }) },
-    { id: 'game-adv', nameKey: 'artTplGameAdv', descKey: 'artTplGameAdvD',
-      preview: ['HP', t('gameItems'), t('artQuests'), t('artMainStory')],
-      build: () => ({
-        charFields: [stat('HP'), fld('artFldRole')],
-        collections: [
-          { name: t('gameItems'),  fields: [fld('artFldDescription', 'textarea'), fld('artFldEffect')] },
-          { name: t('artQuests'),  fields: [fld('artFldDescription', 'textarea'), fld('artFldEffect')] },
-        ],
-        stories: [t('artMainStory')],
-      }) },
-  ];
-  if (target === 'writer') return [
-    { id: 'write-book', nameKey: 'artTplWriteBook', descKey: 'artTplWriteBookD',
-      preview: [`1 ${t('writeSeries')}`, `1 ${t('artBook')}`, `3 ${t('writeChapters')}`],
-      build: (name) => ({
-        series: [{ name, books: [{ name, chapters: [1, 2, 3].map(n => `${t('artChapter')} ${n}`) }] }],
-      }) },
-    { id: 'write-trilogy', nameKey: 'artTplWriteTrilogy', descKey: 'artTplWriteTrilogyD',
-      preview: [`1 ${t('writeSeries')}`, `3 ${t('writeBooks')}`],
-      build: (name) => ({
-        series: [{ name, books: [1, 2, 3].map(n => ({ name: `${t('artBook')} ${n}`, chapters: [`${t('artChapter')} 1`] })) }],
-      }) },
-    { id: 'write-serial', nameKey: 'artTplWriteSerial', descKey: 'artTplWriteSerialD',
-      preview: [`1 ${t('writeSeries')}`, `5 ${t('writeChapters')}`, t('artIdeas')],
-      build: (name) => ({
-        series: [{ name, books: [{ name: `${t('artBook')} 1`, chapters: [1, 2, 3, 4, 5].map(n => `${t('artChapter')} ${n}`) }] }],
-        notes: [t('artIdeas')],
-      }) },
-  ];
-  return [];
-}
-
 // ═══ v3 STRUCTURE TEMPLATES (Phase 23) ═════════════════════════════════
 // The four legacy fixed modules as built-in Nexus-nest templates: each
-// scaffolds a Manager Major + pre-filled Minors through
-// api.artisan.createV3. Names run through t() at call time — the rows
-// become user data in the current language.
+// describes a Manager Major + pre-filled Minors, walked step-by-step by
+// the create wizard below (startArtisanWizard). Names run through t() at
+// call time — the rows become user data in the current language.
 function artisanV3Spec(target, name, colorId) {
   const f = (key, type, levelable) => ({ name: t(key), type: type || 'text', levelable: !!levelable });
   const stat = (nm) => ({ name: nm, type: 'number', levelable: true });
@@ -174,37 +51,102 @@ function artisanV3Spec(target, name, colorId) {
     );
   } else if (target === 'writer') {
     minors.push(
-      { kind: 'author', name, chapters: [1, 2, 3].map(n => `${t('artChapter')} ${n}`) },
+      { kind: 'author', name: t('artBook'), chapters: [1, 2, 3].map(n => `${t('artChapter')} ${n}`) },
       { kind: 'drafter', name: t('artIdeas') },
     );
   }
   return { name, colorId: colorId || null, minors };
 }
 
-async function createArtisanV3(target) {
+// ═══ CREATE WIZARD ════════════════════════════════════
+// Manager step, then one step per Minor (artisanV3Spec) — each step commits
+// its own module row immediately via api.module.create so the user can
+// name/re-icon every piece before it's created, instead of the old one-shot
+// name+color modal that built the whole tree in a single call.
+function startArtisanWizard(target) {
+  const spec = artisanV3Spec(target, '');
+  S.artisanWizard = { target, spec, idx: -1, managerId: null };
+  renderArtisanWizardStep();
+}
+
+async function renderArtisanWizardStep() {
+  const w = S.artisanWizard;
+  if (!w) return;
+  const tg = ARTISAN_TARGETS.find(a => a.id === w.target);
+  if (w.idx === -1) {
+    openModal(`${t(tg.labelKey)} — ${t('artV3Card')} · 1 / ${w.spec.minors.length + 1}`, `
+      <div class="fg"><label>${t('name')} *</label><input id="art-wiz-name"></div>
+      <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(null, null, '', kindLabel('manager'))}</div>
+      <div class="mfoot">
+        <button class="btn btn-s" onclick="closeArtisanWizard()">${t('cancel')}</button>
+        <button class="btn btn-p" onclick="submitArtisanWizardStep()">${t('guideNext')}</button>
+      </div>`);
+  } else {
+    const i = w.idx;
+    const mn = w.spec.minors[i];
+    openModal(`${i + 2} / ${w.spec.minors.length + 1} — ${x(mn.name)}`, `
+      <div class="fg"><label>${t('name')} *</label><input id="art-wiz-name" value="${x(mn.name || '')}"></div>
+      <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(null, null, mn.name || '', kindLabel(mn.kind))}</div>
+      <div class="mfoot">
+        <button class="btn btn-s" onclick="closeArtisanWizard()">${t('cancel')}</button>
+        <button class="btn btn-p" onclick="submitArtisanWizardStep()">${i === w.spec.minors.length - 1 ? t('guideDone') : t('guideNext')}</button>
+      </div>`);
+  }
+  setTimeout(() => q('#art-wiz-name').focus(), 60);
+}
+
+async function submitArtisanWizardStep() {
+  const w = S.artisanWizard;
+  if (!w) return;
   if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
-  const name = q('#art-name').value.trim();
+  const name = q('#art-wiz-name').value.trim();
   if (!name) return;
-  const colorId = q('#sel-color')?.value || null;
-  const res = await api.artisan.createV3(S.nexus.id, artisanV3Spec(target, name, colorId));
-  if (!res?.id) return;
+  const icon = getIconPickerValue() || null;
+  const color = q('#sel-color')?.value || null;
+  if (w.idx === -1) {
+    w.managerId = await api.module.create({ nexus_ref: S.nexus.id, parent_id: null, name, kind: 'manager', color, icon_color: color, icon });
+    if (!w.spec.minors.length) { await finishArtisanWizard(); return; }
+    w.idx = 0;
+    await renderArtisanWizardStep();
+  } else {
+    const i = w.idx;
+    const mn = w.spec.minors[i];
+    const minorId = await api.module.create({
+      nexus_ref: S.nexus.id, parent_id: w.managerId, name, kind: mn.kind,
+      color, icon_color: color, icon,
+      cat_type: mn.kind === 'classifier' ? (mn.catType || 'object') : null,
+    });
+    if (mn.kind === 'classifier') {
+      for (const tf of (mn.templates || [])) {
+        await api.classifier.createTemplate(minorId, tf.name, tf.type || 'text', !!tf.levelable, false, null);
+      }
+    }
+    if (mn.kind === 'author') {
+      for (const ch of (mn.chapters || [])) await api.author.createChapter(minorId, ch);
+    }
+    if (mn.kind === 'drafter' && mn.content) await api.module.updateDescription(minorId, mn.content);
+    if (i === w.spec.minors.length - 1) {
+      await finishArtisanWizard();
+    } else {
+      w.idx = i + 1;
+      await renderArtisanWizardStep();
+    }
+  }
+}
+
+function closeArtisanWizard() {
+  S.artisanWizard = null;
+  closeModal();
+}
+
+async function finishArtisanWizard() {
+  const managerId = S.artisanWizard.managerId;
+  S.artisanWizard = null;
   closeModal();
   toast(t('artisanCreated'), 'ok');
   await returnToNexus();
   await reloadModuleTree();
-  await openModuleNode(res.id);
-}
-
-async function openArtisanV3Modal(target) {
-  const tg = ARTISAN_TARGETS.find(a => a.id === target);
-  openModal(`${t(tg.labelKey)} — ${t('artV3Card')}`, `
-    <div class="fg"><label>${t('name')} *</label><input id="art-name"></div>
-    <div class="fg"><label>${t('color')}</label>${await colorPicker()}</div>
-    <div class="mfoot">
-      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
-      <button class="btn btn-p" onclick="createArtisanV3('${target}')">${t('artisanCreate')}</button>
-    </div>`);
-  setTimeout(() => q('#art-name').focus(), 60);
+  await openModuleNode(managerId);
 }
 
 // ═══ ENTRY / ROUTING ══════════════════════════════════
@@ -216,7 +158,6 @@ function renderArtisanView() {
     h += `<div class="li ${S.artisanTarget === tg.id ? 'active' : ''}" onclick="selectArtisanTarget('${tg.id}')" style="display:flex;align-items:center;gap:8px">
       <span style="display:flex;align-items:center">${I[tg.icon]}</span>
       <span class="name" style="flex:1">${t(tg.labelKey)}</span>
-      <span class="cs-count">${artisanTemplates(tg.id).length}</span>
     </div>`;
   }
   // The legacy fixed modules moved off the hub into here (Phase 23) —
@@ -252,7 +193,7 @@ function renderArtisanMain() {
   // Built-in v3 structure card first (Phase 23) — creates a Nexus-nest
   // Major/Minor set instead of a legacy project.
   const v3Spec = artisanV3Spec(S.artisanTarget, '·');
-  h += `<div class="artisan-card artisan-v3" onclick="openArtisanV3Modal('${S.artisanTarget}')">
+  h += `<div class="artisan-card artisan-v3" onclick="startArtisanWizard('${S.artisanTarget}')">
     <div class="artisan-card-head">
       <span class="artisan-card-icon">${I[tg.icon]}</span>
       <h4>${t('artV3Card')} <span class="kind-chip" data-no-i18n>v3</span></h4>
@@ -260,20 +201,8 @@ function renderArtisanMain() {
     <p>${t('artV3CardD')}</p>
     <div class="artisan-inc">${t('artisanIncludes')}</div>
     <div class="artisan-inc-list">${v3Spec.minors.map(mn => `<span class="artisan-chip">${x(mn.name)} <small data-no-i18n>${x(kindLabel(mn.kind))}</small></span>`).join('')}</div>
-    <button class="btn btn-p" style="margin-top:10px;width:100%" onclick="event.stopPropagation();openArtisanV3Modal('${S.artisanTarget}')">${I.plus} ${t('artisanCreate')}</button>
+    <button class="btn btn-p" style="margin-top:10px;width:100%" onclick="event.stopPropagation();startArtisanWizard('${S.artisanTarget}')">${I.plus} ${t('artisanCreate')}</button>
   </div>`;
-  for (const tpl of artisanTemplates(S.artisanTarget)) {
-    h += `<div class="artisan-card" onclick="openArtisanCreateModal('${tpl.id}')">
-      <div class="artisan-card-head">
-        <span class="artisan-card-icon">${I[tg.icon]}</span>
-        <h4>${t(tpl.nameKey)}</h4>
-      </div>
-      <p>${t(tpl.descKey)}</p>
-      <div class="artisan-inc">${t('artisanIncludes')}</div>
-      <div class="artisan-inc-list">${tpl.preview.map(p => `<span class="artisan-chip">${x(p)}</span>`).join('')}</div>
-      <button class="btn btn-p" style="margin-top:10px;width:100%" onclick="event.stopPropagation();openArtisanCreateModal('${tpl.id}')">${I.plus} ${t('artisanCreate')}</button>
-    </div>`;
-  }
   h += `</div>
   <div class="detail-head" style="border-left:4px solid var(--border);padding-left:12px;margin-top:22px">
     <h2 style="margin:0;font-size:1.05em">${t('artMigrateSection')}</h2>
@@ -313,73 +242,3 @@ async function runArtisanMigration(target, legacyId, btn) {
   }
 }
 
-// ═══ CREATE MODAL ═════════════════════════════════════
-async function openArtisanCreateModal(tplId) {
-  const tpl = artisanTemplates(S.artisanTarget).find(tp => tp.id === tplId);
-  if (!tpl) return;
-  const hasMemo = S.artisanTarget !== 'writer'; // write_project has no memo column
-  openModal(`${t(tpl.nameKey)}`, `
-    <div class="fg"><label>${t('name')} *</label><input id="art-name"></div>
-    <div class="fg"><label>Codename</label><input id="art-code"></div>
-    ${hasMemo ? `<div class="fg"><label>${t('memo')}</label><textarea id="art-memo"></textarea></div>` : ''}
-    <div class="fg"><label>${t('color')}</label>${await colorPicker()}</div>
-    <div class="mfoot">
-      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
-      <button class="btn btn-p" onclick="createFromArtisanTemplate('${tpl.id}')">${t('artisanCreate')}</button>
-    </div>`);
-  setTimeout(() => q('#art-name').focus(), 60);
-}
-
-async function createFromArtisanTemplate(tplId) {
-  const tpl = artisanTemplates(S.artisanTarget).find(tp => tp.id === tplId);
-  if (!tpl) return;
-  const name = q('#art-name').value.trim();
-  if (!name) return;
-  const base = {
-    name,
-    codename: q('#art-code').value.trim() || null,
-    memo: q('#art-memo')?.value.trim() || null,
-    colorId: q('#sel-color')?.value || null,
-  };
-  const spec = tpl.build(name);
-  let res;
-  if      (S.artisanTarget === 'director')  res = await api.artisan.createNovel(base, spec);
-  else if (S.artisanTarget === 'navigator') res = await api.artisan.createWorld(base, spec);
-  else if (S.artisanTarget === 'hero')      res = await api.artisan.createGame(base, spec);
-  else if (S.artisanTarget === 'writer')    res = await api.artisan.createWrite(base, spec);
-  if (!res?.id) return;
-  closeModal();
-  toast(t('artisanCreated'), 'ok');
-  await artisanOpenCreated(S.artisanTarget, res);
-}
-
-// Jump into the freshly scaffolded entity inside its own module, mirroring
-// what selectModule() + the module's own select fn would do.
-async function artisanOpenCreated(target, res) {
-  document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
-  if (target === 'director') {
-    S.activeModule = 'director';
-    S.view = 'projects';
-    q('.nav-btn[data-panel="projects"]')?.classList.add('active');
-    await reloadSidebar();
-    await selectProject(res.id);
-  } else if (target === 'navigator') {
-    S.activeModule = 'navigator';
-    S.view = 'navigator';
-    q('.nav-btn[data-panel="navigator"]')?.classList.add('active');
-    await loadModule('src/renderer/navigator.js');
-    await selectWorld(res.id);
-  } else if (target === 'hero') {
-    S.activeModule = 'hero';
-    S.view = 'hero';
-    q('.nav-btn[data-panel="hero"]')?.classList.add('active');
-    await loadModule('src/renderer/hero.js');
-    await selectGame(res.id);
-  } else if (target === 'writer') {
-    S.activeModule = 'writer';
-    S.view = 'writer';
-    q('.nav-btn[data-panel="writer"]')?.classList.add('active');
-    await loadModule('src/renderer/writer.js');
-    await selectWriteSeries(res.id, res.seriesId ?? null);
-  }
-}

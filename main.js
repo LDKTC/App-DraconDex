@@ -129,6 +129,7 @@ h('module:create',      (data)        => db.createModule(data));
 h('module:update',      (id,data)     => db.updateModule(id,data));
 h('module:updateDescription', (id,d)  => db.updateModuleDescription(id,d));
 h('module:delete',      (id)          => db.deleteModule(id));
+h('module:duplicate',   (id)          => db.duplicateModule(id));
 h('module:move',        (nx,id,parentId,ids) => db.moveModule(nx,id,parentId,ids));
 h('module:count',       (nx)          => db.countModules(nx));
 h('module:getAttrs',    (id)          => db.getModuleAttrs(id));
@@ -629,13 +630,6 @@ h('write:getChats',         (nid)            => db.getWriteChats(nid));
 h('write:createChat',       (nid,txt)        => db.createWriteChat(nid,txt));
 h('write:updateChat',       (id,txt)         => db.updateWriteChat(id,txt));
 h('write:deleteChat',       (id)             => db.deleteWriteChat(id));
-
-// Artisan (v2.8) — create-from-template scaffolding
-h('artisan:createNovel', (base,spec) => db.artisanCreateNovel(base,spec));
-h('artisan:createWorld', (base,spec) => db.artisanCreateWorld(base,spec));
-h('artisan:createGame',  (base,spec) => db.artisanCreateGame(base,spec));
-h('artisan:createWrite', (base,spec) => db.artisanCreateWrite(base,spec));
-h('artisan:createV3',    (nx,spec)   => db.createV3Structure(nx,spec));
 
 // Sage / Analytics
 h('sage:getDataSize',    () => db.getDataSize());

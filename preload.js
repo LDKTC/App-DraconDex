@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('api', {
     update:  (id,data)     => inv('module:update', id,data),
     updateDescription: (id,d) => inv('module:updateDescription', id,d),
     delete:  (id)          => inv('module:delete', id),
+    duplicate: (id)        => inv('module:duplicate', id),
     move:    (nx,id,parentId,ids) => inv('module:move', nx,id,parentId,ids),
     count:   (nx)          => inv('module:count', nx),
     getAttrs:   (id)          => inv('module:getAttrs', id),
@@ -483,13 +484,6 @@ contextBridge.exposeInMainWorld('api', {
     createChat:           (nid,txt)       => inv('write:createChat', nid,txt),
     updateChat:           (id,txt)        => inv('write:updateChat', id,txt),
     deleteChat:           (id)            => inv('write:deleteChat', id),
-  },
-  artisan: {
-    createNovel: (base,spec) => inv('artisan:createNovel', base,spec),
-    createWorld: (base,spec) => inv('artisan:createWorld', base,spec),
-    createGame:  (base,spec) => inv('artisan:createGame', base,spec),
-    createWrite: (base,spec) => inv('artisan:createWrite', base,spec),
-    createV3:    (nx,spec)   => inv('artisan:createV3', nx,spec),
   },
   sage: {
     getDataSize:     () => inv('sage:getDataSize'),

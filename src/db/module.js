@@ -44,10 +44,47 @@ function createModule(data) {
 function updateModule(id, data) {
   const cur = getDB().prepare(`SELECT * FROM module WHERE id=?`).get(id);
   if (!cur) return;
-  const { name = cur.name, icon = cur.icon, icon_color = cur.icon_color, color = cur.color } = data;
-  getDB().prepare(`UPDATE module SET name=?, icon=?, icon_color=?, color=?, update_at=datetime('now') WHERE id=?`)
-    .run(name, icon, icon_color, color, id);
+  const { name = cur.name, icon = cur.icon, icon_color = cur.icon_color, color = cur.color, pinned = cur.pinned } = data;
+  getDB().prepare(`UPDATE module SET name=?, icon=?, icon_color=?, color=?, pinned=?, update_at=datetime('now') WHERE id=?`)
+    .run(name, icon, icon_color, color, pinned, id);
   if (name !== cur.name) wiki.renameWikiTarget(`module_${id}`, cur.name, name);
+}
+
+// Duplicate a module and its whole descendant subtree (Plan part2 #1 —
+// context-menu "Duplicate"). The clone is inserted as a sibling (same
+// parent_id as the source), recursing through children/grandchildren/etc.
+// so no data is silently dropped. Reuses createModule for column
+// population rather than a second raw INSERT. pinned is always reset to 0
+// on every cloned row — ponytail: a duplicate shouldn't clutter the pinned
+// rail; clone-pinned-too can be added if a later request asks for it.
+function cloneModuleSubtree(srcId, newParentId, isRoot) {
+  const d = getDB();
+  const src = d.prepare(`SELECT * FROM module WHERE id=?`).get(srcId);
+  if (!src) return null;
+  const newId = createModule({
+    nexus_ref: src.nexus_ref,
+    parent_id: newParentId,
+    name: isRoot ? `${src.name} (Copy)` : src.name,
+    kind: src.kind,
+    icon: src.icon,
+    icon_color: src.icon_color,
+    color: src.color,
+    cat_type: src.cat_type,
+  });
+  if (src.description) updateModuleDescription(newId, src.description);
+  const children = d.prepare(`SELECT id FROM module WHERE parent_id=? ORDER BY display_order, id`).all(srcId);
+  for (const c of children) cloneModuleSubtree(c.id, newId, false);
+  return newId;
+}
+
+function duplicateModule(id) {
+  const d = getDB();
+  const src = d.prepare(`SELECT parent_id FROM module WHERE id=?`).get(id);
+  if (!src) return null;
+  let newId;
+  const tx = d.transaction(() => { newId = cloneModuleSubtree(id, src.parent_id, true); });
+  tx();
+  return newId;
 }
 
 // Free text with [[wikilinks]] — reindexed on every save, same as object
@@ -149,7 +186,7 @@ const getModuleLinks = (moduleId) => ({
 
 module.exports = {
   getTree, getModule, createModule, updateModule, updateModuleDescription, deleteModule,
-  moveModule, countModules, nexusOfModule,
+  duplicateModule, moveModule, countModules, nexusOfModule,
   getModuleAttrs, upsertModuleAttr, deleteModuleAttr,
   getModuleUi, setModuleUi,
   getModuleTags, setModuleTags,

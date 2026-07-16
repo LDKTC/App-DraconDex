@@ -69,6 +69,7 @@ Commands (each one argv entry, quoted):
 |---|---|
 | `ss <name>` | screenshot → `tmp-driver-data/shots/<name>.png` |
 | `click <selector>` | click first match (Playwright selectors, `:has-text()` ok) |
+| `rclick <selector>` | genuine mouse-driven right-click (fires real `contextmenu`, not synthetic dispatch) |
 | `fill <sel> :: <text>` | set input value (note the ` :: ` separator) |
 | `type <text>` / `press <key>` | keyboard input |
 | `waitfor <selector>` / `wait <ms>` | wait for element / sleep |

@@ -830,8 +830,10 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 
 .li .kicon{display:flex;align-items:center;flex-shrink:0;-webkit-user-drag:none}
 .li .kicon .icon{width:15px;height:15px;stroke-width:2.2}
+.li .kicon .kicon-img-icon{width:15px;height:15px;border-radius:50%;object-fit:cover}
 .module-head .kicon{display:inline-flex;align-items:center}
 .module-head .kicon .icon{width:18px;height:18px;stroke-width:2.2}
+.module-head .kicon .kicon-img-icon{width:18px;height:18px;border-radius:50%;object-fit:cover}
 .li .kind{margin-left:auto;font-size:calc(9px * var(--fsc,1));color:var(--t3);border:1px solid var(--border);
 	border-radius:3px;padding:0 4px;letter-spacing:.03em;flex-shrink:0}
 .li .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -894,6 +896,23 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .ipk-colors .cswatch.sel{border-color:var(--t1)}
 .kicon-glyph{font-size:calc(14px * var(--fsc,1));line-height:1}
 
+/* Uploaded tab (Icon Collection picker) — native upload + canvas circular crop */
+.ipk-grid#ipk-upload-pane{display:flex;flex-direction:column;align-items:center;gap:10px}
+.icrop-empty{width:100%;padding:28px 14px;border:1px dashed var(--border);border-radius:var(--r);
+	display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--t3);cursor:pointer;text-align:center}
+.icrop-empty:hover{background:var(--hover);color:var(--t2)}
+.icrop-empty .icon{width:24px;height:24px}
+.icrop-stage{position:relative;width:220px;height:220px}
+#icrop-canvas{display:block;width:220px;height:220px;cursor:grab}
+#icrop-canvas:active{cursor:grabbing}
+.icrop-mask{position:absolute;top:0;left:0;width:220px;height:220px;border-radius:50%;
+	box-shadow:0 0 0 9999px rgba(0,0,0,.55);pointer-events:none}
+.icrop-zoom{width:100%;accent-color:var(--accent)}
+.icrop-actions{display:flex;gap:8px;justify-content:flex-end;width:100%}
+.icrop-result{display:flex;flex-direction:column;align-items:center;gap:8px}
+.icrop-result-img{width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
+.icrop-preview-img{width:15px;height:15px;border-radius:50%;object-fit:cover}
+
 /* Classifier type picker (progress.md Phase 5) */
 .typegrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .typecard{border:1px solid var(--border);border-radius:var(--r);padding:11px;cursor:pointer}
@@ -927,6 +946,12 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
    its own short, separately-scrolling inner box; this also keeps the
    popup from growing past the viewport when there are many symbols/colors. */
 .icon-edit-popup{padding:12px;width:280px;max-height:min(72vh,520px);overflow-y:auto}
+/* Right-click context menu (hub.js) — reuses .kind-popup base + .kind-list-item
+   rows; Major-module variant appends action rows below the full create-list,
+   so it gets the same docked scrollable max-height as .icon-edit-popup above. */
+.context-menu-popup{width:280px;max-height:min(72vh,520px);overflow-y:auto;padding:6px}
+.ctx-sep{height:0;border-top:1px solid var(--border);margin:5px 0}
+.ctx-check{margin-left:auto;flex-shrink:0;color:var(--accent);font-weight:700}
 
 /* Inline rename (double-click a module name in the Nest row or its open
    detail header) */
@@ -991,6 +1016,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .mgr-card{display:flex;flex-direction:column;align-items:center;gap:4px}
 .mgr-card-icon{display:flex;align-items:center;justify-content:center}
 .mgr-card-icon .icon{width:22px;height:22px}
+.mgr-card-icon .kicon-img-icon{width:22px;height:22px;border-radius:50%;object-fit:cover}
 .mgr-card-count{font-size:calc(10px * var(--fsc,1));color:var(--t3)}
 
 /* Canvas chrome: pan/zoom hint pill + zoom control (progress.md Phase 7,
@@ -1978,6 +2004,12 @@ textarea.table-inline-input{resize:vertical}
   width: 20px;
   height: 20px;
 }
+.nav-btn .kicon-img-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
 .nav-btn:hover .icon {
   transform: scale(1.08);
 }
@@ -1999,6 +2031,12 @@ textarea.table-inline-input{resize:vertical}
   height: 13px;
   margin-right: 4px;
   display: inline-block;
+}
+.empty .ei .kicon-img-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 .empty .ei .icon {
   width: 48px;

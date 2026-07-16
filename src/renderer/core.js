@@ -1416,6 +1416,8 @@ function bindNav() {
   q('#btn-export-db')?.addEventListener('click', exportDatabaseFile);
   q('#modal-close').addEventListener('click', closeModal);
   q('#modal-overlay').addEventListener('click', e=>{ if(e.target===q('#modal-overlay')) closeModal(); });
+  q('#left-panel-inner')?.addEventListener('contextmenu', onHubBackgroundContextMenu);
+  q('#nav-sidebar')?.addEventListener('contextmenu', openNavSidebarContextMenu);
 }
 
 async function exportDatabaseFile(){
