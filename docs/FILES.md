@@ -2,6 +2,12 @@
 
 > คู่กับ [SYSTEMS.md](SYSTEMS.md) ซึ่งอธิบายภาพรวมของแต่ละระบบ — ไฟล์นี้ไล่ทีละไฟล์
 > ตัวเลขจำนวนบรรทัดเป็นค่าโดยประมาณ ณ 2026-07-05 (หลัง Obsidian-like rework v2.8)
+>
+> ⚠️ **ส่วน root/src/db/src/renderer เดิมด้านล่างนี้ยังตรงกับโค้ด** (ไฟล์เดิม
+> ไม่ได้ถูกแก้ในรอบ v3) **แต่ยังไม่ครอบคลุมไฟล์ใหม่ทั้งหมดของ "v3 module
+> system"** (git history Phase 1–24 + Part 1–2, ณ 2026-07-16) — ดูตาราง
+> ไฟล์ใหม่ในหัวข้อ [v3 Module System — ไฟล์ใหม่](#v3-module-system--ไฟล์ใหม่-2026-07-16)
+> ด้านล่าง และดูภาพรวมสถาปัตยกรรมที่ [Architec.md](Architec.md)
 
 ## โครงสร้างรีโป
 
@@ -111,6 +117,63 @@ App-NovelManager/
   ใช้รัน/ทดสอบแอปกับ data dir แยก; v2.8 เพิ่ม `web-driver.mjs` — รัน renderer/
   preload/db จริงใน Playwright **Chromium** (stub เฉพาะ Electron shell) สำหรับ
   sandbox ที่โหลด Electron binary ไม่ได้ (เช่น proxy บล็อก GitHub releases)
+
+---
+
+## v3 Module System — ไฟล์ใหม่ (2026-07-16)
+
+ระบบใหม่ทั้งหมด (Nexus nest tree, Hub, Builder, Module Inspector, 15
+module kinds) เพิ่มเข้ามาแบบ **additive** ควบคู่กับโค้ดเดิมทุกไฟล์ด้านล่างนี้
+(ไม่มีไฟล์เดิมถูกลบ) ดูภาพรวมสถาปัตยกรรมเต็มที่ [Architec.md](Architec.md) §1
+
+### src/db/ (ใหม่)
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `module.js` | 194 | แกน module tree: `getTree/getModule/createModule/updateModule/deleteModule`, `duplicateModule`/`cloneModuleSubtree` (clone ทั้ง subtree), `moveModule` (reorder/reparent), Module Inspector helpers (`*ModuleAttr*`, `*ModuleUi*`, `*ModuleTags*`, `getModuleLinks`) |
+| `classifier.js` | 135 | ระบบ category/object/template ของ kind `classifier` (แยกตารางจาก Director เดิม) |
+| `author.js` | 55 | หนังสือ/บทของ kind `author` (`createBookChapter`/`updateBookChapterContent`) |
+| `narrator.js` | 75 | กราฟบทสนทนาของ kind `narrator` (`story_dialogue/story_talk/story_edge`) |
+| `chatscribe.js` | 82 | โน้ตแชทของ kind `scribe` (ChatScribe) |
+| `wanderer.js` | 30 | เข็มหมุด TimeMap ของ kind `wanderer` (`map_event`) |
+| `sketcher.js` | 68 | หน้าวาดฟรีแฮนด์ของ kind `sketcher` |
+| `designer.js` | 40 | ไดอะแกรมของ kind `designer` |
+| `viewer.js` | 90 | saved-filter lens ของ kind `viewer`/`connector` |
+| `importdock.js` | 55 | ตาราง `import_file` — ไฟล์นำเข้า + `linker_key` ผูก entity |
+| `versions.js` | 89 | `module_version`: `recordVersion`/`restoreVersion` (whitelist `RESTORE_OPS`), retention ตาม `app_setting.versionLimit` |
+| `migrate_v3.js` | 223 | `migrateLegacy(nexusId,target,legacyId)` — map โปรเจกต์เก่า 1 อันเป็น Manager Major + Minor ที่ kind เหมาะสม แบบไม่แตะข้อมูลต้นทาง; `listLegacyProjects` ป้อนลิสต์ migrate ของ Artisan |
+| `nexus.js` (แก้ไข ไม่ใช่ไฟล์ใหม่) | 43 (เดิม ~41) | เหลือแค่ CRUD vault — logic module tree ทั้งหมดย้ายไป `module.js` แล้ว; `getNexuses`/`deleteNexus` นับรวมทั้ง project เดิม + module ระดับบนสุด |
+| `artisan.js` (แก้ไข) | ~7 | ฟังก์ชันสร้างจากเทมเพลตแบบ transaction เดียวเดิมถูกลบทิ้ง เหลือ `module.exports = {}` — wizard ใหม่เรียก `module:`/`classifier:`/`author:` ตรงๆ แทน |
+
+### src/renderer/ (ใหม่)
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `hub.js` | 723 | Nexus nest hub: module rail, accordion (Nest/Sage Hut/Import Dock), nest tree drag-drop, create/context-menu/pin, icon popup, `buildModuleDetailHtml` |
+| `builder.js` | 253 | Editor-group shell 1/2/4 pane, ต่อ tab/history ต่อ pane, `builderNavigate`/`builderSetLayout` |
+| `inspector.js` | 148 | Module Inspector dock: description/แท็ก/แอตทริบิวต์/ลิงก์/ปุ่ม Version History |
+| `iconpicker.js` | 266 | Icon/Color picker ฝัง (ไอคอนแอป/symbol เดิม/อัปโหลด+crop วงกลม) |
+| `versions.js` | 78 | แผง Version History (แทน Inspector dock ชั่วคราวตอนเปิด) |
+| `guide.js` | 105 | Coach-mark แนะนำหลังสร้าง Nexus แรก (`GUIDE_STEPS`, ข้าม step ที่หา DOM เป้าหมายไม่เจอ) |
+| `artisan.js` (แก้ไข) | 258 | เปลี่ยนจากเทมเพลตแบบ one-shot เป็น wizard ทีละหน้าประกอบ module v3 + ส่วน migrate ของเก่า (`fillArtisanMigrateList`/`runArtisanMigration`) |
+| `quickswitch.js` (แก้ไข) | ~110+ | ขยายจาก quick switcher เดิมเป็น search-link overlay: scope chip, kind filter, Ctrl+Enter แทรก wikilink, Alt+Enter ปักหมุดลง canvas |
+| `mod/manager.js` | — | UI ของ kind `manager` |
+| `mod/detail.js` | — | UI ของ kind `inspector` ("Detail") |
+| `mod/classifier.js` | — | UI ของ kind `classifier` |
+| `mod/locator.js` | — | UI ของ kind `locator` (รียูส `map.js` เดิม) |
+| `mod/chronicler.js` | — | UI ของ kind `chronicler` (รียูส `timeline.js` เดิม) |
+| `mod/wanderer.js` | — | UI ของ kind `wanderer` |
+| `mod/narrator.js` | — | UI ของ kind `narrator` |
+| `mod/author.js` | — | UI ของ kind `author` |
+| `mod/chatscribe.js` | — | UI ของ kind `scribe` (ChatScribe) |
+| `mod/viewer.js` | — | UI ของ kind `viewer` |
+| `mod/connector.js` | — | UI ของ kind `connector` |
+| `mod/sketcher.js` | — | UI ของ kind `sketcher` |
+| `mod/designer.js` | — | UI ของ kind `designer` |
+| `mod/sagehut.js` | 134 | Hub section: สถิติวอลต์ (ใช้ `db/sage.js` บางฟังก์ชัน) |
+| `mod/fileviewer.js` | 249 | Hub section: Import Dock — list/link ไฟล์ + viewer read-only ใน Builder |
+
+`vendor/` เพิ่ม konva/d3 เดิมยังใช้ร่วม (ไม่มีไฟล์ vendor ใหม่ในรอบนี้)
 
 ---
 
