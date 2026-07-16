@@ -3,12 +3,23 @@
 > อัปเดตล่าสุด: 2026-07-05 (อ้างอิงโค้ด ณ commit ปัจจุบัน) — พฤติกรรมทุกระบบ
 > ในเอกสารนี้ผ่านการรันทดสอบจริงด้วย driver (`.claude/skills/run-dracondex/`,
 > รวมถึง `web-driver.mjs` สำหรับ sandbox ที่โหลด Electron binary ไม่ได้)
+>
+> ⚠️ **ไม่ครอบคลุม "v3 module system"** — ตั้งแต่ 2026-07-16 แอปมีระบบ
+> module tree แบบ generic เพิ่มเข้ามาอยู่ข้างๆ 7 โมดูลด้านล่างนี้ (Nexus
+> nest hub, Builder split-pane, Module Inspector, 15 module kind) เอกสาร
+> ฉบับนี้ (§1–§11) ยังตรงกับพฤติกรรมของ 7 โมดูลเดิมทุกจุด (โค้ดไม่ถูกแก้)
+> แต่ **ยังไม่มีหัวข้ออธิบายพฤติกรรม v3** — ดูโครงสร้าง/ไฟล์ของระบบใหม่ที่
+> [Architec.md](Architec.md) §1 ก่อน (ยังไม่ผ่านการรันทดสอบ behavior แบบ
+> ละเอียดเหมือนหัวข้ออื่นในไฟล์นี้ — เป็นการสำรวจโค้ดสถิต)
 
 DraconDex เป็นแอป Electron สำหรับจัดการข้อมูลโลก/ตัวละคร/เนื้อเรื่องของนิยาย
 มี 7 โมดูลหลัก (Director, Navigator, Hero, Writer, **Scribe**, Sage, Artisan)
 ทำงานบนฐานข้อมูล SQLite ไฟล์เดียวร่วมกัน ตั้งแต่ v2.8 ทุกอย่างถูกจัดกลุ่มเป็น
 **Nexus (vault)** แบบ Obsidian พร้อมระบบ Markdown/`[[Wikilink]]`/Backlinks/
-Graph view/Quick switcher (ดู §2–§2d)
+Graph view/Quick switcher (ดู §2–§2d) — ตั้งแต่ 2026-07-16 ปุ่ม nav rail ของ
+Director/Navigator/Hero/Writer (4 ใน 7 นี้) ถูกซ่อนแล้ว เข้าถึงได้เฉพาะผ่าน
+Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2) — Scribe/Sage/Artisan
+ยังเป็นปุ่มปกติ พฤติกรรมภายในของทั้ง 7 โมดูล (§3–§9 ด้านล่าง) ไม่เปลี่ยน
 
 > หมายเหตุ: `flutter_app/` เป็น front-end อีกตัว (Flutter port) ที่ใช้ schema เดียวกัน
 > แต่แยกโค้ดกันโดยสิ้นเชิง — เอกสารนี้ครอบคลุมเฉพาะฝั่ง Electron
