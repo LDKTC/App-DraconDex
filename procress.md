@@ -23,23 +23,25 @@ Carried forward as unresolved rather than silently dropped: the **"Symbols tab w
 - Flutter parity: none needed — the Flutter port has no `module` table yet (pre-existing gap, unrelated to this change).
 - Verified live via `app-run-tester` (real mouse events); the real-mouse `rclick` verb was folded permanently into the `run-dracondex` skill's `driver.mjs` (documented in its `SKILL.md`), matching how `dragto` was made permanent after Part 1 round 2's drag-and-drop bug.
 
-## Part 2 — เพิ่ม / แก้ไข feature
+## Part 2 — เพิ่ม / แก้ไข feature — all items live-verified, cleared from Plan.md
 
-**PAUSED here mid-round-2** — round 2 (Artisan wizard, icon popup fixes, icon crop-import) was split across two parallel agents to go faster. Both landed code and passed static/self-review, but live verification (`app-run-tester`) was interrupted mid-run when the agents were stopped to commit at a safe checkpoint. Nothing below is confirmed working in the actual running app yet — next session should resume with a live verification pass on all three items before ticking anything in `Plan.md`.
+Round 2 (Artisan wizard, icon popup fixes, icon crop-import) was split across two parallel agents; both landed code and passed static/self-review, but live verification was interrupted mid-run at a safe-checkpoint commit. Resumed in a later session: ran the real renderer/preload/db stack via the `run-dracondex` skill's `web-driver.mjs` (Electron binary download is 403'd in this sandbox, so the Playwright-Chromium fallback was used instead of `driver.mjs`). All three items below were driven end-to-end in the running app and confirmed working; all four checkboxes ticked in `Plan.md`.
+
+- Added a permanent `upload <selector> :: <filepath>` verb to both `driver.mjs` and `web-driver.mjs` (`Playwright`'s `setInputFiles`, real `change` event) — same precedent as `dragto`/`rclick` being folded in permanently — needed to exercise the icon-crop uploader's `FileReader` path for real instead of bypassing it.
 
 ### เพิ่ม feature (add)
-- [ ] 2. Artisan — once the user picks a template, show a step-by-step modal wizard letting them configure each module themselves
-  - Starts at the Manager modal, then opens each subsequent module's modal per the chosen template, letting the user pick name/icon/color themselves at each step. Status: **implemented, not yet live-verified**. Legacy one-shot per-target templates (Novel/World/Game/Write) removed per user confirmation ("the one that was opening the full module page on the hub"); only the v3 Manager+Minors structure remains, rebuilt as the step wizard. One bug found and fixed mid-implementation: the Writer target's Author-minor step had no default name.
-- [ ] 3. Icon import — let the user import their own image, crop it to a circle, and use that as a module's icon
-  - Status: **implemented, not yet live-verified**. New "Uploaded" tab in the icon/color picker (`src/renderer/iconpicker.js`): file input → offscreen canvas crop UI (circular mask overlay, drag-to-pan, zoom slider) → `icropConfirm()` composites to a 128×128 PNG via `toDataURL`, stored as `icon = "img:" + dataURI` (no schema change — `icon` is already free-form TEXT). `moduleIconHtml()` (`hub.js`) has a new third branch rendering `<img class="kicon-img-icon">` for `img:`-prefixed icons, styled circular everywhere a module icon renders (Nest tree, nav rail, module header, empty state). Known non-blocking nits: reopening the picker on an existing `img:` icon shows a blank upload prompt instead of the prior image; the "change image" button reuses the upload-prompt copy string.
+- [x] 2. Artisan — once the user picks a template, show a step-by-step modal wizard letting them configure each module themselves
+  - Live-verified: ran the Writer target's wizard end-to-end (`startArtisanWizard('writer')`) — step 1/3 Manager, step 2/3 Author (confirmed pre-filled with its default name `เล่มที่`, verifying the bug fix), step 3/3 Drafter, "เสร็จสิ้น" finish. Result confirmed via `api.module.getTree` + `api.author.getChapters`: Manager + 2 Minors created correctly nested, Author minor got its 3 default chapters (`ตอนที่ 1/2/3`).
+- [x] 3. Icon import — let the user import their own image, crop it to a circle, and use that as a module's icon
+  - Live-verified: opened an existing module's edit modal → Uploaded tab → real file upload (new `upload` driver verb) → circular-mask crop UI rendered correctly → `icropConfirm()` produced `icon = "img:data:image/png;base64,..."` → saved via `submitModuleForm` → the cropped circular icon renders correctly in the Nest tree row, the module detail header, and the module inspector. The two known non-blocking nits (blank re-open prompt on an existing `img:` icon; "change image" button reusing the upload-prompt string) were re-confirmed present but are cosmetic/non-blocking as originally assessed — not fixed here.
 
 ### แก้ไข feature (fix/change)
-- [ ] 2. Artisan — remove the full module, no longer used
-  - Status: **done as part of the wizard rewrite above** (see เพิ่ม feature #2) — same change, tracked as one item.
-- [ ] 3. Icon popup — either expand the popup to show content in full, or add a vertical slider/scrollbar to the icon-collection div so it scrolls vertically
-  - Confirmed already satisfied by the existing popup-level scroll dock from Part 1 #6 (`.icon-edit-popup`'s `max-height`/`overflow-y:auto`) — no further code change needed, just needs a live re-check to tick the box.
-- [ ] 4. Icon popup — move the Preview to the top of the overlay, and remove the Search box
-  - Status: **implemented, not yet live-verified**. `iconPicker()` (`iconpicker.js`) reordered: Preview now renders first, Search box and its filter binding removed.
+- [x] 2. Artisan — remove the full module, no longer used
+  - Same change as เพิ่ม feature #2 above; confirmed no legacy one-shot modal reachable from the v3 wizard path.
+- [x] 3. Icon popup — either expand the popup to show content in full, or add a vertical slider/scrollbar to the icon-collection div so it scrolls vertically
+  - Live-verified on the live-save popup (`openModuleIconPopup`, `.icon-edit-popup`): computed style confirmed `overflow-y: auto`, `max-height: 520px` — the Part 1 #6 scroll dock does cover this popup.
+- [x] 4. Icon popup — move the Preview to the top of the overlay, and remove the Search box
+  - Live-verified across every icon-picker surface exercised this session (Artisan wizard steps, module edit modal, live-save popup): Preview row renders first, no search input present (`input[placeholder]` count = 0 in the live-save popup).
 
 ## Part 3 — แก้ไข Builder
 Files: `src/renderer/builder.js`
