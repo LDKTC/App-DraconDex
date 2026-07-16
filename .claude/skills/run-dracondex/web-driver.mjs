@@ -121,6 +121,15 @@ for (const raw of commands) {
         console.log(`[fill] ${sel.trim()}`);
         break;
       }
+      case 'upload': {
+        // Real file-input upload (setInputFiles fires a genuine `change`
+        // event) so FileReader-based handlers (e.g. the icon-crop uploader)
+        // are exercised end-to-end, not bypassed with a synthetic value set.
+        const [sel, filePath] = rest.split(' :: ').map(s => s.trim());
+        await page.setInputFiles(sel, filePath, { timeout: 5000 });
+        console.log(`[upload] ${sel} <- ${filePath}`);
+        break;
+      }
       case 'type': await page.keyboard.type(rest); console.log(`[type] ${rest}`); break;
       case 'press': await page.keyboard.press(rest); console.log(`[press] ${rest}`); break;
       case 'waitfor': await page.waitForSelector(rest, { timeout: 8000 }); console.log(`[waitfor] ${rest}`); break;

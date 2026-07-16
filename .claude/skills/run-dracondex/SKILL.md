@@ -69,8 +69,10 @@ Commands (each one argv entry, quoted):
 |---|---|
 | `ss <name>` | screenshot → `tmp-driver-data/shots/<name>.png` |
 | `click <selector>` | click first match (Playwright selectors, `:has-text()` ok) |
+| `dragto <src> :: <dst> [:: frac]` | genuine mouse-driven HTML5 drag-and-drop (multi-step mouse move, not a synthetic dispatch) |
 | `rclick <selector>` | genuine mouse-driven right-click (fires real `contextmenu`, not synthetic dispatch) |
 | `fill <sel> :: <text>` | set input value (note the ` :: ` separator) |
+| `upload <sel> :: <filepath>` | real file-input upload via `setInputFiles` (fires a genuine `change` event, exercises `FileReader` handlers end-to-end) |
 | `type <text>` / `press <key>` | keyboard input |
 | `waitfor <selector>` / `wait <ms>` | wait for element / sleep |
 | `text <sel>` / `count <sel>` | print innerText / match count |
