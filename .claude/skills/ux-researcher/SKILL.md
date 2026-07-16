@@ -1,22 +1,27 @@
 ---
-name: ui-ux-researcher
-description: Research and improve DraconDex's usability — combine targeted external design research (competitor apps like Obsidian, Notion, world-building tools) with a live audit of the running app via the run-dracondex driver, scored against usability heuristics and this project's STYLE.md conventions. Use when asked to improve UX, make the app easier/friendlier to use, evaluate a feature's usability before or after building it, "ปรับ UX ให้ใช้งานง่ายขึ้น", audit a screen/flow, or research how a UI pattern should work.
+name: ux-researcher
+description: Research and improve DraconDex's usability — task flow, information architecture, discoverability, cognitive load. Combines targeted external UX research (competitor apps like Obsidian, Notion, world-building tools) with a live audit of the running app via the run-dracondex driver, scored against usability heuristics. Use when asked to improve UX, simplify a flow, make the app easier to use, evaluate a feature's usability before or after building it, "ปรับ UX ให้ใช้งานง่ายขึ้น", or audit a screen's task flow. For visual/theming/aesthetic questions use ui-researcher instead.
 ---
 
-# UI/UX Design Researcher
+# UX Researcher
 
 Goal: make DraconDex easier and more pleasant to actually *use* — task flow,
-information architecture, discoverability, cognitive load. This is **not**
-a cosmetics pass: color tokens, i18n key parity, wiring, and button-class
-conformance already belong to `.claude/skills/dracondex-module-style/`
-(`check.mjs`). If you spot one of those while researching, mention it in
-passing and point at that skill rather than re-solving it here.
+information architecture, discoverability, cognitive load. This is about
+**how the app behaves and how easy it is to accomplish a task**, not how it
+looks.
+
+- For **visual design** (theming, contrast, typography, spacing, component
+  polish) use the `ui-researcher` skill instead.
+- For **cosmetics/wiring conformance** (hardcoded colors, missing i18n keys,
+  wrong button class, broken IPC wiring) that's
+  `.claude/skills/dracondex-module-style/` (`check.mjs`) — mention it in
+  passing if you notice one, don't re-solve it here.
 
 For a quick, targeted question ("is this dialog's flow OK?", "how should the
 kind picker present 15 options?") run this skill inline. For a bigger job —
 a full audit across several modules, or research-heavy competitor comparison
-— delegate to the `ui-ux-researcher` agent instead (see bottom of this file)
-so the screenshots and web research don't eat the main conversation's context.
+— delegate to the `ux-researcher` agent instead (see bottom of this file) so
+the screenshots and web research don't eat the main conversation's context.
 
 ## Step 1 — Scope the request
 
@@ -47,9 +52,9 @@ link-dump.
 ## Step 3 — Live audit of the real app
 
 Use the `run-dracondex` driver
-(`.claude/skills/run-dracondex/SKILL.md`) to screenshot the actual flow —
-empty state, populated state, and (if theme-relevant) after a theme switch.
-**Read the screenshots. Don't guess what the UI looks like from the code.**
+(`.claude/skills/run-dracondex/SKILL.md`) to walk through the actual flow —
+empty state, populated state, error/edge-case state. **Read the
+screenshots. Don't guess what the flow does from the code.**
 
 ```bash
 node .claude/skills/run-dracondex/driver.mjs --fresh \
@@ -58,20 +63,19 @@ node .claude/skills/run-dracondex/driver.mjs --fresh \
 
 Also read the actual renderer code for the flow (`src/renderer/*.js`,
 `src/renderer/mod/*.js`) to count real steps/clicks/decisions — not the
-apparent ones from a screenshot alone (a picker that *looks* like one click
-might hide a second confirmation step, etc.).
+apparent ones (a picker that *looks* like one click might hide a second
+confirmation step, etc.).
 
 ## Step 4 — Evaluate against the checklist
 
 See [HEURISTICS.md](HEURISTICS.md) for the full checklist: visibility of
 system status, match between the app and real-world/domain vocabulary
 (นิยาย/worldbuilding terms, not generic CRUD-speak), user control & error
-prevention (destructive actions must confirm), consistency with the shapes
-in `dracondex-module-style/STYLE.md`, recognition over recall, efficiency
-for power users vs. friendliness for new ones, minimalism/progressive
-disclosure, error recovery, and discoverability of nested/hidden features
-(the 15 module kinds; the 4 legacy modules hidden from the rail and only
-reachable via Artisan or migration).
+prevention (destructive actions must confirm specifically), recognition
+over recall, efficiency for power users vs. friendliness for new ones,
+minimalism/progressive disclosure, error recovery, and discoverability of
+nested/hidden features (the 15 module kinds; the 4 legacy modules hidden
+from the rail and only reachable via Artisan or migration).
 
 ## Step 5 — Report findings
 
@@ -91,8 +95,8 @@ Prioritized list, most severe first. Per finding:
 
 ## Running as an agent
 
-For research-heavy or multi-screen work, spawn the `ui-ux-researcher` agent
-(`.claude/agents/ui-ux-researcher.md`) via the Agent tool instead of doing it
+For research-heavy or multi-screen work, spawn the `ux-researcher` agent
+(`.claude/agents/ux-researcher.md`) via the Agent tool instead of doing it
 inline. Brief it with: the specific flow/feature in scope, anything already
 tried or ruled out, and whether you want external research, a live audit, or
 both — a fresh agent has none of this conversation's context.

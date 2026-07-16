@@ -1,9 +1,9 @@
 # Usability checklist for DraconDex
 
-Adapted from Nielsen's 10 usability heuristics, with a DraconDex-specific
-angle on each one. Use this as a scoring rubric during Step 4 of the
-`ui-ux-researcher` skill — not every item applies to every flow, skip what
-doesn't.
+Adapted from Nielsen's usability heuristics (the flow/behavior-relevant
+ones — aesthetic/visual heuristics live in `ui-researcher/VISUAL-CHECKLIST.md`
+instead). Use this as a scoring rubric during Step 4 of the `ux-researcher`
+skill — not every item applies to every flow, skip what doesn't.
 
 ## 1. Visibility of system status
 - Does an autosave (mdeditor.js debounce, chapter editor) show its state
@@ -17,22 +17,14 @@ doesn't.
 - Do labels match worldbuilding/novel-writing vocabulary the target user
   (a novelist) actually uses, or generic database terms ("category",
   "object", "attribute")?
-- Do the 15 v3 module kinds have names/icons a new user can guess the
-  purpose of without reading docs (`classifier`, `narrator`, `wanderer` are
-  not self-explanatory in isolation)?
+- Do the 15 v3 module kinds have names a new user can guess the purpose of
+  without reading docs (`classifier`, `narrator`, `wanderer` are not
+  self-explanatory in isolation, even with a matching icon)?
 
 ## 3. User control and freedom
 - Is there an obvious way out of a modal/wizard step (cancel, back) at every
   point, especially mid-way through the Artisan wizard?
 - Can a mistaken action be undone, or only prevented via a confirm dialog?
-
-## 4. Consistency and standards
-- Does this flow match the shapes in `dracondex-module-style/STYLE.md`
-  (`.ph` header, `.li` row, empty state, modal, detail-head)? Inconsistency
-  here is itself a usability cost, independent of whether `check.mjs` flags
-  it as a style violation.
-- Does similar data (e.g. "delete" across different entity types) behave the
-  same way everywhere?
 
 ## 5. Error prevention
 - Destructive actions (delete module/subtree, delete vault) — is the
@@ -55,11 +47,6 @@ doesn't.
 - Does a first-time user get a *simpler* path than a power user, or is there
   only one path that's simple for neither (see progressive disclosure)?
 
-## 8. Aesthetic and minimalist design
-- Is there information on screen the current task doesn't need? Does the 15-
-  kind picker present all 15 with equal visual weight regardless of how
-  commonly each is used?
-
 ## 9. Help users recognize, diagnose, and recover from errors
 - If an operation fails (import merge conflict, migration), does the toast
   say what happened and what to do, or just "error"?
@@ -69,7 +56,7 @@ doesn't.
   `guide.js` first-run flow) for *new* complex features, or only for the
   original onboarding moment?
 
-## DraconDex-specific angles (beyond classic Nielsen)
+## DraconDex-specific angles
 
 - **Discoverability of hidden power**: Director/Navigator/Hero/Writer are
   fully working but hidden from the nav rail, reachable only via Artisan or
@@ -83,15 +70,11 @@ doesn't.
   (checked by `check.mjs`) doesn't mean it *reads well* in that locale —
   literal machine-shaped translations can still be confusing even if
   technically present. Spot-check phrasing in Thai (the default) especially.
-- **Theme accessibility**: with 30+ themes, does contrast hold up across
-  families (Daylight/Moonlight/Midnight/Eclipse), or only the one the
-  developer tests in? Screenshot at least one light and one dark theme for
-  any finding about visual hierarchy.
 - **Frameless-window conventions**: no OS chrome — are window drag regions,
   min/max/close, and focus states discoverable without OS affordances to
   lean on?
 
-## Comparison-app cheat sheet
+## Comparison-app cheat sheet (workflow, not visuals)
 
 | Pattern in DraconDex | Look at how... |
 |---|---|
