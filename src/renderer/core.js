@@ -1568,6 +1568,7 @@ function renderNexusHome() {
   q('#left-panel-foot').innerHTML = `
     <div class="ph nexus-vault-head">
       <h4 class="nexus-vault-name" onclick="toggleNexusSwitcher(event)" title="${t('nexusSwitch')}"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
+      <button class="btn btn-s btn-sm" onclick="openSyncModal()" title="${t('syncTitle')}">☁</button>
       <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
     </div>`;
   // The whole main area is the builder pane grid (Phase 19) — the focused

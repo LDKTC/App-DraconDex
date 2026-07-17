@@ -177,6 +177,25 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 
 `vendor/` เพิ่ม konva/d3 เดิมยังใช้ร่วม (ไม่มีไฟล์ vendor ใหม่ในรอบนี้)
 
+## Cloud Sync (Supabase) — ไฟล์ใหม่ (2026-07-17)
+
+ต้นแบบซิงก์ Nexus vault ขึ้น Supabase แบบ snapshot + คีย์เข้าถึงต่อ vault
+(`Xxxx-Xxxx-Xxxx-Xxxx`) — ดูรายละเอียดพฤติกรรม/วิธีใช้ที่ [SYNC.md](SYNC.md)
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `src/db/sync.js` | ~560 | ทั้งฟีเจอร์ฝั่ง main: `generateAccessKey` (crypto, 4×4 alphanumeric), config ใน `app_setting` (`sync:url`/`sync:anonKey`/`sync:nexus:<id>`), `rpc()` fetch wrapper (PostgREST, error taxonomy `{ok,code,error}` ไม่ throw), `serializeVault` (vault → JSON snapshot, lookup FK → natural key), `applySnapshot` (wipe-and-rebuild + id remap ใน transaction เดียว แล้ว `rebuildWikiIndex()`), ops: `syncStatus/syncPushVault/syncPullVault/syncLinkVault/syncCreateReadKey/unlinkVault` |
+| `src/renderer/sync.js` | ~210 | หน้าต่างซิงก์ 3 สถานะ (ตั้งค่าเซิร์ฟเวอร์ / ยังไม่เชื่อม / เชื่อมแล้ว), แผงคีย์แบบแสดงครั้งเดียว + คัดลอก, `syncErrToast` map error code → i18n toast; เข้าจากปุ่ม ☁ ใน vault-head (core.js); โหมด dev ข้ามหน้าตั้งค่าและแสดงป้าย dev server |
+| `src/db/sync-devserver.js` | ~140 | เซิร์ฟเวอร์ซิงก์ต้นแบบสำหรับ build dev (`!app.isPackaged`): HTTP in-process บน loopback, endpoint/กติกา auth/error body เหมือน migration ทุกอย่าง, เก็บ state เป็น `dev-sync-server.json` ข้าง novel-manager.db; `ensureDevSyncServer()` เริ่ม lazy ครั้งเดียวต่อโปรเซส |
+| `supabase/migrations/20260717000000_dracondex_sync_prototype.sql` | ~200 | ฝั่งเซิร์ฟเวอร์ทั้งหมด: ตาราง `sync_vault`/`sync_key` (เก็บ sha-256 ของคีย์), RLS ล็อกไม่มี policy, RPC SECURITY DEFINER 5 ตัว (`sync_create_vault/push/pull/create_read_key/vault_status`) |
+| `docs/SYNC.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ |
+
+ไฟล์เดิมที่แตะ: `main.js` (+8 handler `sync:*`), `preload.js` (+namespace
+`api.sync`), `database.js` (re-export `src/db/sync.js`), `index.html`
+(script tag `src/renderer/sync.js`), `src/renderer/core.js` (ปุ่ม ☁ ใน
+vault-head), `src/renderer/i18n.js` (+41 คีย์ `sync*` ครบ 18 locale),
+`style.css` (block `.sync-*`)
+
 ---
 
 ## src/db/ — ชั้นฐานข้อมูล (รันใน main process)

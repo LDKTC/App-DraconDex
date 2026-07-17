@@ -2775,6 +2775,17 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .vh-time{font-size:calc(10px * var(--fsc,1));color:var(--t3);margin-top:3px}
 .vh-foot{padding:10px 14px;border-top:1px solid var(--border);font-size:calc(10px * var(--fsc,1));color:var(--t3);line-height:1.6}
 
+/* Cloud Sync modal (Supabase prototype) */
+.sync-status-row{display:flex;justify-content:space-between;gap:12px;padding:4px 2px;
+	font-size:calc(12.5px * var(--fsc,1));color:var(--t2)}
+.sync-status-row b{color:var(--t1);font-weight:600;text-align:right}
+.sync-key-row{display:flex;align-items:center;gap:8px}
+.sync-key-row input{flex:1}
+.sync-key-code{flex:1;background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
+	padding:7px 10px;font-family:monospace;font-size:calc(13px * var(--fsc,1));color:var(--t1);
+	letter-spacing:.5px;user-select:all}
+.sync-hint{font-size:calc(11px * var(--fsc,1));color:var(--t3);margin:2px 0 8px;line-height:1.45}
+
 /* Settings expansion (Phase 22, mockup 27) */
 .name-mode-seg{display:flex;gap:6px}
 .name-mode-seg .btn{flex:1}

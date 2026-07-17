@@ -101,7 +101,12 @@ const L = {
     noTimelineYet:'No timeline yet', createTimelineLine:'Create Timeline', chroniclerEventNew:'New Event', chroniclerEventEdit:'Edit Event',
     startDate:'Start Date', endDate:'End Date', story:'Story', noEventsYet:'No events yet', addEvent:'Add Event',
     compareWith:'Compare with', pickCompareTimeline:'Pick a timeline to compare',
-    rename:'Rename', duplicate:'Duplicate', pin:'Pin', unpin:'Unpin', moveTo:'Move to…', moveToTopLevel:'Top Level', moveToNoTargets:'No available targets', duplicated:'Duplicated'
+    rename:'Rename', duplicate:'Duplicate', pin:'Pin', unpin:'Unpin', moveTo:'Move to…', moveToTopLevel:'Top Level', moveToNoTargets:'No available targets', duplicated:'Duplicated',
+    syncTitle:'Cloud Sync', syncServerSettings:'Server settings', syncUrl:'Supabase URL', syncAnonKey:'API key (anon)', syncConfigHint:'Enter your Supabase project URL and publishable (anon) key', syncConfigSaved:'Sync settings saved',
+    syncNotLinked:'This vault is not linked to the cloud yet', syncPushNewHint:'Push this vault to the cloud — an owner access key will be generated', syncPush:'Push', syncPull:'Pull', syncPullConfirm:'Pull will overwrite this vault\'s content with the cloud copy. Continue?', syncLinkTitle:'Link with access key', syncLinkBtn:'Link', syncLinked:'Vault linked', syncPushed:'Pushed to cloud', syncPulled:'Pulled from cloud', syncWorking:'Working…',
+    syncRole:'Access', syncRoleOwner:'Owner (push + pull)', syncRoleRead:'Read-only (pull)', syncCloudName:'Cloud name', syncLastPush:'Last push', syncLastPull:'Last pull', syncRemoteUpdated:'Cloud updated', syncAccessKey:'Access key', syncReadKeyBtn:'Create read-only key', syncKeyShownOnce:'This key is shown only once — copy it and keep it safe', syncCopy:'Copy', syncKeyCopied:'Key copied', syncUnlink:'Unlink', syncUnlinkConfirm:'Unlink this vault from the cloud? The cloud copy is kept', syncUnlinked:'Vault unlinked',
+    syncErrBadKey:'Invalid access key', syncErrBadKeyFormat:'Key must look like Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Set the server settings first', syncErrNotOwner:'This key is read-only — push not allowed', syncErrNetwork:'Network error — check the URL and connection', syncErrAuth:'Server rejected the API key', syncErrServer:'Server error', syncErrTooLarge:'Vault too large to sync (10 MB limit)', syncErrAlreadyLinked:'This vault is already linked',
+    syncDevServer:'Dev version — using the local prototype sync server (no Supabase needed)'
   },
   ja: {
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
@@ -200,7 +205,12 @@ const L = {
     noTimelineYet:'まだタイムラインがありません', createTimelineLine:'タイムラインを作成', chroniclerEventNew:'新しいイベント', chroniclerEventEdit:'イベントを編集',
     startDate:'開始日', endDate:'終了日', story:'ストーリー', noEventsYet:'まだイベントがありません', addEvent:'イベントを追加',
     compareWith:'比較対象', pickCompareTimeline:'比較するタイムラインを選択',
-    rename:'名前変更', duplicate:'複製', pin:'ピン留め', unpin:'ピン留め解除', moveTo:'移動先…', moveToTopLevel:'最上位', moveToNoTargets:'移動先がありません', duplicated:'複製しました'
+    rename:'名前変更', duplicate:'複製', pin:'ピン留め', unpin:'ピン留め解除', moveTo:'移動先…', moveToTopLevel:'最上位', moveToNoTargets:'移動先がありません', duplicated:'複製しました',
+    syncTitle:'クラウド同期', syncServerSettings:'サーバー設定', syncUrl:'Supabase URL', syncAnonKey:'APIキー (anon)', syncConfigHint:'SupabaseプロジェクトのURLとpublishable (anon) キーを入力', syncConfigSaved:'同期設定を保存しました',
+    syncNotLinked:'このVaultはまだクラウドに接続されていません', syncPushNewHint:'このVaultをクラウドへプッシュ — オーナーキーが発行されます', syncPush:'プッシュ', syncPull:'プル', syncPullConfirm:'プルするとこのVaultの内容はクラウドのコピーで上書きされます。続行しますか？', syncLinkTitle:'アクセスキーで接続', syncLinkBtn:'接続', syncLinked:'Vaultを接続しました', syncPushed:'クラウドへプッシュしました', syncPulled:'クラウドからプルしました', syncWorking:'処理中…',
+    syncRole:'権限', syncRoleOwner:'オーナー（プッシュ＋プル）', syncRoleRead:'読み取り専用（プル）', syncCloudName:'クラウド名', syncLastPush:'最終プッシュ', syncLastPull:'最終プル', syncRemoteUpdated:'クラウド更新', syncAccessKey:'アクセスキー', syncReadKeyBtn:'読み取り専用キーを作成', syncKeyShownOnce:'このキーは一度しか表示されません — コピーして安全に保管してください', syncCopy:'コピー', syncKeyCopied:'キーをコピーしました', syncUnlink:'接続解除', syncUnlinkConfirm:'このVaultのクラウド接続を解除しますか？クラウドのコピーは残ります', syncUnlinked:'接続を解除しました',
+    syncErrBadKey:'アクセスキーが無効です', syncErrBadKeyFormat:'キーの形式は Xxxx-Xxxx-Xxxx-Xxxx です', syncErrNoConfig:'先にサーバー設定を行ってください', syncErrNotOwner:'このキーは読み取り専用です — プッシュできません', syncErrNetwork:'ネットワークエラー — URLと接続を確認してください', syncErrAuth:'サーバーがAPIキーを拒否しました', syncErrServer:'サーバーエラー', syncErrTooLarge:'Vaultが大きすぎて同期できません（上限10MB）', syncErrAlreadyLinked:'このVaultは既に接続されています',
+    syncDevServer:'開発版 — ローカルのプロトタイプ同期サーバーを使用中（Supabase不要）'
   },
   ko: {
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
@@ -299,7 +309,12 @@ const L = {
     noTimelineYet:'아직 타임라인이 없습니다', createTimelineLine:'타임라인 만들기', chroniclerEventNew:'새 이벤트', chroniclerEventEdit:'이벤트 편집',
     startDate:'시작일', endDate:'종료일', story:'스토리', noEventsYet:'아직 이벤트가 없습니다', addEvent:'이벤트 추가',
     compareWith:'비교 대상', pickCompareTimeline:'비교할 타임라인 선택',
-    rename:'이름 변경', duplicate:'복제', pin:'고정', unpin:'고정 해제', moveTo:'이동…', moveToTopLevel:'최상위', moveToNoTargets:'이동 가능한 대상 없음', duplicated:'복제됨'
+    rename:'이름 변경', duplicate:'복제', pin:'고정', unpin:'고정 해제', moveTo:'이동…', moveToTopLevel:'최상위', moveToNoTargets:'이동 가능한 대상 없음', duplicated:'복제됨',
+    syncTitle:'클라우드 동기화', syncServerSettings:'서버 설정', syncUrl:'Supabase URL', syncAnonKey:'API 키 (anon)', syncConfigHint:'Supabase 프로젝트 URL과 publishable (anon) 키를 입력하세요', syncConfigSaved:'동기화 설정 저장됨',
+    syncNotLinked:'이 Vault는 아직 클라우드에 연결되지 않았습니다', syncPushNewHint:'이 Vault를 클라우드로 푸시 — 소유자 키가 생성됩니다', syncPush:'푸시', syncPull:'풀', syncPullConfirm:'풀하면 이 Vault의 내용이 클라우드 사본으로 덮어써집니다. 계속할까요?', syncLinkTitle:'액세스 키로 연결', syncLinkBtn:'연결', syncLinked:'Vault 연결됨', syncPushed:'클라우드로 푸시됨', syncPulled:'클라우드에서 풀됨', syncWorking:'작업 중…',
+    syncRole:'권한', syncRoleOwner:'소유자 (푸시 + 풀)', syncRoleRead:'읽기 전용 (풀)', syncCloudName:'클라우드 이름', syncLastPush:'마지막 푸시', syncLastPull:'마지막 풀', syncRemoteUpdated:'클라우드 업데이트', syncAccessKey:'액세스 키', syncReadKeyBtn:'읽기 전용 키 만들기', syncKeyShownOnce:'이 키는 한 번만 표시됩니다 — 복사해서 안전하게 보관하세요', syncCopy:'복사', syncKeyCopied:'키 복사됨', syncUnlink:'연결 해제', syncUnlinkConfirm:'이 Vault의 클라우드 연결을 해제할까요? 클라우드 사본은 유지됩니다', syncUnlinked:'연결 해제됨',
+    syncErrBadKey:'잘못된 액세스 키', syncErrBadKeyFormat:'키 형식은 Xxxx-Xxxx-Xxxx-Xxxx 입니다', syncErrNoConfig:'먼저 서버 설정을 하세요', syncErrNotOwner:'이 키는 읽기 전용입니다 — 푸시 불가', syncErrNetwork:'네트워크 오류 — URL과 연결을 확인하세요', syncErrAuth:'서버가 API 키를 거부했습니다', syncErrServer:'서버 오류', syncErrTooLarge:'Vault가 너무 커서 동기화할 수 없습니다 (10MB 제한)', syncErrAlreadyLinked:'이미 연결된 Vault입니다',
+    syncDevServer:'개발 버전 — 로컬 프로토타입 동기화 서버 사용 중 (Supabase 불필요)'
   },
   th: {
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
@@ -398,7 +413,12 @@ const L = {
     noTimelineYet:'ยังไม่มีไทม์ไลน์', createTimelineLine:'สร้างไทม์ไลน์', chroniclerEventNew:'เหตุการณ์ใหม่', chroniclerEventEdit:'แก้ไขเหตุการณ์',
     startDate:'วันที่เริ่มต้น', endDate:'วันที่สิ้นสุด', story:'สตอรี่', noEventsYet:'ยังไม่มีเหตุการณ์', addEvent:'เพิ่มเหตุการณ์',
     compareWith:'เปรียบเทียบกับ', pickCompareTimeline:'เลือกไทม์ไลน์ที่จะเปรียบเทียบ',
-    rename:'เปลี่ยนชื่อ', duplicate:'ทำสำเนา', pin:'ปักหมุด', unpin:'เลิกปักหมุด', moveTo:'ย้ายไปยัง…', moveToTopLevel:'ระดับบนสุด', moveToNoTargets:'ไม่มีปลายทางที่ใช้ได้', duplicated:'ทำสำเนาแล้ว'
+    rename:'เปลี่ยนชื่อ', duplicate:'ทำสำเนา', pin:'ปักหมุด', unpin:'เลิกปักหมุด', moveTo:'ย้ายไปยัง…', moveToTopLevel:'ระดับบนสุด', moveToNoTargets:'ไม่มีปลายทางที่ใช้ได้', duplicated:'ทำสำเนาแล้ว',
+    syncTitle:'ซิงก์คลาวด์', syncServerSettings:'ตั้งค่าเซิร์ฟเวอร์', syncUrl:'Supabase URL', syncAnonKey:'คีย์ API (anon)', syncConfigHint:'กรอก URL โปรเจกต์ Supabase และคีย์ publishable (anon)', syncConfigSaved:'บันทึกการตั้งค่าซิงก์แล้ว',
+    syncNotLinked:'Vault นี้ยังไม่ได้เชื่อมกับคลาวด์', syncPushNewHint:'อัปโหลด Vault นี้ขึ้นคลาวด์ — ระบบจะสร้างคีย์เจ้าของให้', syncPush:'อัปโหลด', syncPull:'ดึงข้อมูล', syncPullConfirm:'การดึงข้อมูลจะเขียนทับเนื้อหาของ Vault นี้ด้วยสำเนาบนคลาวด์ ดำเนินการต่อหรือไม่?', syncLinkTitle:'เชื่อมด้วยคีย์เข้าถึง', syncLinkBtn:'เชื่อม', syncLinked:'เชื่อม Vault แล้ว', syncPushed:'อัปโหลดขึ้นคลาวด์แล้ว', syncPulled:'ดึงข้อมูลจากคลาวด์แล้ว', syncWorking:'กำลังทำงาน…',
+    syncRole:'สิทธิ์', syncRoleOwner:'เจ้าของ (อัปโหลด + ดึงข้อมูล)', syncRoleRead:'อ่านอย่างเดียว (ดึงข้อมูล)', syncCloudName:'ชื่อบนคลาวด์', syncLastPush:'อัปโหลดล่าสุด', syncLastPull:'ดึงข้อมูลล่าสุด', syncRemoteUpdated:'คลาวด์อัปเดตล่าสุด', syncAccessKey:'คีย์เข้าถึง', syncReadKeyBtn:'สร้างคีย์อ่านอย่างเดียว', syncKeyShownOnce:'คีย์นี้แสดงเพียงครั้งเดียว — คัดลอกและเก็บไว้ให้ดี', syncCopy:'คัดลอก', syncKeyCopied:'คัดลอกคีย์แล้ว', syncUnlink:'ยกเลิกการเชื่อม', syncUnlinkConfirm:'ยกเลิกการเชื่อม Vault นี้กับคลาวด์? สำเนาบนคลาวด์ยังอยู่', syncUnlinked:'ยกเลิกการเชื่อมแล้ว',
+    syncErrBadKey:'คีย์เข้าถึงไม่ถูกต้อง', syncErrBadKeyFormat:'รูปแบบคีย์ต้องเป็น Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'กรุณาตั้งค่าเซิร์ฟเวอร์ก่อน', syncErrNotOwner:'คีย์นี้อ่านอย่างเดียว — อัปโหลดไม่ได้', syncErrNetwork:'เครือข่ายผิดพลาด — ตรวจสอบ URL และการเชื่อมต่อ', syncErrAuth:'เซิร์ฟเวอร์ปฏิเสธคีย์ API', syncErrServer:'เซิร์ฟเวอร์ผิดพลาด', syncErrTooLarge:'Vault ใหญ่เกินไปสำหรับซิงก์ (จำกัด 10 MB)', syncErrAlreadyLinked:'Vault นี้เชื่อมอยู่แล้ว',
+    syncDevServer:'เวอร์ชัน dev — ใช้เซิร์ฟเวอร์ซิงก์ต้นแบบในเครื่อง (ไม่ต้องมี Supabase)'
   },
   zh: {
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
@@ -497,7 +517,12 @@ const L = {
     noTimelineYet:'还没有时间线', createTimelineLine:'创建时间线', chroniclerEventNew:'新建事件', chroniclerEventEdit:'编辑事件',
     startDate:'开始日期', endDate:'结束日期', story:'故事', noEventsYet:'还没有事件', addEvent:'添加事件',
     compareWith:'对比对象', pickCompareTimeline:'选择要对比的时间线',
-    rename:'重命名', duplicate:'复制', pin:'置顶', unpin:'取消置顶', moveTo:'移动到…', moveToTopLevel:'顶层', moveToNoTargets:'没有可用目标', duplicated:'已复制'
+    rename:'重命名', duplicate:'复制', pin:'置顶', unpin:'取消置顶', moveTo:'移动到…', moveToTopLevel:'顶层', moveToNoTargets:'没有可用目标', duplicated:'已复制',
+    syncTitle:'云同步', syncServerSettings:'服务器设置', syncUrl:'Supabase URL', syncAnonKey:'API 密钥 (anon)', syncConfigHint:'输入 Supabase 项目 URL 和 publishable (anon) 密钥', syncConfigSaved:'同步设置已保存',
+    syncNotLinked:'此 Vault 尚未连接云端', syncPushNewHint:'将此 Vault 推送到云端 — 将生成所有者密钥', syncPush:'推送', syncPull:'拉取', syncPullConfirm:'拉取会用云端副本覆盖此 Vault 的内容。继续吗？', syncLinkTitle:'用访问密钥连接', syncLinkBtn:'连接', syncLinked:'Vault 已连接', syncPushed:'已推送到云端', syncPulled:'已从云端拉取', syncWorking:'处理中…',
+    syncRole:'权限', syncRoleOwner:'所有者（推送 + 拉取）', syncRoleRead:'只读（拉取）', syncCloudName:'云端名称', syncLastPush:'上次推送', syncLastPull:'上次拉取', syncRemoteUpdated:'云端更新', syncAccessKey:'访问密钥', syncReadKeyBtn:'创建只读密钥', syncKeyShownOnce:'此密钥仅显示一次 — 请复制并妥善保管', syncCopy:'复制', syncKeyCopied:'密钥已复制', syncUnlink:'断开连接', syncUnlinkConfirm:'断开此 Vault 与云端的连接？云端副本会保留', syncUnlinked:'已断开连接',
+    syncErrBadKey:'访问密钥无效', syncErrBadKeyFormat:'密钥格式应为 Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'请先完成服务器设置', syncErrNotOwner:'此密钥为只读 — 无法推送', syncErrNetwork:'网络错误 — 请检查 URL 和连接', syncErrAuth:'服务器拒绝了 API 密钥', syncErrServer:'服务器错误', syncErrTooLarge:'Vault 过大无法同步（限 10 MB）', syncErrAlreadyLinked:'此 Vault 已连接',
+    syncDevServer:'开发版 — 正在使用本地原型同步服务器（无需 Supabase）'
   },
   vi: {
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
@@ -596,7 +621,12 @@ const L = {
     noTimelineYet:'Chưa có dòng thời gian', createTimelineLine:'Tạo dòng thời gian', chroniclerEventNew:'Sự kiện mới', chroniclerEventEdit:'Sửa sự kiện',
     startDate:'Ngày bắt đầu', endDate:'Ngày kết thúc', story:'Câu chuyện', noEventsYet:'Chưa có sự kiện', addEvent:'Thêm sự kiện',
     compareWith:'So sánh với', pickCompareTimeline:'Chọn dòng thời gian để so sánh',
-    rename:'Đổi tên', duplicate:'Nhân bản', pin:'Ghim', unpin:'Bỏ ghim', moveTo:'Di chuyển đến…', moveToTopLevel:'Cấp cao nhất', moveToNoTargets:'Không có đích khả dụng', duplicated:'Đã nhân bản'
+    rename:'Đổi tên', duplicate:'Nhân bản', pin:'Ghim', unpin:'Bỏ ghim', moveTo:'Di chuyển đến…', moveToTopLevel:'Cấp cao nhất', moveToNoTargets:'Không có đích khả dụng', duplicated:'Đã nhân bản',
+    syncTitle:'Đồng bộ đám mây', syncServerSettings:'Cài đặt máy chủ', syncUrl:'Supabase URL', syncAnonKey:'Khóa API (anon)', syncConfigHint:'Nhập URL dự án Supabase và khóa publishable (anon)', syncConfigSaved:'Đã lưu cài đặt đồng bộ',
+    syncNotLinked:'Vault này chưa kết nối với đám mây', syncPushNewHint:'Đẩy Vault này lên đám mây — khóa chủ sở hữu sẽ được tạo', syncPush:'Đẩy lên', syncPull:'Kéo về', syncPullConfirm:'Kéo về sẽ ghi đè nội dung Vault này bằng bản sao trên đám mây. Tiếp tục?', syncLinkTitle:'Kết nối bằng khóa truy cập', syncLinkBtn:'Kết nối', syncLinked:'Đã kết nối Vault', syncPushed:'Đã đẩy lên đám mây', syncPulled:'Đã kéo về từ đám mây', syncWorking:'Đang xử lý…',
+    syncRole:'Quyền', syncRoleOwner:'Chủ sở hữu (đẩy + kéo)', syncRoleRead:'Chỉ đọc (kéo)', syncCloudName:'Tên trên đám mây', syncLastPush:'Đẩy lần cuối', syncLastPull:'Kéo lần cuối', syncRemoteUpdated:'Đám mây cập nhật', syncAccessKey:'Khóa truy cập', syncReadKeyBtn:'Tạo khóa chỉ đọc', syncKeyShownOnce:'Khóa này chỉ hiển thị một lần — hãy sao chép và cất giữ cẩn thận', syncCopy:'Sao chép', syncKeyCopied:'Đã sao chép khóa', syncUnlink:'Ngắt kết nối', syncUnlinkConfirm:'Ngắt kết nối Vault này với đám mây? Bản sao trên đám mây vẫn còn', syncUnlinked:'Đã ngắt kết nối',
+    syncErrBadKey:'Khóa truy cập không hợp lệ', syncErrBadKeyFormat:'Định dạng khóa phải là Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Hãy cài đặt máy chủ trước', syncErrNotOwner:'Khóa này chỉ đọc — không thể đẩy lên', syncErrNetwork:'Lỗi mạng — kiểm tra URL và kết nối', syncErrAuth:'Máy chủ từ chối khóa API', syncErrServer:'Lỗi máy chủ', syncErrTooLarge:'Vault quá lớn để đồng bộ (giới hạn 10 MB)', syncErrAlreadyLinked:'Vault này đã được kết nối',
+    syncDevServer:'Bản dev — đang dùng máy chủ đồng bộ thử nghiệm cục bộ (không cần Supabase)'
   },
   id: {
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
@@ -695,7 +725,12 @@ const L = {
     noTimelineYet:'Belum ada garis waktu', createTimelineLine:'Buat Garis Waktu', chroniclerEventNew:'Peristiwa Baru', chroniclerEventEdit:'Edit Peristiwa',
     startDate:'Tanggal Mulai', endDate:'Tanggal Selesai', story:'Cerita', noEventsYet:'Belum ada peristiwa', addEvent:'Tambah Peristiwa',
     compareWith:'Bandingkan dengan', pickCompareTimeline:'Pilih garis waktu untuk dibandingkan',
-    rename:'Ganti nama', duplicate:'Duplikat', pin:'Sematkan', unpin:'Lepas sematan', moveTo:'Pindahkan ke…', moveToTopLevel:'Tingkat teratas', moveToNoTargets:'Tidak ada target yang tersedia', duplicated:'Diduplikat'
+    rename:'Ganti nama', duplicate:'Duplikat', pin:'Sematkan', unpin:'Lepas sematan', moveTo:'Pindahkan ke…', moveToTopLevel:'Tingkat teratas', moveToNoTargets:'Tidak ada target yang tersedia', duplicated:'Diduplikat',
+    syncTitle:'Sinkronisasi Cloud', syncServerSettings:'Pengaturan server', syncUrl:'Supabase URL', syncAnonKey:'Kunci API (anon)', syncConfigHint:'Masukkan URL proyek Supabase dan kunci publishable (anon)', syncConfigSaved:'Pengaturan sinkronisasi disimpan',
+    syncNotLinked:'Vault ini belum terhubung ke cloud', syncPushNewHint:'Push Vault ini ke cloud — kunci pemilik akan dibuat', syncPush:'Push', syncPull:'Pull', syncPullConfirm:'Pull akan menimpa isi Vault ini dengan salinan cloud. Lanjutkan?', syncLinkTitle:'Hubungkan dengan kunci akses', syncLinkBtn:'Hubungkan', syncLinked:'Vault terhubung', syncPushed:'Berhasil push ke cloud', syncPulled:'Berhasil pull dari cloud', syncWorking:'Sedang bekerja…',
+    syncRole:'Akses', syncRoleOwner:'Pemilik (push + pull)', syncRoleRead:'Hanya baca (pull)', syncCloudName:'Nama di cloud', syncLastPush:'Push terakhir', syncLastPull:'Pull terakhir', syncRemoteUpdated:'Cloud diperbarui', syncAccessKey:'Kunci akses', syncReadKeyBtn:'Buat kunci hanya-baca', syncKeyShownOnce:'Kunci ini hanya ditampilkan sekali — salin dan simpan dengan aman', syncCopy:'Salin', syncKeyCopied:'Kunci disalin', syncUnlink:'Putuskan', syncUnlinkConfirm:'Putuskan Vault ini dari cloud? Salinan cloud tetap ada', syncUnlinked:'Vault diputuskan',
+    syncErrBadKey:'Kunci akses tidak valid', syncErrBadKeyFormat:'Format kunci harus Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Atur pengaturan server dulu', syncErrNotOwner:'Kunci ini hanya-baca — tidak bisa push', syncErrNetwork:'Kesalahan jaringan — periksa URL dan koneksi', syncErrAuth:'Server menolak kunci API', syncErrServer:'Kesalahan server', syncErrTooLarge:'Vault terlalu besar untuk disinkronkan (batas 10 MB)', syncErrAlreadyLinked:'Vault ini sudah terhubung',
+    syncDevServer:'Versi dev — memakai server sinkronisasi prototipe lokal (tanpa Supabase)'
   },
   es: {
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
@@ -794,7 +829,12 @@ const L = {
     noTimelineYet:'Aún no hay línea de tiempo', createTimelineLine:'Crear línea de tiempo', chroniclerEventNew:'Nuevo evento', chroniclerEventEdit:'Editar evento',
     startDate:'Fecha de inicio', endDate:'Fecha de fin', story:'Historia', noEventsYet:'Aún no hay eventos', addEvent:'Añadir evento',
     compareWith:'Comparar con', pickCompareTimeline:'Elige una línea de tiempo para comparar',
-    rename:'Renombrar', duplicate:'Duplicar', pin:'Fijar', unpin:'Desfijar', moveTo:'Mover a…', moveToTopLevel:'Nivel superior', moveToNoTargets:'No hay destinos disponibles', duplicated:'Duplicado'
+    rename:'Renombrar', duplicate:'Duplicar', pin:'Fijar', unpin:'Desfijar', moveTo:'Mover a…', moveToTopLevel:'Nivel superior', moveToNoTargets:'No hay destinos disponibles', duplicated:'Duplicado',
+    syncTitle:'Sincronización en la nube', syncServerSettings:'Ajustes del servidor', syncUrl:'URL de Supabase', syncAnonKey:'Clave API (anon)', syncConfigHint:'Introduce la URL del proyecto Supabase y la clave publishable (anon)', syncConfigSaved:'Ajustes de sincronización guardados',
+    syncNotLinked:'Este Vault aún no está vinculado a la nube', syncPushNewHint:'Sube este Vault a la nube — se generará una clave de propietario', syncPush:'Subir', syncPull:'Bajar', syncPullConfirm:'Bajar sobrescribirá el contenido de este Vault con la copia de la nube. ¿Continuar?', syncLinkTitle:'Vincular con clave de acceso', syncLinkBtn:'Vincular', syncLinked:'Vault vinculado', syncPushed:'Subido a la nube', syncPulled:'Bajado de la nube', syncWorking:'Trabajando…',
+    syncRole:'Acceso', syncRoleOwner:'Propietario (subir + bajar)', syncRoleRead:'Solo lectura (bajar)', syncCloudName:'Nombre en la nube', syncLastPush:'Última subida', syncLastPull:'Última bajada', syncRemoteUpdated:'Nube actualizada', syncAccessKey:'Clave de acceso', syncReadKeyBtn:'Crear clave de solo lectura', syncKeyShownOnce:'Esta clave se muestra solo una vez — cópiala y guárdala bien', syncCopy:'Copiar', syncKeyCopied:'Clave copiada', syncUnlink:'Desvincular', syncUnlinkConfirm:'¿Desvincular este Vault de la nube? La copia en la nube se conserva', syncUnlinked:'Vault desvinculado',
+    syncErrBadKey:'Clave de acceso no válida', syncErrBadKeyFormat:'La clave debe tener el formato Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Configura primero el servidor', syncErrNotOwner:'Esta clave es de solo lectura — no puede subir', syncErrNetwork:'Error de red — comprueba la URL y la conexión', syncErrAuth:'El servidor rechazó la clave API', syncErrServer:'Error del servidor', syncErrTooLarge:'Vault demasiado grande para sincronizar (límite 10 MB)', syncErrAlreadyLinked:'Este Vault ya está vinculado',
+    syncDevServer:'Versión dev — usando el servidor de sincronización prototipo local (sin Supabase)'
   },
   pt: {
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
@@ -893,7 +933,12 @@ const L = {
     noTimelineYet:'Ainda não há linha do tempo', createTimelineLine:'Criar linha do tempo', chroniclerEventNew:'Novo evento', chroniclerEventEdit:'Editar evento',
     startDate:'Data de início', endDate:'Data de término', story:'História', noEventsYet:'Ainda não há eventos', addEvent:'Adicionar evento',
     compareWith:'Comparar com', pickCompareTimeline:'Escolha uma linha do tempo para comparar',
-    rename:'Renomear', duplicate:'Duplicar', pin:'Fixar', unpin:'Desafixar', moveTo:'Mover para…', moveToTopLevel:'Nível superior', moveToNoTargets:'Nenhum destino disponível', duplicated:'Duplicado'
+    rename:'Renomear', duplicate:'Duplicar', pin:'Fixar', unpin:'Desafixar', moveTo:'Mover para…', moveToTopLevel:'Nível superior', moveToNoTargets:'Nenhum destino disponível', duplicated:'Duplicado',
+    syncTitle:'Sincronização na nuvem', syncServerSettings:'Configurações do servidor', syncUrl:'URL do Supabase', syncAnonKey:'Chave API (anon)', syncConfigHint:'Informe a URL do projeto Supabase e a chave publishable (anon)', syncConfigSaved:'Configurações de sincronização salvas',
+    syncNotLinked:'Este Vault ainda não está vinculado à nuvem', syncPushNewHint:'Envie este Vault para a nuvem — uma chave de proprietário será gerada', syncPush:'Enviar', syncPull:'Baixar', syncPullConfirm:'Baixar substituirá o conteúdo deste Vault pela cópia da nuvem. Continuar?', syncLinkTitle:'Vincular com chave de acesso', syncLinkBtn:'Vincular', syncLinked:'Vault vinculado', syncPushed:'Enviado para a nuvem', syncPulled:'Baixado da nuvem', syncWorking:'Processando…',
+    syncRole:'Acesso', syncRoleOwner:'Proprietário (enviar + baixar)', syncRoleRead:'Somente leitura (baixar)', syncCloudName:'Nome na nuvem', syncLastPush:'Último envio', syncLastPull:'Último download', syncRemoteUpdated:'Nuvem atualizada', syncAccessKey:'Chave de acesso', syncReadKeyBtn:'Criar chave somente leitura', syncKeyShownOnce:'Esta chave é exibida apenas uma vez — copie e guarde com segurança', syncCopy:'Copiar', syncKeyCopied:'Chave copiada', syncUnlink:'Desvincular', syncUnlinkConfirm:'Desvincular este Vault da nuvem? A cópia na nuvem é mantida', syncUnlinked:'Vault desvinculado',
+    syncErrBadKey:'Chave de acesso inválida', syncErrBadKeyFormat:'A chave deve ter o formato Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Configure o servidor primeiro', syncErrNotOwner:'Esta chave é somente leitura — não pode enviar', syncErrNetwork:'Erro de rede — verifique a URL e a conexão', syncErrAuth:'O servidor rejeitou a chave API', syncErrServer:'Erro do servidor', syncErrTooLarge:'Vault grande demais para sincronizar (limite de 10 MB)', syncErrAlreadyLinked:'Este Vault já está vinculado',
+    syncDevServer:'Versão dev — usando o servidor de sincronização protótipo local (sem Supabase)'
   },
   fr: {
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
@@ -992,7 +1037,12 @@ const L = {
     noTimelineYet:'Pas encore de ligne temporelle', createTimelineLine:'Créer une ligne temporelle', chroniclerEventNew:'Nouvel événement', chroniclerEventEdit:"Modifier l'événement",
     startDate:'Date de début', endDate:'Date de fin', story:'Histoire', noEventsYet:"Pas encore d'événements", addEvent:'Ajouter un événement',
     compareWith:'Comparer avec', pickCompareTimeline:'Choisir une ligne temporelle à comparer',
-    rename:'Renommer', duplicate:'Dupliquer', pin:'Épingler', unpin:'Désépingler', moveTo:'Déplacer vers…', moveToTopLevel:'Niveau supérieur', moveToNoTargets:'Aucune destination disponible', duplicated:'Dupliqué'
+    rename:'Renommer', duplicate:'Dupliquer', pin:'Épingler', unpin:'Désépingler', moveTo:'Déplacer vers…', moveToTopLevel:'Niveau supérieur', moveToNoTargets:'Aucune destination disponible', duplicated:'Dupliqué',
+    syncTitle:'Synchronisation cloud', syncServerSettings:'Paramètres du serveur', syncUrl:'URL Supabase', syncAnonKey:'Clé API (anon)', syncConfigHint:'Saisissez l\'URL du projet Supabase et la clé publishable (anon)', syncConfigSaved:'Paramètres de synchronisation enregistrés',
+    syncNotLinked:'Ce Vault n\'est pas encore lié au cloud', syncPushNewHint:'Envoyez ce Vault vers le cloud — une clé propriétaire sera générée', syncPush:'Envoyer', syncPull:'Récupérer', syncPullConfirm:'Récupérer remplacera le contenu de ce Vault par la copie du cloud. Continuer ?', syncLinkTitle:'Lier avec une clé d\'accès', syncLinkBtn:'Lier', syncLinked:'Vault lié', syncPushed:'Envoyé vers le cloud', syncPulled:'Récupéré depuis le cloud', syncWorking:'En cours…',
+    syncRole:'Accès', syncRoleOwner:'Propriétaire (envoi + récupération)', syncRoleRead:'Lecture seule (récupération)', syncCloudName:'Nom dans le cloud', syncLastPush:'Dernier envoi', syncLastPull:'Dernière récupération', syncRemoteUpdated:'Cloud mis à jour', syncAccessKey:'Clé d\'accès', syncReadKeyBtn:'Créer une clé en lecture seule', syncKeyShownOnce:'Cette clé n\'est affichée qu\'une seule fois — copiez-la et conservez-la en lieu sûr', syncCopy:'Copier', syncKeyCopied:'Clé copiée', syncUnlink:'Délier', syncUnlinkConfirm:'Délier ce Vault du cloud ? La copie cloud est conservée', syncUnlinked:'Vault délié',
+    syncErrBadKey:'Clé d\'accès invalide', syncErrBadKeyFormat:'La clé doit être au format Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Configurez d\'abord le serveur', syncErrNotOwner:'Cette clé est en lecture seule — envoi impossible', syncErrNetwork:'Erreur réseau — vérifiez l\'URL et la connexion', syncErrAuth:'Le serveur a rejeté la clé API', syncErrServer:'Erreur serveur', syncErrTooLarge:'Vault trop volumineux pour la synchronisation (limite 10 Mo)', syncErrAlreadyLinked:'Ce Vault est déjà lié',
+    syncDevServer:'Version dev — serveur de synchronisation prototype local (Supabase inutile)'
   },
   de: {
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
@@ -1091,7 +1141,12 @@ const L = {
     noTimelineYet:'Noch keine Zeitlinie', createTimelineLine:'Zeitlinie erstellen', chroniclerEventNew:'Neues Ereignis', chroniclerEventEdit:'Ereignis bearbeiten',
     startDate:'Startdatum', endDate:'Enddatum', story:'Geschichte', noEventsYet:'Noch keine Ereignisse', addEvent:'Ereignis hinzufügen',
     compareWith:'Vergleichen mit', pickCompareTimeline:'Zeitlinie zum Vergleich auswählen',
-    rename:'Umbenennen', duplicate:'Duplizieren', pin:'Anheften', unpin:'Lösen', moveTo:'Verschieben nach…', moveToTopLevel:'Oberste Ebene', moveToNoTargets:'Keine verfügbaren Ziele', duplicated:'Dupliziert'
+    rename:'Umbenennen', duplicate:'Duplizieren', pin:'Anheften', unpin:'Lösen', moveTo:'Verschieben nach…', moveToTopLevel:'Oberste Ebene', moveToNoTargets:'Keine verfügbaren Ziele', duplicated:'Dupliziert',
+    syncTitle:'Cloud-Sync', syncServerSettings:'Servereinstellungen', syncUrl:'Supabase-URL', syncAnonKey:'API-Schlüssel (anon)', syncConfigHint:'Supabase-Projekt-URL und publishable (anon) Schlüssel eingeben', syncConfigSaved:'Sync-Einstellungen gespeichert',
+    syncNotLinked:'Dieser Vault ist noch nicht mit der Cloud verbunden', syncPushNewHint:'Diesen Vault in die Cloud pushen — ein Besitzerschlüssel wird erzeugt', syncPush:'Push', syncPull:'Pull', syncPullConfirm:'Pull überschreibt den Inhalt dieses Vaults mit der Cloud-Kopie. Fortfahren?', syncLinkTitle:'Mit Zugriffsschlüssel verbinden', syncLinkBtn:'Verbinden', syncLinked:'Vault verbunden', syncPushed:'In die Cloud gepusht', syncPulled:'Aus der Cloud gepullt', syncWorking:'Arbeitet…',
+    syncRole:'Zugriff', syncRoleOwner:'Besitzer (Push + Pull)', syncRoleRead:'Nur lesen (Pull)', syncCloudName:'Cloud-Name', syncLastPush:'Letzter Push', syncLastPull:'Letzter Pull', syncRemoteUpdated:'Cloud aktualisiert', syncAccessKey:'Zugriffsschlüssel', syncReadKeyBtn:'Nur-Lese-Schlüssel erstellen', syncKeyShownOnce:'Dieser Schlüssel wird nur einmal angezeigt — kopieren und sicher aufbewahren', syncCopy:'Kopieren', syncKeyCopied:'Schlüssel kopiert', syncUnlink:'Trennen', syncUnlinkConfirm:'Diesen Vault von der Cloud trennen? Die Cloud-Kopie bleibt erhalten', syncUnlinked:'Vault getrennt',
+    syncErrBadKey:'Ungültiger Zugriffsschlüssel', syncErrBadKeyFormat:'Schlüsselformat muss Xxxx-Xxxx-Xxxx-Xxxx sein', syncErrNoConfig:'Zuerst die Servereinstellungen festlegen', syncErrNotOwner:'Dieser Schlüssel ist nur-lesend — Push nicht möglich', syncErrNetwork:'Netzwerkfehler — URL und Verbindung prüfen', syncErrAuth:'Server hat den API-Schlüssel abgelehnt', syncErrServer:'Serverfehler', syncErrTooLarge:'Vault zu groß für die Synchronisierung (Limit 10 MB)', syncErrAlreadyLinked:'Dieser Vault ist bereits verbunden',
+    syncDevServer:'Dev-Version — lokaler Prototyp-Sync-Server wird verwendet (kein Supabase nötig)'
   },
   ru: {
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
@@ -1190,7 +1245,12 @@ const L = {
     noTimelineYet:'Пока нет линии времени', createTimelineLine:'Создать линию времени', chroniclerEventNew:'Новое событие', chroniclerEventEdit:'Изменить событие',
     startDate:'Дата начала', endDate:'Дата окончания', story:'История', noEventsYet:'Пока нет событий', addEvent:'Добавить событие',
     compareWith:'Сравнить с', pickCompareTimeline:'Выберите линию для сравнения',
-    rename:'Переименовать', duplicate:'Дублировать', pin:'Закрепить', unpin:'Открепить', moveTo:'Переместить в…', moveToTopLevel:'Верхний уровень', moveToNoTargets:'Нет доступных целей', duplicated:'Продублировано'
+    rename:'Переименовать', duplicate:'Дублировать', pin:'Закрепить', unpin:'Открепить', moveTo:'Переместить в…', moveToTopLevel:'Верхний уровень', moveToNoTargets:'Нет доступных целей', duplicated:'Продублировано',
+    syncTitle:'Облачная синхронизация', syncServerSettings:'Настройки сервера', syncUrl:'URL Supabase', syncAnonKey:'API-ключ (anon)', syncConfigHint:'Введите URL проекта Supabase и publishable (anon) ключ', syncConfigSaved:'Настройки синхронизации сохранены',
+    syncNotLinked:'Этот Vault ещё не связан с облаком', syncPushNewHint:'Отправить этот Vault в облако — будет создан ключ владельца', syncPush:'Отправить', syncPull:'Получить', syncPullConfirm:'Получение перезапишет содержимое этого Vault облачной копией. Продолжить?', syncLinkTitle:'Связать по ключу доступа', syncLinkBtn:'Связать', syncLinked:'Vault связан', syncPushed:'Отправлено в облако', syncPulled:'Получено из облака', syncWorking:'Выполняется…',
+    syncRole:'Доступ', syncRoleOwner:'Владелец (отправка + получение)', syncRoleRead:'Только чтение (получение)', syncCloudName:'Имя в облаке', syncLastPush:'Последняя отправка', syncLastPull:'Последнее получение', syncRemoteUpdated:'Облако обновлено', syncAccessKey:'Ключ доступа', syncReadKeyBtn:'Создать ключ только для чтения', syncKeyShownOnce:'Этот ключ показывается только один раз — скопируйте и сохраните его', syncCopy:'Копировать', syncKeyCopied:'Ключ скопирован', syncUnlink:'Отвязать', syncUnlinkConfirm:'Отвязать этот Vault от облака? Облачная копия сохранится', syncUnlinked:'Vault отвязан',
+    syncErrBadKey:'Неверный ключ доступа', syncErrBadKeyFormat:'Формат ключа: Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Сначала настройте сервер', syncErrNotOwner:'Этот ключ только для чтения — отправка невозможна', syncErrNetwork:'Ошибка сети — проверьте URL и подключение', syncErrAuth:'Сервер отклонил API-ключ', syncErrServer:'Ошибка сервера', syncErrTooLarge:'Vault слишком велик для синхронизации (лимит 10 МБ)', syncErrAlreadyLinked:'Этот Vault уже связан',
+    syncDevServer:'Dev-версия — используется локальный прототипный сервер синхронизации (Supabase не нужен)'
   },
   it: {
     settings:'Impostazioni', theme:'Tema', language:'Lingua', uiSize:'Dimensione UI', cancel:'Annulla',
@@ -1289,7 +1349,12 @@ const L = {
     noTimelineYet:'Nessuna linea temporale ancora', createTimelineLine:'Crea linea temporale', chroniclerEventNew:'Nuovo evento', chroniclerEventEdit:'Modifica evento',
     startDate:'Data di inizio', endDate:'Data di fine', story:'Storia', noEventsYet:'Nessun evento ancora', addEvent:'Aggiungi evento',
     compareWith:'Confronta con', pickCompareTimeline:'Scegli una linea temporale da confrontare',
-    rename:'Rinomina', duplicate:'Duplica', pin:'Fissa', unpin:'Sblocca', moveTo:'Sposta in…', moveToTopLevel:'Livello superiore', moveToNoTargets:'Nessuna destinazione disponibile', duplicated:'Duplicato'
+    rename:'Rinomina', duplicate:'Duplica', pin:'Fissa', unpin:'Sblocca', moveTo:'Sposta in…', moveToTopLevel:'Livello superiore', moveToNoTargets:'Nessuna destinazione disponibile', duplicated:'Duplicato',
+    syncTitle:'Sincronizzazione cloud', syncServerSettings:'Impostazioni server', syncUrl:'URL Supabase', syncAnonKey:'Chiave API (anon)', syncConfigHint:'Inserisci l\'URL del progetto Supabase e la chiave publishable (anon)', syncConfigSaved:'Impostazioni di sincronizzazione salvate',
+    syncNotLinked:'Questo Vault non è ancora collegato al cloud', syncPushNewHint:'Invia questo Vault al cloud — verrà generata una chiave proprietario', syncPush:'Invia', syncPull:'Scarica', syncPullConfirm:'Scaricare sovrascriverà il contenuto di questo Vault con la copia cloud. Continuare?', syncLinkTitle:'Collega con chiave di accesso', syncLinkBtn:'Collega', syncLinked:'Vault collegato', syncPushed:'Inviato al cloud', syncPulled:'Scaricato dal cloud', syncWorking:'In corso…',
+    syncRole:'Accesso', syncRoleOwner:'Proprietario (invio + scarico)', syncRoleRead:'Sola lettura (scarico)', syncCloudName:'Nome nel cloud', syncLastPush:'Ultimo invio', syncLastPull:'Ultimo scarico', syncRemoteUpdated:'Cloud aggiornato', syncAccessKey:'Chiave di accesso', syncReadKeyBtn:'Crea chiave di sola lettura', syncKeyShownOnce:'Questa chiave viene mostrata una sola volta — copiala e conservala al sicuro', syncCopy:'Copia', syncKeyCopied:'Chiave copiata', syncUnlink:'Scollega', syncUnlinkConfirm:'Scollegare questo Vault dal cloud? La copia cloud viene mantenuta', syncUnlinked:'Vault scollegato',
+    syncErrBadKey:'Chiave di accesso non valida', syncErrBadKeyFormat:'La chiave deve avere il formato Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Configura prima il server', syncErrNotOwner:'Questa chiave è di sola lettura — invio non consentito', syncErrNetwork:'Errore di rete — controlla URL e connessione', syncErrAuth:'Il server ha rifiutato la chiave API', syncErrServer:'Errore del server', syncErrTooLarge:'Vault troppo grande per la sincronizzazione (limite 10 MB)', syncErrAlreadyLinked:'Questo Vault è già collegato',
+    syncDevServer:'Versione dev — server di sincronizzazione prototipo locale in uso (Supabase non necessario)'
   },
   nl: {
     settings:'Instellingen', theme:'Thema', language:'Taal', uiSize:'UI-grootte', cancel:'Annuleren',
@@ -1388,7 +1453,12 @@ const L = {
     noTimelineYet:'Nog geen tijdlijn', createTimelineLine:'Tijdlijn maken', chroniclerEventNew:'Nieuwe gebeurtenis', chroniclerEventEdit:'Gebeurtenis bewerken',
     startDate:'Startdatum', endDate:'Einddatum', story:'Verhaal', noEventsYet:'Nog geen gebeurtenissen', addEvent:'Gebeurtenis toevoegen',
     compareWith:'Vergelijken met', pickCompareTimeline:'Kies een tijdlijn om te vergelijken',
-    rename:'Hernoemen', duplicate:'Dupliceren', pin:'Vastzetten', unpin:'Losmaken', moveTo:'Verplaats naar…', moveToTopLevel:'Bovenste niveau', moveToNoTargets:'Geen beschikbare bestemmingen', duplicated:'Gedupliceerd'
+    rename:'Hernoemen', duplicate:'Dupliceren', pin:'Vastzetten', unpin:'Losmaken', moveTo:'Verplaats naar…', moveToTopLevel:'Bovenste niveau', moveToNoTargets:'Geen beschikbare bestemmingen', duplicated:'Gedupliceerd',
+    syncTitle:'Cloudsynchronisatie', syncServerSettings:'Serverinstellingen', syncUrl:'Supabase-URL', syncAnonKey:'API-sleutel (anon)', syncConfigHint:'Voer de Supabase-project-URL en de publishable (anon) sleutel in', syncConfigSaved:'Synchronisatie-instellingen opgeslagen',
+    syncNotLinked:'Deze Vault is nog niet gekoppeld aan de cloud', syncPushNewHint:'Push deze Vault naar de cloud — er wordt een eigenaarssleutel aangemaakt', syncPush:'Push', syncPull:'Pull', syncPullConfirm:'Pull overschrijft de inhoud van deze Vault met de cloudkopie. Doorgaan?', syncLinkTitle:'Koppelen met toegangssleutel', syncLinkBtn:'Koppelen', syncLinked:'Vault gekoppeld', syncPushed:'Naar de cloud gepusht', syncPulled:'Uit de cloud gepulld', syncWorking:'Bezig…',
+    syncRole:'Toegang', syncRoleOwner:'Eigenaar (push + pull)', syncRoleRead:'Alleen-lezen (pull)', syncCloudName:'Cloudnaam', syncLastPush:'Laatste push', syncLastPull:'Laatste pull', syncRemoteUpdated:'Cloud bijgewerkt', syncAccessKey:'Toegangssleutel', syncReadKeyBtn:'Alleen-lezen sleutel aanmaken', syncKeyShownOnce:'Deze sleutel wordt maar één keer getoond — kopieer en bewaar hem veilig', syncCopy:'Kopiëren', syncKeyCopied:'Sleutel gekopieerd', syncUnlink:'Ontkoppelen', syncUnlinkConfirm:'Deze Vault ontkoppelen van de cloud? De cloudkopie blijft bewaard', syncUnlinked:'Vault ontkoppeld',
+    syncErrBadKey:'Ongeldige toegangssleutel', syncErrBadKeyFormat:'Sleutelformaat moet Xxxx-Xxxx-Xxxx-Xxxx zijn', syncErrNoConfig:'Stel eerst de serverinstellingen in', syncErrNotOwner:'Deze sleutel is alleen-lezen — pushen kan niet', syncErrNetwork:'Netwerkfout — controleer URL en verbinding', syncErrAuth:'Server weigerde de API-sleutel', syncErrServer:'Serverfout', syncErrTooLarge:'Vault te groot om te synchroniseren (limiet 10 MB)', syncErrAlreadyLinked:'Deze Vault is al gekoppeld',
+    syncDevServer:'Dev-versie — lokale prototype-syncserver in gebruik (geen Supabase nodig)'
   },
   pl: {
     settings:'Ustawienia', theme:'Motyw', language:'Język', uiSize:'Rozmiar UI', cancel:'Anuluj',
@@ -1487,7 +1557,12 @@ const L = {
     noTimelineYet:'Brak linii czasu', createTimelineLine:'Utwórz linię czasu', chroniclerEventNew:'Nowe wydarzenie', chroniclerEventEdit:'Edytuj wydarzenie',
     startDate:'Data rozpoczęcia', endDate:'Data zakończenia', story:'Historia', noEventsYet:'Brak wydarzeń', addEvent:'Dodaj wydarzenie',
     compareWith:'Porównaj z', pickCompareTimeline:'Wybierz linię czasu do porównania',
-    rename:'Zmień nazwę', duplicate:'Duplikuj', pin:'Przypnij', unpin:'Odepnij', moveTo:'Przenieś do…', moveToTopLevel:'Najwyższy poziom', moveToNoTargets:'Brak dostępnych celów', duplicated:'Zduplikowano'
+    rename:'Zmień nazwę', duplicate:'Duplikuj', pin:'Przypnij', unpin:'Odepnij', moveTo:'Przenieś do…', moveToTopLevel:'Najwyższy poziom', moveToNoTargets:'Brak dostępnych celów', duplicated:'Zduplikowano',
+    syncTitle:'Synchronizacja w chmurze', syncServerSettings:'Ustawienia serwera', syncUrl:'URL Supabase', syncAnonKey:'Klucz API (anon)', syncConfigHint:'Podaj URL projektu Supabase i klucz publishable (anon)', syncConfigSaved:'Zapisano ustawienia synchronizacji',
+    syncNotLinked:'Ten Vault nie jest jeszcze połączony z chmurą', syncPushNewHint:'Wyślij ten Vault do chmury — zostanie wygenerowany klucz właściciela', syncPush:'Wyślij', syncPull:'Pobierz', syncPullConfirm:'Pobranie nadpisze zawartość tego Vaulta kopią z chmury. Kontynuować?', syncLinkTitle:'Połącz kluczem dostępu', syncLinkBtn:'Połącz', syncLinked:'Vault połączony', syncPushed:'Wysłano do chmury', syncPulled:'Pobrano z chmury', syncWorking:'Pracuję…',
+    syncRole:'Dostęp', syncRoleOwner:'Właściciel (wysyłanie + pobieranie)', syncRoleRead:'Tylko odczyt (pobieranie)', syncCloudName:'Nazwa w chmurze', syncLastPush:'Ostatnie wysłanie', syncLastPull:'Ostatnie pobranie', syncRemoteUpdated:'Chmura zaktualizowana', syncAccessKey:'Klucz dostępu', syncReadKeyBtn:'Utwórz klucz tylko do odczytu', syncKeyShownOnce:'Ten klucz jest pokazywany tylko raz — skopiuj go i przechowuj bezpiecznie', syncCopy:'Kopiuj', syncKeyCopied:'Klucz skopiowany', syncUnlink:'Rozłącz', syncUnlinkConfirm:'Rozłączyć ten Vault z chmurą? Kopia w chmurze pozostanie', syncUnlinked:'Vault rozłączony',
+    syncErrBadKey:'Nieprawidłowy klucz dostępu', syncErrBadKeyFormat:'Format klucza to Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Najpierw skonfiguruj serwer', syncErrNotOwner:'Ten klucz jest tylko do odczytu — nie można wysłać', syncErrNetwork:'Błąd sieci — sprawdź URL i połączenie', syncErrAuth:'Serwer odrzucił klucz API', syncErrServer:'Błąd serwera', syncErrTooLarge:'Vault jest zbyt duży do synchronizacji (limit 10 MB)', syncErrAlreadyLinked:'Ten Vault jest już połączony',
+    syncDevServer:'Wersja dev — używany jest lokalny prototypowy serwer synchronizacji (bez Supabase)'
   },
   uk: {
     settings:'Налаштування', theme:'Тема', language:'Мова', uiSize:'Розмір інтерфейсу', cancel:'Скасувати',
@@ -1586,7 +1661,12 @@ const L = {
     noTimelineYet:'Поки немає лінії часу', createTimelineLine:'Створити лінію часу', chroniclerEventNew:'Нова подія', chroniclerEventEdit:'Редагувати подію',
     startDate:'Дата початку', endDate:'Дата закінчення', story:'Історія', noEventsYet:'Поки немає подій', addEvent:'Додати подію',
     compareWith:'Порівняти з', pickCompareTimeline:'Виберіть лінію часу для порівняння',
-    rename:'Перейменувати', duplicate:'Дублювати', pin:'Закріпити', unpin:'Відкріпити', moveTo:'Перемістити до…', moveToTopLevel:'Верхній рівень', moveToNoTargets:'Немає доступних цілей', duplicated:'Продубльовано'
+    rename:'Перейменувати', duplicate:'Дублювати', pin:'Закріпити', unpin:'Відкріпити', moveTo:'Перемістити до…', moveToTopLevel:'Верхній рівень', moveToNoTargets:'Немає доступних цілей', duplicated:'Продубльовано',
+    syncTitle:'Хмарна синхронізація', syncServerSettings:'Налаштування сервера', syncUrl:'URL Supabase', syncAnonKey:'API-ключ (anon)', syncConfigHint:'Введіть URL проєкту Supabase і publishable (anon) ключ', syncConfigSaved:'Налаштування синхронізації збережено',
+    syncNotLinked:'Цей Vault ще не пов\'язаний із хмарою', syncPushNewHint:'Надіслати цей Vault у хмару — буде створено ключ власника', syncPush:'Надіслати', syncPull:'Отримати', syncPullConfirm:'Отримання перезапише вміст цього Vault хмарною копією. Продовжити?', syncLinkTitle:'Зв\'язати ключем доступу', syncLinkBtn:'Зв\'язати', syncLinked:'Vault зв\'язано', syncPushed:'Надіслано в хмару', syncPulled:'Отримано з хмари', syncWorking:'Виконується…',
+    syncRole:'Доступ', syncRoleOwner:'Власник (надсилання + отримання)', syncRoleRead:'Лише читання (отримання)', syncCloudName:'Назва в хмарі', syncLastPush:'Останнє надсилання', syncLastPull:'Останнє отримання', syncRemoteUpdated:'Хмару оновлено', syncAccessKey:'Ключ доступу', syncReadKeyBtn:'Створити ключ лише для читання', syncKeyShownOnce:'Цей ключ показується лише раз — скопіюйте та збережіть його', syncCopy:'Копіювати', syncKeyCopied:'Ключ скопійовано', syncUnlink:'Відв\'язати', syncUnlinkConfirm:'Відв\'язати цей Vault від хмари? Хмарна копія збережеться', syncUnlinked:'Vault відв\'язано',
+    syncErrBadKey:'Неправильний ключ доступу', syncErrBadKeyFormat:'Формат ключа: Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Спершу налаштуйте сервер', syncErrNotOwner:'Цей ключ лише для читання — надсилання неможливе', syncErrNetwork:'Помилка мережі — перевірте URL і з\'єднання', syncErrAuth:'Сервер відхилив API-ключ', syncErrServer:'Помилка сервера', syncErrTooLarge:'Vault завеликий для синхронізації (ліміт 10 МБ)', syncErrAlreadyLinked:'Цей Vault уже зв\'язано',
+    syncDevServer:'Dev-версія — використовується локальний прототипний сервер синхронізації (Supabase не потрібен)'
   },
   tr: {
     settings:'Ayarlar', theme:'Tema', language:'Dil', uiSize:'Arayüz Boyutu', cancel:'İptal',
@@ -1685,7 +1765,12 @@ const L = {
     noTimelineYet:'Henüz zaman çizgisi yok', createTimelineLine:'Zaman Çizgisi Oluştur', chroniclerEventNew:'Yeni Olay', chroniclerEventEdit:'Olayı Düzenle',
     startDate:'Başlangıç Tarihi', endDate:'Bitiş Tarihi', story:'Hikaye', noEventsYet:'Henüz olay yok', addEvent:'Olay Ekle',
     compareWith:'Şununla karşılaştır', pickCompareTimeline:'Karşılaştırılacak zaman çizgisini seç',
-    rename:'Yeniden adlandır', duplicate:'Çoğalt', pin:'Sabitle', unpin:'Sabitlemeyi kaldır', moveTo:'Taşı…', moveToTopLevel:'Üst düzey', moveToNoTargets:'Kullanılabilir hedef yok', duplicated:'Çoğaltıldı'
+    rename:'Yeniden adlandır', duplicate:'Çoğalt', pin:'Sabitle', unpin:'Sabitlemeyi kaldır', moveTo:'Taşı…', moveToTopLevel:'Üst düzey', moveToNoTargets:'Kullanılabilir hedef yok', duplicated:'Çoğaltıldı',
+    syncTitle:'Bulut Eşitleme', syncServerSettings:'Sunucu ayarları', syncUrl:'Supabase URL', syncAnonKey:'API anahtarı (anon)', syncConfigHint:'Supabase proje URL\'sini ve publishable (anon) anahtarı girin', syncConfigSaved:'Eşitleme ayarları kaydedildi',
+    syncNotLinked:'Bu Vault henüz buluta bağlı değil', syncPushNewHint:'Bu Vault\'u buluta gönder — bir sahip anahtarı oluşturulacak', syncPush:'Gönder', syncPull:'Al', syncPullConfirm:'Alma işlemi bu Vault\'un içeriğini bulut kopyasıyla değiştirecek. Devam edilsin mi?', syncLinkTitle:'Erişim anahtarıyla bağlan', syncLinkBtn:'Bağlan', syncLinked:'Vault bağlandı', syncPushed:'Buluta gönderildi', syncPulled:'Buluttan alındı', syncWorking:'Çalışıyor…',
+    syncRole:'Erişim', syncRoleOwner:'Sahip (gönder + al)', syncRoleRead:'Salt okunur (al)', syncCloudName:'Bulut adı', syncLastPush:'Son gönderme', syncLastPull:'Son alma', syncRemoteUpdated:'Bulut güncellendi', syncAccessKey:'Erişim anahtarı', syncReadKeyBtn:'Salt okunur anahtar oluştur', syncKeyShownOnce:'Bu anahtar yalnızca bir kez gösterilir — kopyalayıp güvenle saklayın', syncCopy:'Kopyala', syncKeyCopied:'Anahtar kopyalandı', syncUnlink:'Bağlantıyı kes', syncUnlinkConfirm:'Bu Vault\'un bulut bağlantısı kesilsin mi? Bulut kopyası korunur', syncUnlinked:'Bağlantı kesildi',
+    syncErrBadKey:'Geçersiz erişim anahtarı', syncErrBadKeyFormat:'Anahtar biçimi Xxxx-Xxxx-Xxxx-Xxxx olmalı', syncErrNoConfig:'Önce sunucu ayarlarını yapın', syncErrNotOwner:'Bu anahtar salt okunur — gönderilemez', syncErrNetwork:'Ağ hatası — URL ve bağlantıyı kontrol edin', syncErrAuth:'Sunucu API anahtarını reddetti', syncErrServer:'Sunucu hatası', syncErrTooLarge:'Vault eşitleme için çok büyük (10 MB sınırı)', syncErrAlreadyLinked:'Bu Vault zaten bağlı',
+    syncDevServer:'Dev sürümü — yerel prototip eşitleme sunucusu kullanılıyor (Supabase gerekmez)'
   },
   qd: {
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
@@ -1784,7 +1869,12 @@ const L = {
     noTimelineYet:'Nyn Chronofyl yet', createTimelineLine:'Kryneth Chronofyl', chroniclerEventNew:'Nyu Eventyx', chroniclerEventEdit:'Zhakrii Eventyx',
     startDate:'Stahrt Datyx', endDate:'Endyx Datyx', story:'Storyx', noEventsYet:'Nyn Eventyx yet', addEvent:'Addyth Eventyx',
     compareWith:'Compahryth wyth', pickCompareTimeline:'Choozz Chronofyl to compahryth',
-    rename:'Rename', duplicate:'Duplicate', pin:'Pin', unpin:'Unpin', moveTo:'Move to…', moveToTopLevel:'Top Level', moveToNoTargets:'No available targets', duplicated:'Duplicated'
+    rename:'Rename', duplicate:'Duplicate', pin:'Pin', unpin:'Unpin', moveTo:'Move to…', moveToTopLevel:'Top Level', moveToNoTargets:'No available targets', duplicated:'Duplicated',
+    syncTitle:'Skyvault Synco', syncServerSettings:'Servyth Vharokk', syncUrl:'Supabase URL', syncAnonKey:'API Klyv (anon)', syncConfigHint:'Zenn thy Supabase vorqu URL unn publishable (anon) klyv', syncConfigSaved:'Synco vharokk korvath\'d',
+    syncNotLinked:'Thyss vault nyx vynk\'d ta skyvault yett', syncPushNewHint:'Shovva thyss vault ta skyvault — ovvner klyv wyll be forg\'d', syncPush:'Shovva', syncPull:'Dragga', syncPullConfirm:'Dragga wyll overskryv thyss vault wyth skyvault kopya. Kontynua?', syncLinkTitle:'Vynk wyth akssess klyv', syncLinkBtn:'Vynk', syncLinked:'Vault vynk\'d', syncPushed:'Shovva\'d ta skyvault', syncPulled:'Dragga\'d fromm skyvault', syncWorking:'Wyrkynn…',
+    syncRole:'Akssess', syncRoleOwner:'Ovvner (shovva + dragga)', syncRoleRead:'Reed-onlya (dragga)', syncCloudName:'Skyvault yssira', syncLastPush:'Lasst shovva', syncLastPull:'Lasst dragga', syncRemoteUpdated:'Skyvault renew\'d', syncAccessKey:'Akssess klyv', syncReadKeyBtn:'Forge reed-onlya klyv', syncKeyShownOnce:'Thyss klyv shynn onnly onze — kopya unn hoard ytt saff', syncCopy:'Kopya', syncKeyCopied:'Klyv kopya\'d', syncUnlink:'Unvynk', syncUnlinkConfirm:'Unvynk thyss vault fromm skyvault? Skyvault kopya stayss', syncUnlinked:'Vault unvynk\'d',
+    syncErrBadKey:'Akssess klyv invalyd', syncErrBadKeyFormat:'Klyv formm musst be Xxxx-Xxxx-Xxxx-Xxxx', syncErrNoConfig:'Sett servyth vharokk fyrst', syncErrNotOwner:'Thyss klyv reed-onlya — shovva forbydd', syncErrNetwork:'Nettwyrk faylure — chekk URL unn konnekt', syncErrAuth:'Servyth rejekt\'d API klyv', syncErrServer:'Servyth faylure', syncErrTooLarge:'Vault too vasst forr synco (10 MB lymit)', syncErrAlreadyLinked:'Thyss vault allreddy vynk\'d',
+    syncDevServer:'Dev formm — lokyl prototyp synco servyth (no Supabase needyth)'
   },
 };
 const LANGUAGE_LABELS = { en:'ENG - English', ja:'JP - 日本語', ko:'KR - 한국어', th:'TH - ไทย', zh:'CN - 中文', vi:'VI - Tiếng Việt', id:'ID - Bahasa Indonesia', es:'ES - Español', pt:'PT - Português (Brasil)', fr:'FR - Français', de:'DE - Deutsch', ru:'RU - Русский', it:'IT - Italiano', nl:'NL - Nederlands', pl:'PL - Polski', uk:'UA - Українська', tr:'TR - Türkçe', qd:'🐉 Draconic' };

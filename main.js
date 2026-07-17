@@ -272,6 +272,16 @@ h('versions:restore', (id)   => db.restoreVersion(id));
 h('setting:get',      (k)    => db.getAppSetting(k));
 h('setting:set',      (k,v)  => db.setAppSetting(k,v));
 
+// Cloud sync prototype (Supabase) — snapshot push/pull per vault
+h('sync:getConfig',     ()       => db.getSyncConfig());
+h('sync:setConfig',     (u,k)    => db.setSyncConfig(u,k));
+h('sync:status',        (nx)     => db.syncStatus(nx));
+h('sync:push',          (nx)     => db.syncPushVault(nx));
+h('sync:pull',          (nx)     => db.syncPullVault(nx));
+h('sync:link',          (nx,key) => db.syncLinkVault(nx,key));
+h('sync:createReadKey', (nx)     => db.syncCreateReadKey(nx));
+h('sync:unlink',        (nx)     => db.unlinkVault(nx));
+
 // Legacy -> v3 migration (v3 Phase 24)
 h('migrate:list',   (target)        => db.listLegacyProjects(target));
 h('migrate:run',    (nx,target,id)  => db.migrateLegacy(nx,target,id));

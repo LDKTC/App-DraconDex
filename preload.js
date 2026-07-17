@@ -133,6 +133,16 @@ contextBridge.exposeInMainWorld('api', {
     get: (k)   => inv('setting:get', k),
     set: (k,v) => inv('setting:set', k,v),
   },
+  sync: {
+    getConfig:     ()       => inv('sync:getConfig'),
+    setConfig:     (u,k)    => inv('sync:setConfig', u,k),
+    status:        (nx)     => inv('sync:status', nx),
+    push:          (nx)     => inv('sync:push', nx),
+    pull:          (nx)     => inv('sync:pull', nx),
+    link:          (nx,key) => inv('sync:link', nx,key),
+    createReadKey: (nx)     => inv('sync:createReadKey', nx),
+    unlink:        (nx)     => inv('sync:unlink', nx),
+  },
   importdock: {
     list:          (nx)     => inv('importdock:list', nx),
     add:           (nx,fs2) => inv('importdock:add', nx,fs2),
