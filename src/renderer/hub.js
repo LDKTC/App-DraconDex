@@ -94,7 +94,10 @@ function renderModuleRail() {
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
   const pinned = S.moduleTree.filter(m => m.pinned);
-  let html = `<button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus}</button>`;
+  const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut;
+  let html = `<button class="nav-btn module-rail-tool${atHubHome ? ' active' : ''}" title="${t('nexusNest')}" onclick="goToNexusNestHub()">${I.home}</button>
+    <div class="rail-sep module-rail-tool"></div>
+    <button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus}</button>`;
   if (pinned.length) html += `<div class="rail-sep module-rail-tool"></div>`;
   for (const m of pinned) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
@@ -108,6 +111,18 @@ function renderModuleRail() {
   html += `<div class="rail-sep module-rail-tool"></div>
     <button class="nav-btn module-rail-tool" title="${t('importDock')}" onclick="openImportDockSection()">${I.import}</button>`;
   anchor.insertAdjacentHTML('afterend', html);
+}
+
+// Nav-sidebar "home" button — jumps back to the Nexus Nest hub's welcome
+// page from anywhere inside a v3 module's detail view (the existing
+// #nav-logo-btn "return" affordance only fires for legacy full-page
+// modules — S.activeModule — not for a focused module node inside the
+// Builder grid, so there was previously no one-click way back for that).
+function goToNexusNestHub() {
+  S.activeModuleNode = null;
+  S.filePreview = null;
+  S.sageHut = null;
+  renderNexusHome();
 }
 
 function openImportDockSection() {
@@ -224,13 +239,14 @@ function buildNestRow(m, depth, parentId) {
   </div>${childrenHtml}`;
 }
 
-// ═══ Drag-reorder / reparent — any depth (Plan part1 #4/#4-2) ═════════
+// ═══ Drag-reorder / reparent — any depth, any module (Plan part1 #1) ═══
 // Dropping on the top/bottom quarter of a row reorders the dragged module
-// as that row's sibling there; the middle half nests it as that row's
-// child instead. A top-level module can be dropped anywhere (reorder or
-// nest); a module that already has a parent is locked to it — it can only
-// reorder among its own siblings (top/bottom of a row sharing that same
-// parent), never nest into a row or jump to a different parent.
+// as that row's sibling there (adopting that row's parent, which may be a
+// different parent than the one it came from — an implicit "move to"); the
+// middle half nests it as that row's child instead. Any module can be
+// dragged out of its current parent to top-level, into a different parent,
+// or reordered among new siblings — the only hard rule is the self/
+// descendant guard below (can't drop a module into its own subtree).
 function onNestDragStart(ev, id, parentId) {
   S.dragNest = { id, parentId };
   ev.dataTransfer.effectAllowed = 'move';
@@ -260,12 +276,7 @@ async function onNestDrop(ev, targetId, targetParentId, row) {
   if (!drag || drag.id === targetId) return;
   const dragNode = findModuleNode(drag.id);
   if (!dragNode || isSelfOrDescendant(dragNode, targetId)) return;
-  let zone = nestDropZone(ev, row);
-  const isLockedToParent = drag.parentId != null;
-  if (isLockedToParent) {
-    if (targetParentId !== drag.parentId) return; // can't leave its parent
-    if (zone === 'in') zone = 'after'; // and can't nest — reorder only
-  }
+  const zone = nestDropZone(ev, row);
   const newParentId = zone === 'in' ? targetId : targetParentId;
   if (zone === 'in') S.moduleCollapsed.delete(targetId);
   const siblings = (newParentId == null ? S.moduleTree : findModuleNode(newParentId)?.children || [])
@@ -311,6 +322,46 @@ function positionPopupNear(el, rect) {
   el.style.left = `${left}px`;
 }
 
+// Place a submenu flyout to the right of its parent row (native context-menu
+// convention), flipping to the left when it would overflow the right edge —
+// vertically aligned with the row itself rather than below it, like
+// positionPopupNear.
+function positionSubmenuNear(el, rect) {
+  const pw = el.offsetWidth, ph = el.offsetHeight, gap = 2;
+  let left = rect.right + gap;
+  if (left + pw > window.innerWidth - 8) left = Math.max(8, rect.left - pw - gap);
+  let top = rect.top;
+  if (top + ph > window.innerHeight - 8) top = Math.max(8, window.innerHeight - ph - 8);
+  el.style.top = `${top}px`;
+  el.style.left = `${left}px`;
+}
+
+// The Major-module context menu's "Create" row (buildModuleContextMenuHtml)
+// reveals the kind list as a hover submenu instead of inlining it — a second
+// `.kind-popup` appended next to the first, closed on mouseleave with a short
+// grace period so crossing the gap between the row and the flyout doesn't
+// close it prematurely.
+let _ctxSubmenuCloseTimer = null;
+function cancelCtxSubmenuClose() {
+  clearTimeout(_ctxSubmenuCloseTimer);
+}
+function scheduleCtxSubmenuClose() {
+  clearTimeout(_ctxSubmenuCloseTimer);
+  _ctxSubmenuCloseTimer = setTimeout(() => document.querySelector('.ctx-submenu')?.remove(), 200);
+}
+function openCreateSubmenu(ev, parentId) {
+  cancelCtxSubmenuClose();
+  if (document.querySelector('.ctx-submenu')) return;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup kind-list-popup ctx-submenu';
+  pop.innerHTML = buildKindListHtml(parentId);
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  pop.addEventListener('mouseenter', cancelCtxSubmenuClose);
+  pop.addEventListener('mouseleave', scheduleCtxSubmenuClose);
+  positionSubmenuNear(pop, ev.currentTarget.getBoundingClientRect());
+}
+
 // Cursor-anchored popup helper — inline onclick= attributes can't close over
 // a live event object once the popup's own click handler runs later, so the
 // last right-click point is stashed on S and read back here.
@@ -346,8 +397,14 @@ function openModuleContextMenu(ev, id) {
 function buildModuleContextMenuHtml(id, isMajor, pinned) {
   let html = '';
   if (isMajor) {
-    html += buildKindListHtml(null);
-    html += `<div class="ctx-sep"></div>
+    // The create-list used to sit inline at the top of the menu (every kind,
+    // always visible) — moved behind one "Create" row with a hover submenu
+    // instead, decluttering the menu the same way a native app's context
+    // menu nests a submenu rather than flattening every option.
+    html += `<div class="kind-list-item kli-submenu-parent" onmouseenter="openCreateSubmenu(event,null)" onmouseleave="scheduleCtxSubmenuClose()">
+      <span class="kli-name">${x(t('create'))}</span><span class="kli-arrow">›</span>
+    </div>
+      <div class="ctx-sep"></div>
       <div class="kind-list-item" onclick="closeAllPopups();openMinorModuleModal(${id},ctxAnchor())"><span class="kli-name">${x(t('addMinorModule'))}</span></div>`;
   }
   html += `

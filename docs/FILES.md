@@ -116,7 +116,9 @@ App-NovelManager/
 - `.claude/skills/run-dracondex/` — driver อัตโนมัติ (Playwright `_electron`)
   ใช้รัน/ทดสอบแอปกับ data dir แยก; v2.8 เพิ่ม `web-driver.mjs` — รัน renderer/
   preload/db จริงใน Playwright **Chromium** (stub เฉพาะ Electron shell) สำหรับ
-  sandbox ที่โหลด Electron binary ไม่ได้ (เช่น proxy บล็อก GitHub releases)
+  sandbox ที่โหลด Electron binary ไม่ได้ (เช่น proxy บล็อก GitHub releases);
+  `web-driver.mjs` เพิ่มคำสั่ง `dragto`/`rclick` (พอร์ตจาก `driver.mjs` — mouse
+  down/move/up จริง ไม่ใช่ synthetic dispatchEvent) ให้ตรงกับ vocabulary เดิม
 
 ---
 
@@ -149,8 +151,8 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `hub.js` | 723 | Nexus nest hub: module rail, accordion (Nest/Sage Hut/Import Dock), nest tree drag-drop, create/context-menu/pin, icon popup, `buildModuleDetailHtml` |
-| `builder.js` | 253 | Editor-group shell 1/2/4 pane, ต่อ tab/history ต่อ pane, `builderNavigate`/`builderSetLayout` |
+| `hub.js` | 781 | Nexus nest hub: module rail (+ `goToNexusNestHub` home button, ปุ่มแรกในแถบ ก่อน "+create"), accordion (Nest/Sage Hut/Import Dock — แต่ละ section มี `.acc-body` เลื่อนแยกกันเองผ่าน `#hub-body` flex layout, ดู style.css), nest tree drag-drop (โมดูลไหนก็ reparent ข้าม parent ได้ ไม่ล็อกเฉพาะ top-level แล้ว — `onNestDrop`), context menu (ปุ่ม "Create" เปิด hover submenu แทนการแสดง kind-list แบนราบเดิม — `openCreateSubmenu`/`positionSubmenuNear`)/rename/duplicate/move-to/pin, icon popup, `buildModuleDetailHtml` |
+| `builder.js` | 618 | Editor-group shell — recursive split-pane layout tree (`builderSplitPane`/`builderClosePane`, ซ้อนได้ไม่จำกัดชั้น, Part 4), tab drag-reorder/cross-pane move/pop-out เป็นหน้าต่างแยก, toggle Module Inspector dock, auto-split เมื่อลาก tab ไปวางขอบ pane; `pruneStaleLayoutElements` กวาด DOM ที่หลงเหลือจาก legacy view (เช่น Scribe, Nexus picker — เขียนทับ `#main-inner.innerHTML` ตรงๆ) ออกก่อน re-render grid ทุกครั้ง กัน pane ค้างที่ปิดไม่ได้ |
 | `inspector.js` | 148 | Module Inspector dock: description/แท็ก/แอตทริบิวต์/ลิงก์/ปุ่ม Version History |
 | `iconpicker.js` | 266 | Icon/Color picker ฝัง (ไอคอนแอป/symbol เดิม/อัปโหลด+crop วงกลม) |
 | `versions.js` | 78 | แผง Version History (แทน Inspector dock ชั่วคราวตอนเปิด) |
