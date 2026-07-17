@@ -19,6 +19,34 @@
 
 ---
 
+## 2026-07-17 — Cloud Sync (Supabase) prototype: ซิงก์ Nexus vault + คีย์เข้าถึง
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/sync.js` (ใหม่), `src/renderer/sync.js` (ใหม่),
+  `supabase/migrations/20260717000000_dracondex_sync_prototype.sql` (ใหม่),
+  `docs/SYNC.md` (ใหม่), `main.js`, `preload.js`, `database.js`, `index.html`,
+  `src/renderer/core.js`, `src/renderer/i18n.js`, `style.css`
+- อะไรเปลี่ยน:
+  - ฟีเจอร์ซิงก์ vault ขึ้น Supabase แบบ snapshot ทั้งก้อน (last-write-wins):
+    ปุ่ม ☁ ใน vault-head เปิดหน้าต่างซิงก์ 3 สถานะ (ตั้งค่าเซิร์ฟเวอร์ /
+    Push ครั้งแรก+เชื่อมด้วยคีย์ / เชื่อมแล้ว Push-Pull-สร้างคีย์-ยกเลิก)
+  - คีย์เข้าถึงรูปแบบ `Xxxx-Xxxx-Xxxx-Xxxx` (4 กลุ่ม × 4 alphanumeric)
+    สร้างฝั่งเครื่อง แสดงครั้งเดียว เซิร์ฟเวอร์เก็บ sha-256; role
+    owner (push+pull) / read (pull อย่างเดียว)
+  - ฝั่งเซิร์ฟเวอร์เป็น migration SQL ไฟล์เดียว: ตาราง `sync_vault`/`sync_key`
+    RLS ล็อกไม่มี policy + RPC SECURITY DEFINER 5 ตัวเป็นทางเข้าเดียว
+  - `src/db/sync.js`: serializeVault (lookup FK → natural key),
+    applySnapshot (wipe-and-rebuild + id remap ใน transaction แล้ว rebuild
+    wiki index), fetch ทั้งหมดอยู่ main process — จุดแรกของแอปที่มี network call
+  - i18n เพิ่ม 41 คีย์ `sync*` ครบ 18 locale; CSS block `.sync-*`
+- ทำไม: ต้นแบบ (prototype) แชร์/สำรอง vault ข้ามเครื่องผ่านคลาวด์ ตามแผน
+  ที่ user กำหนด — จำกัดขอบเขตไว้ที่ snapshot sync ไม่มี merge/conflict UI
+- ตรวจสอบ: `check.mjs` ผ่าน (0 warning ใหม่, i18n parity ครบ), E2E ผ่าน
+  web-driver + mock RPC (push→link→pull ครบ, id remap ถูก, read key ถูกกัน
+  push, คีย์ผิดถูกปฏิเสธ) — migration จริงยังไม่ได้ apply ขึ้น Supabase
+  (user เลือกข้ามการใช้ MCP; รัน SQL เองได้ตาม docs/SYNC.md §1.1)
+- Doc ที่อัปเดต: docs/SYNC.md (ใหม่ทั้งไฟล์), docs/SYSTEMS.md §10 (หัวข้อ
+  Cloud Sync), docs/FILES.md (ตาราง "Cloud Sync — ไฟล์ใหม่")
+
 ## 2026-07-17 — Nexus Nest hub: reparent drag-drop, Create submenu, home button, hub scroll fixes
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/hub.js`, `src/renderer/builder.js`,

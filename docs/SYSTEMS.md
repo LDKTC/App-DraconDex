@@ -363,6 +363,31 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 - โปรเจกต์ที่นำเข้ามาโดยไม่มี `nexus_ref` (จาก DB เก่ากว่า v2.8) จะถูก adopt
   เข้า vault แรกที่เจอ เหมือน migration ตอนบูต
 
+### Cloud Sync — Supabase (prototype, 2026-07-17)
+
+ซิงก์ Nexus vault ขึ้นคลาวด์แบบ **snapshot ทั้ง vault, last-write-wins** —
+เอกสารเต็ม (วิธีใช้ + หลักการทำงาน + ข้อจำกัด) อยู่ที่ [SYNC.md](SYNC.md)
+สรุปพฤติกรรม:
+
+- เข้าจากปุ่ม **☁** ใน vault-head (ข้าง ⇄) → หน้าต่างเดียว 3 สถานะ:
+  ตั้งค่าเซิร์ฟเวอร์ (URL + anon key, เก็บใน `app_setting`) → ยังไม่เชื่อม
+  (Push ครั้งแรก หรือกรอกคีย์เชื่อม vault บนคลาวด์ที่มีอยู่) → เชื่อมแล้ว
+  (สถานะ role/เวลาซิงก์, Push/Pull/สร้างคีย์อ่านอย่างเดียว/ยกเลิกการเชื่อม)
+- **คีย์เข้าถึง** รูปแบบ `Xxxx-Xxxx-Xxxx-Xxxx` (4×4 alphanumeric ≈95 bit)
+  สร้างฝั่งเครื่อง แสดงครั้งเดียว; เซิร์ฟเวอร์เก็บ sha-256 เท่านั้น;
+  role `owner` = push+pull, `read` = pull อย่างเดียว (push โดน `not_owner`)
+- Push = serialize ทั้ง closure ของ vault (module tree ทุก kind + attribute/ui/
+  tag + entity_relation + note) เป็น JSON ก้อนเดียว ยิงผ่าน RPC ฝั่ง main
+  process; **ไม่รวม** module_version, import_file, wiki_link, legacy projects
+- Pull = ยืนยันก่อน แล้ว **ล้างเนื้อหา vault ในเครื่องและสร้างใหม่จาก snapshot**
+  พร้อม remap id (`entity_relation` keys, `linker_key` ของ sketch pin /
+  design node, `mapModule`/`timelineModule` ของ Wanderer) แล้ว rebuild
+  wiki index; ชื่อ vault ในเครื่องคงเดิม (UNIQUE)
+- ฝั่งเซิร์ฟเวอร์: ตาราง RLS ล็อกสนิท — ทางเข้าเดียวคือ RPC SECURITY DEFINER
+  5 ตัว, error ส่งกลับเป็น code (`bad_key`/`not_owner`/`too_large`) แสดงเป็น toast
+- ตรวจแล้วด้วย E2E (web-driver + mock RPC ครบ 5 ตัว): push→link→pull ข้อมูล
+  ครบและ remap ถูก, คีย์ read ถูกกัน push, คีย์ผิด/ฟอร์แมตผิดถูกปฏิเสธ
+
 ---
 
 ## 11. บั๊ก/จุดอ่อนที่รู้แล้ว (จากการรันทดสอบ 2026-07-04)
