@@ -864,6 +864,18 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .li.indent3{padding-left:58px}
 .li.indent4{padding-left:74px}
 .li.indent5{padding-left:90px}
+/* Nest-tree child guide lines — one thin vertical rule per ancestor depth,
+   painted on a ::after overlay (not .li's own background) so it survives
+   :hover/.active/.drop-in, which all set the `background` shorthand and
+   would otherwise wipe out a background-image drawn directly on .li. Only
+   rows from buildNestRow (hub.js) ever carry an indentN class, so this
+   never touches Sage Hut/Import Dock/other .li lists elsewhere. */
+.li[class*="indent"]::after{content:'';position:absolute;inset:0;pointer-events:none;background-repeat:no-repeat}
+.li.indent1::after{background-image:linear-gradient(var(--border),var(--border));background-size:1px 100%;background-position:10px 0}
+.li.indent2::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%;background-position:10px 0,26px 0}
+.li.indent3::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%;background-position:10px 0,26px 0,42px 0}
+.li.indent4::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%;background-position:10px 0,26px 0,42px 0,58px 0}
+.li.indent5::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%,1px 100%;background-position:10px 0,26px 0,42px 0,58px 0,74px 0}
 .tree-chev{width:9px;height:9px;stroke-width:3;color:var(--t3);flex-shrink:0}
 .grip{color:var(--t3);font-size:calc(10px * var(--fsc,1));letter-spacing:-1px;opacity:0;cursor:grab;flex-shrink:0}
 .li:hover .grip{opacity:.7}
