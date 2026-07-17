@@ -5,11 +5,22 @@
 
 เอกสารนี้มี 2 ส่วน: **วิธีใช้งาน** สำหรับผู้ใช้ และ **หลักการทำงาน** สำหรับผู้พัฒนา
 
+### โหมดตามชนิด build
+
+| Build | Backend ที่ใช้ |
+|---|---|
+| ติดตั้ง (installer) / portable | Supabase จริง — ตั้งค่า URL + anon key เอง (§1.1–1.2) |
+| dev (`npm start` / driver) | **เซิร์ฟเวอร์ต้นแบบในเครื่อง** (`src/db/sync-devserver.js`) เริ่มเองอัตโนมัติ ไม่ต้องตั้งค่าใด ๆ — หน้าต่างซิงก์ข้ามหน้าตั้งค่าเซิร์ฟเวอร์และแสดงป้าย "เวอร์ชัน dev" |
+
+ในโหมด dev ขั้นตอน §1.1–1.2 ไม่จำเป็น — กด ☁ แล้ว Push ได้เลย ข้อมูล
+"คลาวด์" เก็บเป็นไฟล์ `dev-sync-server.json` ในโฟลเดอร์ข้อมูล dev
+(ลบไฟล์ = ล้างคลาวด์จำลอง)
+
 ---
 
 ## ส่วนที่ 1 — วิธีใช้งาน
 
-### 1.1 เตรียมเซิร์ฟเวอร์ (ทำครั้งเดียว)
+### 1.1 เตรียมเซิร์ฟเวอร์ (ทำครั้งเดียว — เฉพาะ build ติดตั้ง/portable)
 
 1. สร้างโปรเจกต์ที่ [supabase.com](https://supabase.com) (แผนฟรีใช้ได้)
 2. เปิด SQL Editor ในแดชบอร์ด แล้วรันไฟล์
@@ -81,10 +92,18 @@ Main process IPC 'sync:*' (main.js) → src/db/sync.js
    │ serializeVault / applySnapshot  (SQLite ผ่าน src/db/core.js)
    │ fetch (Node 18+, main process เท่านั้น — renderer ไม่แตะเครือข่าย)
    ▼
-Supabase PostgREST  POST /rest/v1/rpc/<fn>   (header: apikey + Bearer anon key)
-   ▼
-Postgres: ตาราง sync_vault / sync_key + ฟังก์ชัน SECURITY DEFINER 5 ตัว
+build ติดตั้ง/portable:                       build dev (`!app.isPackaged`):
+Supabase PostgREST                            เซิร์ฟเวอร์ต้นแบบ in-process
+POST /rest/v1/rpc/<fn>                        (sync-devserver.js, loopback,
+(apikey + Bearer anon key)                    endpoint/พฤติกรรมเหมือนกันทุกอย่าง)
+   ▼                                             ▼
+Postgres: sync_vault/sync_key + RPC 5 ตัว     JSON ไฟล์ dev-sync-server.json
 ```
+
+การสลับ backend อยู่ที่ `IS_DEV = !app.isPackaged` ใน src/db/sync.js —
+โหมด dev บังคับ config เป็น URL ของเซิร์ฟเวอร์ในเครื่อง (เริ่ม lazy ตอนเรียก
+ซิงก์ครั้งแรก, port สุ่ม, ไม่ persist URL) และไม่อ่าน/ไม่ต้องมี `sync:url`/
+`sync:anonKey` ใน `app_setting`
 
 ฝั่งเซิร์ฟเวอร์อยู่ในไฟล์เดียว:
 `supabase/migrations/20260717000000_dracondex_sync_prototype.sql`

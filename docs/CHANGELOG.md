@@ -19,6 +19,27 @@
 
 ---
 
+## 2026-07-17 — Cloud Sync: แยก backend ตามชนิด build (Supabase จริงเฉพาะ build ติดตั้ง, dev ใช้เซิร์ฟเวอร์ต้นแบบในเครื่อง)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/sync-devserver.js` (ใหม่), `src/db/sync.js`,
+  `src/renderer/sync.js`, `src/renderer/i18n.js`, `docs/SYNC.md`
+- อะไรเปลี่ยน:
+  - build ติดตั้ง/portable (`app.isPackaged`) ใช้ Supabase จริงตามเดิม;
+    build dev (`npm start`/driver) ถูกปักหมุดไปที่เซิร์ฟเวอร์ต้นแบบ
+    in-process ตัวใหม่ (`sync-devserver.js`) — endpoint/auth/error body
+    เหมือน migration ทุกอย่าง, loopback + port สุ่ม, state เก็บเป็น
+    `dev-sync-server.json` ในโฟลเดอร์ข้อมูล dev
+  - โหมด dev ไม่อ่าน/ไม่ต้องตั้ง `sync:url`/`sync:anonKey` — หน้าต่างซิงก์
+    ข้ามหน้าตั้งค่าเซิร์ฟเวอร์ ซ่อนปุ่มตั้งค่า และแสดงป้าย "เวอร์ชัน dev"
+    (i18n คีย์ใหม่ `syncDevServer` ครบ 18 locale)
+- ทำไม: ตามที่ user กำหนด — sync จริงใช้กับตัวติดตั้งเท่านั้น ส่วนเวอร์ชัน
+  dev ให้มี prototype sync ทดสอบ flow ได้ครบโดยไม่ต้องมีโปรเจกต์ Supabase
+- ตรวจสอบ: E2E dev-mode ผ่าน web-driver — server เริ่มเอง, push→link→pull
+  ครบ, สถานะ/ป้าย dev แสดงถูก (screenshot), ไฟล์ state ถูกเขียน; check.mjs
+  0 warning ใหม่
+- Doc ที่อัปเดต: docs/SYNC.md (ตาราง build mode + ไดอะแกรม §2.1),
+  docs/FILES.md (แถว sync-devserver.js)
+
 ## 2026-07-17 — Cloud Sync (Supabase) prototype: ซิงก์ Nexus vault + คีย์เข้าถึง
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/db/sync.js` (ใหม่), `src/renderer/sync.js` (ใหม่),

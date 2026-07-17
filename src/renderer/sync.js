@@ -49,9 +49,14 @@ function syncKeyPanelHtml(key, labelKey) {
 async function openSyncModal() {
   if (!S.nexus) return;
   const st = await api.sync.status(S.nexus.id);
-  if (!st.configured) return syncRenderConfig();
-  if (!st.linked) return syncRenderUnlinked();
+  if (!st.dev && !st.configured) return syncRenderConfig();
+  if (!st.linked) return syncRenderUnlinked(st);
   return syncRenderLinked(st);
+}
+
+// Dev runs are pinned to the local prototype server — no Supabase config.
+function syncDevHintHtml(st) {
+  return st.dev ? `<div class="modal-hint">${I.info}<span>${t('syncDevServer')}</span></div>` : '';
 }
 
 // --- state 1: server not configured (also reachable from the other states)
@@ -78,8 +83,9 @@ async function syncSaveConfig() {
 }
 
 // --- state 2: configured, vault not linked yet
-function syncRenderUnlinked() {
+function syncRenderUnlinked(st = {}) {
   openModal(`☁ ${t('syncTitle')}`, `
+    ${syncDevHintHtml(st)}
     <div class="modal-hint">${I.info}<span>${t('syncNotLinked')}</span></div>
     <div class="fg"><label>${t('syncPush')}</label>
       <div class="sync-hint">${t('syncPushNewHint')}</div>
@@ -92,7 +98,7 @@ function syncRenderUnlinked() {
       </div>
     </div>
     <div class="mfoot">
-      <button class="btn btn-s" onclick="syncRenderConfig()">${t('syncServerSettings')}</button>
+      ${st.dev ? '' : `<button class="btn btn-s" onclick="syncRenderConfig()">${t('syncServerSettings')}</button>`}
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
     </div>`);
 }
@@ -109,6 +115,7 @@ function syncRenderLinked(st) {
   ].map(([k, v]) => `<div class="sync-status-row"><span>${k}</span><b>${v}</b></div>`).join('');
 
   openModal(`☁ ${t('syncTitle')}`, `
+    ${syncDevHintHtml(st)}
     ${rows}
     <div class="fg"><label>${t('syncAccessKey')}</label>
       <div class="sync-key-row">

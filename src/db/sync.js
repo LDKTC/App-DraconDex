@@ -12,6 +12,18 @@ const { getAppSetting, setAppSetting } = require('./versions');
 const SNAPSHOT_FORMAT = 'dracondex-vault-snapshot';
 const SNAPSHOT_VERSION = 1;
 
+// Build-mode gate: packaged builds (portable + installer) talk to the real
+// Supabase backend configured by the user; an unpackaged run (`npm start`,
+// drivers) is pinned to the in-process dev prototype server instead
+// (src/db/sync-devserver.js) — zero setup, loopback-only, JSON persistence.
+const IS_DEV = !require('electron').app.isPackaged;
+let devUrl = null;
+
+async function ensureDevBackend() {
+  if (!IS_DEV || devUrl) return;
+  devUrl = await require('./sync-devserver').ensureDevSyncServer();
+}
+
 // ---------------------------------------------------------------------------
 // Access keys — "Ertt-3fu6-Dd5t-Fd34": 4 groups of 4 mixed-case alphanumerics
 // (62^16 ≈ 95 bits). The key is the sole credential; the server stores only
@@ -30,9 +42,13 @@ function generateAccessKey() {
 // Config + per-vault link state (app_setting K/V)
 // ---------------------------------------------------------------------------
 function getSyncConfig() {
+  if (IS_DEV) {
+    // Dev runs never use (or require) the stored Supabase config.
+    return { url: devUrl || '', anonKey: 'dev-local', configured: true, dev: true };
+  }
   const url = (getAppSetting('sync:url') || '').replace(/\/+$/, '');
   const anonKey = getAppSetting('sync:anonKey') || '';
-  return { url, anonKey, configured: !!(url && anonKey) };
+  return { url, anonKey, configured: !!(url && anonKey), dev: false };
 }
 
 function setSyncConfig(url, anonKey) {
@@ -72,8 +88,11 @@ function unlinkVault(nexusId) {
 const RPC_KNOWN_ERRORS = ['bad_key', 'not_owner', 'too_large'];
 
 async function rpc(fn, params) {
+  try { await ensureDevBackend(); } catch (e) {
+    return { ok: false, code: 'network', error: `dev sync server failed: ${String(e?.message || e)}` };
+  }
   const { url, anonKey, configured } = getSyncConfig();
-  if (!configured) return { ok: false, code: 'no_config' };
+  if (!configured || !url) return { ok: false, code: 'no_config' };
   let res;
   try {
     res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
@@ -687,11 +706,12 @@ function applySnapshot(nexusId, payload) {
 // Public sync operations (IPC surface)
 // ---------------------------------------------------------------------------
 async function syncStatus(nexusId) {
-  const { configured } = getSyncConfig();
+  const { configured, dev } = getSyncConfig();
   const state = getVaultSyncState(nexusId);
   const out = {
     ok: true,
     configured,
+    dev,
     linked: state.linked,
     role: state.role || null,
     accessKey: state.accessKey || null,
