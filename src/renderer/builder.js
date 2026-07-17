@@ -327,8 +327,17 @@ function renderLayoutNode(node, parentEl, dir, slot) {
 
 function pruneStaleLayoutElements(tree) {
   const { ids, paneIdx } = collectLiveIds(tree);
-  q('#main-inner')?.querySelectorAll('.bsplit[data-node-id]').forEach(el => { if (!ids.has(Number(el.dataset.nodeId))) el.remove(); });
-  q('#main-inner')?.querySelectorAll('.bpane[data-pane]').forEach(el => { if (!paneIdx.has(Number(el.dataset.pane))) el.remove(); });
+  const main = q('#main-inner');
+  if (!main) return;
+  main.querySelectorAll('.bsplit[data-node-id]').forEach(el => { if (!ids.has(Number(el.dataset.nodeId))) el.remove(); });
+  main.querySelectorAll('.bpane[data-pane]').forEach(el => { if (!paneIdx.has(Number(el.dataset.pane))) el.remove(); });
+  // Legacy views (Scribe, Director, the Nexus picker, ...) wholesale-replace
+  // #main-inner's innerHTML directly (never touching .bpane/.bsplit), so
+  // returning to the Nexus Nest home only ever appends fresh grid nodes on
+  // top via ensureNodeElement's appendChild — any such leftover content
+  // would otherwise sit stuck below the Builder pane with no way to close
+  // it. Sweep it here, once, before the grid (re)renders.
+  Array.from(main.children).forEach(el => { if (!el.classList.contains('bpane') && !el.classList.contains('bsplit')) el.remove(); });
 }
 
 let builderSplitResizeState = null;

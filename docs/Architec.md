@@ -1,8 +1,9 @@
 # DraconDex — โครงสร้าง Module / Submodule
 
 > เอกสารนี้สรุป **สถาปัตยกรรมระดับโมดูล** ของแอป (module tree) — ใครประกอบด้วย
-> อะไรบ้าง, ไฟล์ไหนรับผิดชอบส่วนไหน อ้างอิงจากโค้ด ณ วันที่ 2026-07-16
-> (หลังการรื้อใหญ่ "v3 module system", git history Phase 1–24 + Part 1–2)
+> อะไรบ้าง, ไฟล์ไหนรับผิดชอบส่วนไหน อ้างอิงจากโค้ด ณ วันที่ 2026-07-17
+> (หลังการรื้อใหญ่ "v3 module system", git history Phase 1–24 + Part 1–4 +
+> Nest hub round 2)
 > รายละเอียดพฤติกรรมเชิงลึกดู [SYSTEMS.md](SYSTEMS.md), รายไฟล์ดู [FILES.md](FILES.md)
 
 ## ภาพรวมสแต็ก
@@ -86,19 +87,34 @@ dispatch ใน `openModuleNode` (kind → `load<Kind>Data`) เป็นจุ�
 tree), **Sage Hut**, **Import Dock** (ไม่มี section โมดูลเดิมแล้ว — Legacy
 เข้าถึงผ่าน Artisan เท่านั้น)
 
-- **Module rail**: ปุ่ม +สร้าง แล้วตามด้วย Major module ที่ปักหมุด (`pinned`)
-  + shortcut Import Dock
-- **Nest tree**: render ต้นไม้แบบ recursive, ลาก reorder/reparent (top-level
-  ลากไปไหนก็ได้, node ที่มี parent แล้วล็อกอยู่กับ parent เดิม — reorder
-  เฉพาะพี่น้อง), inline rename, expand/collapse, chip ไอคอน+ป้าย kind
+- **Module rail**: ปุ่ม home (`goToNexusNestHub` — กลับมาหน้า welcome ของ
+  Hub จากที่ไหนก็ได้ ต่างจาก `#nav-logo-btn`'s "return" ที่ทำงานเฉพาะโมดูล
+  เดิมแบบเต็มหน้า ไม่ใช่ v3 module node) → ปุ่ม +สร้าง → Major module ที่
+  ปักหมุด (`pinned`) → shortcut Import Dock
+- **Nest tree**: render ต้นไม้แบบ recursive, ลาก reorder/reparent — **โมดูล
+  ไหนก็ reparent ข้าม parent ได้ ไม่ล็อกเฉพาะ top-level แล้ว** (`onNestDrop`,
+  เดิมโมดูลที่มี parent อยู่แล้วจะ reorder ได้แค่ในกลุ่มพี่น้องเดิม ตอนนี้ลาก
+  ออกไปเป็น top-level หรือไปเป็นลูกของโมดูลอื่นได้เหมือนกันหมด กันแค่ลากเข้า
+  subtree ตัวเอง), inline rename, expand/collapse, chip ไอคอน+ป้าย kind
 - **สร้าง node ใหม่**: popup เลือก kind จากทั้ง 15 (`openKindPopup`) →
   `quickCreateModule` (classifier ต้องเลือก `cat_type` เพิ่มอีกขั้น)
-- **Context menu**: rename / duplicate (clone ทั้ง subtree, reset pinned
-  เป็น 0) / move to… / delete / pin-unpin (Major เท่านั้น)
+- **Context menu**: ปุ่ม **"Create" เปิด hover submenu** แสดง kind-list เดียว
+  กันแทนที่จะแบนราบอยู่บนสุดเมนูเหมือนเดิม (`openCreateSubmenu`/
+  `positionSubmenuNear`, Major เท่านั้น) / rename / duplicate (clone ทั้ง
+  subtree, reset pinned เป็น 0) / move to… / delete / pin-unpin (Major
+  เท่านั้น)
 - **ไอคอน/สี**: popup แบบ live-save ผ่าน `iconpicker.js`
 - **หน้า detail ของ module** (`buildModuleDetailHtml`): header (ชื่อ/kind
   chip/แท็ก/จำนวนลิงก์) + เนื้อหาตาม kind (`KIND_MAIN_BUILDER`) + Module
   Inspector dock (§1.3)
+- **แต่ละ accordion section เลื่อนแยกกันเอง**: `#hub-body` เป็น flex column
+  (style.css), section ที่เปิดอยู่แชร์พื้นที่แนวตั้งที่เหลือเท่าๆ กัน
+  (`flex:1` ต่อ `.acc-body`) และมี scrollbar ของตัวเอง ไม่ใช่หน้าเดียวยาว
+  scroll รวมกันทั้ง Nest/Sage Hut/Import Dock เหมือนเดิม; ลำดับ section
+  ยังเป็น stable sort เดิม (`buildHubHtml`) — section ที่เปิดขึ้นบนสุดตาม
+  ลำดับเดิม, ที่ปิดจมลงล่างสุดตามลำดับเดิม, ตัวล่างสุดจะติดกับแถบ
+  nexus-vault-head พอดี (`#left-panel-foot` เป็น flex sibling คงที่ใต้
+  `#left-panel-inner`)
 
 ### 1.3 Module Inspector (`src/renderer/inspector.js`, 148 บรรทัด — Phase 4)
 
@@ -107,10 +123,13 @@ Dock ขวาของ module ที่โฟกัสอยู่: kind (read-
 ขาออก/backlink (ผ่าน `wiki_link` คีย์ `module_<id>`), ปุ่ม **Version
 History** (§1.5) ที่สลับทั้ง dock ไปแสดงประวัติแทน
 
-### 1.4 Builder (`src/renderer/builder.js`, 253 บรรทัด — Phase 19)
+### 1.4 Builder (`src/renderer/builder.js`, 618 บรรทัด — Phase 19, ขยายใหญ่
+ใน Part 4 เป็น recursive split-layout tree แทน grid 1/2/4 ตายตัวเดิม)
 
-Editor-group shell สไตล์ VS Code สำหรับพื้นที่หลัก — grid 1 / 2 (1×2) /
-4 (2×2) pane แต่ละ pane มีแท็บของตัวเอง + ประวัติ ◀/▶ แบบเบราว์เซอร์
+Editor-group shell สไตล์ VS Code สำหรับพื้นที่หลัก — split ได้ตามใจ (แนวนอน/
+แนวตั้ง ซ้อนได้ไม่จำกัดชั้น ผ่าน `builderSplitPane`/`builderClosePane`) แต่ละ
+pane มีแท็บของตัวเอง + ประวัติ ◀/▶ แบบเบราว์เซอร์ ลาก tab reorder/ย้ายข้าม
+pane/pop-out เป็นหน้าต่างแยกได้ (Part 3)
 
 - "page" 1 หน้า = `{kind:'module',id}` หรือ `{kind:'file',id}` (Import
   Dock viewer) หรือ `{kind:'sagehut',tab}`
@@ -119,6 +138,14 @@ Editor-group shell สไตล์ VS Code สำหรับพื้นที�
 - แท็บ/หน้าต่างของโมดูลเดิม (Director project, Hero/Writer/Scribe entity)
   ยังอยู่แถบ `#builder-tabs` เดิมบน title bar แยกจาก grid นี้โดยเจตนา —
   ระบบ split-pane เป็นของ v3 เท่านั้น
+- **`pruneStaleLayoutElements`** (เรียกทุกครั้งก่อน re-render grid ใน
+  `renderBuilderPanes`) กวาด child ของ `#main-inner` ที่ไม่ใช่
+  `.bpane`/`.bsplit` ทิ้งด้วย — ไม่ใช่แค่ prune node ที่ stale จาก layout
+  tree เดิมเท่านั้น เพราะ legacy view (Scribe, Director, Nexus picker ฯลฯ)
+  เขียนทับ `#main-inner.innerHTML` ตรงๆ เวลาเข้า view นั้น แล้วพอกลับมา
+  Nexus home `ensureNodeElement` จะ `appendChild` โหนด `.bpane` ใหม่ทับ
+  ลงไปโดยไม่เคลียร์ของเก่าออกก่อน — เดิมทำให้ content ของ legacy view
+  ค้างอยู่ใต้ Builder pane ปิดไม่ได้ (บั๊กที่เจอชัดกับ Scribe)
 
 ### 1.5 ระบบร่วมของ v3
 

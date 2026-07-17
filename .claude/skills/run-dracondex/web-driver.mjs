@@ -115,6 +115,45 @@ for (const raw of commands) {
         break;
       }
       case 'click': await page.click(rest, { timeout: 5000 }); console.log(`[click] ${rest}`); break;
+      case 'dragto': {
+        // Real HTML5 drag-and-drop via actual mouse.down/move/up (multiple
+        // intermediate moves, like a human drag) — ported from driver.mjs so
+        // Playwright-Chromium sessions can verify draggable="true" handlers
+        // the same way genuine Electron sessions do. Optional third segment
+        // picks the vertical fraction of the target row to drop on (0=top
+        // edge, 0.5=center, 1=bottom edge); defaults to center.
+        const [srcSel, dstSel, fracStr] = rest.split(' :: ').map(s => s.trim());
+        const frac = fracStr !== undefined ? parseFloat(fracStr) : 0.5;
+        const src = page.locator(srcSel).first();
+        const dst = page.locator(dstSel).first();
+        const srcBox = await src.boundingBox({ timeout: 5000 });
+        if (!srcBox) throw new Error('dragto: source element not visible');
+        const sx = srcBox.x + srcBox.width / 2, sy = srcBox.y + srcBox.height / 2;
+        await page.mouse.move(sx, sy);
+        const dstBox = await dst.boundingBox({ timeout: 5000 });
+        if (!dstBox) throw new Error('dragto: destination element not visible');
+        const dx = dstBox.x + dstBox.width / 2, dy = dstBox.y + dstBox.height * frac;
+        await page.mouse.down();
+        await page.mouse.move(sx + (dx - sx) / 2, sy + (dy - sy) / 2, { steps: 5 });
+        await page.mouse.move(dx, dy, { steps: 5 });
+        await page.mouse.move(dx, dy, { steps: 2 });
+        await page.mouse.up();
+        console.log(`[dragto] ${srcSel} -> ${dstSel} @${frac}`);
+        break;
+      }
+      case 'rclick': {
+        // Real mouse-driven right-click so it fires a genuine `contextmenu`
+        // event, not a synthetic dispatchEvent — ported from driver.mjs.
+        const el = page.locator(rest).first();
+        const box = await el.boundingBox({ timeout: 5000 });
+        if (!box) throw new Error('rclick: element not visible');
+        const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+        await page.mouse.move(cx, cy);
+        await page.mouse.down({ button: 'right' });
+        await page.mouse.up({ button: 'right' });
+        console.log(`[rclick] ${rest} @ ${cx},${cy}`);
+        break;
+      }
       case 'fill': {
         const [sel, text] = rest.split(' :: ');
         await page.fill(sel.trim(), text ?? '', { timeout: 5000 });

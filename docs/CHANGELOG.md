@@ -19,6 +19,47 @@
 
 ---
 
+## 2026-07-17 — Nexus Nest hub: reparent drag-drop, Create submenu, home button, hub scroll fixes
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/hub.js`, `src/renderer/builder.js`,
+  `src/renderer/core.js`, `style.css`, `.claude/skills/run-dracondex/web-driver.mjs`,
+  `Plan.md`
+- อะไรเปลี่ยน:
+  - `onNestDrop` (hub.js) เอาข้อจำกัด `isLockedToParent` ออก — โมดูลที่มี
+    parent อยู่แล้วเคยลาก reorder ได้แค่ในกลุ่มพี่น้องเดิม ตอนนี้ลากออกไป
+    top-level หรือไปเป็นลูกของโมดูลอื่นได้เหมือน top-level module (กันแค่
+    ลากเข้า subtree ตัวเอง ผ่าน `isSelfOrDescendant` เดิม)
+  - `buildModuleContextMenuHtml` (hub.js): เปลี่ยน kind-list แบนราบบนสุดเมนู
+    (เฉพาะ Major module) เป็นปุ่ม "Create" เดียวที่เปิด hover submenu แทน
+    (`openCreateSubmenu`/`positionSubmenuNear`/`scheduleCtxSubmenuClose`,
+    CSS ใหม่ `.kli-submenu-parent`/`.kli-arrow`/`.ctx-submenu`)
+  - เพิ่มปุ่ม home บน nav rail (`goToNexusNestHub`, ไอคอนใหม่ `I.home` ใน
+    core.js) กลับไปหน้า welcome ของ Hub จากตรงไหนก็ได้ — ต่างจาก
+    `#nav-logo-btn` ที่ "return" เฉพาะตอนอยู่ในโมดูลเดิมแบบเต็มหน้า
+    (`S.activeModule`) ไม่ครอบคลุม v3 module node ที่โฟกัสอยู่ใน Builder
+  - **บั๊ก**: เปิด legacy view (เช่น Scribe, หรือ Nexus picker ตอนยังไม่มี
+    nexus) แล้วกลับมา Nexus home จะเห็น pane ของ view เดิมค้างอยู่ใต้
+    Builder pane ปิดไม่ได้ — root cause: `pruneStaleLayoutElements`
+    (builder.js) กวาดแค่ `.bpane`/`.bsplit` ที่ stale จาก layout tree เดิม
+    ไม่เคยกวาด child อื่นของ `#main-inner` ที่ legacy view เขียนทับ
+    `innerHTML` ตรงๆ ทิ้งไว้ — แก้โดยกวาด child ที่ไม่ใช่
+    `.bpane`/`.bsplit` ออกทุกครั้งก่อน re-render grid
+  - Hub accordion (Nest/Sage Hut/Import Dock) แต่ละ section ได้ scrollbar
+    ของตัวเอง — `#hub-body` เป็น flex column, `.acc-body` ที่เปิดอยู่ได้
+    `flex:1 1 0;overflow-y:auto` แชร์พื้นที่เท่าๆ กัน แทนที่จะ scroll รวม
+    กันเป็นหน้าเดียวผ่าน `#left-panel-inner` เหมือนเดิม (ลำดับ section เอง
+    ตรวจสอบซ้ำแล้วว่าถูกต้องอยู่แล้วจาก fix รอบก่อน ไม่ได้แก้เพิ่ม)
+  - `web-driver.mjs`: พอร์ต `dragto`/`rclick` มาจาก `driver.mjs` (mouse
+    down/move/up จริง ไม่ใช่ synthetic dispatchEvent) — ต้องใช้ยืนยัน
+    drag-reparent กับ context-menu submenu ข้างต้นตอน Electron binary
+    โหลดไม่ได้ใน sandbox นี้
+- ทำไม: `Plan.md` รอบใหม่ (แยกจาก "Plan.md rollout complete" รอบก่อน) ขอ
+  ฟีเจอร์/บั๊กฟิกซ์ 6 อย่างนี้บน Nexus Nest hub
+- Doc ที่อัปเดต: `docs/Architec.md` §1.2 (Hub) และ §1.4 (Builder),
+  `docs/FILES.md` (แถว `hub.js`/`builder.js`/`web-driver.mjs`) —
+  `docs/SYSTEMS.md` ยังไม่มีหัวข้อ v3 Hub/Builder เลย (ช่องว่างเดิมจากรอบ
+  ก่อน ไม่ใช่งานรอบนี้ ยังไม่ได้ backfill)
+
 ## 2026-07-16 — เอกสารสถาปัตยกรรม v3 module system (Architec.md rewrite)
 - commit: 17be1d6..f3fe2f9 (ครอบคลุม 93a4187, 5aeb175, และก่อนหน้า — "Phase 1"
   ถึง "Phase 24" + "Part 1"/"Part 2" ทั้งหมด, git log เต็มอยู่ใน
