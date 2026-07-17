@@ -24,6 +24,60 @@ function ensureImportDock() {
   });
 }
 
+// Files store their full nested folder path as one string (e.g.
+// "Root/sub1/sub2", built by main.js's importdock:pickFolder walk) — build
+// a real tree out of that instead of grouping by the exact string, so each
+// segment gets its own collapsible row at its own depth (mockup ask: show
+// the Dock as an actual folder tree, matching the Nest tree's own look).
+function buildImportFolderTree(files) {
+  const root = { name: null, path: '', children: new Map(), files: [] };
+  for (const f of files) {
+    const segs = (f.folder || '').split('/').filter(Boolean);
+    let node = root, cum = '';
+    for (const seg of segs) {
+      cum = cum ? `${cum}/${seg}` : seg;
+      if (!node.children.has(seg)) node.children.set(seg, { name: seg, path: cum, children: new Map(), files: [] });
+      node = node.children.get(seg);
+    }
+    node.files.push(f);
+  }
+  return root;
+}
+
+function importNodeFileCount(node) {
+  let n = node.files.length;
+  for (const c of node.children.values()) n += importNodeFileCount(c);
+  return n;
+}
+
+function buildImportFolderNode(node, depth) {
+  const collapsed = S.importFolderCollapsed.has(node.path);
+  const indentCls = depth ? ` indent${Math.min(depth, 5)}` : '';
+  let html = `<div class="li dock-folder${indentCls}" data-no-i18n onclick="toggleImportFolder(${x(JSON.stringify(node.path))})">
+    <svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="${collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>
+    ${I.folder || ''} ${x(node.name)}/<span class="cnt">${importNodeFileCount(node)} files</span></div>`;
+  if (!collapsed) {
+    for (const child of node.children.values()) html += buildImportFolderNode(child, depth + 1);
+    for (const f of node.files) html += buildImportFileRow(f, depth + 1);
+  }
+  return html;
+}
+
+function buildImportFileRow(f, depth) {
+  const indentCls = depth ? ` indent${Math.min(depth, 5)}` : '';
+  const chip = f.entity
+    ? `<span class="dock-chip lk" data-no-i18n>→ ${x(f.entity.name)}</span>`
+    : `<span class="dock-chip ghost">${t('notLinked')}</span>`;
+  return `<div class="li${indentCls}${S.filePreview?.id === f.id && !S.activeModuleNode ? ' sel' : ''}" onclick="openImportFile(${f.id})">
+    <span class="dock-ficon dock-${x(f.file_type || 'file')}" data-no-i18n>▤</span>
+    <span class="name" data-no-i18n>${x(f.file_name)}${f.use_as_image ? ' ★' : ''}</span>
+    ${chip}
+    <span class="acts">
+      <button class="btn btn-g btn-i" onclick="event.stopPropagation();deleteImportFileRow(${f.id})" title="${t('delete')}">${I.delete}</button>
+    </span>
+  </div>`;
+}
+
 function buildImportDockRows() {
   ensureImportDock();
   const files = S.importFiles;
@@ -31,31 +85,10 @@ function buildImportDockRows() {
   if (!files || !files.length) {
     return `${files === null || files === undefined ? '' : `<div class="empty" style="padding:14px 10px"><p>${t('nestEmpty')}</p></div>`}${importBtn}`;
   }
+  const tree = buildImportFolderTree(files);
   let html = '';
-  let lastFolder = null;
-  let folderCollapsed = false;
-  for (const f of files) {
-    if (f.folder !== lastFolder) {
-      lastFolder = f.folder;
-      folderCollapsed = S.importFolderCollapsed.has(f.folder || '');
-      const count = files.filter(v => v.folder === f.folder).length;
-      html += `<div class="au-col-label dock-folder" data-no-i18n onclick="toggleImportFolder(${x(JSON.stringify(f.folder || ''))})">
-        <svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="${folderCollapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>
-        ${I.folder || ''} ${x(f.folder || '—')}/<span class="cnt">${count} files</span></div>`;
-    }
-    if (folderCollapsed) continue;
-    const chip = f.entity
-      ? `<span class="dock-chip lk" data-no-i18n>→ ${x(f.entity.name)}</span>`
-      : `<span class="dock-chip ghost">${t('notLinked')}</span>`;
-    html += `<div class="li${S.filePreview?.id === f.id && !S.activeModuleNode ? ' sel' : ''}" onclick="openImportFile(${f.id})">
-      <span class="dock-ficon dock-${x(f.file_type || 'file')}" data-no-i18n>▤</span>
-      <span class="name" data-no-i18n>${x(f.file_name)}${f.use_as_image ? ' ★' : ''}</span>
-      ${chip}
-      <span class="acts">
-        <button class="btn btn-g btn-i" onclick="event.stopPropagation();deleteImportFileRow(${f.id})" title="${t('delete')}">${I.delete}</button>
-      </span>
-    </div>`;
-  }
+  for (const child of tree.children.values()) html += buildImportFolderNode(child, 0);
+  for (const f of tree.files) html += buildImportFileRow(f, 0);
   return html + importBtn;
 }
 
