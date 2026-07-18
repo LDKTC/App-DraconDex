@@ -199,16 +199,17 @@ async function createTimeline(){ const n=q('#tn').value.trim(); if(!n) return; c
 async function saveTimeline(id){ const n=q('#tn').value.trim(); if(!n) return; await api.timeline.update(id,n,q('#sel-color').value||null); closeModal(); const tls=await api.timeline.getAll(S.project.id); S.timeline=tls.find(t=>t.id===id)||null; await renderTimelineView(); toast('บันทึกเรียบร้อยแล้ว','ok'); }
 async function delTimeline(id){ if(!await uiConfirm('ลบ Timeline? เหตุการณ์ทั้งหมดจะหาย')) return; await api.timeline.delete(id); closeModal(); if(S.timeline?.id===id) S.timeline=null; await renderTimelineView(); toast('ลบเรียบร้อยแล้ว'); }
 
-function dateInputsHTML(prefix,ev,dayKey,mKey,yKey,hKey,minKey){
+function dateInputsHTML(prefix,ev,dayKey,mKey,yKey,hKey,minKey,onchangeFn=''){
+  const oc = onchangeFn ? ` onchange="${onchangeFn}"` : '';
   return `<div class="date-row-inline">
-    <input id="${prefix}-d" class="date-inp" type="number" placeholder="DD" min="1" value="${ev?ev[dayKey]||'':''}">
+    <input id="${prefix}-d" class="date-inp" type="number" placeholder="DD" min="1" value="${ev?ev[dayKey]||'':''}"${oc}>
     <span class="date-sep">/</span>
-    <input id="${prefix}-m" class="date-inp" type="number" placeholder="MM" min="1" value="${ev?ev[mKey]||'':''}">
+    <input id="${prefix}-m" class="date-inp" type="number" placeholder="MM" min="1" value="${ev?ev[mKey]||'':''}"${oc}>
     <span class="date-sep">/</span>
-    <input id="${prefix}-y" class="date-inp date-inp-y" type="number" placeholder="YYYY" value="${ev?ev[yKey]||'':''}">
-    <input id="${prefix}-h" class="date-inp" type="number" placeholder="HH" min="0" max="23" value="${ev?ev[hKey]||0:0}">
+    <input id="${prefix}-y" class="date-inp date-inp-y" type="number" placeholder="YYYY" value="${ev?ev[yKey]||'':''}"${oc}>
+    <input id="${prefix}-h" class="date-inp" type="number" placeholder="HH" min="0" max="23" value="${ev?ev[hKey]||0:0}"${oc}>
     <span class="date-sep">:</span>
-    <input id="${prefix}-min" class="date-inp" type="number" placeholder="MM" min="0" max="59" value="${ev?ev[minKey]||0:0}">
+    <input id="${prefix}-min" class="date-inp" type="number" placeholder="MM" min="0" max="59" value="${ev?ev[minKey]||0:0}"${oc}>
   </div>`;
 }
 

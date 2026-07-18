@@ -40,6 +40,12 @@ app.on('second-instance', () => {
 });
 
 
+// Popup (Builder-tab) windows are tracked here by id so "move this tab back
+// to the main window" (Plan part1 #2/#2.1) can find a non-popup window to
+// relay to, without needing a full parent/opener registry — see
+// window:moveTabToMain below.
+const popupWindowIds = new Set();
+
 function createWindow(bootstrapNexusId, bootstrapTabKey) {
   const win = new BrowserWindow({
     width: bootstrapTabKey ? 900 : 1280, height: bootstrapTabKey ? 650 : 800,
@@ -54,6 +60,10 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
       nodeIntegration: false,
     },
   });
+  if (bootstrapTabKey) {
+    popupWindowIds.add(win.id);
+    win.on('closed', () => popupWindowIds.delete(win.id));
+  }
   const params = new URLSearchParams();
   if (bootstrapNexusId) params.set('nexus', bootstrapNexusId);
   if (bootstrapTabKey) { params.set('tab', bootstrapTabKey); params.set('popup', '1'); }
@@ -321,7 +331,6 @@ h('wiki:entityPath',   (key)       => db.getEntityPath(key));
 h('wiki:rebuild',      ()          => db.rebuildWikiIndex());
 h('wiki:resolveKeys',  (keys)      => db.resolveEntityKeys(keys));
 h('wiki:linkCounts',   (nx)        => db.getLinkCounts(nx));
-h('wiki:explorerTree', (nx)        => db.explorerTree(nx));
 h('wiki:getGraph',     (nx)        => db.getGraph(nx));
 h('wiki:renameTarget', (key,o,n)   => db.renameWikiTarget(key,o,n));
 
@@ -675,3 +684,15 @@ h('window:openNexus', (nexusId) => { createWindow(nexusId); });
 // into a leaner popup window instead of the full app shell — see core.js's
 // init() `popup=1` branch and style.css's `.popup-mode` rules.
 h('window:openBuilderTab', (nexusId, tabKey) => { createWindow(nexusId, tabKey); });
+// Plan part1 #2: a real cross-window HTML5 drag doesn't work between
+// separate Electron BrowserWindows (each is an isolated renderer process —
+// confirmed, not just assumed), so "drag a tab from a popup back to the
+// main window" ships as a click action relayed via IPC instead. Needs the
+// raw ipcMain event to identify the calling window, which the `h()` wrapper
+// above discards — bypass it here with a direct ipcMain.handle.
+ipcMain.handle('window:getId', (event) => BrowserWindow.fromWebContents(event.sender)?.id);
+h('window:moveTabToMain', (nexusId, tabKey) => {
+  const main = BrowserWindow.getAllWindows().find(w => !popupWindowIds.has(w.id));
+  if (main && !main.isDestroyed()) main.webContents.send('builder:tabInbound', nexusId, tabKey);
+  return !!main;
+});

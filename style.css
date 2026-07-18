@@ -564,6 +564,22 @@ body{
 	font-size:calc(14px * var(--fsc,1));
 }
 
+/* Plan part4 #1: bare <select> elements with no wrapper class (many v3
+   module toolbars/modals) fell through to the OS-native white dropdown —
+   this base rule themes every <select> in the app by default so none of
+   them need an ad-hoc class; the more specific .fg/.form-row/etc. select
+   rules elsewhere just reinforce the same look for their own layout needs.
+   Chromium (Electron) does honor background/color on <option>, including
+   inside the native popup list, unlike some other engines. */
+select{
+	font-family:inherit;background:var(--surface);color:var(--t1);
+	border:1px solid var(--border);border-radius:var(--rs);
+	padding:6px 9px;font-size:calc(13px * var(--fsc,1));cursor:pointer;outline:none;
+}
+select:focus{border-color:var(--accent)}
+select:disabled{opacity:.5;cursor:not-allowed}
+select option{background:var(--surface);color:var(--t1)}
+
 /* UI scale via transform instead of non-standard zoom */
 .ui-scale-wrap {
 	transform-origin: top left;
@@ -1143,7 +1159,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .qs-type{font-size:calc(10.5px * var(--fsc,1));color:var(--t3);flex-shrink:0}
 .qs-empty{padding:18px;text-align:center;color:var(--t3);font-size:calc(13px * var(--fsc,1))}
 
-/* ═══ IDE SHELL: status bar + explorer ═══ */
+/* ═══ IDE SHELL: status bar ═══ */
 #status-bar{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   height:24px;padding:0 12px;flex-shrink:0;
@@ -1155,26 +1171,6 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 #status-bar .sb-nexus{cursor:pointer;color:var(--t2)}
 #status-bar .sb-nexus:hover{color:var(--accent)}
 #status-bar .nexus-vault-dot{width:7px;height:7px}
-
-.xp-section{margin-bottom:2px}
-.xp-section-head{
-  display:flex;align-items:center;gap:7px;padding:7px 8px;cursor:pointer;
-  font-size:calc(12px * var(--fsc,1));font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t2);
-  border-radius:var(--rs);
-}
-.xp-section-head:hover{background:var(--hover)}
-.xp-section-icon{display:flex;align-items:center;color:var(--accent)}
-.xp-section-icon .icon{width:14px;height:14px}
-.xp-chev{width:8px;height:8px;flex-shrink:0;transition:transform .15s}
-.xp-row{display:flex;align-items:center;gap:7px;font-size:calc(12.5px * var(--fsc,1))}
-.xp-row .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.xp-row .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.xp-count{font-size:calc(10px * var(--fsc,1));color:var(--t3);flex-shrink:0}
-.xp-empty{padding:4px 20px;font-size:calc(12px * var(--fsc,1));color:var(--t3)}
-.xp-open{opacity:0;border:none;background:none;color:var(--t3);cursor:pointer;padding:2px;border-radius:var(--rs);display:flex;align-items:center}
-.xp-row:hover .xp-open{opacity:1}
-.xp-open:hover{color:var(--t1);background:var(--hover)}
-.xp-open .icon{width:12px;height:12px}
 
 /* Editor columns + backlinks panel */
 .mded-cols{flex:1;min-height:0;display:flex;gap:10px}
@@ -2442,6 +2438,16 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .chr-downline-graph{flex:0 0 340px;min-width:0}
 .chr-downline-note{font-size:calc(10.5px * var(--fsc,1));color:var(--t3);margin-top:6px}
 .chr-downline-list{flex:1;min-width:0}
+/* Chronicler event inspector (Plan part3 #2/#2.1/#2.2): shared below-graph
+   (One-line) and per-row dropdown (Down-line) editable panel, one open at a time */
+.chr-insp-row{margin-bottom:8px}
+.chr-insp-row .objrow .tree-chev{margin-left:2px}
+.chr-insp-body{
+	padding:14px 16px 4px;margin-top:6px;
+	background:var(--raised);border:1px solid var(--border);border-radius:var(--r);
+	animation:chrInspOpen .14s ease;
+}
+@keyframes chrInspOpen{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 /* Classifier grid card icon (mockup 21) */
 .cls-card-icon{
 	width:34px;height:34px;border-radius:50%;border:2px solid var(--border);
@@ -2694,6 +2700,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .bpane-tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;min-height:32px;flex:1}
 .bpane-tabs::-webkit-scrollbar{height:4px}
 .bpane-tabs .project-tab{flex-shrink:0}
+.bpane-tabs.reordering .project-tab{transition:transform .12s ease,opacity .12s ease}
 .bpane-tabs .project-tab.pane-active{background:var(--raised)}
 .bpane-tabs .project-tab.tab-drop-before{box-shadow:inset 2px 0 0 0 var(--accent)}
 .bpane-tabs .project-tab.tab-drop-after{box-shadow:inset -2px 0 0 0 var(--accent)}

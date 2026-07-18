@@ -177,7 +177,6 @@ contextBridge.exposeInMainWorld('api', {
     rebuild:    ()         => inv('wiki:rebuild'),
     resolveKeys: (keys)    => inv('wiki:resolveKeys', keys),
     linkCounts:  (nx)      => inv('wiki:linkCounts', nx),
-    explorerTree: (nx)     => inv('wiki:explorerTree', nx),
     getGraph:   (nx)       => inv('wiki:getGraph', nx),
     renameTarget: (key,o,n) => inv('wiki:renameTarget', key,o,n),
   },
@@ -507,5 +506,8 @@ contextBridge.exposeInMainWorld('api', {
     close:          () => inv('window:close'),
     openNexus:      (nexusId) => inv('window:openNexus', nexusId),
     openBuilderTab: (nexusId, tabKey) => inv('window:openBuilderTab', nexusId, tabKey),
+    getId:          () => inv('window:getId'),
+    moveTabToMain:  (nexusId, tabKey) => inv('window:moveTabToMain', nexusId, tabKey),
+    onTabInbound:   (cb) => ipcRenderer.on('builder:tabInbound', (_, nexusId, tabKey) => cb(nexusId, tabKey)),
   },
 });

@@ -268,69 +268,6 @@ function getGraph(nexusId) {
   return { nodes, edges };
 }
 
-// One batched tree of everything in a vault, for the IDE-style explorer.
-// Shape: [{key, name, color, children:[…]}] per module section.
-function explorerTree(nexusId) {
-  const d = getDB();
-  const nx = nexusId ?? null;
-  const all = (sql, ...args) => { try { return d.prepare(sql).all(...args); } catch (_) { return []; } };
-
-  // Scribe: nested folders + notes
-  const folders = all(`SELECT nf.id, nf.parent_ref, nf.name, uc.color_code FROM note_folder nf LEFT JOIN use_color uc ON uc.id=nf.color WHERE nf.nexus_ref=? ORDER BY nf.name COLLATE NOCASE`, nx);
-  const notes = all(`SELECT n.id, n.folder_ref, n.title, uc.color_code FROM note n LEFT JOIN use_color uc ON uc.id=n.color WHERE n.nexus_ref=? ORDER BY n.pinned DESC, n.title COLLATE NOCASE`, nx);
-  const folderNode = (f) => ({
-    key: `nfold_${f.id}`, name: f.name, color: f.color_code, children: [
-      ...folders.filter(v => v.parent_ref === f.id).map(folderNode),
-      ...notes.filter(n => n.folder_ref === f.id).map(n => ({ key: `note_${n.id}`, name: n.title, color: n.color_code })),
-    ],
-  });
-  const scribe = [
-    ...folders.filter(f => !f.parent_ref).map(folderNode),
-    ...notes.filter(n => !n.folder_ref).map(n => ({ key: `note_${n.id}`, name: n.title, color: n.color_code })),
-  ];
-
-  // Director: projects → categories → objects
-  const director = all(`SELECT p.id, p.name, uc.color_code FROM project p LEFT JOIN use_color uc ON uc.id=p.project_color WHERE (? IS NULL OR p.nexus_ref=?) ORDER BY p.name`, nx, nx).map(p => ({
-    key: `proj_${p.id}`, name: p.name, color: p.color_code,
-    children: all(`SELECT c.id, c.category_name, uc.color_code FROM object_category c LEFT JOIN use_color uc ON uc.id=c.color WHERE c.project_id=? ORDER BY c.category_name`, p.id).map(c => ({
-      key: `cat_${c.id}`, name: c.category_name, color: c.color_code,
-      children: all(`SELECT o.id, o.name, uc.color_code FROM object o LEFT JOIN use_color uc ON uc.id=o.color WHERE o.category_id=? ORDER BY o.name`, c.id).map(o => ({ key: `obj_${o.id}`, name: o.name, color: o.color_code })),
-    })),
-  }));
-
-  // Navigator: worlds → characters + original objects
-  const navigator = all(`SELECT w.id, w.name, uc.color_code FROM world_project w LEFT JOIN use_color uc ON uc.id=w.color WHERE (? IS NULL OR w.nexus_ref=?) ORDER BY w.name`, nx, nx).map(w => ({
-    key: `world_${w.id}`, name: w.name, color: w.color_code,
-    children: [
-      ...all(`SELECT c.id, c.name, uc.color_code FROM world_character c LEFT JOIN use_color uc ON uc.id=c.color WHERE c.world_ref=? ORDER BY c.name`, w.id).map(c => ({ key: `wchar_${c.id}`, name: c.name, color: c.color_code })),
-      ...all(`SELECT o.id, o.name FROM world_orig_object o JOIN world_orig_category c ON o.category_id=c.id WHERE c.world_ref=? ORDER BY o.name`, w.id).map(o => ({ key: `wobj_${o.id}`, name: o.name, color: null })),
-    ],
-  }));
-
-  // Hero: games → characters + collection elements
-  const hero = all(`SELECT g.id, g.name, uc.color_code FROM game_project g LEFT JOIN use_color uc ON uc.id=g.color_ref WHERE (? IS NULL OR g.nexus_ref=?) ORDER BY g.name`, nx, nx).map(g => ({
-    key: `game_${g.id}`, name: g.name, color: g.color_code,
-    children: [
-      ...all(`SELECT c.id, c.name, uc.color_code FROM game_character c LEFT JOIN use_color uc ON uc.id=c.color_ref WHERE c.game_ref=? ORDER BY c.name`, g.id).map(c => ({ key: `gchar_${c.id}`, name: c.name, color: c.color_code })),
-      ...all(`SELECT e.id, e.name FROM game_col_element e JOIN game_collection c ON e.collection_ref=c.id WHERE c.game_ref=? ORDER BY e.name`, g.id).map(e => ({ key: `gel_${e.id}`, name: e.name, color: null })),
-    ],
-  }));
-
-  // Writer: projects → series → books → chapters
-  const writer = all(`SELECT p.id, p.project_name AS name, uc.color_code FROM write_project p LEFT JOIN use_color uc ON uc.id=p.color WHERE (? IS NULL OR p.nexus_ref=?) ORDER BY p.project_name`, nx, nx).map(p => ({
-    key: `write_${p.id}`, name: p.name, color: p.color_code,
-    children: all(`SELECT s.id, s.name, uc.color_code FROM write_series s LEFT JOIN use_color uc ON uc.id=s.color WHERE s.project_id=? ORDER BY s.name`, p.id).map(s => ({
-      key: `wser_${s.id}`, name: s.name, color: s.color_code,
-      children: all(`SELECT b.id, b.name, uc.color_code FROM write_book b LEFT JOIN use_color uc ON uc.id=b.color WHERE b.series_id=? ORDER BY b.name`, s.id).map(b => ({
-        key: `wbook_${b.id}`, name: b.name, color: b.color_code,
-        children: all(`SELECT ch.id, ch.name, uc.color_code FROM write_chapter ch LEFT JOIN use_color uc ON uc.id=ch.color WHERE ch.book_id=? ORDER BY ch.chapter_order`, b.id).map(ch => ({ key: `wchp_${ch.id}`, name: ch.name, color: ch.color_code })),
-      })),
-    })),
-  }));
-
-  return { scribe, director, navigator, hero, writer };
-}
-
 // Ancestor ids so the renderer can navigate straight to a deep entity.
 function getEntityPath(key) {
   const d = getDB();
@@ -472,5 +409,5 @@ module.exports = {
   resolveWikiName, reindexWikiLinks, rebuildWikiIndex,
   nexusOfNote, nexusOfObject, nexusOfChapter,
   getBacklinks, getOutgoingLinks, resolveEntityKeys,
-  quickIndex, getEntityPath, explorerTree, getGraph, getLinkCounts,
+  quickIndex, getEntityPath, getGraph, getLinkCounts,
 };

@@ -280,6 +280,26 @@ function bindTimelineGraphInteractions(tlid){
       if(isNaN(s)) return;
       node.setAttribute('cx', xFromTs(s));
     });
+    // Chronicler one-line view's tick connector + name/date labels (Plan
+    // part3 #1 — these used to have no data-* key at all, so zooming moved
+    // the dot but left them behind).
+    svg.querySelectorAll('[data-event-tick]').forEach(tick => {
+      const s = Number(tick.dataset.startTs||'');
+      if(isNaN(s)) return;
+      const x = xFromTs(s);
+      tick.setAttribute('x1', x);
+      tick.setAttribute('x2', x);
+    });
+    svg.querySelectorAll('[data-event-label]').forEach(label => {
+      const s = Number(label.dataset.startTs||'');
+      if(isNaN(s)) return;
+      label.setAttribute('x', xFromTs(s));
+    });
+    svg.querySelectorAll('[data-event-date]').forEach(label => {
+      const s = Number(label.dataset.startTs||'');
+      if(isNaN(s)) return;
+      label.setAttribute('x', xFromTs(s));
+    });
     svg.querySelectorAll('[data-event-card]').forEach(card => {
       const s = Number(card.dataset.startTs||'');
       if(isNaN(s)) return;

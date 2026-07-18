@@ -220,6 +220,12 @@ async function builderCloseTab(paneIdx, key) {
   const idx = pane.tabs.indexOf(key);
   if (idx < 0) return;
   pane.tabs.splice(idx, 1);
+
+  if (pane.tabs.length === 0) {
+    if (!builderCloseIfEmpty(paneIdx)) { pane.active = null; renderNexusHome(); }
+    return;
+  }
+
   if (pane.active === key) {
     const next = pane.tabs[idx] ?? pane.tabs[idx - 1] ?? null;
     pane.active = next;
@@ -229,6 +235,19 @@ async function builderCloseTab(paneIdx, key) {
     }
   }
   renderNexusHome();
+}
+
+// Auto-close a pane once its tabs array is empty (Plan part1 #1). No-op if
+// paneIdx is the sole remaining pane (builderClosePane's own guard handles
+// that — the pane is left in place with tabs=[]). Returns true iff the pane
+// was actually removed, so a caller holding another pane's numeric index can
+// correct for the renumbering builderClosePane performs.
+function builderCloseIfEmpty(paneIdx) {
+  const b = builderState();
+  const pane = b.panes[paneIdx];
+  if (!pane || pane.tabs.length > 0) return false;
+  builderClosePane(paneIdx);
+  return b.panes[paneIdx] !== pane;
 }
 
 // ── Tab labels ──────────────────────────────────────────────────────────
@@ -408,35 +427,52 @@ function builderPaneHeadHtml(i, pane, focused) {
     // Draggable target is a plain div, not a native form control — matches
     // the Nest tree row's own element choice for its draggable rows.
     return `<div class="project-tab module-tab ${active && focused ? 'active' : active ? 'pane-active' : ''}"
-      draggable="true" ondragstart="onTabDragStart(event,${i},'${x(key)}')"
+      draggable="true" data-tab-key="${x(key)}" ondragstart="onTabDragStart(event,${i},'${x(key)}')"
       ondragover="onTabDragOver(event,this)" ondragleave="onTabDragLeave(event,this)" ondrop="onTabDrop(event,${i},'${x(key)}',this)"
       ondragend="onTabDragEnd(event,${i},'${x(key)}')"
       onclick="builderSwitchTab(${i},'${x(key)}')" title="${x(meta.name)}">
       <span class="tab-dot" style="background:${x(meta.color)}"></span>
       <span class="tab-name">${x(meta.name)}</span>
       <span class="ek" data-no-i18n>${x(meta.badge)}</span>
+      ${S.isPopup ? `<span class="tab-close" onclick="event.stopPropagation();builderMoveTabToMain(${i},'${x(key)}')" title="${t('moveToMainWindow')}">${I.return}</span>` : ''}
       <span class="tab-close" onclick="event.stopPropagation();builderCloseTab(${i},'${x(key)}')" title="${t('closeTab')}">&times;</span>
     </div>`;
   }).join('');
   const isSplit = builderState().layoutTree.type === 'split';
+  // Plan part2 #2: split/close-pane buttons moved next to the nav
+  // back/forward buttons (far left), away from the Module Inspector toggle
+  // (far right) — they used to sit adjacent with identical btn-g/btn-i
+  // styling and only a 4px gap, which users confused with the inspector
+  // toggle. The tab strip's flex:1 now separates the two groups.
   const inspectorToggle = !isSplit
-    ? `<button class="btn btn-g btn-i bnav ${S.inspectorCollapsed ? '' : 'active'}" onclick="toggleModuleInspector()" title="${t('toggleInspector')}">${I.fields}</button>`
+    ? `<button class="btn btn-g btn-i bnav ${S.inspectorCollapsed ? '' : 'active'}" onclick="toggleModuleInspector()" title="${t('toggleInspector')}">${I.panelRight}</button>`
     : '';
   const splitBtns = `
     <button class="btn btn-g btn-i bnav" onclick="builderSplitPane(${i},'h')" title="${t('splitPane')}">◫</button>
     <button class="btn btn-g btn-i bnav" onclick="builderSplitPane(${i},'v')" title="${t('splitPane')}">⬓</button>
     ${isSplit ? `<button class="btn btn-g btn-i bnav" onclick="builderClosePane(${i})" title="${t('closePane')}">${I.close}</button>` : ''}`;
-  return `${nav}<div class="bpane-tabs" ondragover="onTabStripDragOver(event,${i})" ondrop="onTabStripDrop(event,${i})">${tabs}</div>${inspectorToggle}${splitBtns}`;
+  return `${nav}${splitBtns}<div class="bpane-tabs" ondragover="onTabStripDragOver(event,${i})" ondrop="onTabStripDrop(event,${i})">${tabs}</div>${inspectorToggle}`;
 }
 
-// ═══ Tab drag-reorder / cross-pane move (Plan part3 #1) ═══════════════
-// Same DnD cycle as onNestDragStart/onNestDragOver/onNestDrop (hub.js),
-// adapted for a horizontal tab strip: only two drop zones (before/after —
-// tabs don't nest), and a tab can land in any pane (cross-pane move). Tab
-// order is pure UI-session state (S.builder.panes[i].tabs) — nothing to
-// persist, unlike the Nest's module.move() DB write.
+// ═══ Tab drag-reorder / cross-pane move (Plan part3 #1, reworked part1 #3)
+// A tab is "locked" to its own tab bar: dragging it within that bar live-
+// reflows the neighboring tabs out of the way (Chrome-tab-style, 3a below)
+// and always reorders instantly on drop, no threshold. Only once the drag
+// crosses DRAG_DETACH_PX outside that bar and stays there DRAG_DETACH_MS
+// (S.dragTab.armed, set by trackDragArm above) does it "detach" and become
+// eligible for cross-pane move, edge-split, or pop-out-to-window — matching
+// Chrome's own tab-strip feel instead of the old swap-on-drop model.
 function onTabDragStart(ev, paneIdx, key) {
-  S.dragTab = { key, paneIdx };
+  const bar = ev.currentTarget.closest('.bpane-tabs');
+  const tabs = [...bar.querySelectorAll('.project-tab')];
+  S.dragTab = {
+    key, paneIdx, armed: false, armTimer: null,
+    barEl: bar,
+    rects: tabs.map(el => el.getBoundingClientRect()),
+    fromIndex: tabs.findIndex(el => el.dataset.tabKey === key),
+    curIndex: -1,
+  };
+  bar.classList.add('reordering');
   ev.dataTransfer.effectAllowed = 'move';
   ev.stopPropagation();
 }
@@ -446,20 +482,50 @@ function tabDropZone(ev, tabEl) {
   return frac < 0.5 ? 'before' : 'after';
 }
 function onTabDragOver(ev, tabEl) {
-  if (!S.dragTab) return;
+  const d = S.dragTab;
+  if (!d) return;
   ev.preventDefault();
   ev.stopPropagation();
-  tabEl.classList.remove('tab-drop-before', 'tab-drop-after');
-  tabEl.classList.add(`tab-drop-${tabDropZone(ev, tabEl)}`);
+  const bar = tabEl.closest('.bpane-tabs');
+  if (bar !== d.barEl) {
+    // Cross-pane hover: no local reflow to do (different bar's own tabs
+    // aren't cached), keep the static before/after indicator — but only
+    // once armed, so a still-locked drag doesn't advertise a drop it would
+    // actually bounce back (Plan part1 #3).
+    tabEl.classList.remove('tab-drop-before', 'tab-drop-after');
+    if (d.armed) tabEl.classList.add(`tab-drop-${tabDropZone(ev, tabEl)}`);
+    return;
+  }
+  const targetIdx = d.rects.findIndex(r => ev.clientX < (r.left + r.right) / 2);
+  const newIndex = targetIdx < 0 ? d.rects.length - 1 : targetIdx;
+  if (newIndex === d.curIndex) return;
+  d.curIndex = newIndex;
+  const draggedWidth = d.rects[d.fromIndex].width + 4; // +4px gap, .bpane-tabs{gap:4px}
+  d.barEl.querySelectorAll('.project-tab').forEach((el, i) => {
+    if (el.dataset.tabKey === d.key) { el.style.opacity = '0'; return; }
+    let shift = 0;
+    if (d.fromIndex < newIndex && i > d.fromIndex && i <= newIndex) shift = -draggedWidth;
+    if (d.fromIndex > newIndex && i < d.fromIndex && i >= newIndex) shift = draggedWidth;
+    el.style.transform = shift ? `translateX(${shift}px)` : '';
+  });
 }
 function onTabDragLeave(ev, tabEl) {
   tabEl.classList.remove('tab-drop-before', 'tab-drop-after');
+}
+function clearDragReflow() {
+  const d = S.dragTab;
+  if (!d?.barEl) return;
+  d.barEl.classList.remove('reordering');
+  d.barEl.querySelectorAll('.project-tab').forEach(el => { el.style.transform = ''; el.style.opacity = ''; });
 }
 async function onTabDrop(ev, paneIdx, key, tabEl) {
   ev.preventDefault();
   ev.stopPropagation();
   tabEl.classList.remove('tab-drop-before', 'tab-drop-after');
   const drag = S.dragTab;
+  const crossPane = drag && drag.paneIdx !== paneIdx;
+  if (crossPane && !drag.armed) { clearDragReflow(); S.dragTab = null; return; } // still locked — bounce back, no move
+  clearDragReflow();
   S.dragTab = null;
   if (!drag || (drag.paneIdx === paneIdx && drag.key === key)) return; // dropped on itself
   await builderMoveTabTo(drag, paneIdx, key, tabDropZone(ev, tabEl));
@@ -475,6 +541,9 @@ function onTabStripDragOver(ev, paneIdx) {
 async function onTabStripDrop(ev, paneIdx) {
   ev.preventDefault();
   const drag = S.dragTab;
+  const crossPane = drag && drag.paneIdx !== paneIdx;
+  if (crossPane && !drag.armed) { clearDragReflow(); S.dragTab = null; return; } // still locked — bounce back, no move
+  clearDragReflow();
   S.dragTab = null;
   if (!drag) return;
   await builderMoveTabTo(drag, paneIdx, null, null); // no target key -> append to end
@@ -503,6 +572,14 @@ async function builderMoveTabTo(drag, paneIdx, targetKey, zone) {
   // Cross-pane: same active-tab fallback builderCloseTab already uses.
   if (srcPane.active === drag.key) srcPane.active = srcPane.tabs[srcIdx] ?? srcPane.tabs[srcIdx - 1] ?? null;
   dstPane.active = drag.key;
+
+  // Plan part1 #1: the source pane may now be empty — close it and correct
+  // the destination index for the renumbering that causes (dstPane's own
+  // object identity is unaffected, only its numeric index may shift down).
+  if (srcPane.tabs.length === 0) {
+    const removed = builderCloseIfEmpty(drag.paneIdx);
+    if (removed && drag.paneIdx < paneIdx) paneIdx--;
+  }
   await builderFocusPane(paneIdx, builderParseKey(drag.key));
 }
 
@@ -522,7 +599,7 @@ function bodyDropZone(ev, bodyEl) {
   return 'center';
 }
 function onBodyDragOver(ev, bodyEl) {
-  if (!S.dragTab) return;
+  if (!S.dragTab || !S.dragTab.armed) return; // still locked to its origin tab bar (Plan part1 #3)
   ev.preventDefault();
   ev.stopPropagation();
   bodyEl.classList.remove('drop-left', 'drop-right', 'drop-top', 'drop-bottom', 'drop-center');
@@ -533,10 +610,11 @@ function onBodyDragLeave(ev, bodyEl) {
 }
 async function onBodyDrop(ev, targetPaneIdx, bodyEl) {
   const drag = S.dragTab;
-  if (!drag) return; // nothing being dragged — let the grid-level fallback handle it
+  if (!drag || !drag.armed) return; // nothing being dragged, or still locked to its origin tab bar — let the grid-level fallback handle it
   ev.preventDefault();
   ev.stopPropagation();
   bodyEl.classList.remove('drop-left', 'drop-right', 'drop-top', 'drop-bottom', 'drop-center');
+  clearDragReflow();
   S.dragTab = null;
   const zone = bodyDropZone(ev, bodyEl);
   if (zone === 'center') { await builderMoveTabTo(drag, targetPaneIdx, null, null); return; }
@@ -545,17 +623,62 @@ async function onBodyDrop(ev, targetPaneIdx, bodyEl) {
   await builderMoveTabTo(drag, newIdx, null, null);
 }
 
-// ═══ Pop-out to a free window (Plan part3 #2) ═════════════════════════
+// ═══ Pop-out to a free window (Plan part3 #2 / part1 #1.1) ════════════
 // Every successful drop (onTabDrop / onTabStripDrop) clears S.dragTab. If
 // dragend fires and it's still set, nothing accepted the drop — either the
 // user released outside #main-inner entirely (nav-sidebar, title bar,
-// outside the OS window) or the whole drag was cancelled some other way
+// outside the OS window), the whole drag was cancelled some other way
 // (Escape mid-drag also lands here — a known, accepted ambiguity in the
-// HTML5 DnD API, not distinguishable from a genuine miss).
+// HTML5 DnD API, not distinguishable from a genuine miss), OR — the actual
+// bug behind Plan part1 #1.1 — a DOM reflow (e.g. right after closing a
+// pane, which collapses the layout and shifts tabs under the cursor) turns
+// a fast follow-up click into a near-zero-movement accidental micro-drag.
+// Gate the pop-out behind an actual "the user dragged this meaningfully far
+// outside its own tab bar and held it there" signal (`S.dragTab.armed`,
+// set by trackDragArm below) instead of firing on ANY unaccepted drop.
+const DRAG_DETACH_PX = 48;   // distance outside the origin tab bar before a drag "wants" to leave it
+const DRAG_DETACH_MS = 160;  // how long it must stay past that distance before counting as a real detach, not a jiggle
+
+function dragOutsideTabBar(ev, barRect) {
+  return ev.clientX < barRect.left - DRAG_DETACH_PX || ev.clientX > barRect.right + DRAG_DETACH_PX ||
+         ev.clientY < barRect.top - DRAG_DETACH_PX || ev.clientY > barRect.bottom + DRAG_DETACH_PX;
+}
+
+// Bound once at document level (dragover bubbles there even over
+// nav-sidebar/title-bar, which a plain #main-inner listener would miss) —
+// see bindBuilderGridDrop, called once from core.js's init().
+function trackDragArm(ev) {
+  const d = S.dragTab;
+  if (!d || d.armed) return;
+  const bar = document.querySelector(`#main-inner [data-pane="${d.paneIdx}"] .bpane-tabs`);
+  if (!bar) return;
+  if (dragOutsideTabBar(ev, bar.getBoundingClientRect())) {
+    if (!d.armTimer) d.armTimer = setTimeout(() => { d.armed = true; }, DRAG_DETACH_MS);
+  } else if (d.armTimer) { clearTimeout(d.armTimer); d.armTimer = null; }
+}
+
 async function onTabDragEnd(ev, paneIdx, key) {
   if (!S.dragTab) return; // a real drop already handled + cleared it
+  clearDragReflow();
+  const armed = S.dragTab.armed;
+  if (S.dragTab.armTimer) clearTimeout(S.dragTab.armTimer);
   S.dragTab = null;
+  if (!armed) return; // never crossed the distance+hold threshold — a reflow jiggle or an early cancel, not an intentional detach
   await builderPopOutTab(paneIdx, key);
+}
+
+// ═══ Move a popup's tab back to the main window (Plan part1 #2/#2.1) ═══
+// Real cross-window HTML5 drag doesn't work between separate Electron
+// BrowserWindows (each is an isolated renderer process, confirmed via the
+// spike this feature was built around) — so this ships as a click action:
+// close the tab locally first (builderCloseTab already auto-closes the
+// pane if it empties, Plan part1 #1), tell the main window to open it, then
+// close this whole popup once every pane in it is empty.
+async function builderMoveTabToMain(paneIdx, key) {
+  await builderCloseTab(paneIdx, key);
+  await api.window.moveTabToMain(S.nexus.id, key);
+  const b = builderState();
+  if (b.panes.every(p => p.tabs.length === 0)) await api.window.close();
 }
 
 async function builderPopOutTab(paneIdx, key) {
@@ -576,8 +699,17 @@ function bindBuilderGridDrop() {
   grid.addEventListener('drop', (ev) => {
     if (!S.dragTab) return;
     ev.preventDefault();
+    clearDragReflow();
     S.dragTab = null;
   });
+  // Document-level, not grid-scoped, so drags toward nav-sidebar/title-bar
+  // (outside #main-inner) still arm correctly (Plan part1 #1.1). Capture
+  // phase is required: onTabDragOver calls ev.stopPropagation() for every
+  // tab it's dragged over (including tabs in a DIFFERENT, destination
+  // pane), which would otherwise stop this listener from ever seeing those
+  // events during the bubble phase — silently preventing a drag from ever
+  // arming whenever it ends up hovering an existing tab in another pane.
+  document.addEventListener('dragover', trackDragArm, true);
 }
 
 // Best-effort static content for a pane whose DOM was wiped (e.g. after a

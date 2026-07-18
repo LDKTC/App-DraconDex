@@ -151,6 +151,7 @@ function buildHubHtml() {
   const sections = [
     { key: 'nest', html: buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>`) },
+    { key: 'kinds', html: buildAccSection('kinds', t('kindBrowser'), buildKindBrowserHtml()) },
     { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows()) },
     { key: 'dock', html: buildAccSection('dock', t('importDock'),
         typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
@@ -182,6 +183,50 @@ function buildSageHutRows() {
       <span class="kicon">${icon}</span><span class="name">${x(label)}</span>
       ${badge ? `<span class="cnt" data-no-i18n>${x(badge)}</span>` : ''}
     </div>`).join('');
+}
+
+// ═══ KIND BROWSER SECTION (Plan part2 #1) ═══════════════════════════════
+// Replaces the old legacy-only Explorer panel (wiki:explorerTree, blind to
+// the v3 module table) with a view classifying every module in this Nexus
+// by its kind, using data already in memory (S.moduleTree) — no new IPC.
+function flattenModulesByKind(nodes = S.moduleTree, out = []) {
+  for (const m of nodes) {
+    out.push(m);
+    if (m.children?.length) flattenModulesByKind(m.children, out);
+  }
+  return out;
+}
+
+function groupModulesByKind() {
+  const groups = {};
+  for (const m of flattenModulesByKind()) (groups[m.kind] ||= []).push(m);
+  return groups;
+}
+
+function buildKindBrowserHtml() {
+  const groups = groupModulesByKind();
+  const kinds = MODULE_KINDS.filter(k => groups[k]?.length);
+  if (!kinds.length) return `<div class="empty" style="padding:24px 10px"><p>${t('nestEmpty')}</p></div>`;
+  return kinds.map(k => {
+    const mods = groups[k].slice().sort((a, b) => a.name.localeCompare(b.name));
+    const open = S.kindBrowserOpen.has(k);
+    return `
+      <div class="li" onclick="toggleKindGroup('${k}')">
+        <svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="${open ? '6 9 12 15 18 9' : '9 18 15 12 9 6'}"/></svg>
+        <span class="kicon" style="color:${x(KIND_COLOR[k])}">${I[KIND_ICON[k]]}</span>
+        <span class="name">${x(kindLabel(k))}</span>
+        <span class="kind" data-no-i18n>${mods.length}</span>
+      </div>
+      ${open ? mods.map(m => `
+        <div class="li indent1" onclick="event.stopPropagation();openModuleNode(${m.id})">
+          <span class="name">${x(m.name)}</span>
+        </div>`).join('') : ''}`;
+  }).join('');
+}
+
+function toggleKindGroup(kind) {
+  if (S.kindBrowserOpen.has(kind)) S.kindBrowserOpen.delete(kind); else S.kindBrowserOpen.add(kind);
+  renderNexusHome();
 }
 
 function buildAccSection(key, label, bodyHtml, actHtml = '') {

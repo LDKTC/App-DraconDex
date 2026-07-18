@@ -22,6 +22,11 @@ const I = {
   star: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
   pin: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.26V5a3 3 0 0 0-6 0v4.26a2 2 0 0 1-.78 1.24l-2.78 3.5a2 2 0 0 0-.44 1.24z"/></svg>`,
   fields: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>`,
+  // Mirror of #hub-toggle-btn's inline SVG (index.html) — same panel glyph,
+  // divider line on the RIGHT instead of the left, so the Module Inspector
+  // toggle (which collapses a RIGHT-side dock) reads as the opposite of the
+  // Hub toggle (which collapses the LEFT sidebar) — Plan part2 #2.1.
+  panelRight: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>`,
   settings: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
   list: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
   table: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="10" y1="9" x2="10" y2="21"/></svg>`,
@@ -59,8 +64,8 @@ const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
 const HUB_OPEN_KEY = 'novel-manager-hub-open';
 
 function loadHubOpen(){
-  try { return { nest:true, sage:false, dock:false, ...JSON.parse(localStorage.getItem(HUB_OPEN_KEY) || '{}') }; }
-  catch(e){ return { nest:true, sage:false, dock:false }; }
+  try { return { nest:true, kinds:false, sage:false, dock:false, ...JSON.parse(localStorage.getItem(HUB_OPEN_KEY) || '{}') }; }
+  catch(e){ return { nest:true, kinds:false, sage:false, dock:false }; }
 }
 const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse','clearAurora','atTwilight','atSunset','clearComet','atDaybreak','afterSunset','atSunrise','atNight','atNoon','clearDusk','atMidnight','clearMoon','clearGalaxy','clearNebula','afterStorm','afterSnow','atMorning','clearSun','atEvening','clearMeteor'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','de','ru','it','nl','pl','uk','tr','qd'];
@@ -145,9 +150,10 @@ const S = {
   scribeNote:null, scribeFolders:[], scribeNotes:[], scribeOpenFolders:new Set(), scribeTab:'notes',
   // Wiki navigation state
   recentEntities:[],
-  // Explorer state
-  explorerOpen:new Set(['sec_scribe','sec_director','sec_navigator','sec_hero','sec_writer']),
-  explorerTree:null,
+  // Kind-browser accordion state (Plan part2 #1, replaces legacy Explorer —
+  // session-only, not persisted, consistent with other in-session accordion
+  // Sets like scribeOpenFolders above).
+  kindBrowserOpen:new Set(),
   // v3 module system state (Nexus nest hub — progress.md Phases 1-3). Additive
   // alongside the legacy Director/Navigator/Hero/Writer/Scribe/Sage/Artisan
   // modules; see progress.md Section C for the scoping decision.
@@ -186,6 +192,12 @@ async function init() {
   S.folders      = await api.folder.getAll();
   S.projects     = await api.project.getAll(null, S.nexus?.id ?? null);
   S.moduleTree   = S.nexus ? await api.module.getTree(S.nexus.id) : [];
+  // Set before the first render below — builderPaneHeadHtml (builder.js)
+  // reads S.isPopup to decide whether to show the "move to main window" tab
+  // button (Plan part1 #2). S._windowId is this window's own id, needed to
+  // let the main process pick a DIFFERENT window when relaying that move.
+  S.isPopup  = new URLSearchParams(location.search).get('popup') === '1';
+  S._windowId = await api.window.getId();
   bindWindowChrome();
   bindHubToggle();
   bindBuilderGridDrop();
@@ -200,11 +212,19 @@ async function init() {
   translateStaticChrome();
   renderProjectTabs();
   renderNexusHome();
+  // Receives a tab moved from a popup window via the "move to main window"
+  // button (Plan part1 #2) — opens it in the currently focused pane. Main
+  // process only ever relays this to a non-popup window, but guard against
+  // a vault switch since the two windows' S.nexus are independently mutable.
+  api.window.onTabInbound(async (nexusId, tabKey) => {
+    if (S.nexus?.id !== nexusId) { toast(t('tabMoveWrongVault'), 'error'); return; }
+    await builderFocusPane(builderState().focused, builderParseKey(tabKey));
+  });
   // A window opened via a dragged-out Builder tab (builderPopOutTab) boots
   // straight into that one tab, with the nav-sidebar/left-panel/hub chrome
   // hidden (.popup-mode, style.css) — see procress.md Part 3 #2.
   const popupTabKey = new URLSearchParams(location.search).get('tab');
-  const isPopup = new URLSearchParams(location.search).get('popup') === '1';
+  const isPopup = S.isPopup;
   if (isPopup && popupTabKey) {
     q('#window-frame')?.classList.add('popup-mode');
     await builderOpenPage(builderParseKey(popupTabKey));
@@ -912,10 +932,6 @@ function updateTopNavButton(){
   document.querySelectorAll('.nav-btn.scribe-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'scribe') ? '' : 'none';
     btn.classList.toggle('active', S.activeModule === 'scribe');
-  });
-  // Explorer is available whenever a vault is open, regardless of module.
-  document.querySelectorAll('.nav-btn.explorer-btn').forEach(btn => {
-    btn.style.display = S.nexus ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.artisan-only').forEach(btn => {
     btn.style.display = (S.activeModule === 'artisan') ? '' : 'none';
@@ -1937,12 +1953,6 @@ function bindWikilinkClicks() {
     const newId = await api.note.create(S.nexus.id, name, null, null);
     await openEntityByKey(`note_${newId}`);
   });
-}
-
-async function openExplorer() {
-  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
-  await loadModule('src/renderer/explorer.js');
-  await openExplorerPanel();
 }
 
 // ═══ STATUS BAR ═══════════════════════════════════════════

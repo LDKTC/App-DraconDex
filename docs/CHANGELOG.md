@@ -19,6 +19,46 @@
 
 ---
 
+## 2026-07-18 — Chronicler: แก้ bug zoom ของ Oneline view + เพิ่ม event inspector แบบ autosave (Plan part3)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/mod/chronicler.js`, `src/renderer/timeline.js`,
+  `src/renderer/modals.js`, `style.css`
+- อะไรเปลี่ยน:
+  - **แก้ bug #1**: ใน Oneline view เดิม เมื่อ zoom (wheel) กราฟ,
+    `updateTimelineGraphX()` reposition เฉพาะจุด `[data-event-dot]`
+    เท่านั้น — เส้น tick connector กับ text ชื่อ/วันที่ของแต่ละ event
+    ไม่มี `data-*` attribute ใด ๆ เลยจึงค้างอยู่ตำแหน่งเดิม ทำให้จุดวงกลม
+    เลื่อนหนีจาก label ของตัวเอง เพิ่ม `data-event-tick`/
+    `data-event-label`/`data-event-date` (คีย์ `data-start-ts` เดียวกับจุด)
+    แล้วให้ `updateTimelineGraphX()` reposition ทั้งกลุ่มพร้อมกัน
+  - **เพิ่ม event inspector**: คลิกจุด event บนกราฟ (Oneline) หรือแถวใน
+    event list (Downline) ไม่เปิด modal เดิมอีกต่อไป — เรียก
+    `toggleChroniclerInspector(tlid, evId)` แสดงแผง inspector inline
+    แก้ไขได้ (ชื่อ/วันเริ่ม-สิ้นสุด/สี/story) แบบ autosave (onchange +
+    delegated click สำหรับ color picker) แทน — Oneline แสดงใต้กราฟ,
+    Downline แสดงเป็น dropdown ใต้แถวที่กด
+  - **เปิดได้ทีละอัน**: เก็บ event ที่เปิดอยู่เป็นค่าเดียว
+    `chroniclerData.inspectorEventId` (ไม่ใช่ Set) — เปิดอันใหม่จะปิด
+    อันเก่าอัตโนมัติ เพราะ `colorPicker()` ใช้ id ซ้ำ (`#sel-color`,
+    `#cpicker-grid`, …) เปิดพร้อมกันสองอันจะชนกัน
+  - `dateInputsHTML()` (modals.js) เพิ่ม param เสริม `onchangeFn` (default
+    `''`, backward-compatible) สำหรับผูก autosave กับ input วันที่
+  - CSS ใหม่: `.chr-insp-row`, `.chr-insp-body` (style.css)
+- ทำไม: ตาม Plan.md part3 #1/#2/#2.1/#2.2 ที่ user กำหนด
+- ตรวจสอบ: ขับแอปจริงผ่าน run-dracondex driver — สร้าง module kind
+  chronicler + timeline + 5 events ช่วงปี 1000-2000, ยืนยัน zoom ไม่ทำให้
+  tick/label หลุดจากจุดแล้ว (ภาพก่อน/หลัง), เปิด/แก้/ปิด inspector ทั้ง
+  Oneline และ Downline สำเร็จพร้อม toast บันทึก + ยืนยันข้อมูลจริงใน DB
+  ผ่าน `eval window.api.timeline.getEvents(...)`, ยืนยันเปิดได้ทีละแถวใน
+  Downline (querySelectorAll('.chr-insp-row.open') เหลืออันเดียวเสมอ);
+  `check.mjs` ไม่มี warning ใหม่จากไฟล์ที่แก้
+- Doc ที่อัปเดต: docs/CHANGELOG.md (รายการนี้) — ไม่กระทบ
+  docs/SYSTEMS.md/docs/FILES.md/docs/Architec.md เพราะ mapping
+  kind↔file↔IPC เดิมไม่เปลี่ยน มีแค่พฤติกรรมภายใน chronicler.js/
+  timeline.js ที่แก้
+
+---
+
 ## 2026-07-17 — Cloud Sync: แยก backend ตามชนิด build (Supabase จริงเฉพาะ build ติดตั้ง, dev ใช้เซิร์ฟเวอร์ต้นแบบในเครื่อง)
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/db/sync-devserver.js` (ใหม่), `src/db/sync.js`,
