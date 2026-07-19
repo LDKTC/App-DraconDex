@@ -1,6 +1,6 @@
 ---
 name: procress-writing
-description: Once every checklist item in Plan.md is ticked [x], write a detailed roundup of what was actually built into procress.md (per-part write-up — files/functions touched, bugs found and fixed with root cause, deliberate simplifications, how it was verified) and reset Plan.md's checklist body back to an empty template, ready for the next plan. If anything in Plan.md is still unchecked, does nothing to either file — only reports which items remain. Use when the user wants to close out a finished plan ("ทำ procress.md", "เคลียร์ plan", "log the finished plan", "sync procress with what's done", "clear Plan.md"), or says they want to run/execute/close out "the plan I wrote down".
+description: Once every checklist item in Plan.md is ticked [x], write a detailed roundup of what was actually built into procress.md (per-part write-up — files/functions touched, bugs found and fixed with root cause, deliberate simplifications, how it was verified), reset Plan.md's checklist body back to an empty template, then chain into version-update to bump package.json and commit + push the whole close-out. If anything in Plan.md is still unchecked, does nothing to any file — only reports which items remain. Use when the user wants to close out a finished plan ("ทำ procress.md", "เคลียร์ plan", "log the finished plan", "sync procress with what's done", "clear Plan.md"), or says they want to run/execute/close out "the plan I wrote down".
 ---
 
 # procress-writing — log a finished Plan.md rollout into procress.md, then reset Plan.md
@@ -15,7 +15,12 @@ It has no persisted state of its own — everything is re-derived fresh from
 `.claude/skills/version-update/SKILL.md` (which reads these two files as a
 finished/in-progress signal but never writes them — this skill is the one
 that actually produces the `**Part N complete**` line version-update looks
-for).
+for). Once the roundup is written and `Plan.md` is cleared, this skill also
+**chains into `version-update`** and then commits + pushes the whole
+close-out (steps 7-10 below) — `version-update` itself still never commits
+or touches anything but `package.json`/`package-lock.json`; the
+commit-and-push step belongs to this skill, as the one that owns the
+close-out moment.
 
 ## Run
 
@@ -96,8 +101,43 @@ for).
    - [ ] 
    ```
 
-7. **Report** what was written to `procress.md` and confirm `Plan.md` was
-   cleared. Do not commit — leave that to the user.
+7. **Chain into `version-update`.** Now that Plan.md is cleared and
+   `procress.md` holds the write-up, invoke the `version-update` skill so
+   the version bump for this cycle is part of the same close-out. Let it
+   run its own classification (MAJOR/MINOR/PATCH, the Pre-gate,
+   finished-vs-in-progress, escalation checks) exactly as documented in its
+   own SKILL.md — don't second-guess or skip its steps. If it stops to ask
+   the user something (ambiguous scope, malformed version, an escalation
+   reclassify), relay that question and pause here rather than guessing on
+   its behalf just to keep moving toward the commit.
+
+8. **Stage the cycle's files.** Add by name, never `git add -A`/`git add
+   -u`: `Plan.md`, `procress.md`, `package.json` and `package-lock.json`
+   (only if `version-update` actually bumped them — skip those two if it
+   reported "Pre"), plus whatever implementation files were part of the
+   diff gathered in step 4. Run `git status` first; if it shows other
+   dirty/untracked files unrelated to this plan's diff, leave them unstaged
+   and mention them to the user — don't sweep up work that isn't part of
+   this close-out.
+
+9. **Commit**, message matching this repo's own convention (check recent
+   `git log` for the exact style): `v.X.Y.Z — <one-line summary of what
+   shipped>` when `version-update` bumped the version, or `pre v.X.Y.Z —
+   <summary>` when it reported "Pre" (no app code touched this cycle). End
+   the message with the standard `Co-Authored-By: Claude Sonnet 5
+   <noreply@anthropic.com>` trailer, passed via heredoc per this project's
+   own commit conventions.
+
+10. **Push** the current branch to its remote (`git push`, or `git push -u
+    origin <branch>` if it has no upstream yet). This is a durable,
+    pre-authorized action for this skill specifically — closing out a plan
+    is exactly the "explicitly authorized in advance" case, so don't stop
+    to re-confirm the push itself. Do still surface a real push failure
+    (rejected, no remote, auth error) rather than reporting success.
+
+11. **Report** what was written to `procress.md`, that `Plan.md` was
+    cleared, the `version-update` result (old → new version, or "Pre — no
+    bump"), the commit hash, and confirmation the push succeeded.
 
 ## Decision table — is this run a no-op?
 
@@ -134,8 +174,19 @@ for).
 - No helper script or marker file, by design — this is stateless; every
   run re-derives everything fresh from `Plan.md`'s current content and git,
   same as `version-update`'s own rationale for having none.
-- Don't auto-invoke `version-update` — finishing a plan is a natural moment
-  to bump the version, but that's the user's call, not an automatic
-  chained action.
+- Finishing a plan now automatically chains into `version-update` → commit
+  → push (steps 7-10) — this replaced the earlier hands-off behavior where
+  the user bumped/committed/pushed manually. If `version-update` itself
+  needs to ask the user something, relay it instead of resolving it
+  unilaterally.
+- Stage by filename, never `git add -A`/`-u` — the working tree can have
+  unrelated dirty files that aren't part of this plan's diff; sweeping them
+  into the close-out commit is exactly the kind of accidental scope creep
+  the project's git safety rules warn about.
+- The push in step 10 doesn't need a fresh confirmation prompt each run —
+  it's pre-authorized by this skill's own instructions, the same way a
+  CLAUDE.md rule pre-authorizes a normally-risky action. That authorization
+  is scoped to this skill's own close-out flow only; it isn't a license to
+  push in unrelated contexts.
 - `procress.md` is append-only for the life of the project; `Plan.md` is
   the only file this skill ever wipes.

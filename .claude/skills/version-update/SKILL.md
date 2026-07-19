@@ -9,7 +9,11 @@ There is no marker file and no cached state for this skill. The current
 `"version"` field in `package.json` is the only state that matters, and it's
 always read fresh. Everything else — what changed, how big, whether it's
 finished — is re-derived from git each run. The actual write happens via
-`npm version`, never a hand-edited JSON patch, and never a commit.
+`npm version`, never a hand-edited JSON patch, and never a commit — that
+still holds even now that `.claude/skills/procress-writing/SKILL.md` calls
+this skill automatically as step 7 of its own close-out flow. This skill
+bumps the field and stops; the caller (`procress-writing`) is the one that
+stages, commits, and pushes afterward.
 
 ## The scheme
 
