@@ -162,6 +162,14 @@ const S = {
   // session-only, not persisted, consistent with other in-session accordion
   // Sets like scribeOpenFolders above).
   kindBrowserOpen:new Set(),
+  // Plan part2 §2: Kind Browser promoted to its own full page (nav-rail
+  // button) instead of a Hub accordion section — mutually exclusive with
+  // activeModuleNode/filePreview/sageHut below.
+  kindBrowserPage:false,
+  // Plan part2 §2: read-only "Import DB" legacy view — reuses the existing
+  // (normally hidden) Director/Navigator/Hero/Writer panels via
+  // selectModule(), gated read-only by installImportDbGuard() below.
+  importDbMode:false,
   // v3 module system state (Nexus nest hub — progress.md Phases 1-3). Additive
   // alongside the legacy Director/Navigator/Hero/Writer/Scribe/Sage/Artisan
   // modules; see progress.md Section C for the scoping decision.
@@ -761,6 +769,7 @@ function translateStaticChrome(){
   });
   q('#director-project-shortcut')?.setAttribute('title', t('projects'));
   q('#btn-import-db')?.setAttribute('title', t('importDb'));
+  q('#btn-import-db-hub')?.setAttribute('title', t('importDbHubTitle'));
   q('#btn-export-db')?.setAttribute('title', t('exportDb'));
   applyLeftPanelState();
   updateTopNavButton();
@@ -908,7 +917,11 @@ function updateTopNavButton(){
     // modules leave the rail and live in the hub's Legacy section until
     // their Phase 23 migration into Artisan templates.
     const oc = btn.getAttribute('onclick') || '';
-    if (/selectModule\('(director|navigator|hero|writer)'\)/.test(oc)) { btn.style.display = 'none'; return; }
+    // Plan part2 §2: un-hidden while S.importDbMode is active, so the
+    // read-only Import DB hub can switch between the 4 legacy panels the
+    // same way a normal Nexus once did — still calls the unchanged
+    // selectModule(...), gated read-only by installImportDbGuard() instead.
+    if (/selectModule\('(director|navigator|hero|writer)'\)/.test(oc)) { btn.style.display = S.importDbMode ? '' : 'none'; return; }
     btn.style.display = (!S.activeModule) ? '' : 'none';
   });
   document.querySelectorAll('.nav-btn.director-only').forEach(btn => {
@@ -1515,6 +1528,14 @@ async function importDatabaseFile(){
     if(S.project?.id) S.project = await api.project.get(S.project.id) || null;
     switchView(S.view || 'projects');
     toast('Import DB สำเร็จและรวมข้อมูลแล้ว','ok');
+    // Plan part2 §2: a merged file may carry un-migrated legacy-shaped data
+    // (a v1/v2 file, or notes for a nexus that predates v3) — offer the
+    // Nexus Nest / Import DB choice instead of silently leaving it in its
+    // legacy tables with no way to act on it.
+    const sm = res.summary || {};
+    const hasLegacy = (sm.projects||0) + (sm.world_projects||0) + (sm.game_projects||0)
+      + (sm.write_projects||0) + (sm.notes||0) > 0;
+    if (hasLegacy && typeof openImportChoiceModal === 'function') openImportChoiceModal();
   }catch(e){
     toast(`${tr('Import ไม่สำเร็จ')}: ${e.message}`,'err');
   }
@@ -1590,6 +1611,7 @@ function buildBuilderPageHtml() {
     : S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode)
     : (S.filePreview && typeof buildFileViewerHtml === 'function') ? buildFileViewerHtml()
     : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
+    : (S.kindBrowserPage && typeof buildKindBrowserPageHtml === 'function') ? buildKindBrowserPageHtml()
     : `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
     <h3>${x(S.nexus.name)}</h3>
@@ -1700,7 +1722,8 @@ function clearWorkspaceTabs() {
   S.world = null; S.game = null; S.write = null;
   S.scribeNote = null; S.scribeOpenFolders = new Set();
   S.moduleTree = []; S.activeModuleNode = null; S.moduleTabs = [];
-  S.builder = null; S.filePreview = null; S.sageHut = null; S.importFiles = undefined; S.legacyImport = undefined;
+  S.builder = null; S.filePreview = null; S.sageHut = null; S.kindBrowserPage = false; S.importFiles = undefined;
+  if (S.importDbMode) { S.importDbMode = false; api.setImportDbMode(false); }
   S.displayImageCache = null;
   q('#main-inner')?.querySelectorAll(':scope > .bpane').forEach(el => el.remove());
   renderProjectTabs();
@@ -1854,6 +1877,16 @@ function selectModule(name) {
   }
 }
 
+// Plan part2 §2: entry point for the read-only "Import DB" legacy view —
+// reuses selectModule('director') unchanged, just with S.importDbMode
+// already set so updateTopNavButton() un-hides the 4 legacy nav buttons and
+// installImportDbGuard() blocks any mutation IPC call while it's active.
+function openImportDbHub() {
+  S.importDbMode = true;
+  api.setImportDbMode(true);
+  selectModule('director');
+}
+
 // ═══ ENTITY NAVIGATION ════════════════════════════════════
 // Central dispatcher: open any entity from its wiki key ('note_3', 'obj_12',
 // 'wchp_9', …). Used by wikilink clicks, backlinks, quick switcher and graph.
@@ -1965,6 +1998,18 @@ function updateStatusBar(patch = {}) {
 
 // ═══ GLOBAL SHORTCUTS ═════════════════════════════════════
 function bindGlobalShortcuts() {
+  // Plan part2 §2: the Import DB read-only guard (preload.js) rejects
+  // blocked mutation calls rather than silently no-oping — the legacy
+  // Director/Navigator/Hero/Writer save/create/delete handlers this view
+  // reuses unchanged don't all wrap their api.* calls in try/catch, so this
+  // is the one place that turns the rejection into a visible toast instead
+  // of a silent unhandled-rejection console warning.
+  window.addEventListener('unhandledrejection', (e) => {
+    if (String(e?.reason?.message || '').includes('Import DB is read-only')) {
+      e.preventDefault();
+      toast(t('importDbReadOnly'), 'error');
+    }
+  });
   document.addEventListener('keydown', async (e) => {
     const mod = e.ctrlKey || e.metaKey;
     if (!mod) return;
@@ -2023,6 +2068,8 @@ function bindGlobalShortcuts() {
 function returnToNexus() {
   if (typeof closeRelNodeNote === 'function') closeRelNodeNote();
   S.activeModule = null;
+  if (S.importDbMode) api.setImportDbMode(false);
+  S.importDbMode = false;
   S.project = null; S.category = null; S.object = null;
   S.timeline = null; S.map = null; S.mapAreaId = null;
   S.activeProjectTabId = null; S.projectHashtagId = null;

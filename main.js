@@ -94,11 +94,11 @@ const h = (ch, fn) => ipcMain.handle(ch, async (_, ...a) => {
 
 // DB import/export
 h('db:exportFile', async () => {
-  const defaultName = `novel-manager-backup-${new Date().toISOString().slice(0, 10)}.db`;
+  const defaultName = `novel-manager-backup-${new Date().toISOString().slice(0, 10)}.ddx`;
   const result = await dialog.showSaveDialog({
     title: 'Export Database',
     defaultPath: path.join(app.getPath('documents'), defaultName),
-    filters: [{ name: 'SQLite DB', extensions: ['db'] }],
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
   });
   if (result.canceled || !result.filePath) return { canceled: true };
   await db.exportDatabaseTo(result.filePath);
@@ -106,10 +106,13 @@ h('db:exportFile', async () => {
 });
 
 h('db:importFileMerge', async () => {
+  // Accepts both the current .ddx format and legacy .db files (pre-v3.11,
+  // or a v1/v2 export) — an old-shaped .db import is exactly the trigger
+  // case for the Nexus Nest / Import DB choice modal (src/renderer/hub.js).
   const result = await dialog.showOpenDialog({
-    title: 'Import Database (.db)',
+    title: 'Import Database (.ddx / .db)',
     properties: ['openFile'],
-    filters: [{ name: 'SQLite DB', extensions: ['db'] }],
+    filters: [{ name: 'DraconDex / SQLite DB', extensions: ['ddx', 'db'] }],
   });
   if (result.canceled || !result.filePaths?.[0]) return { canceled: true };
   const summary = db.importDatabaseMerge(result.filePaths[0]);
@@ -294,8 +297,8 @@ h('sync:createReadKey', (nx)     => db.syncCreateReadKey(nx));
 h('sync:unlink',        (nx)     => db.unlinkVault(nx));
 
 // Legacy -> v3 migration (v3 Phase 24)
-h('migrate:list',   (target)        => db.listLegacyProjects(target));
-h('migrate:run',    (nx,target,id)  => db.migrateLegacy(nx,target,id));
+h('migrate:list',   (target,nx)          => db.listLegacyProjects(target,nx));
+h('migrate:run',    (nx,target,id,ctx)   => db.migrateLegacy(nx,target,id,ctx));
 
 // Sage Hut (v3 Phase 17) — vault analytics
 h('sagehut:stats',      (nx) => db.sageHutStats(nx));
@@ -359,20 +362,20 @@ h('category:update', (id,n,c)    => db.updateCategory(id,n,c));
 h('category:delete', (id)        => db.deleteCategory(id));
 
 // Template
-h('template:getAll', (cid)       => db.getTemplates(cid));
-h('template:create', (cid,d,t)   => db.createTemplate(cid,d,t));
-h('template:update', (id,d,t)    => db.updateTemplate(id,d,t));
-h('template:delete', (id)        => db.deleteTemplate(id));
+h('template:getAll', (cid)       => db.dirGetTemplates(cid));
+h('template:create', (cid,d,t)   => db.dirCreateTemplate(cid,d,t));
+h('template:update', (id,d,t)    => db.dirUpdateTemplate(id,d,t));
+h('template:delete', (id)        => db.dirDeleteTemplate(id));
 
 // Object
-h('object:getAll',  (cid)        => db.getObjects(cid));
-h('object:get',     (id)         => db.getObject(id));
-h('object:create',  (pid,cid,n,c)=> db.createObject(pid,cid,n,c));
-h('object:update',  (id,n,c)     => db.updateObject(id,n,c));
-h('object:updateNote',(id,note)  => db.updateObjectNote(id,note));
-h('object:delete',  (id)         => db.deleteObject(id));
+h('object:getAll',  (cid)        => db.dirGetObjects(cid));
+h('object:get',     (id)         => db.dirGetObject(id));
+h('object:create',  (pid,cid,n,c)=> db.dirCreateObject(pid,cid,n,c));
+h('object:update',  (id,n,c)     => db.dirUpdateObject(id,n,c));
+h('object:updateNote',(id,note)  => db.dirUpdateObjectNote(id,note));
+h('object:delete',  (id)         => db.dirDeleteObject(id));
 h('object:getAttrs',(oid)        => db.getObjectAttrs(oid));
-h('object:upsertAttr',(oid,tid,v)=> db.upsertAttr(oid,tid,v));
+h('object:upsertAttr',(oid,tid,v)=> db.dirUpsertAttr(oid,tid,v));
 h('object:getCategoryAttrs',(cid) => db.getCategoryAttrs(cid));
 
 // Color

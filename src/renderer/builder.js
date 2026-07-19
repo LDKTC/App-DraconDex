@@ -72,7 +72,7 @@ function builderNavigate(ref) {
 
 async function builderOpenPage(ref) {
   if (!ref) {
-    S.activeModuleNode = null; S.filePreview = null; S.sageHut = null; S.activeItemNode = null;
+    S.activeModuleNode = null; S.filePreview = null; S.sageHut = null; S.activeItemNode = null; S.kindBrowserPage = false;
     renderNexusHome();
     return;
   }

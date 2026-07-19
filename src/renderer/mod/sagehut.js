@@ -24,6 +24,7 @@ async function openSageTab(tab) {
   S.filePreview = null;
   S.activeModuleNode = null;
   S.activeItemNode = null;
+  S.kindBrowserPage = false;
   if (typeof builderNavigate === 'function') builderNavigate({ kind: 'sagehut', tab });
   renderNexusHome();
 }

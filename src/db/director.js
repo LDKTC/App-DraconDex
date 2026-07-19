@@ -67,39 +67,48 @@ const deleteCategory = (id) => {
 };
 
 // ── Template (Fields) ────────────────────────────────
-const getTemplates = (categoryId) =>
+// dir-prefixed (Plan part2 §2 fix): classifier.js (src/db/classifier.js)
+// exports identically-named functions for the v3 module system, and
+// database.js's `...director, ...classifier` export spread let classifier's
+// versions silently shadow these ever since classifier.js was added —
+// Director's own IPC channels (object:*/template:*, main.js) were calling
+// classifier's module_ref-shaped implementations under Director's
+// project/category-shaped argument names, throwing FOREIGN KEY errors.
+// Latent because Director's UI was nav-rail-hidden; newly reachable via the
+// read-only "Import DB" view, which is what surfaced this while live-testing.
+const dirGetTemplates = (categoryId) =>
   getDB().prepare(`SELECT * FROM object_template WHERE category_id=? ORDER BY display_order, id`).all(categoryId);
-const createTemplate = (categoryId, description, type) =>
+const dirCreateTemplate = (categoryId, description, type) =>
   getDB().prepare(`INSERT INTO object_template (category_id,description,attribute_type) VALUES (?,?,?)`).run(categoryId, description, type || 'text');
-const updateTemplate = (id, description, type) =>
+const dirUpdateTemplate = (id, description, type) =>
   getDB().prepare(`UPDATE object_template SET description=?,attribute_type=?,update_at=datetime('now') WHERE id=?`).run(description, type, id);
-const deleteTemplate = (id) =>
+const dirDeleteTemplate = (id) =>
   getDB().prepare(`DELETE FROM object_template WHERE id=?`).run(id);
 
 // ── Object ───────────────────────────────────────────
-const getObjects = (categoryId) =>
+const dirGetObjects = (categoryId) =>
   getDB().prepare(`SELECT o.*, uc.color_code FROM object o LEFT JOIN use_color uc ON o.color = uc.id WHERE o.category_id=? ORDER BY o.name`).all(categoryId);
-const getObject = (id) =>
+const dirGetObject = (id) =>
   getDB().prepare(`SELECT o.*, uc.color_code FROM object o LEFT JOIN use_color uc ON o.color = uc.id WHERE o.id=?`).get(id);
-const createObject = (projectId, categoryId, name, colorId) => {
+const dirCreateObject = (projectId, categoryId, name, colorId) => {
   const r = getDB().prepare(`INSERT INTO object (name,project_id,category_id,color) VALUES (?,?,?,?)`).run(name, projectId, categoryId, colorId || null);
   const wiki = require('./wiki'); // lazy: avoids module cycle
   wiki.resolveDanglingLinks(name, wiki.nexusOfObject(r.lastInsertRowid));
   return r;
 };
-const updateObject = (id, name, colorId) => {
+const dirUpdateObject = (id, name, colorId) => {
   const r = getDB().prepare(`UPDATE object SET name=?,color=?,update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
   const wiki = require('./wiki');
   wiki.resolveDanglingLinks(name, wiki.nexusOfObject(id));
   return r;
 };
-const updateObjectNote = (id, note) => {
+const dirUpdateObjectNote = (id, note) => {
   const r = getDB().prepare(`UPDATE object SET note=?,update_at=datetime('now') WHERE id=?`).run(note, id);
   const wiki = require('./wiki'); // lazy: avoids module cycle
   wiki.reindexWikiLinks(`obj_${id}`, note, wiki.nexusOfObject(id));
   return r;
 };
-const deleteObject = (id) => {
+const dirDeleteObject = (id) => {
   const d = getDB();
   const tx = d.transaction((objectId) => {
     d.prepare(`
@@ -128,7 +137,7 @@ const getCategoryAttrs = (categoryId) =>
     SELECT oa.object_id, oa.template_id, oa.attribute_value
     FROM object_attribute oa JOIN object o ON oa.object_id = o.id WHERE o.category_id = ?
   `).all(categoryId);
-const upsertAttr = (objectId, templateId, value) =>
+const dirUpsertAttr = (objectId, templateId, value) =>
   getDB().prepare(`
     INSERT INTO object_attribute (object_id, template_id, attribute_value) VALUES (?,?,?)
     ON CONFLICT(object_id, template_id) DO UPDATE SET attribute_value=excluded.attribute_value, update_at=datetime('now')
@@ -156,8 +165,8 @@ module.exports = {
   getProjects, getProject, createProject, updateProject, deleteProject,
   getProjectDesc, addProjectDesc, updateProjectDesc, deleteProjectDesc,
   getCategories, createCategory, updateCategory, deleteCategory,
-  getTemplates, createTemplate, updateTemplate, deleteTemplate,
-  getObjects, getObject, createObject, updateObject, updateObjectNote, deleteObject,
-  getObjectAttrs, getCategoryAttrs, upsertAttr,
+  dirGetTemplates, dirCreateTemplate, dirUpdateTemplate, dirDeleteTemplate,
+  dirGetObjects, dirGetObject, dirCreateObject, dirUpdateObject, dirUpdateObjectNote, dirDeleteObject,
+  getObjectAttrs, getCategoryAttrs, dirUpsertAttr,
   searchAll,
 };

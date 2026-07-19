@@ -53,6 +53,13 @@ const ARTISAN_TARGETS = [
   { id: 'writer',    icon: 'writer',    labelKey: 'writer' },
 ];
 
+// Plan part2 §2: the 5 sources the new import-choice modal's "Nexus Nest"
+// path can migrate — ARTISAN_TARGETS' 4 plus Scribe, which has no legacy
+// "project" table (src/db/migrate_v3.js's scribe target keys off the
+// nexus's un-migrated notes instead) and was never part of Artisan's
+// create-wizard, so it stays out of ARTISAN_TARGETS itself.
+const MIGRATE_TARGETS = [...ARTISAN_TARGETS, { id: 'scribe', icon: 'story', labelKey: 'scribe' }];
+
 // Selection made in the Icon Collection picker (Phase 5): `svg:<I-key>` or
 // `sym:<glyph>`, stored verbatim in module.icon. Falls back to the kind's
 // default icon when unset.
@@ -111,8 +118,9 @@ function renderModuleRail() {
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
   const pinned = S.moduleTree.filter(m => m.pinned);
-  const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut;
+  const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut && !S.kindBrowserPage;
   let html = `<button class="nav-btn module-rail-tool${atHubHome ? ' active' : ''}" title="${t('nexusNest')}" onclick="goToNexusNestHub()">${I.home}</button>
+    <button class="nav-btn module-rail-tool${S.kindBrowserPage ? ' active' : ''}" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()">${I.layer}</button>
     <div class="rail-sep module-rail-tool"></div>
     <button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus}</button>`;
   if (pinned.length) html += `<div class="rail-sep module-rail-tool"></div>`;
@@ -136,6 +144,7 @@ function goToNexusNestHub() {
   S.filePreview = null;
   S.sageHut = null;
   S.activeItemNode = null;
+  S.kindBrowserPage = false;
   renderNexusHome();
 }
 
@@ -178,15 +187,14 @@ function buildHubHtml() {
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();quickCreateModule('collector',null)" title="${kindLabel('collector')}">${I[KIND_ICON.collector]}</button>
          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>
          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openNestOptionsPopup(this)" title="${t('nestOptionsTitle')}">${I.options}</button>`) },
-    { key: 'kinds', html: buildAccSection('kinds', t('kindBrowser'), buildKindBrowserHtml()) },
     { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows()) },
     { key: 'dock', html: buildAccSection('dock', t('importDock'),
         typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`) },
-    // Plan part2 #1: relocated from Artisan's own page (now removed) — the
-    // only remaining way to bring pre-v3 Director/Navigator/Hero/Writer
-    // project data into the Nexus Nest.
-    { key: 'legacy', html: buildAccSection('legacy', t('artMigrateSection'), buildLegacyImportRows()) },
+    // Plan part2 §2: this accordion section is removed — legacy import is
+    // now offered via the import-choice modal (openImportChoiceModal) that
+    // importDatabaseFile() (core.js) opens automatically after a merge
+    // brings in un-migrated legacy data, instead of a standing Hub section.
   ];
   // VS Code container-fold behavior (Plan part1 #2): toggled-off sections
   // sink to the bottom, stacking against each other and against whatever
@@ -214,50 +222,6 @@ function buildSageHutRows() {
       <span class="kicon">${icon}</span><span class="name">${x(label)}</span>
       ${badge ? `<span class="cnt" data-no-i18n>${x(badge)}</span>` : ''}
     </div>`).join('');
-}
-
-// ═══ LEGACY IMPORT SECTION (Plan part2 #1) ═════════════════════════════
-// Relocated from Artisan's own page (now removed) — lists each not-yet-
-// migrated Director/Navigator/Hero/Writer project per target, one-click
-// "Migrate" per row, non-destructive (src/db/migrate_v3.js). Same lazy-
-// cache-then-rerender idiom as mod/fileviewer.js's ensureImportDock.
-function ensureLegacyImport() {
-  if (!S.nexus || S.legacyImport !== undefined) return;
-  S.legacyImport = null; // loading marker
-  Promise.all(ARTISAN_TARGETS.map(tg => api.migrate.list(tg.id))).then(lists => {
-    S.legacyImport = ARTISAN_TARGETS.map((tg, i) => ({ target: tg, rows: lists[i] }));
-    renderNexusHome();
-  });
-}
-
-function buildLegacyImportRows() {
-  ensureLegacyImport();
-  if (!S.legacyImport) return `<div class="empty" style="padding:14px"><p>…</p></div>`;
-  return S.legacyImport.map(({ target, rows }) => `
-    <div class="legacy-target-group">
-      <div class="li-head" data-no-i18n>${I[target.icon]} ${t(target.labelKey)}</div>
-      ${rows.length ? rows.map(r => `
-        <div class="li">
-          <span class="name">${x(r.name)}</span>
-          <button class="btn btn-s btn-sm" onclick="runLegacyImport('${target.id}',${r.id},this)">${t('artMigrateBtn')}</button>
-        </div>`).join('') : `<div class="empty" style="padding:8px 14px"><p>${t('artMigrateEmpty')}</p></div>`}
-    </div>`).join('');
-}
-
-async function runLegacyImport(target, legacyId, btn) {
-  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
-  if (btn) btn.disabled = true;
-  try {
-    const res = await api.migrate.run(S.nexus.id, target, legacyId);
-    const c = res.counts || {};
-    toast(`${t('artMigrateDone')} — ${c.modules} modules · ${c.objects} objects · ${c.events} events · ${c.chapters} chapters · ${c.dialogues} dialogues`, 'ok');
-    S.legacyImport = undefined; // force refetch — this row is now consumed
-    await reloadModuleTree();
-    if (res.id) await openModuleNode(res.id);
-  } catch (e) {
-    toast(t('vRestoreFailed'), 'error');
-    if (btn) btn.disabled = false;
-  }
 }
 
 // ═══ KIND BROWSER SECTION (Plan part2 #1) ═══════════════════════════════
@@ -302,6 +266,84 @@ function buildKindBrowserHtml() {
 function toggleKindGroup(kind) {
   if (S.kindBrowserOpen.has(kind)) S.kindBrowserOpen.delete(kind); else S.kindBrowserOpen.add(kind);
   renderNexusHome();
+}
+
+// Plan part2 §2: promoted out of the Hub accordion into its own full page,
+// reached via a nav-rail button — same mutual-exclusion state (S.*Node/
+// S.filePreview/S.sageHut) goToNexusNestHub() already resets, plus its own
+// S.kindBrowserPage flag. buildKindBrowserHtml() itself is unchanged/reused
+// verbatim; only its container (accordion section vs standalone page) moved.
+function goToKindBrowserHub() {
+  S.activeModuleNode = null;
+  S.activeItemNode = null;
+  S.filePreview = null;
+  S.sageHut = null;
+  S.kindBrowserPage = true;
+  renderNexusHome();
+}
+
+function buildKindBrowserPageHtml() {
+  return `<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
+      <h2 style="margin:0;font-size:1.15em">${x(t('kindBrowser'))}</h2>
+      <div class="drafter-hint">${x(S.nexus.name)}</div>
+    </div>
+    <div class="acc-body" style="display:block">${buildKindBrowserHtml()}</div>`;
+}
+
+// ═══ IMPORT-CHOICE MODAL (Plan part2 §2) ════════════════════════════════
+// Opens after importDatabaseFile() (core.js) merges in a file that carried
+// un-migrated legacy data (director/navigator/hero/writer projects, or
+// Scribe notes) — replaces the old always-on Hub "Legacy Import" accordion
+// with a one-time choice: convert everything into a real Nexus Nest module
+// tree (migrate_v3.js), or keep it as a read-only "Import DB" legacy view
+// (openImportDbHub, S.importDbMode).
+function openImportChoiceModal() {
+  openModal(t('importChoiceTitle'), `
+    <p class="drafter-hint">${t('importChoiceBody')}</p>
+    <div class="typegrid" style="grid-template-columns:1fr 1fr">
+      <div class="typecard" onclick="chooseImportAsNexusNest(this)">
+        <h5>${I.layer} ${t('importChoiceNestOption')}</h5><p>${t('importChoiceNestDesc')}</p>
+      </div>
+      <div class="typecard" onclick="chooseImportAsDb(this)">
+        <h5>${I.director} ${t('importChoiceDbOption')}</h5><p>${t('importChoiceDbDesc')}</p>
+      </div>
+    </div>`);
+}
+
+// Runs migrate_v3.js across every un-migrated row in every MIGRATE_TARGETS
+// source, threading batchCtx through so Navigator's classifiers/chroniclers
+// can fold into a Director connector created earlier in the same batch
+// (decision #6 — see migrate_v3.js's navigator target). IPC args are
+// serialized by value, so the mutated batchCtx has to come back from each
+// migrate:run response rather than staying a shared live reference.
+async function chooseImportAsNexusNest(cardEl) {
+  const nexusId = S.nexus?.id || S.nexuses?.[0]?.id;
+  if (!nexusId) { toast(t('nexusSelectFirst'), 'error'); return; }
+  if (cardEl) cardEl.style.pointerEvents = 'none';
+  const totals = { modules: 0, objects: 0, events: 0, chapters: 0, dialogues: 0, relations: 0 };
+  let firstOpenedId = null;
+  let batchCtx = {};
+  for (const tg of MIGRATE_TARGETS) {
+    const rows = await api.migrate.list(tg.id, nexusId);
+    for (const row of rows) {
+      const res = await api.migrate.run(nexusId, tg.id, row.id, batchCtx);
+      batchCtx = res.batchCtx || batchCtx;
+      const c = res.counts || {};
+      for (const k of Object.keys(totals)) totals[k] += c[k] || 0;
+      if (!firstOpenedId && res.id) firstOpenedId = res.id;
+    }
+  }
+  closeModal();
+  toast(`${t('artMigrateDone')} — ${totals.modules} modules · ${totals.objects} objects · ${totals.events} events · ${totals.chapters} chapters · ${totals.dialogues} dialogues · ${totals.relations} relations`, 'ok');
+  if (S.nexus?.id === nexusId) {
+    await reloadModuleTree();
+    if (firstOpenedId) await openModuleNode(firstOpenedId);
+  }
+}
+
+function chooseImportAsDb() {
+  closeModal();
+  openImportDbHub();
 }
 
 function buildAccSection(key, label, bodyHtml, actHtml = '') {
@@ -1004,6 +1046,7 @@ async function openModuleNode(id) {
   if (m.kind === 'collector') { if (m.parent_id == null) toggleMajorExpand(id); return; }
   S.activeModuleNode = m;
   S.activeItemNode = null;
+  S.kindBrowserPage = false;
   upsertModuleTab(id);
   updateStatusBar({ item: null, words: null, saveState: null });
   renderModuleRail();

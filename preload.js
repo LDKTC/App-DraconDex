@@ -1,7 +1,29 @@
 const { contextBridge, ipcRenderer } = require('electron');
-const inv = (ch, ...a) => ipcRenderer.invoke(ch, ...a);
+
+// Plan part2 §2: read-only "Import DB" legacy view. contextBridge deep-
+// freezes the exposed `api` object, so the guard can't be a renderer-side
+// monkey-patch of api.<ns>.<fn> (that would silently no-op, or throw, since
+// the object is immutable from either side of the bridge) — it has to live
+// here in the preload's own isolated scope instead, toggled via the
+// setImportDbMode() call the renderer makes when entering/leaving that mode.
+// Scoped only to the legacy Director/Navigator/Hero/Writer namespaces (the
+// only ones that view ever calls) — every channel in them is either a
+// `get*` read or an actual mutation, confirmed by reading main.js's full
+// handler list, so "block everything except get*" has no false positives.
+let importDbMode = false;
+const IMPORT_DB_READONLY_NS = new Set(['project', 'category', 'template', 'object', 'timeline', 'map', 'relation', 'world', 'game', 'write', 'hashtag', 'color']);
+const inv = (ch, ...a) => {
+  if (importDbMode) {
+    const [ns, fn] = ch.split(':');
+    if (IMPORT_DB_READONLY_NS.has(ns) && !/^get/i.test(fn || '')) {
+      return Promise.reject(new Error('Import DB is read-only'));
+    }
+  }
+  return ipcRenderer.invoke(ch, ...a);
+};
 
 contextBridge.exposeInMainWorld('api', {
+  setImportDbMode: (v) => { importDbMode = !!v; },
   db: {
     exportFile: ()          => inv('db:exportFile'),
     importFileMerge: ()     => inv('db:importFileMerge'),
@@ -123,8 +145,8 @@ contextBridge.exposeInMainWorld('api', {
     exportPng:    (n,dataUrl)    => inv('sketcher:exportPng', n,dataUrl),
   },
   migrate: {
-    list: (target)       => inv('migrate:list', target),
-    run:  (nx,target,id) => inv('migrate:run', nx,target,id),
+    list: (target,nx)         => inv('migrate:list', target,nx),
+    run:  (nx,target,id,ctx)  => inv('migrate:run', nx,target,id,ctx),
   },
   versions: {
     list:    (mref) => inv('versions:list', mref),
