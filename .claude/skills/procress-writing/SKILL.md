@@ -16,11 +16,20 @@ It has no persisted state of its own — everything is re-derived fresh from
 finished/in-progress signal but never writes them — this skill is the one
 that actually produces the `**Part N complete**` line version-update looks
 for). Once the roundup is written and `Plan.md` is cleared, this skill also
-**chains into `version-update`** and then commits + pushes the whole
-close-out (steps 7-10 below) — `version-update` itself still never commits
-or touches anything but `package.json`/`package-lock.json`; the
-commit-and-push step belongs to this skill, as the one that owns the
-close-out moment.
+**chains into `version-update`'s Flow A** (bump-only, never commits there)
+and then commits + pushes the whole close-out itself (steps 7-10 below) —
+Flow A only touches `package.json`/`package-lock.json`; the commit-and-push
+step belongs to this skill, as the one that owns the full close-out moment.
+
+`version-update` also has a separate **Flow B**: a per-`part N` checkpoint
+that bumps *and* commits + pushes on its own, the moment a single part's
+checklist is fully checked while other parts in `Plan.md` are still open.
+That flow is entirely outside this skill's concern — it only ever fires
+mid-plan, never on the last remaining part (which routes here instead) — but
+its side effect matters for step 4's git fallback below: if Flow B ran
+earlier in this cycle, the repo will already have one or more `v.X.Y.Z —
+Part N: ...` commits, which make better anchors than the historical
+"Plan clear"/empty-checklist search once they exist.
 
 ## Run
 

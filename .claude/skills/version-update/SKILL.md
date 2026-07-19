@@ -1,6 +1,6 @@
 ---
 name: version-update
-description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default), and a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Never commits, never touches any other field. Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", or after a commit/set of edits that should carry a version change.
+description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default), and a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part-finished checkpoint flow that also commits + pushes when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open. Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
 ---
 
 # version-update — bump package.json's version per DraconDex's x.y.z-n scheme
@@ -8,27 +8,33 @@ description: Bump package.json's (and package-lock.json's mirrored) "version" fi
 There is no marker file and no cached state for this skill. The current
 `"version"` field in `package.json` is the only state that matters, and it's
 always read fresh. Everything else — what changed, how big, whether it's
-finished — is re-derived from git each run. The actual write happens via
-`npm version`, never a hand-edited JSON patch, and never a commit — that
-still holds even now that `.claude/skills/procress-writing/SKILL.md` calls
-this skill automatically as step 7 of its own close-out flow. This skill
-bumps the field and stops; the caller (`procress-writing`) is the one that
-stages, commits, and pushes afterward.
+finished — is re-derived from git (and Plan.md) each run.
 
-## The scheme
+This skill has **two flows**, and picking the right one matters:
 
-| Segment | Bumps when... | Real example from this repo |
-|---|---|---|
-| `x` (major) | UI/UX or architecture overhaul | `2.7.3 → 3.0.0` (`5d5d40e`) — the story-info "collector" rebuilt into the IDE-shell Scribe vault; submodules promoted into major modules, old ones moved to template |
-| `y` (minor) | a whole new module added, or an existing major module/function added or removed | adding a new fixed module (own renderer + db file + IPC + preload wiring) |
-| `z` (patch) | everything else — bug fixes, small tweaks. **This is the default when scope is genuinely ambiguous.** | `3.7.1 → 3.7.2 → 3.7.3` |
-| `-n` | this cycle's bump (x, y, or z) is still mid-flight across multiple commits, not finished yet | not yet used in this repo — this skill introduces it |
-| **"Pre"** | the commit only updates planning/write-up docs (`Plan.md`, `procress.md`) — no app code touched at all | already informal in this repo's history: `pre v.3.7.2`, `pre v.3.7.3` commits preceding the real bump |
+- **Flow A — bump only, never commits.** The original behavior: for ad-hoc
+  "bump the version" requests, and as the final step
+  `.claude/skills/procress-writing/SKILL.md` chains into once *the whole*
+  `Plan.md` is finished (all parts, not just one). In Flow A this skill
+  bumps the field and stops — the caller (`procress-writing`) is the one
+  that stages, commits, and pushes afterward, and it also writes
+  `procress.md` and resets `Plan.md` as part of that same close-out.
+- **Flow B — part-finished checkpoint, bumps *and* commits + pushes.**
+  Triggers when a single `part N` block in `Plan.md`'s body just had its
+  last checklist item ticked, but `Plan.md`'s body still has at least one
+  `- [ ]` left somewhere else (the plan as a whole isn't done yet). This is
+  the exception to "never commits" — see Flow B below.
 
-"Pre" is not a value of x/y/z/-n — it's a separate gate that applies
-*before* any of the above, because nothing in the running app changed.
+**Which flow applies:**
 
-## Run
+| Situation | Flow |
+|---|---|
+| User explicitly asks to bump/release the version, unrelated to a Plan.md part | A |
+| Invoked by `procress-writing` as its own step 7, after it already confirmed *every* checklist item in `Plan.md` is checked | A (procress-writing owns the commit) |
+| A single `part N` block just became fully checked, and other `- [ ]` items remain elsewhere in `Plan.md`'s body | **B** |
+| A single `part N` block just became fully checked, and it was the *last* unchecked block (finishing it finishes the whole plan) | Not this skill directly — hand off to `procress-writing`, which does its full write-up/reset/bump/commit close-out. Don't also fire Flow B here; that would double-bump and double-commit. |
+
+## Flow A — bump only (unchanged)
 
 1. **Read the current version** straight from `package.json`'s `"version"`
    field. If it doesn't parse as `X.Y.Z` or `X.Y.Z-N`, stop and ask the user
@@ -109,6 +115,61 @@ stages, commits, and pushes afterward.
     will change too. Do not commit. If useful, suggest (don't run) a commit
     message matching this repo's own style: `v.X.Y.Z` or `v.X.Y.Z-N`.
 
+## Flow B — part-finished checkpoint (bump + commit + push)
+
+Same classification machinery as Flow A, scoped to one `part N` block, plus
+a commit and push at the end. Use this the moment a part's last checkbox
+gets ticked during a work session — don't wait for someone to ask.
+
+1. **Confirm the trigger.** Re-read `Plan.md`'s body. The `part N` block
+   that just finished must have every checklist line under it `[x]`/`[X]`,
+   **and** at least one `- [ ]` must still exist somewhere else in the body.
+   If the whole body is now fully checked instead, stop — this is a full
+   close-out, hand off to `procress-writing` instead of proceeding here.
+
+2. **Run Flow A steps 1–9** (read version, find anchor, gather the diff
+   since anchor, Pre gate, classify scope, classify finished/in-progress,
+   escalation check, compute target version) with one substitution: the
+   "finished" signal for step 7 is simply this part's checklist being fully
+   checked — that's decisive on its own, no need to ask the user for a part
+   checkpoint the way step 7 might for an ambiguous ad-hoc bump.
+
+   If the Pre gate (step 4) fires — the accumulated diff really is
+   planning-doc-only — stop entirely: no version bump, no commit. A part
+   whose "finish" produced zero app-source changes isn't this flow's job;
+   leave it for the user to commit by hand in this repo's existing informal
+   `pre v.X.Y.Z` style.
+
+3. **Write the version** the same way as Flow A step 10 (`npm version
+   <target> --no-git-tag-version`).
+
+4. **Stage this part's files.** Add by name, never `git add -A`/`git add
+   -u`: `package.json`, `package-lock.json`, `Plan.md` (its checkbox states
+   changed), and whatever implementation files were part of the diff
+   gathered in step 2. Run `git status` first; if it shows other
+   dirty/untracked files clearly unrelated to this part's diff, leave them
+   unstaged and mention them to the user rather than sweeping them in.
+   Never stage `procress.md` here — that file is only written at the full
+   plan close-out owned by `procress-writing`.
+
+5. **Commit**, message format `v.X.Y.Z — Part N: <one-line summary of what
+   that part shipped>`, matching this repo's `v.X.Y.Z — <summary>`
+   convention with a `Part N` tag so it's traceable back to `Plan.md`. End
+   with the standard `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
+   trailer, passed via heredoc per this project's own commit conventions.
+
+6. **Push** the current branch to its remote (`git push`, or `git push -u
+   origin <branch>` if it has no upstream yet). This is pre-authorized for
+   this specific checkpoint flow, the same way `procress-writing`'s own
+   close-out push is pre-authorized — closing out a finished part is the
+   "explicitly authorized in advance" case. Do still surface a real push
+   failure (rejected, no remote, auth error) rather than reporting success.
+
+7. **Report**: old → new version, which part finished, the commit hash, and
+   confirmation the push succeeded. Note that `Plan.md`'s checkboxes for
+   this part stay as-is (checked) — only the full close-out in
+   `procress-writing` ever resets `Plan.md`.
+
 ## Decision table — scope
 
 | Signal in the diff | Classification |
@@ -136,6 +197,11 @@ Worked examples:
 - `3.7.4-2`, this commit finishes it → `3.7.4`.
 - `3.7.3`, a new module added in one commit, finished → `3.8.0`.
 - `3.8.0`, a UI/architecture overhaul, finished → `4.0.0`.
+- `3.7.3`, Part 2 of a multi-part `Plan.md` finishes (Part 1 already shipped
+  earlier, Part 3 still unchecked) and Part 2's diff is a bug-fix-scale
+  change → Flow B: `3.7.4`, committed as `v.3.7.4 — Part 2: <summary>`,
+  pushed. Part 3 finishing later, if it also empties the whole checklist,
+  routes to `procress-writing`'s full close-out instead of Flow B.
 
 ## Gotchas
 
@@ -151,15 +217,33 @@ Worked examples:
   `npm version` — not by hand-editing JSON. This matches 100% of this
   repo's historical version-bump commits; it's intentionally broader than
   "package.json only," not an oversight.
-- `--no-git-tag-version` is mandatory on every `npm version` call — this
-  skill never commits or tags.
+- `--no-git-tag-version` is mandatory on every `npm version` call — neither
+  flow ever creates a tag.
+- **Flow A never commits.** That invariant only holds for Flow A. Flow B is
+  the one deliberate exception, scoped tightly to "a single part finished,
+  the rest of the plan hasn't" — don't generalize Flow B's commit-and-push
+  behavior back onto Flow A's ad-hoc bump requests.
 - A plan-only diff is **Pre**, not Patch — never fold "only touched
   Plan.md/procress.md" into the PATCH default just because PATCH is the
-  fallback for ambiguous *app* changes. Pre means skip entirely.
+  fallback for ambiguous *app* changes. Pre means skip entirely (Flow A) or
+  skip entirely with no commit (Flow B).
 - Mixed/dirty diffs spanning clearly unrelated systems: surface that to the
   user and ask what should count toward this bump, rather than silently
   picking the loudest change.
 - Malformed/unparseable current version field, or nothing changed since the
   anchor: stop and say so — don't guess, don't bump on an empty diff.
-- `Plan.md`/`procress.md` are a hint for finished/in-progress, not ground
-  truth — a change might not route through them at all.
+- `Plan.md`/`procress.md` are a hint for finished/in-progress in Flow A, not
+  ground truth — a change might not route through them at all. In Flow B,
+  by contrast, the part's checklist state *is* the finished signal —
+  decisive, not just a hint.
+- **Don't double-fire on the last part.** If the part that just finished was
+  the only one left unchecked, Flow B must not run — that scenario belongs
+  entirely to `procress-writing`'s full close-out (write-up, `Plan.md`
+  reset, Flow A bump, commit, push). Firing Flow B there would bump and
+  commit twice for the same close-out.
+- Stage by filename in Flow B, never `git add -A`/`-u` — same rationale as
+  `procress-writing`'s own staging step: the working tree can have unrelated
+  dirty files that aren't part of this part's diff.
+- Flow B's push is pre-authorized the same way `procress-writing`'s is —
+  scoped to this checkpoint flow only, not a general license to push
+  elsewhere.
