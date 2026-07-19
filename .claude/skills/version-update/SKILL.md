@@ -1,6 +1,6 @@
 ---
 name: version-update
-description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default), and a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part-finished checkpoint flow that also commits + pushes when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open. Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
+description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default), and a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part-finished checkpoint flow that also commits + pushes when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open. Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
 ---
 
 # version-update — bump package.json's version per DraconDex's x.y.z-n scheme
@@ -113,7 +113,9 @@ This skill has **two flows**, and picking the right one matters:
     filename) and `scripts/finish-portable.mjs` (portable build's output
     folder name) both read this field — so the next build's artifact names
     will change too. Do not commit. If useful, suggest (don't run) a commit
-    message matching this repo's own style: `v.X.Y.Z` or `v.X.Y.Z-N`.
+    message matching this repo's own style — subject `v.X.Y.Z` or
+    `v.X.Y.Z-N`, plus the **commit value** trailer computed per the section
+    below, for whoever runs the actual commit to paste in as-is.
 
 ## Flow B — part-finished checkpoint (bump + commit + push)
 
@@ -154,9 +156,11 @@ gets ticked during a work session — don't wait for someone to ask.
 
 5. **Commit**, message format `v.X.Y.Z — Part N: <one-line summary of what
    that part shipped>`, matching this repo's `v.X.Y.Z — <summary>`
-   convention with a `Part N` tag so it's traceable back to `Plan.md`. End
-   with the standard `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`
-   trailer, passed via heredoc per this project's own commit conventions.
+   convention with a `Part N` tag so it's traceable back to `Plan.md`. Body:
+   a blank line, then the **commit value** trailer computed per the section
+   below, then a blank line, then the standard `Co-Authored-By: Claude
+   Sonnet 5 <noreply@anthropic.com>` trailer — passed via heredoc per this
+   project's own commit conventions.
 
 6. **Push** the current branch to its remote (`git push`, or `git push -u
    origin <branch>` if it has no upstream yet). This is pre-authorized for
@@ -169,6 +173,73 @@ gets ticked during a work session — don't wait for someone to ask.
    confirmation the push succeeded. Note that `Plan.md`'s checkboxes for
    this part stay as-is (checked) — only the full close-out in
    `procress-writing` ever resets `Plan.md`.
+
+## Commit value — the `V.x.y.z-n a-b-c-dd/mm/yy` trailer
+
+Every commit that carries a version bump (Flow B's own commits, and the
+message `procress-writing` uses for its full close-out) gets one extra
+trailer line beyond the standard `Co-Authored-By:` — a compact,
+grep-able "commit value" that answers "which version, and which commit is
+this in the day/month/major-version" at a glance:
+
+```
+V.x.y.z-n a-b-c-dd/mm/yy
+```
+
+| Field | Meaning |
+|---|---|
+| `x.y.z-n` | The exact target version string this run just computed (Flow A step 9 / Flow B step 2), prefixed with capital `V.` instead of the lowercase `v.` used in the human-readable subject line — this is what makes the trailer visually distinct from the subject. Omit `-n` when the target has no in-progress suffix. |
+| `a` | This commit's round number **today** — how many commits (any author) already exist in the repo since midnight, plus 1 for the commit being made now. |
+| `b` | This commit's round number **this month** — same idea, counted from the 1st of the current month. |
+| `c` | This commit's round number **since this major version started** — counted from the commit that first introduced the current major segment `x` (the "major anchor," distinct from Flow A step 2's per-cycle anchor, which tracks the full `X.Y.Z`). |
+| `dd/mm/yy` | Today's date, zero-padded day and month, 2-digit year — deliberately not this project's usual ISO style, matching the format the user specified for this trailer specifically. |
+
+Placement: a blank line after the subject, the trailer on its own line, a
+blank line, then `Co-Authored-By:`. Example subject + trailer:
+
+```
+v.3.7.4 — Part 2: fix wikilink resolver
+
+V.3.7.4 2-5-13-19/07/26
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+```
+
+**Computing it**, run fresh immediately before the commit (never cached,
+never reused from an earlier report in the same session — the counters
+shift every time another commit lands):
+
+```bash
+# a — commits today, inclusive of the one about to be made
+a=$(( $(git log --since=midnight --oneline | wc -l) + 1 ))
+
+# b — commits this month, inclusive
+b=$(( $(git log --since="$(date +%Y-%m-01)" --oneline | wc -l) + 1 ))
+
+# c — commits since the current major version's anchor, inclusive
+# majorAnchor: walk the same pickaxe log as Flow A step 2, but match only
+# the major segment X instead of the full X.Y.Z — find the oldest commit
+# in that log still carrying today's major X (i.e. one commit past the
+# most recent transition away from X, or the log's oldest entry if X has
+# never changed). If package.json's version history doesn't reach back to
+# X's true introduction (tracking started mid-way), fall back to the
+# oldest commit the pickaxe log returns.
+if git rev-parse "$majorAnchor^" >/dev/null 2>&1; then
+  c=$(( $(git rev-list --count "$majorAnchor^..HEAD") + 1 ))
+else
+  # majorAnchor is the repo's root commit — no parent to diff from
+  c=$(( $(git rev-list --count HEAD) + 1 ))
+fi
+
+d=$(date +%d/%m/%y)
+
+commit_value="V.$target $a-$b-$c-$d"   # $target = this run's computed X.Y.Z[-N]
+```
+
+This trailer is purely informational bookkeeping — it never feeds back into
+the MAJOR/MINOR/PATCH classification or the IN-PROGRESS/FINISHED decision,
+and a wrong `majorAnchor` heuristic only skews a display counter, not the
+actual `package.json` version.
 
 ## Decision table — scope
 
@@ -247,3 +318,10 @@ Worked examples:
 - Flow B's push is pre-authorized the same way `procress-writing`'s is —
   scoped to this checkpoint flow only, not a general license to push
   elsewhere.
+- The commit-value trailer's `a`/`b`/`c` counters must be recomputed at the
+  moment of each actual commit, not once and reused — if Flow B fires twice
+  in one day (two different parts), the second commit's `a` must be one
+  higher than the first's, not a stale copy.
+- The commit-value trailer's `dd/mm/yy` is intentionally day-month-year with
+  2-digit year — don't normalize it to this project's usual ISO date style
+  elsewhere in docs; this format is specific to the trailer.

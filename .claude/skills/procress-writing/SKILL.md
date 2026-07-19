@@ -132,10 +132,15 @@ Part N: ...` commits, which make better anchors than the historical
 9. **Commit**, message matching this repo's own convention (check recent
    `git log` for the exact style): `v.X.Y.Z — <one-line summary of what
    shipped>` when `version-update` bumped the version, or `pre v.X.Y.Z —
-   <summary>` when it reported "Pre" (no app code touched this cycle). End
-   the message with the standard `Co-Authored-By: Claude Sonnet 5
-   <noreply@anthropic.com>` trailer, passed via heredoc per this project's
-   own commit conventions.
+   <summary>` when it reported "Pre" (no app code touched this cycle). When
+   a real bump happened, insert the **commit value** trailer — computed
+   fresh per `.claude/skills/version-update/SKILL.md`'s "Commit value"
+   section, using the version it just wrote as `$target` — as its own line
+   after a blank line following the subject. Skip the trailer entirely on a
+   "Pre" commit; there's no bumped version for it to describe. End the
+   message with the standard `Co-Authored-By: Claude Sonnet 5
+   <noreply@anthropic.com>` trailer (its own blank line before it), passed
+   via heredoc per this project's own commit conventions.
 
 10. **Push** the current branch to its remote (`git push`, or `git push -u
     origin <branch>` if it has no upstream yet). This is a durable,
@@ -199,3 +204,7 @@ Part N: ...` commits, which make better anchors than the historical
   push in unrelated contexts.
 - `procress.md` is append-only for the life of the project; `Plan.md` is
   the only file this skill ever wipes.
+- The commit-value trailer (step 9) is computed fresh at commit time, not
+  copied from anything `version-update` printed earlier in the session —
+  its `a`/`b`/`c` counters shift with every commit that lands, including
+  this one. Only skip it on a "Pre" commit.
