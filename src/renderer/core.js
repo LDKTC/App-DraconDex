@@ -1768,23 +1768,20 @@ function openWelcomeModal() {
   const closeBtn = q('#modal-close'); if(closeBtn) closeBtn.style.display='none';
 }
 
-// "Create new Nexus" from the Welcome modal: ask whether the user is new, then open the
-// create form. First-time users get the coach-marks guide once the vault is created
-// (createNexusSubmit reads S._guideAfterCreate).
+// "Create new Nexus" from the Welcome modal opens the form with an optional tour.
+// createNexusSubmit reads the checkbox after the vault is created.
 async function welcomeCreateNexus() {
-  const usedBefore = await uiConfirm(t('usedBeforeAsk'),
-    { okText: t('usedBeforeYes'), cancelText: t('usedBeforeNo'), danger: false });
-  S._guideAfterCreate = !usedBefore;
-  openNexusModal();
+  openNexusModal(null, { showGuideChoice: true });
 }
 
-async function openNexusModal(id = null) {
+async function openNexusModal(id = null, { showGuideChoice = false } = {}) {
   await reloadNexuses();
   const n = id ? S.nexuses.find(v => v.id === id) : null;
   openModal(n ? `✏️ ${t('nexusEdit')}` : `🗄️ ${t('nexusNew')}`, `
     <div class="fg"><label>${t('name')} *</label><input id="nx-name" value="${x(n?.name || '')}"></div>
     <div class="fg"><label>${t('memo')}</label><textarea id="nx-memo">${x(n?.memo || '')}</textarea></div>
     <div class="fg"><label>${t('color')}</label>${await colorPicker(n?.color)}</div>
+    ${!n && showGuideChoice ? `<div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="nx-guide" type="checkbox" checked> ${t('nexusTourOption')}</label></div>` : ''}
     <div class="mfoot">
       ${n ? `<button class="btn btn-d" onclick="delNexus(${id})">${t('delete')}</button>`
           : `<button class="btn btn-s" onclick="closeModal();importDatabaseFile()">${t('importDb')}</button>`}
@@ -1796,14 +1793,14 @@ async function openNexusModal(id = null) {
 
 async function createNexusSubmit() {
   const name = q('#nx-name').value.trim(); if (!name) return;
+  S._guideAfterCreate = Boolean(q('#nx-guide')?.checked);
   try {
     const newId = await api.nexus.create(name, q('#nx-memo').value.trim(), q('#sel-color').value || null);
     closeModal();
     await reloadNexuses();
     toast(t('nexusCreated'), 'ok');
     await selectNexus(newId);
-    // First-time users (chose "never used" in welcomeCreateNexus) get the coach-marks
-    // tour now that the vault home is rendered and its real UI elements exist.
+    // Users who opted in get the coach-marks tour once the vault home is rendered.
     if (S._guideAfterCreate) {
       S._guideAfterCreate = false;
       await loadModule('src/renderer/guide.js');

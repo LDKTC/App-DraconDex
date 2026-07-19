@@ -104,6 +104,9 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
     พร้อมสีและจำนวน project, ปุ่มสร้าง/แก้ไข/ลบผ่าน modal (`openNexusModal`)
   - เปิด vault แล้ว → การ์ด 7 โมดูล (รวม Scribe) ใต้ header ชื่อ vault
     พร้อมปุ่มสลับ vault (`closeNexus`)
+- **เริ่มครั้งแรก**: เลือกสร้าง Nexus จาก welcome แล้วเปิดฟอร์มทันที พร้อม
+  checkbox "แสดงทัวร์แนะนำหลังสร้าง Nexus นี้" ที่เลือกไว้ล่วงหน้า; ปิด checkbox
+  ได้เพื่อข้าม coach-mark โดยไม่ต้องตอบคำถามแยกใน modal ซ้อน
 - **ข้อมูลถูก scope ตาม vault**: `project`, `world_project`, `game_project`,
   `write_project` มีคอลัมน์ `nexus_ref`; ฟังก์ชัน list/create และ `searchAll`
   รับพารามิเตอร์ `nexusId` — เปิดคนละ vault เห็นคนละชุดข้อมูล

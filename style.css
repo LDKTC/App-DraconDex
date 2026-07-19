@@ -1475,6 +1475,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--accent)}
 .fg textarea{resize:vertical;min-height:72px}
 .fg select option{background:var(--raised)}
+.fg input[type="checkbox"]{width:auto;padding:0}
 
 /* COLOR GRID */
 .cgrid{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}

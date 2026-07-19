@@ -19,6 +19,15 @@
 
 ---
 
+## 2026-07-20 — ลดขั้นตอนเริ่มสร้าง Nexus
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/core.js`, `src/renderer/i18n.js`, `style.css`,
+  `test/onboarding-tour.test.mjs`
+- อะไรเปลี่ยน: ปุ่มสร้าง Nexus ใน welcome เปิดฟอร์มโดยตรง; เพิ่ม checkbox
+  เลือกเปิด coach-mark หลังสร้าง และแก้ CSS ของ checkbox ใน form ไม่ให้ยืดเต็มบรรทัด
+- ทำไม: ลด modal ซ้อนและคำถามที่ไม่อธิบายผลลัพธ์ แต่ยังคงให้ผู้ใช้เลือกทัวร์ได้
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` §2, `docs/FILES.md` core.js
+
 ## 2026-07-18 — Chronicler: แก้ bug zoom ของ Oneline view + เพิ่ม event inspector แบบ autosave (Plan part3)
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/mod/chronicler.js`, `src/renderer/timeline.js`,

@@ -276,7 +276,8 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 - **เมนูตั้งค่า**: `renderSettingsMenu/setUiSetting` (ธีม+swatch, ภาษา,
   สไลเดอร์ขนาด), `exportDatabaseFile/importDatabaseFile`
 - **Nexus vault (v2.8)**: `renderNexusHome()` (2 ระดับ — picker/การ์ด 7 โมดูล),
-  `renderNexusPicker/openNexusModal/createNexusSubmit/saveNexus/delNexus`,
+  `renderNexusPicker/welcomeCreateNexus/openNexusModal/createNexusSubmit/saveNexus/delNexus`
+  (ฟอร์มเริ่มครั้งแรกมี checkbox เลือก coach-mark),
   `selectNexus/closeNexus/clearWorkspaceTabs`, `reloadSidebar/renderSidebar`
 - **Wiki navigation (v2.8)**: `openEntityByKey(key)` (จุดเดียวที่เปิด entity
   จาก key ทุกที่ — wikilink click/backlinks/quick switcher/graph node),

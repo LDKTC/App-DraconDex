@@ -5,6 +5,7 @@
 // top-level bindings are visible to every renderer script.
 const L = {
   en: {
+    nexusTourOption:'Show me a quick tour after creating this Nexus',
     settings:'Settings', theme:'Theme', language:'Language', uiSize:'UI Size', cancel:'Cancel',
     gameCollections:'Collections', gameCollectionNew:'New Collection', gameElementNew:'New Element',
     gameConversations:'Conversations', gameConvNew:'Add Conversation', gameAddEdge:'Link Dialogue',
@@ -111,6 +112,7 @@ const L = {
     syncDevServer:'Dev version — using the local prototype sync server (no Supabase needed)'
   },
   ja: {
+    nexusTourOption:'この Nexus を作成したあと、簡単なツアーを表示する',
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
     gameCollections:'コレクション', gameCollectionNew:'新規コレクション', gameElementNew:'新規エレメント',
     gameConversations:'会話', gameConvNew:'会話を追加', gameAddEdge:'ダイアログを接続',
@@ -217,6 +219,7 @@ const L = {
     syncDevServer:'開発版 — ローカルのプロトタイプ同期サーバーを使用中（Supabase不要）'
   },
   ko: {
+    nexusTourOption:'이 Nexus를 만든 뒤 빠른 둘러보기를 표시합니다',
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
     gameCollections:'컬렉션', gameCollectionNew:'새 컬렉션', gameElementNew:'새 엘리먼트',
     gameConversations:'대화', gameConvNew:'대화 추가', gameAddEdge:'다이얼로그 연결',
@@ -323,6 +326,7 @@ const L = {
     syncDevServer:'개발 버전 — 로컬 프로토타입 동기화 서버 사용 중 (Supabase 불필요)'
   },
   th: {
+    nexusTourOption:'แสดงทัวร์แนะนำหลังสร้าง Nexus นี้',
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
     gameCollections:'คอลเลกชัน', gameCollectionNew:'คอลเลกชันใหม่', gameElementNew:'เพิ่ม Element',
     gameConversations:'บทสนทนา', gameConvNew:'เพิ่มบทสนทนา', gameAddEdge:'เชื่อม Dialogue',
@@ -429,6 +433,7 @@ const L = {
     syncDevServer:'เวอร์ชัน dev — ใช้เซิร์ฟเวอร์ซิงก์ต้นแบบในเครื่อง (ไม่ต้องมี Supabase)'
   },
   zh: {
+    nexusTourOption:'创建此 Nexus 后显示快速导览',
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
     gameCollections:'收藏集', gameCollectionNew:'新建收藏集', gameElementNew:'新建元素',
     gameConversations:'对话', gameConvNew:'添加对话', gameAddEdge:'连接对话节点',
@@ -535,6 +540,7 @@ const L = {
     syncDevServer:'开发版 — 正在使用本地原型同步服务器（无需 Supabase）'
   },
   vi: {
+    nexusTourOption:'Hiển thị chuyến tham quan nhanh sau khi tạo Nexus này',
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
     gameCollections:'Bộ sưu tập', gameCollectionNew:'Bộ sưu tập mới', gameElementNew:'Element mới',
     gameConversations:'Hội thoại', gameConvNew:'Thêm hội thoại', gameAddEdge:'Nối Dialogue',
@@ -641,6 +647,7 @@ const L = {
     syncDevServer:'Bản dev — đang dùng máy chủ đồng bộ thử nghiệm cục bộ (không cần Supabase)'
   },
   id: {
+    nexusTourOption:'Tampilkan tur singkat setelah membuat Nexus ini',
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
     gameCollections:'Koleksi', gameCollectionNew:'Koleksi Baru', gameElementNew:'Elemen Baru',
     gameConversations:'Percakapan', gameConvNew:'Tambah Percakapan', gameAddEdge:'Hubungkan Dialog',
@@ -747,6 +754,7 @@ const L = {
     syncDevServer:'Versi dev — memakai server sinkronisasi prototipe lokal (tanpa Supabase)'
   },
   es: {
+    nexusTourOption:'Mostrar un recorrido rápido después de crear este Nexus',
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
     gameCollections:'Colecciones', gameCollectionNew:'Nueva colección', gameElementNew:'Nuevo elemento',
     gameConversations:'Conversaciones', gameConvNew:'Añadir conversación', gameAddEdge:'Enlazar diálogo',
@@ -853,6 +861,7 @@ const L = {
     syncDevServer:'Versión dev — usando el servidor de sincronización prototipo local (sin Supabase)'
   },
   pt: {
+    nexusTourOption:'Mostrar um tour rápido após criar este Nexus',
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
     gameCollections:'Coleções', gameCollectionNew:'Nova coleção', gameElementNew:'Novo elemento',
     gameConversations:'Conversas', gameConvNew:'Adicionar conversa', gameAddEdge:'Ligar diálogo',
@@ -959,6 +968,7 @@ const L = {
     syncDevServer:'Versão dev — usando o servidor de sincronização protótipo local (sem Supabase)'
   },
   fr: {
+    nexusTourOption:'Afficher une courte visite après la création de ce Nexus',
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
     gameCollections:'Collections', gameCollectionNew:'Nouvelle collection', gameElementNew:'Nouvel élément',
     gameConversations:'Conversations', gameConvNew:'Ajouter une conversation', gameAddEdge:'Lier le dialogue',
@@ -1065,6 +1075,7 @@ const L = {
     syncDevServer:'Version dev — serveur de synchronisation prototype local (Supabase inutile)'
   },
   de: {
+    nexusTourOption:'Nach dem Erstellen dieses Nexus eine kurze Tour anzeigen',
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
     gameCollections:'Sammlungen', gameCollectionNew:'Neue Sammlung', gameElementNew:'Neues Element',
     gameConversations:'Gespräche', gameConvNew:'Gespräch hinzufügen', gameAddEdge:'Dialog verbinden',
@@ -1171,6 +1182,7 @@ const L = {
     syncDevServer:'Dev-Version — lokaler Prototyp-Sync-Server wird verwendet (kein Supabase nötig)'
   },
   ru: {
+    nexusTourOption:'Показать короткий обзор после создания этого Nexus',
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
     gameCollections:'Коллекции', gameCollectionNew:'Новая коллекция', gameElementNew:'Новый элемент',
     gameConversations:'Разговоры', gameConvNew:'Добавить разговор', gameAddEdge:'Связать диалог',
@@ -1277,6 +1289,7 @@ const L = {
     syncDevServer:'Dev-версия — используется локальный прототипный сервер синхронизации (Supabase не нужен)'
   },
   it: {
+    nexusTourOption:'Mostra un breve tour dopo aver creato questo Nexus',
     settings:'Impostazioni', theme:'Tema', language:'Lingua', uiSize:'Dimensione UI', cancel:'Annulla',
     gameCollections:'Collezioni', gameCollectionNew:'Nuova collezione', gameElementNew:'Nuovo elemento',
     gameConversations:'Conversazioni', gameConvNew:'Aggiungi conversazione', gameAddEdge:'Collega dialogo',
@@ -1383,6 +1396,7 @@ const L = {
     syncDevServer:'Versione dev — server di sincronizzazione prototipo locale in uso (Supabase non necessario)'
   },
   nl: {
+    nexusTourOption:'Toon een korte rondleiding na het maken van deze Nexus',
     settings:'Instellingen', theme:'Thema', language:'Taal', uiSize:'UI-grootte', cancel:'Annuleren',
     gameCollections:'Collecties', gameCollectionNew:'Nieuwe collectie', gameElementNew:'Nieuw element',
     gameConversations:'Gesprekken', gameConvNew:'Gesprek toevoegen', gameAddEdge:'Dialoog koppelen',
@@ -1489,6 +1503,7 @@ const L = {
     syncDevServer:'Dev-versie — lokale prototype-syncserver in gebruik (geen Supabase nodig)'
   },
   pl: {
+    nexusTourOption:'Pokaż krótki przewodnik po utworzeniu tego Nexusa',
     settings:'Ustawienia', theme:'Motyw', language:'Język', uiSize:'Rozmiar UI', cancel:'Anuluj',
     gameCollections:'Kolekcje', gameCollectionNew:'Nowa kolekcja', gameElementNew:'Nowy element',
     gameConversations:'Rozmowy', gameConvNew:'Dodaj rozmowę', gameAddEdge:'Połącz dialog',
@@ -1595,6 +1610,7 @@ const L = {
     syncDevServer:'Wersja dev — używany jest lokalny prototypowy serwer synchronizacji (bez Supabase)'
   },
   uk: {
+    nexusTourOption:'Показати короткий огляд після створення цього Nexus',
     settings:'Налаштування', theme:'Тема', language:'Мова', uiSize:'Розмір інтерфейсу', cancel:'Скасувати',
     gameCollections:'Колекції', gameCollectionNew:'Нова колекція', gameElementNew:'Новий елемент',
     gameConversations:'Розмови', gameConvNew:'Додати розмову', gameAddEdge:'Зв’язати діалог',
@@ -1701,6 +1717,7 @@ const L = {
     syncDevServer:'Dev-версія — використовується локальний прототипний сервер синхронізації (Supabase не потрібен)'
   },
   tr: {
+    nexusTourOption:'Bu Nexus oluşturulduktan sonra kısa bir tur göster',
     settings:'Ayarlar', theme:'Tema', language:'Dil', uiSize:'Arayüz Boyutu', cancel:'İptal',
     gameCollections:'Koleksiyonlar', gameCollectionNew:'Yeni koleksiyon', gameElementNew:'Yeni öğe',
     gameConversations:'Konuşmalar', gameConvNew:'Konuşma ekle', gameAddEdge:'Diyalog bağla',
@@ -1807,6 +1824,7 @@ const L = {
     syncDevServer:'Dev sürümü — yerel prototip eşitleme sunucusu kullanılıyor (Supabase gerekmez)'
   },
   qd: {
+    nexusTourOption:'Sheweth a swyft tour after thy Nexus be kryneth',
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
     gameCollections:'Kolvexa', gameCollectionNew:'Kolvexa Nyr', gameElementNew:'Elym Nyr',
     gameConversations:'Vorlakks', gameConvNew:'Vorlakk Zenn', gameAddEdge:'Dialyth Vynk',
