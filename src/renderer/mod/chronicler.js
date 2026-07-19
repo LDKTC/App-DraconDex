@@ -183,7 +183,16 @@ async function saveChroniclerInspectorField(evId, tlid) {
     const story = q('#chr-insp-story')?.value.trim() || '';
     const colorId = q('#sel-color')?.value || null;
     await api.timeline.updateEvent(evId, n, sid, eid, colorId, story);
-    await mountChroniclerGraph();
+    // This same reused body (buildChroniclerEventInspectorHtml) renders in
+    // two contexts (Plan part4): the module's own Oneline/Downline view, or
+    // the event's own dedicated item page — refresh whichever is live.
+    if (S.activeItemNode?.itemKind === 'chronicler' && S.activeItemNode?.id === evId) {
+      invalidateNestItems(S.activeItemNode.moduleId);
+      await openItemNode('chronicler', S.activeItemNode.moduleId, evId);
+    } else {
+      if (S.chroniclerData?.moduleId != null) invalidateNestItems(S.chroniclerData.moduleId);
+      await mountChroniclerGraph();
+    }
     toast(t('saved'), 'ok');
   } catch (e) { toast(e.message, 'err'); console.error(e); }
 }
@@ -406,6 +415,7 @@ async function createChroniclerEvent(tlid) {
     await api.timeline.createEvent(tlid, n, sid, eid, q('#sel-color').value || null, story);
     closeModal();
     await mountChroniclerGraph();
+    if (S.chroniclerData?.moduleId != null) invalidateNestItems(S.chroniclerData.moduleId, 1);
     toast(t('created'), 'ok');
   } catch (e) { toast(e.message, 'err'); console.error(e); }
 }
@@ -421,6 +431,7 @@ async function saveChroniclerEvent(evId, tlid) {
     await api.timeline.updateEvent(evId, n, sid, eid, q('#sel-color').value || null, story);
     closeModal();
     await mountChroniclerGraph();
+    if (S.chroniclerData?.moduleId != null) invalidateNestItems(S.chroniclerData.moduleId);
     toast(t('saved'), 'ok');
   } catch (e) { toast(e.message, 'err'); console.error(e); }
 }
@@ -430,6 +441,8 @@ async function deleteChroniclerEvent(evId, tlid) {
   await api.timeline.deleteEvent(evId);
   if (S.chroniclerData?.inspectorEventId === evId) S.chroniclerData.inspectorEventId = null;
   closeModal();
+  const moduleId = S.chroniclerData?.moduleId;
   await mountChroniclerGraph();
+  if (moduleId != null) invalidateNestItems(moduleId, -1);
   toast(t('deleted'), 'ok');
 }

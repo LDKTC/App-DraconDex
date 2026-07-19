@@ -41,6 +41,18 @@ const KIND_DESC_KEY = {
   connector:'kindDescConnector', sketcher:'kindDescSketcher', designer:'kindDescDesigner',
 };
 
+// The 4 legacy-fixed-module-shaped structure templates Artisan's create
+// wizard (src/renderer/artisan.js, lazy-loaded) can build in one step —
+// moved here (Plan part2 #1) so both the Nest "+" popup's "Start from
+// template" row (buildKindListHtml) and the Hub's Legacy Import section
+// (ensureLegacyImport) can read it synchronously without a lazy-load.
+const ARTISAN_TARGETS = [
+  { id: 'director',  icon: 'director',  labelKey: 'director' },
+  { id: 'navigator', icon: 'navigator', labelKey: 'navigator' },
+  { id: 'hero',      icon: 'hero',      labelKey: 'hero' },
+  { id: 'writer',    icon: 'writer',    labelKey: 'writer' },
+];
+
 // Selection made in the Icon Collection picker (Phase 5): `svg:<I-key>` or
 // `sym:<glyph>`, stored verbatim in module.icon. Falls back to the kind's
 // default icon when unset.
@@ -73,13 +85,18 @@ function isSelfOrDescendant(node, targetId) {
 }
 
 async function reloadModuleTree() {
-  S.moduleTree = S.nexus ? await api.module.getTree(S.nexus.id) : [];
+  [S.moduleTree, S.moduleItemCounts] = S.nexus
+    ? await Promise.all([api.module.getTree(S.nexus.id), api.module.getItemCounts(S.nexus.id)])
+    : [[], {}];
   S.activeModuleNode = S.activeModuleNode ? findModuleNode(S.activeModuleNode.id) : null;
   // prune builder tabs pointing at deleted modules
   for (const pane of (S.builder?.panes || [])) {
     pane.tabs = pane.tabs.filter(k => !k.startsWith('module:') || !!findModuleNode(Number(k.slice(7))));
     if (pane.active && !pane.tabs.includes(pane.active)) pane.active = pane.tabs[0] || null;
   }
+  // Plan part4: drop the lazy content-item cache for any module no longer
+  // in the tree (deleted, or moved to a different nexus).
+  for (const id of [...S.nestItems.keys()]) if (!findModuleNode(id)) S.nestItems.delete(id);
   renderModuleRail();
   renderProjectTabs();
   if (S.view === 'nexus' && !S.activeModule) renderNexusHome();
@@ -106,10 +123,6 @@ function renderModuleRail() {
       ${moduleIconHtml(m)}<span class="mdot" style="background:${x(m.color_code || '#6366f1')}"></span>
     </button>`;
   }
-  // Pinned Import Dock tool (mockup 01's pinned cluster) — jumps to the hub
-  // section; the section's real content is Phase 18.
-  html += `<div class="rail-sep module-rail-tool"></div>
-    <button class="nav-btn module-rail-tool" title="${t('importDock')}" onclick="openImportDockSection()">${I.import}</button>`;
   anchor.insertAdjacentHTML('afterend', html);
 }
 
@@ -122,12 +135,7 @@ function goToNexusNestHub() {
   S.activeModuleNode = null;
   S.filePreview = null;
   S.sageHut = null;
-  renderNexusHome();
-}
-
-function openImportDockSection() {
-  setLeftPanelCollapsed(false);
-  if (!S.hubOpen.dock) { S.hubOpen.dock = true; localStorage.setItem(HUB_OPEN_KEY, JSON.stringify(S.hubOpen)); }
+  S.activeItemNode = null;
   renderNexusHome();
 }
 
@@ -144,18 +152,22 @@ function toggleMajorExpand(id) {
 }
 
 function buildHubHtml() {
-  // Director/Navigator/Hero/Writer migrated into Artisan (Phase 23): the
-  // hub carries no legacy section anymore — the four legacy views stay
-  // reachable from Artisan's sidebar until their data is migrated
-  // (Phase 24).
   const sections = [
     { key: 'nest', html: buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
-        `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>`) },
+        // Plan part1 #6: one-click Collector create, no popup/name-prompt
+        // needed — quickCreateModule already auto-names + enters inline
+        // rename mode for every kind when called with no cat_type decision.
+        `<button class="btn btn-g btn-i" onclick="event.stopPropagation();quickCreateModule('collector',null)" title="${kindLabel('collector')}">${I[KIND_ICON.collector]}</button>
+         <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>`) },
     { key: 'kinds', html: buildAccSection('kinds', t('kindBrowser'), buildKindBrowserHtml()) },
     { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows()) },
     { key: 'dock', html: buildAccSection('dock', t('importDock'),
         typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`) },
+    // Plan part2 #1: relocated from Artisan's own page (now removed) — the
+    // only remaining way to bring pre-v3 Director/Navigator/Hero/Writer
+    // project data into the Nexus Nest.
+    { key: 'legacy', html: buildAccSection('legacy', t('artMigrateSection'), buildLegacyImportRows()) },
   ];
   // VS Code container-fold behavior (Plan part1 #2): toggled-off sections
   // sink to the bottom, stacking against each other and against whatever
@@ -183,6 +195,50 @@ function buildSageHutRows() {
       <span class="kicon">${icon}</span><span class="name">${x(label)}</span>
       ${badge ? `<span class="cnt" data-no-i18n>${x(badge)}</span>` : ''}
     </div>`).join('');
+}
+
+// ═══ LEGACY IMPORT SECTION (Plan part2 #1) ═════════════════════════════
+// Relocated from Artisan's own page (now removed) — lists each not-yet-
+// migrated Director/Navigator/Hero/Writer project per target, one-click
+// "Migrate" per row, non-destructive (src/db/migrate_v3.js). Same lazy-
+// cache-then-rerender idiom as mod/fileviewer.js's ensureImportDock.
+function ensureLegacyImport() {
+  if (!S.nexus || S.legacyImport !== undefined) return;
+  S.legacyImport = null; // loading marker
+  Promise.all(ARTISAN_TARGETS.map(tg => api.migrate.list(tg.id))).then(lists => {
+    S.legacyImport = ARTISAN_TARGETS.map((tg, i) => ({ target: tg, rows: lists[i] }));
+    renderNexusHome();
+  });
+}
+
+function buildLegacyImportRows() {
+  ensureLegacyImport();
+  if (!S.legacyImport) return `<div class="empty" style="padding:14px"><p>…</p></div>`;
+  return S.legacyImport.map(({ target, rows }) => `
+    <div class="legacy-target-group">
+      <div class="li-head" data-no-i18n>${I[target.icon]} ${t(target.labelKey)}</div>
+      ${rows.length ? rows.map(r => `
+        <div class="li">
+          <span class="name">${x(r.name)}</span>
+          <button class="btn btn-s btn-sm" onclick="runLegacyImport('${target.id}',${r.id},this)">${t('artMigrateBtn')}</button>
+        </div>`).join('') : `<div class="empty" style="padding:8px 14px"><p>${t('artMigrateEmpty')}</p></div>`}
+    </div>`).join('');
+}
+
+async function runLegacyImport(target, legacyId, btn) {
+  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
+  if (btn) btn.disabled = true;
+  try {
+    const res = await api.migrate.run(S.nexus.id, target, legacyId);
+    const c = res.counts || {};
+    toast(`${t('artMigrateDone')} — ${c.modules} modules · ${c.objects} objects · ${c.events} events · ${c.chapters} chapters · ${c.dialogues} dialogues`, 'ok');
+    S.legacyImport = undefined; // force refetch — this row is now consumed
+    await reloadModuleTree();
+    if (res.id) await openModuleNode(res.id);
+  } catch (e) {
+    toast(t('vRestoreFailed'), 'error');
+    if (btn) btn.disabled = false;
+  }
 }
 
 // ═══ KIND BROWSER SECTION (Plan part2 #1) ═══════════════════════════════
@@ -249,7 +305,19 @@ function buildNestRow(m, depth, parentId) {
   const col = m.icon_color_code || m.color_code || 'var(--accent)';
   const hasChildren = m.children?.length > 0;
   const collapsed = S.moduleCollapsed.has(m.id);
-  const chev = hasChildren
+  // Plan part4: content-item "minor module" leaves. Fetched lazily, once,
+  // opportunistically at render time (same idiom as buildImportDockRows's
+  // own ensureImportDock() call — idempotent, fires the async fetch once
+  // and re-renders when it resolves) rather than only on an explicit
+  // expand-click, since a module starts EXPANDED by default (not in
+  // S.moduleCollapsed) — a click-only trigger would never fire for a
+  // freshly-opened Nexus's modules.
+  const isContentKind = !!ITEM_KIND[m.kind];
+  if (isContentKind && !collapsed) ensureNestItemsLoaded(m.id);
+  const itemRows = S.nestItems.get(m.id);
+  const itemCount = Array.isArray(itemRows) ? itemRows.length : (S.moduleItemCounts[m.id] || 0);
+  const showChev = hasChildren || (isContentKind && itemCount > 0);
+  const chev = showChev
     ? `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" onclick="event.stopPropagation();toggleMajorExpand(${m.id})"><polyline points="${collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>`
     : '';
   const grip = `<span class="grip">⠿</span>`;
@@ -260,6 +328,13 @@ function buildNestRow(m, depth, parentId) {
   // the tree itself still nests as deep as the drop rules allow.
   const indentCls = depth ? ` indent${Math.min(depth, 5)}` : '';
   const childrenHtml = (hasChildren && !collapsed) ? m.children.map(c => buildNestRow(c, depth + 1, m.id)).join('') : '';
+  // Module sub-structure first, then this module's own content-item leaves
+  // — a brand-new render function, deliberately NOT a buildNestRow
+  // recursion, so these rows structurally cannot inherit drag/drop wiring
+  // (no draggable/ondragstart/ondragover/ondrop, no chevron, no context
+  // menu) — a content item can never be dragged out of its owning module.
+  const itemsHtml = (isContentKind && !collapsed && Array.isArray(itemRows))
+    ? itemRows.map(it => buildNestItemRow(it, m.kind, m.id, depth + 1)).join('') : '';
   // draggable is on the whole row, not just the grip icon — the grip was
   // the only draggable="true" element before, but it's a ~10px target
   // that's invisible until hover, so a real drag started anywhere else on
@@ -269,7 +344,7 @@ function buildNestRow(m, depth, parentId) {
   // input makes placing the caret unreliable).
   return `<div class="li${indentCls}${sel}"
       draggable="${renaming ? 'false' : 'true'}" ondragstart="onNestDragStart(event,${m.id},${parentId ?? 'null'})"
-      ondragover="onNestDragOver(event,this)" ondragleave="onNestDragLeave(event,this)" ondrop="onNestDrop(event,${m.id},${parentId ?? 'null'},this)"
+      ondragover="onNestDragOver(event,this,${m.id})" ondragleave="onNestDragLeave(event,this)" ondrop="onNestDrop(event,${m.id},${parentId ?? 'null'},this)"
       onclick="${renaming ? '' : `scheduleRowOpen(${m.id})`}" oncontextmenu="openModuleContextMenu(event,${m.id})">
     ${grip}${chev}
     <span class="kicon" style="color:${x(col)}" onclick="event.stopPropagation();openModuleIconPopup(${m.id},this)">${moduleIconHtml(m)}</span>
@@ -281,7 +356,76 @@ function buildNestRow(m, depth, parentId) {
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id},this)" title="${t('addMinorModule')}">${I.plus}</button>
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openModuleEditModal(${m.id})" title="${t('moduleEdit')}">${I.edit}</button>
     </span>
-  </div>${childrenHtml}`;
+  </div>${childrenHtml}${itemsHtml}`;
+}
+
+// Leaf row for one content item (Plan part4) — see buildNestRow's own
+// comment above for why this is deliberately not a buildNestRow recursion.
+function buildNestItemRow(item, itemKind, moduleId, depth) {
+  const reg = ITEM_KIND[itemKind];
+  const active = S.activeItemNode?.itemKind === itemKind && S.activeItemNode?.moduleId === moduleId && S.activeItemNode?.id === item.id;
+  const indentCls = ` indent${Math.min(depth, 5)}`;
+  return `<div class="li${indentCls}${active ? ' sel' : ''} nest-item-row" onclick="openItemNode('${itemKind}',${moduleId},${item.id})">
+    <span class="kicon" style="color:var(--t3)">${reg.icon()}</span>
+    <span class="name">${x(reg.nameOf(item))}</span>
+  </div>`;
+}
+
+// Lazy per-module content-item fetch (Plan part4) — idempotent (checked via
+// S.nestItems.has), triggered opportunistically from buildNestRow whenever
+// a content-bearing-kind module's row renders expanded, so it fires both
+// for a module that starts expanded by default and one explicitly toggled
+// open. Mirrors ensureImportDock's own loading-marker-then-cache pattern.
+function ensureNestItemsLoaded(moduleId) {
+  if (S.nestItems.has(moduleId)) return;
+  const m = findModuleNode(moduleId);
+  if (!m || !ITEM_KIND[m.kind]) return;
+  S.nestItems.set(moduleId, null);
+  ITEM_KIND[m.kind].list(moduleId).then(items => {
+    S.nestItems.set(moduleId, items);
+    for (const it of items) {
+      const key = `item:${m.kind}:${moduleId}:${it.id}`;
+      S.itemNodeCache.set(key, { name: ITEM_KIND[m.kind].nameOf(it), color: m.color_code, badge: t(ITEM_KIND[m.kind].badgeKey), icon: ITEM_KIND[m.kind].icon() });
+    }
+    renderNexusHome();
+  });
+}
+
+// Called from every content-item create/rename/delete path (both a
+// module's own inline view and the item's own page) so the Nest tree's
+// lazy cache and count-gated chevron never drift stale. `delta` (+1/-1)
+// keeps the chevron accurate immediately, without waiting for a refetch,
+// when the row isn't currently expanded.
+function invalidateNestItems(moduleId, delta = 0) {
+  if (delta) S.moduleItemCounts[moduleId] = Math.max(0, (S.moduleItemCounts[moduleId] || 0) + delta);
+  const wasLoaded = S.nestItems.has(moduleId);
+  S.nestItems.delete(moduleId);
+  // A deleted item may still have its own Builder tab open in the
+  // background (unfocused, so openItemNode's own "stale tab" re-check never
+  // fires for it) — close those proactively instead of leaving a dead tab.
+  if (delta < 0) closeStaleItemTabs(moduleId, wasLoaded);
+  renderNexusHome();
+}
+
+async function closeStaleItemTabs(moduleId, reload) {
+  const m = findModuleNode(moduleId);
+  if (!m || !ITEM_KIND[m.kind]) return;
+  const items = await ITEM_KIND[m.kind].list(moduleId);
+  if (reload) S.nestItems.set(moduleId, items);
+  const liveIds = new Set(items.map(it => it.id));
+  const prefix = `item:${m.kind}:${moduleId}:`;
+  const b = builderState();
+  let closedAny = false;
+  for (const [idx, pane] of b.panes.entries()) {
+    for (const key of [...pane.tabs]) {
+      if (key.startsWith(prefix) && !liveIds.has(Number(key.slice(prefix.length)))) {
+        await builderCloseTab(idx, key);
+        closedAny = true;
+      }
+    }
+  }
+  if (closedAny) toast(t('itemNotFound'), 'error');
+  renderNexusHome();
 }
 
 // ═══ Drag-reorder / reparent — any depth, any module (Plan part1 #1) ═══
@@ -297,17 +441,29 @@ function onNestDragStart(ev, id, parentId) {
   ev.dataTransfer.effectAllowed = 'move';
   ev.stopPropagation();
 }
-function nestDropZone(ev, row) {
+// Plan part1 #8: a row visually sitting directly below an already-EXPANDED
+// parent already reads as "inside" that parent's children, not as its
+// sibling — so the bottom-quarter zone becomes a child-drop ('in') instead
+// of a sibling reorder ('after') for that specific case. A collapsed
+// parent, or one with no children at all, keeps the original behavior.
+function nestDropZone(ev, row, id) {
   const r = row.getBoundingClientRect();
   const frac = (ev.clientY - r.top) / r.height;
-  return frac < 0.25 ? 'before' : frac > 0.75 ? 'after' : 'in';
+  if (frac < 0.25) return 'before';
+  if (frac > 0.75) {
+    const node = id != null ? findModuleNode(id) : null;
+    const hasChildren = node?.children?.length > 0;
+    const expanded = hasChildren && !S.moduleCollapsed.has(id);
+    return expanded ? 'in' : 'after';
+  }
+  return 'in';
 }
-function onNestDragOver(ev, row) {
+function onNestDragOver(ev, row, id) {
   if (!S.dragNest) return;
   ev.preventDefault();
   ev.stopPropagation();
   row.classList.remove('drop-before', 'drop-after', 'drop-in');
-  row.classList.add(`drop-${nestDropZone(ev, row)}`);
+  row.classList.add(`drop-${nestDropZone(ev, row, id)}`);
 }
 function onNestDragLeave(ev, row) {
   row.classList.remove('drop-before', 'drop-after', 'drop-in');
@@ -321,7 +477,7 @@ async function onNestDrop(ev, targetId, targetParentId, row) {
   if (!drag || drag.id === targetId) return;
   const dragNode = findModuleNode(drag.id);
   if (!dragNode || isSelfOrDescendant(dragNode, targetId)) return;
-  const zone = nestDropZone(ev, row);
+  const zone = nestDropZone(ev, row, targetId);
   const newParentId = zone === 'in' ? targetId : targetParentId;
   if (zone === 'in') S.moduleCollapsed.delete(targetId);
   const siblings = (newParentId == null ? S.moduleTree : findModuleNode(newParentId)?.children || [])
@@ -399,7 +555,11 @@ function openCreateSubmenu(ev, parentId) {
   if (document.querySelector('.ctx-submenu')) return;
   const pop = document.createElement('div');
   pop.className = 'kind-popup kind-list-popup ctx-submenu';
-  pop.innerHTML = buildKindListHtml(parentId);
+  // Plan part1 #7: Collector has its own direct row on the context menu
+  // now (buildModuleContextMenuHtml) — excluded here only, not from the
+  // major/minor-module "+" popups below (openKindPopup's own call stays
+  // unfiltered), which still list every kind including Collector.
+  pop.innerHTML = buildKindListHtml(parentId, true);
   document.body.appendChild(pop);
   pop.addEventListener('click', e => e.stopPropagation());
   pop.addEventListener('mouseenter', cancelCtxSubmenuClose);
@@ -446,11 +606,18 @@ function buildModuleContextMenuHtml(id, isMajor, pinned) {
     // always visible) — moved behind one "Create" row with a hover submenu
     // instead, decluttering the menu the same way a native app's context
     // menu nests a submenu rather than flattening every option.
-    html += `<div class="kind-list-item kli-submenu-parent" onmouseenter="openCreateSubmenu(event,null)" onmouseleave="scheduleCtxSubmenuClose()">
+    // Plan part1 #5: auto-parent to the right-clicked module — this used to
+    // hardcode parentId=null regardless of which module's menu was open,
+    // always creating a new top-level sibling instead of a child of `id`.
+    html += `<div class="kind-list-item kli-submenu-parent" onmouseenter="openCreateSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
       <span class="kli-name">${x(t('create'))}</span><span class="kli-arrow">›</span>
     </div>
       <div class="ctx-sep"></div>
-      <div class="kind-list-item" onclick="closeAllPopups();openMinorModuleModal(${id},ctxAnchor())"><span class="kli-name">${x(t('addMinorModule'))}</span></div>`;
+      <div class="kind-list-item" onclick="closeAllPopups();openMinorModuleModal(${id},ctxAnchor())"><span class="kli-name">${x(t('addMinorModule'))}</span></div>
+      <div class="kind-list-item" onclick="closeAllPopups();quickCreateModule('collector',${id})">
+        <span class="kicon" style="color:${x(KIND_COLOR.collector)}">${I[KIND_ICON.collector]}</span>
+        <span class="kli-text"><span class="kli-name">${x(kindLabel('collector'))}</span><span class="kli-desc">${t(KIND_DESC_KEY.collector)}</span></span>
+      </div>`;
   }
   html += `
     <div class="kind-list-item" onclick="closeAllPopups();startRenameModule(${id})"><span class="kli-name">${x(t('rename'))}</span></div>
@@ -546,11 +713,42 @@ function openKindPopup(parentId, anchor) {
   positionPopupNear(pop, anchor.getBoundingClientRect());
 }
 
-function buildKindListHtml(parentId) {
-  return MODULE_KINDS.map(k => `
+function buildKindListHtml(parentId, excludeCollector = false) {
+  // Plan part2 #1: Artisan's create-wizard ("start from template") only
+  // ever builds a top-level Manager (parent_id always null) — only offer it
+  // where a brand-new top-level module is being created, never on a Minor-
+  // create popup or the module context-menu's "Create" submenu (both
+  // always pass a real parentId).
+  let html = '';
+  if (parentId == null) {
+    html += `<div class="kind-list-item" onclick="openArtisanTemplateList(this)">
+      <span class="kicon" style="color:${x(KIND_COLOR.manager)}">${I.artisan}</span>
+      <span class="kli-text"><span class="kli-name">${t('artStartTemplate')}</span><span class="kli-desc">${t('artV3CardD')}</span></span>
+    </div><div class="ctx-sep"></div>`;
+  }
+  html += MODULE_KINDS.filter(k => !(excludeCollector && k === 'collector')).map(k => `
     <div class="kind-list-item" onclick="quickCreateModule('${k}',${parentId ?? 'null'})">
       <span class="kicon" style="color:${x(KIND_COLOR[k])}">${I[KIND_ICON[k]]}</span>
       <span class="kli-text"><span class="kli-name">${x(kindLabel(k))}</span><span class="kli-desc">${t(KIND_DESC_KEY[k])}</span></span>
+    </div>`).join('');
+  return html;
+}
+
+// Swaps the same popup's content to the 4 template targets (same swap-
+// innerHTML idiom as buildCatTypeListHtml below) — artisan.js isn't in
+// index.html's eager <script> list, so it needs a lazy-load before its
+// startArtisanWizard/ARTISAN_TARGETS-consuming markup can run.
+async function openArtisanTemplateList(anchor) {
+  const pop = document.querySelector('.kind-popup');
+  if (!pop) return;
+  await loadModule('src/renderer/artisan.js');
+  pop.innerHTML = buildArtisanTemplateListHtml();
+}
+function buildArtisanTemplateListHtml() {
+  return ARTISAN_TARGETS.map(tg => `
+    <div class="kind-list-item" onclick="closeAllPopups();startArtisanWizard('${tg.id}')">
+      <span class="kicon">${I[tg.icon]}</span>
+      <span class="kli-text"><span class="kli-name">${t(tg.labelKey)}</span></span>
     </div>`).join('');
 }
 
@@ -748,6 +946,7 @@ async function openModuleNode(id) {
   if (!m) return;
   if (m.kind === 'collector') { if (m.parent_id == null) toggleMajorExpand(id); return; }
   S.activeModuleNode = m;
+  S.activeItemNode = null;
   upsertModuleTab(id);
   updateStatusBar({ item: null, words: null, saveState: null });
   renderModuleRail();

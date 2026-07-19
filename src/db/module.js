@@ -121,6 +121,40 @@ function moveModule(nexusRef, moduleId, newParentId, orderedSiblingIds) {
 
 const countModules = (nexusRef) => getDB().prepare(`SELECT COUNT(*) AS c FROM module WHERE nexus_ref=?`).get(nexusRef).c;
 
+// ═══ Content-item counts (Plan part4 #3) ═══════════════════════════════
+// One COUNT(*) per content-bearing kind, merged into a single {moduleId:
+// count} map — cheap (no row payloads), used only to decide whether a
+// module's Nest-tree row shows an expand chevron before its content items
+// have ever been lazily fetched. The full item lists themselves are never
+// loaded here; see each kind's own getXxx(moduleRef) list-getter for that.
+function getContentItemCounts(nexusRef) {
+  const d = getDB();
+  const counts = {};
+  const add = (rows) => { for (const r of rows) counts[r.module_ref] = (counts[r.module_ref] || 0) + r.c; };
+  add(d.prepare(`
+    SELECT o.module_ref, COUNT(*) AS c FROM classifier_object o
+    JOIN module m ON o.module_ref=m.id WHERE m.nexus_ref=? GROUP BY o.module_ref
+  `).all(nexusRef));
+  add(d.prepare(`
+    SELECT tl.module_ref, COUNT(*) AS c FROM timeline_event te
+    JOIN timeline tl ON te.timeline_id=tl.id
+    JOIN module m ON tl.module_ref=m.id WHERE m.nexus_ref=? GROUP BY tl.module_ref
+  `).all(nexusRef));
+  add(d.prepare(`
+    SELECT ch.module_ref, COUNT(*) AS c FROM book_chapter ch
+    JOIN module m ON ch.module_ref=m.id WHERE m.nexus_ref=? GROUP BY ch.module_ref
+  `).all(nexusRef));
+  add(d.prepare(`
+    SELECT s.module_ref, COUNT(*) AS c FROM chat_session s
+    JOIN module m ON s.module_ref=m.id WHERE m.nexus_ref=? GROUP BY s.module_ref
+  `).all(nexusRef));
+  add(d.prepare(`
+    SELECT n.module_ref, COUNT(*) AS c FROM design_node n
+    JOIN module m ON n.module_ref=m.id WHERE m.nexus_ref=? GROUP BY n.module_ref
+  `).all(nexusRef));
+  return counts;
+}
+
 // ═══ Module Inspector (Phase 4) ═══════════════════════════════════════
 const getModuleAttrs = (moduleId) =>
   getDB().prepare(`SELECT * FROM module_attribute WHERE module_ref=? ORDER BY display_order, id`).all(moduleId);
@@ -186,7 +220,7 @@ const getModuleLinks = (moduleId) => ({
 
 module.exports = {
   getTree, getModule, createModule, updateModule, updateModuleDescription, deleteModule,
-  duplicateModule, moveModule, countModules, nexusOfModule,
+  duplicateModule, moveModule, countModules, nexusOfModule, getContentItemCounts,
   getModuleAttrs, upsertModuleAttr, deleteModuleAttr,
   getModuleUi, setModuleUi,
   getModuleTags, setModuleTags,

@@ -23,6 +23,7 @@ async function openSageTab(tab) {
   S.sageHut = { tab, stats, linkRows, graph };
   S.filePreview = null;
   S.activeModuleNode = null;
+  S.activeItemNode = null;
   if (typeof builderNavigate === 'function') builderNavigate({ kind: 'sagehut', tab });
   renderNexusHome();
 }

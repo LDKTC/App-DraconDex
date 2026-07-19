@@ -112,48 +112,16 @@
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
       </svg>
     </button>
-    <button class="nav-btn nexus-only" title="Scribe" style="display:none" onclick="selectModule('scribe')">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <path d="m10.5 12.5 3 3L9 20l-3 1 1-3z"/>
-      </svg>
-    </button>
-    <button class="nav-btn scribe-only" data-panel="scribe" title="Scribe" style="display:none" onclick="selectModule('scribe')">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <path d="m10.5 12.5 3 3L9 20l-3 1 1-3z"/>
-      </svg>
-    </button>
-    <button class="nav-btn nexus-only" title="Sage" style="display:none" onclick="selectModule('sage')">
+    <!-- Plan part2 #2: opens the same Sage Hut analytics the Hub's own
+         section opens (openSageTab, mod/sagehut.js, eager-loaded) instead
+         of the old whole-panel-swap legacy Sage page — no .sage-only
+         indicator twin needed since this never sets S.activeModule. -->
+    <button class="nav-btn nexus-only" title="Sage" style="display:none" onclick="openSageTab('dataSize')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="18" y1="20" x2="18" y2="10"/>
         <line x1="12" y1="20" x2="12" y2="4"/>
         <line x1="6" y1="20" x2="6" y2="14"/>
         <line x1="2" y1="20" x2="22" y2="20"/>
-      </svg>
-    </button>
-    <button class="nav-btn sage-only" data-panel="sage" title="Sage" style="display:none">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/>
-        <line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6" y1="20" x2="6" y2="14"/>
-        <line x1="2" y1="20" x2="22" y2="20"/>
-      </svg>
-    </button>
-    <button class="nav-btn nexus-only" title="Artisan" style="display:none" onclick="selectModule('artisan')">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/>
-        <path d="m18 15 4-4"/>
-        <path d="M21.5 11.5 19.586 9.586A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
-      </svg>
-    </button>
-    <button class="nav-btn artisan-only" data-panel="artisan" title="Artisan" style="display:none">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/>
-        <path d="m18 15 4-4"/>
-        <path d="M21.5 11.5 19.586 9.586A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
       </svg>
     </button>
     <button class="nav-btn director-only" data-panel="projects" title="โปรเจกต์" style="display:none">
@@ -188,13 +156,6 @@
         <line x1="4" y1="15" x2="20" y2="15"/>
         <line x1="10" y1="3" x2="8" y2="21"/>
         <line x1="16" y1="3" x2="14" y2="21"/>
-      </svg>
-    </button>
-    <button class="nav-btn artisan-shortcut" id="artisan-module-shortcut" title="Artisan" style="display:none" onclick="openArtisanFromModule()">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/>
-        <path d="m18 15 4-4"/>
-        <path d="M21.5 11.5 19.586 9.586A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
       </svg>
     </button>
     <div style="flex:1"></div>
@@ -272,6 +233,7 @@
   <script src="src/renderer/mod/connector.js"></script>
   <script src="src/renderer/mod/sketcher.js"></script>
   <script src="src/renderer/mod/designer.js"></script>
+  <script src="src/renderer/mod/item.js"></script>
   <script src="src/renderer/mod/sagehut.js"></script>
   <script src="src/renderer/mod/fileviewer.js"></script>
   <script src="src/renderer/mod/wanderer.js"></script>

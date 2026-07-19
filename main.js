@@ -137,6 +137,7 @@ h('note:delete',       (id)            => db.deleteNote(id));
 
 // Module system (v3 Nexus nest)
 h('module:getTree',     (nx)          => db.getTree(nx));
+h('module:getItemCounts', (nx)        => db.getContentItemCounts(nx));
 h('module:get',         (id)          => db.getModule(id));
 h('module:create',      (data)        => db.createModule(data));
 h('module:update',      (id,data)     => db.updateModule(id,data));
@@ -652,12 +653,6 @@ h('write:getChats',         (nid)            => db.getWriteChats(nid));
 h('write:createChat',       (nid,txt)        => db.createWriteChat(nid,txt));
 h('write:updateChat',       (id,txt)         => db.updateWriteChat(id,txt));
 h('write:deleteChat',       (id)             => db.deleteWriteChat(id));
-
-// Sage / Analytics
-h('sage:getDataSize',    () => db.getDataSize());
-h('sage:getObjectAmounts', () => db.getObjectAmounts());
-h('sage:getLinkerList',  () => db.getLinkerList());
-h('sage:getLinkerGraph', () => db.getLinkerGraph());
 
 // Window controls for the custom title/tab bar.
 h('window:minimize', () => {

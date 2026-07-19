@@ -159,6 +159,13 @@ const S = {
   // modules; see progress.md Section C for the scoping decision.
   moduleTree:[], activeModuleNode:null, inspectorData:null,
   moduleTabs:[], renamingModuleId:null,
+  // Content-item "minor module" pages (Plan part4) — a separate mirror from
+  // activeModuleNode since an item is never itself a `module` row. nestItems
+  // is the Nest tree's lazy per-module item-list cache (moduleId -> null
+  // while loading, else array); moduleItemCounts gates the expand chevron
+  // before any list has ever been fetched; itemNodeCache feeds builderTabMeta
+  // for tabs whose pane never focused (so the tab label is warm regardless).
+  activeItemNode:null, nestItems:new Map(), moduleItemCounts:{}, itemNodeCache:new Map(),
   classifierData:null, classifierView:'table', classifierSelectedObject:null,
   managerData:null, managerView:'cards',
   locatorAreas:null,
@@ -841,19 +848,15 @@ const MODULE_SUBNAV = {
     ['tags','hashtag','gameTags'] ] },
   writer: { setter:'setWriteTab', items:[
     ['novel','relation','writeNovelLink'], ['note','story','writeChatnote'] ] },
-  scribe: { setter:'setScribeTab', items:[
-    ['graph','relation','graphView'] ] },
-  sage: { setter:'setSageTab', items:[
-    ['dataSize','layer','sageDataSize'], ['objectAmount','table','sageObjectAmount'],
-    ['linkerList','list','sageLinkerList'], ['linkerGraph','relation','sageLinkerGraph'] ] },
 };
 
 function buildModuleSubNav(){
   const rail = q('#nav-sidebar');
   if(!rail) return;
-  // Insert before the Artisan shortcut (bottom of the module cluster) so the
-  // create-from-template button always sits under a module's subnav icons.
-  const anchor = rail.querySelector('#artisan-module-shortcut') || rail.querySelector('div[style*="flex:1"]');
+  // Insert before the flex-spacer (bottom of the module cluster) so the
+  // create-from-template button always sits under a module's subnav icons —
+  // used to anchor before the Artisan shortcut (Plan part2 #1: removed).
+  const anchor = rail.querySelector('div[style*="flex:1"]');
   let html = '';
   for(const [mod, cfg] of Object.entries(MODULE_SUBNAV)){
     for(const [tab, icon, key] of cfg.items){
@@ -868,10 +871,8 @@ function updateModuleSubNav(){
   const show = {
     hero:      S.activeModule === 'hero'      && !!S.game,
     writer:    S.activeModule === 'writer'    && !!S.write,
-    sage:      S.activeModule === 'sage',
-    scribe:    S.activeModule === 'scribe',
   };
-  const cur = { hero:S.gameTab, writer:S.writeTab, sage:S.sageTab, scribe:S.scribeTab };
+  const cur = { hero:S.gameTab, writer:S.writeTab };
   for(const mod of Object.keys(MODULE_SUBNAV)){
     document.querySelectorAll(`.nav-btn.${mod}-sub`).forEach(btn => {
       btn.style.display = show[mod] ? '' : 'none';
@@ -925,23 +926,6 @@ function updateTopNavButton(){
     // With a project active the Writer rail button doubles as the "project"
     // submodule (series → books → chapters), mirroring Hero's rail button.
     btn.classList.toggle('active', S.activeModule === 'writer' && !!S.write && S.writeTab === 'project');
-  });
-  document.querySelectorAll('.nav-btn.sage-only').forEach(btn => {
-    btn.style.display = (S.activeModule === 'sage') ? '' : 'none';
-  });
-  document.querySelectorAll('.nav-btn.scribe-only').forEach(btn => {
-    btn.style.display = (S.activeModule === 'scribe') ? '' : 'none';
-    btn.classList.toggle('active', S.activeModule === 'scribe');
-  });
-  document.querySelectorAll('.nav-btn.artisan-only').forEach(btn => {
-    btn.style.display = (S.activeModule === 'artisan') ? '' : 'none';
-    btn.classList.toggle('active', S.activeModule === 'artisan');
-  });
-  // Create-from-template shortcut shown inside every project module's rail.
-  const artisanFrom = ['director','navigator','hero','writer'].includes(S.activeModule);
-  document.querySelectorAll('.nav-btn.artisan-shortcut').forEach(btn => {
-    btn.style.display = artisanFrom ? '' : 'none';
-    btn.setAttribute('title', t('artisan'));
   });
   updateModuleSubNav();
 }
@@ -1560,8 +1544,6 @@ async function switchView(v) {
   else if (v==='navigator')       { await loadModule('src/renderer/navigator.js'); renderNavigatorView(); }
   else if (v==='hero')            { await loadModule('src/renderer/hero.js'); renderHeroView(); }
   else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
-  else if (v==='sage')            { await loadModule('src/renderer/sage.js'); renderSageView(); }
-  else if (v==='artisan')         { await loadModule('src/renderer/artisan.js'); renderArtisanView(); }
   else if (v==='scribe')          { await loadModule('src/renderer/scribe.js'); renderScribeView(); }
 }
 
@@ -1594,9 +1576,10 @@ function renderNexusHome() {
 }
 
 // The focused pane's page, from the global page mirrors — precedence:
-// module > file preview > sage hut > vault welcome.
+// item page > module > file preview > sage hut > vault welcome.
 function buildBuilderPageHtml() {
-  return S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode)
+  return (S.activeItemNode && typeof buildItemPageHtml === 'function') ? buildItemPageHtml(S.activeItemNode)
+    : S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode)
     : (S.filePreview && typeof buildFileViewerHtml === 'function') ? buildFileViewerHtml()
     : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
     : `<div class="empty" style="margin-top:80px">
@@ -1608,6 +1591,7 @@ function buildBuilderPageHtml() {
 
 // Post-DOM hooks for the focused pane's page.
 function runBuilderMounts() {
+  if (S.activeItemNode && typeof ITEM_KIND !== 'undefined') ITEM_KIND[S.activeItemNode.itemKind]?.mount?.(S.activeItemNode);
   if (!S.activeModuleNode && !S.filePreview && S.sageHut && typeof mountSageHutGraph === 'function') mountSageHutGraph();
   if (typeof hydrateDisplayImages === 'function') hydrateDisplayImages();
   if (S.activeModuleNode?.kind === 'inspector' && typeof mountDetailEditor === 'function') mountDetailEditor(S.activeModuleNode);
@@ -1708,7 +1692,7 @@ function clearWorkspaceTabs() {
   S.world = null; S.game = null; S.write = null;
   S.scribeNote = null; S.scribeOpenFolders = new Set();
   S.moduleTree = []; S.activeModuleNode = null; S.moduleTabs = [];
-  S.builder = null; S.filePreview = null; S.sageHut = null; S.importFiles = undefined;
+  S.builder = null; S.filePreview = null; S.sageHut = null; S.importFiles = undefined; S.legacyImport = undefined;
   S.displayImageCache = null;
   q('#main-inner')?.querySelectorAll(':scope > .bpane').forEach(el => el.remove());
   renderProjectTabs();
@@ -1852,18 +1836,6 @@ function selectModule(name) {
     q('.nav-btn[data-panel="writer"]')?.classList.add('active');
     updateTopNavButton();
     loadModule('src/renderer/writer.js').then(() => renderWriterView());
-  } else if (name === 'sage') {
-    S.view = 'sage';
-    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
-    q('.nav-btn[data-panel="sage"]')?.classList.add('active');
-    updateTopNavButton();
-    loadModule('src/renderer/sage.js').then(() => renderSageView());
-  } else if (name === 'artisan') {
-    S.view = 'artisan';
-    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
-    q('.nav-btn[data-panel="artisan"]')?.classList.add('active');
-    updateTopNavButton();
-    loadModule('src/renderer/artisan.js').then(() => renderArtisanView());
   } else if (name === 'scribe') {
     S.view = 'scribe';
     S.scribeNote = null; S.scribeTab = 'notes';
@@ -2040,15 +2012,6 @@ function bindGlobalShortcuts() {
   });
 }
 
-// Rail shortcut inside each project module: open Artisan with that module's
-// templates preselected, so a templated project is one click away.
-function openArtisanFromModule(){
-  if(['director','navigator','hero','writer'].includes(S.activeModule)){
-    S.artisanTarget = S.activeModule;
-  }
-  selectModule('artisan');
-}
-
 function returnToNexus() {
   if (typeof closeRelNodeNote === 'function') closeRelNodeNote();
   S.activeModule = null;
@@ -2059,7 +2022,6 @@ function returnToNexus() {
   S.game = null; S.gameTab = 'project';
   S.write = null; S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null;
   S.writeChapter = null; S.writeWikiChapter = null; S.writeNote = null;
-  S.artisanTarget = null;
   S.view = 'nexus';
   renderProjectTabs();
   renderNexusHome();

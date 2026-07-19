@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   module: {
     getTree: (nx)          => inv('module:getTree', nx),
+    getItemCounts: (nx)    => inv('module:getItemCounts', nx),
     get:     (id)          => inv('module:get', id),
     create:  (data)        => inv('module:create', data),
     update:  (id,data)     => inv('module:update', id,data),
@@ -493,12 +494,6 @@ contextBridge.exposeInMainWorld('api', {
     createChat:           (nid,txt)       => inv('write:createChat', nid,txt),
     updateChat:           (id,txt)        => inv('write:updateChat', id,txt),
     deleteChat:           (id)            => inv('write:deleteChat', id),
-  },
-  sage: {
-    getDataSize:     () => inv('sage:getDataSize'),
-    getObjectAmounts:() => inv('sage:getObjectAmounts'),
-    getLinkerList:   () => inv('sage:getLinkerList'),
-    getLinkerGraph:  () => inv('sage:getLinkerGraph'),
   },
   window: {
     minimize:       () => inv('window:minimize'),

@@ -120,6 +120,7 @@ async function openImportFile(id) {
   S.filePreview = { ...f, content, zoom: 1 };
   S.sageHut = null;
   S.activeModuleNode = null;
+  S.activeItemNode = null;
   if (typeof builderNavigate === 'function') builderNavigate({ kind: 'file', id });
   renderNexusHome();
 }

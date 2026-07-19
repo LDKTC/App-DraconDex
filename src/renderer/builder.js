@@ -40,10 +40,16 @@ const builderNewPane = () => ({ tabs: [], active: null, history: [], hIdx: -1 })
 
 const builderPageKey = (ref) => !ref ? '' :
   ref.kind === 'module' ? `module:${ref.id}` :
-  ref.kind === 'file' ? `file:${ref.id}` : `sagehut:${ref.tab}`;
+  ref.kind === 'file' ? `file:${ref.id}` :
+  ref.kind === 'item' ? `item:${ref.itemKind}:${ref.moduleId}:${ref.id}` : `sagehut:${ref.tab}`;
 
 function builderParseKey(key) {
-  const [kind, v] = String(key).split(':');
+  const str = String(key);
+  if (str.startsWith('item:')) {
+    const [, itemKind, moduleId, id] = str.split(':');
+    return { kind: 'item', itemKind, moduleId: Number(moduleId), id: Number(id) };
+  }
+  const [kind, v] = str.split(':');
   if (kind === 'module' || kind === 'file') return { kind, id: Number(v) };
   if (kind === 'sagehut') return { kind, tab: v };
   return null;
@@ -66,12 +72,13 @@ function builderNavigate(ref) {
 
 async function builderOpenPage(ref) {
   if (!ref) {
-    S.activeModuleNode = null; S.filePreview = null; S.sageHut = null;
+    S.activeModuleNode = null; S.filePreview = null; S.sageHut = null; S.activeItemNode = null;
     renderNexusHome();
     return;
   }
   if (ref.kind === 'module') await openModuleNode(ref.id);
   else if (ref.kind === 'file') await openImportFile(ref.id);
+  else if (ref.kind === 'item') await openItemNode(ref.itemKind, ref.moduleId, ref.id);
   else if (ref.kind === 'sagehut') await openSageTab(ref.tab);
 }
 
@@ -223,6 +230,11 @@ async function builderCloseTab(paneIdx, key) {
 
   if (pane.tabs.length === 0) {
     if (!builderCloseIfEmpty(paneIdx)) { pane.active = null; renderNexusHome(); }
+    // Plan part1 #1: a popup window (S.isPopup) always starts as a single
+    // leaf pane with no parent split node, so builderCloseIfEmpty above is
+    // always a no-op for it — closing its last tab must close the window
+    // itself instead of leaving an empty popup behind.
+    if (S.isPopup && builderState().panes.every(p => p.tabs.length === 0)) await api.window.close();
     return;
   }
 
@@ -257,14 +269,21 @@ function builderTabMeta(key) {
   if (ref.kind === 'module') {
     const m = findModuleNode(ref.id);
     if (!m) return null;
-    return { name: m.name, badge: kindLabel(m.kind), color: m.color_code || 'var(--accent)' };
+    return { name: m.name, badge: kindLabel(m.kind), color: m.color_code || 'var(--accent)', icon: moduleIconHtml(m) };
   }
   if (ref.kind === 'file') {
     const f = (S.importFiles || []).find(v => v.id === ref.id) || (S.filePreview?.id === ref.id ? S.filePreview : null);
-    return { name: f ? f.file_name : `#${ref.id}`, badge: 'File', color: 'var(--accent)' };
+    return { name: f ? f.file_name : `#${ref.id}`, badge: 'File', color: 'var(--accent)', icon: I.document };
+  }
+  if (ref.kind === 'item') {
+    const key = builderPageKey(ref);
+    const cached = S.itemNodeCache?.get(key);
+    if (cached) return cached;
+    const m = findModuleNode(ref.moduleId);
+    return { name: `#${ref.id}`, badge: kindLabel(ref.itemKind), color: m?.color_code || 'var(--accent)', icon: ITEM_KIND[ref.itemKind]?.icon() || I.document };
   }
   const lbl = typeof SAGEHUT_VIEW_LABEL !== 'undefined' ? SAGEHUT_VIEW_LABEL[ref.tab] : ref.tab;
-  return { name: `Sage Hut · ${lbl}`, badge: 'Sage', color: 'var(--accent)' };
+  return { name: `Sage Hut · ${lbl}`, badge: 'Sage', color: 'var(--accent)', icon: I.sage };
 }
 
 // ═══ Module Inspector toggle (Plan part3 #3) ═══════════════════════════
@@ -300,6 +319,13 @@ function ensureNodeElement(node) {
         const idx = Number(el.dataset.pane);
         if (builderState().focused !== idx) { ev.stopPropagation(); builderFocusPane(idx); }
       }, true);
+      // Plan part1 #3: .bpane-head's own DOM node survives every re-render
+      // (only its innerHTML is replaced, see renderBuilderPanes), so a
+      // ResizeObserver attached here once keeps working across renders as
+      // long as it looks up the current .bpane-tabs at callback time rather
+      // than holding a reference to the one that existed at observe() time.
+      const head = el.querySelector('.bpane-head');
+      new ResizeObserver(() => syncTabBarCompact(head.querySelector('.bpane-tabs'))).observe(head);
       const body = el.querySelector('.bpane-body');
       body.ondragover = (ev) => onBodyDragOver(ev, body);
       body.ondragleave = (ev) => onBodyDragLeave(ev, body);
@@ -373,6 +399,10 @@ document.addEventListener('mousemove', (ev) => {
     ? Math.max(0.15, Math.min(0.85, (ev.clientX - rect.left) / rect.width))
     : Math.max(0.15, Math.min(0.85, (ev.clientY - rect.top) / rect.height));
   applySplitGridTemplate(q(`#main-inner [data-node-id="${node.id}"]`), node);
+  // Plan part1 #3: dragging a split handle changes pane width without going
+  // through renderBuilderPanes — resync compact state live for every pane,
+  // not just the two under this split (cheap: a handful of DOM nodes).
+  document.querySelectorAll('#main-inner .bpane-tabs').forEach(syncTabBarCompact);
 });
 document.addEventListener('mouseup', () => {
   if (!builderSplitResizeState) return;
@@ -400,6 +430,7 @@ function renderBuilderPanes(contentHtml, runMounts) {
     const focused = idx === b.focused;
     paneEl.classList.toggle('focused', focused && b.layoutTree.type === 'split');
     paneEl.querySelector('.bpane-head').innerHTML = builderPaneHeadHtml(idx, pane, focused);
+    syncTabBarCompact(paneEl.querySelector('.bpane-tabs'));
     if (focused) {
       paneEl.querySelector('.bpane-body').innerHTML = contentHtml();
     } else {
@@ -432,6 +463,7 @@ function builderPaneHeadHtml(i, pane, focused) {
       ondragend="onTabDragEnd(event,${i},'${x(key)}')"
       onclick="builderSwitchTab(${i},'${x(key)}')" title="${x(meta.name)}">
       <span class="tab-dot" style="background:${x(meta.color)}"></span>
+      <span class="tab-kicon">${meta.icon || ''}</span>
       <span class="tab-name">${x(meta.name)}</span>
       <span class="ek" data-no-i18n>${x(meta.badge)}</span>
       ${S.isPopup ? `<span class="tab-close" onclick="event.stopPropagation();builderMoveTabToMain(${i},'${x(key)}')" title="${t('moveToMainWindow')}">${I.return}</span>` : ''}
@@ -518,6 +550,18 @@ function clearDragReflow() {
   d.barEl.classList.remove('reordering');
   d.barEl.querySelectorAll('.project-tab').forEach(el => { el.style.transform = ''; el.style.opacity = ''; });
 }
+
+// Plan part1 #3: tabs shrink to fit their pane instead of overflowing into a
+// horizontal-scroll strip. Below this many px/tab, ellipsis-truncated text
+// stops being legible, so collapse to icon-only (.tabs-compact) instead.
+const TAB_COMPACT_THRESHOLD = 90;
+function syncTabBarCompact(barEl) {
+  if (!barEl) return;
+  const tabs = barEl.children.length;
+  if (!tabs) return;
+  const perTab = barEl.clientWidth / tabs;
+  barEl.classList.toggle('tabs-compact', perTab < TAB_COMPACT_THRESHOLD);
+}
 async function onTabDrop(ev, paneIdx, key, tabEl) {
   ev.preventDefault();
   ev.stopPropagation();
@@ -528,6 +572,13 @@ async function onTabDrop(ev, paneIdx, key, tabEl) {
   clearDragReflow();
   S.dragTab = null;
   if (!drag || (drag.paneIdx === paneIdx && drag.key === key)) return; // dropped on itself
+  // Plan part1 #2: a same-pane reorder uses the exact slot the drag-over
+  // reflow animation was already driving (d.curIndex, computed once from
+  // the frozen pre-drag rects) instead of re-deriving a target key +
+  // before/after zone from tabEl's LIVE bounding rect at drop time — that
+  // rect can be transform-shifted by the reflow itself and disagree with
+  // what the animation visually showed, landing the tab in the wrong slot.
+  if (!crossPane && drag.curIndex >= 0) { builderMoveTabToIndex(drag, paneIdx, drag.curIndex); return; }
   await builderMoveTabTo(drag, paneIdx, key, tabDropZone(ev, tabEl));
 }
 
@@ -581,6 +632,20 @@ async function builderMoveTabTo(drag, paneIdx, targetKey, zone) {
     if (removed && drag.paneIdx < paneIdx) paneIdx--;
   }
   await builderFocusPane(paneIdx, builderParseKey(drag.key));
+}
+
+// Same-pane reorder only (Plan part1 #2) — inserts at the exact index the
+// drag-over reflow was driving. `index` is into the pre-drag tab order (the
+// same order d.rects/d.curIndex were computed against); splicing the
+// dragged key out first then clamping the insertion index to the now-
+// shorter array reproduces that visually-indicated final position exactly.
+function builderMoveTabToIndex(drag, paneIdx, index) {
+  const pane = builderState().panes[paneIdx];
+  const srcIdx = pane.tabs.indexOf(drag.key);
+  if (srcIdx < 0) return; // stale — dragged tab was closed mid-drag
+  pane.tabs.splice(srcIdx, 1);
+  pane.tabs.splice(Math.min(index, pane.tabs.length), 0, drag.key);
+  renderNexusHome();
 }
 
 // ═══ Auto-split on drag-to-edge (Plan part4 #3) ════════════════════════
@@ -675,10 +740,12 @@ async function onTabDragEnd(ev, paneIdx, key) {
 // pane if it empties, Plan part1 #1), tell the main window to open it, then
 // close this whole popup once every pane in it is empty.
 async function builderMoveTabToMain(paneIdx, key) {
-  await builderCloseTab(paneIdx, key);
+  // Move the tab to the main window FIRST, then close it locally —
+  // builderCloseTab now closes this (popup) window itself once every pane
+  // is empty (Plan part1 #1), so doing the move first avoids the popup
+  // starting to close before the main window has actually adopted the tab.
   await api.window.moveTabToMain(S.nexus.id, key);
-  const b = builderState();
-  if (b.panes.every(p => p.tabs.length === 0)) await api.window.close();
+  await builderCloseTab(paneIdx, key);
 }
 
 async function builderPopOutTab(paneIdx, key) {
@@ -721,6 +788,7 @@ function builderStaticPageHtml(ref) {
       if (m) return buildModuleDetailHtml(m);
     }
     if (ref?.kind === 'file' && S.filePreview?.id === ref.id) return buildFileViewerHtml();
+    if (ref?.kind === 'item' && S.activeItemNode && builderPageKey(ref) === builderPageKey({ kind: 'item', ...S.activeItemNode })) return buildItemPageHtml(S.activeItemNode);
     if (ref?.kind === 'sagehut' && S.sageHut) return buildSageHutHtml();
   } catch (_) {}
   return '';

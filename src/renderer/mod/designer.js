@@ -235,6 +235,7 @@ async function addDesignNode(shape) {
   const color = DG_COLORS[(d.nodes.length) % (DG_COLORS.length - 1)];
   const id = await api.designer.createNode(d.moduleId, shape, c.x + jitter(), c.y + jitter(), '', color, null);
   await openModuleNode(d.moduleId);
+  invalidateNestItems(d.moduleId, 1);
   openDesignNodeModal(id);
 }
 
@@ -272,19 +273,31 @@ function dgArmEdgePick() {
 }
 
 // ── Node / edge / pin modals ────────────────────────────────────────────
+// Extracted (Plan part4) so the node's own dedicated item page
+// (src/renderer/mod/item.js) can reuse the exact same fields, scoped by its
+// own id prefix instead of the shared '#modal' selector the original inline
+// markup used — a container-scoped selector works correctly whether this
+// renders inside the modal or the item page (only one of either is ever
+// mounted at a time either way).
+function buildDesignNodeFieldsHtml(n, opts = {}) {
+  const prefix = opts.prefix || 'dn';
+  return `
+    <div class="fg"><label>${t('content')}</label><input id="${prefix}-text" value="${x(n.node_text || '')}" ${n.linker_key ? 'disabled' : ''}></div>
+    <div class="fg"><label data-no-i18n>Shape</label>
+      <select id="${prefix}-shape" data-no-i18n ${n.linker_key ? 'disabled' : ''}>${DG_SHAPES.map(s =>
+        `<option value="${s}" ${n.shape === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+    <div class="fg"><label data-no-i18n>Color</label>
+      <div class="vw-kindchecks" id="${prefix}-colors">${DG_COLORS.map(c =>
+        `<span class="sk-swatch${(n.color || '') === c ? ' act' : ''}" style="background:${c}" onclick="document.querySelectorAll('#${prefix}-colors .sk-swatch').forEach(e=>e.classList.remove('act'));this.classList.add('act')" data-color="${c}"></span>`).join('')}
+      </div></div>`;
+}
+
 function openDesignNodeModal(id) {
   const d = S.designerData;
   const n = d.nodes.find(nn => nn.id === id);
   if (!n) return;
   openModal(t('moduleEdit'), `
-    <div class="fg"><label>${t('content')}</label><input id="dn-text" value="${x(n.node_text || '')}" ${n.linker_key ? 'disabled' : ''}></div>
-    <div class="fg"><label data-no-i18n>Shape</label>
-      <select id="dn-shape" data-no-i18n ${n.linker_key ? 'disabled' : ''}>${DG_SHAPES.map(s =>
-        `<option value="${s}" ${n.shape === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-    <div class="fg"><label data-no-i18n>Color</label>
-      <div class="vw-kindchecks">${DG_COLORS.map(c =>
-        `<span class="sk-swatch${(n.color || '') === c ? ' act' : ''}" style="background:${c}" onclick="document.querySelectorAll('#modal .sk-swatch').forEach(e=>e.classList.remove('act'));this.classList.add('act');this.dataset.sel='1'" data-color="${c}"></span>`).join('')}
-      </div></div>
+    ${buildDesignNodeFieldsHtml(n, { prefix: 'dn' })}
     <div class="mfoot">
       <button class="btn btn-d" onclick="deleteDesignNodeRow(${n.id})">${t('delete')}</button>
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
@@ -299,19 +312,22 @@ async function submitDesignNode(id) {
   if (!n) return;
   const text = q('#dn-text')?.value ?? n.node_text;
   const shape = q('#dn-shape')?.value || n.shape;
-  const colorEl = document.querySelector('#modal .sk-swatch.act');
+  const colorEl = document.querySelector('#dn-colors .sk-swatch.act');
   const color = colorEl ? colorEl.dataset.color : n.color;
   await api.designer.updateNode(id, shape, text, color);
   closeModal();
   await openModuleNode(d.moduleId);
+  invalidateNestItems(d.moduleId);
   toast(t('saved'), 'ok');
 }
 
 async function deleteDesignNodeRow(id) {
   if (!await uiConfirm(t('moduleDeleteConfirm'))) return;
+  const moduleId = S.designerData.moduleId;
   await api.designer.deleteNode(id);
   closeModal();
-  await openModuleNode(S.designerData.moduleId);
+  await openModuleNode(moduleId);
+  invalidateNestItems(moduleId, -1);
   toast(t('deleted'), 'ok');
 }
 

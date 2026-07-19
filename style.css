@@ -996,11 +996,19 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
 .kli-text{display:flex;flex-direction:column;gap:1px;min-width:0}
 .kli-name{font-size:calc(12.5px * var(--fsc,1));color:var(--t1)}
 .kli-desc{font-size:calc(10.5px * var(--fsc,1));color:var(--t3);line-height:1.35}
-/* Plan part1 #6 — the whole popup is one docked, vertically scrollable
-   container (mouse-wheel scrolls it) instead of just the icon grid having
-   its own short, separately-scrolling inner box; this also keeps the
-   popup from growing past the viewport when there are many symbols/colors. */
-.icon-edit-popup{padding:12px;width:280px;max-height:min(72vh,520px);overflow-y:auto}
+/* Plan part1 #4 (this round) reverses a prior round's "whole popup scrolls
+   as one block" decision: only the icon/symbol swatch grid gets its own
+   fixed-height, independently scrolling box (mouse-wheel over the grid
+   only) — preview/tabs/color rows stay fixed in place. .icon-edit-popup
+   itself keeps only a generous last-resort cap (positionPopupNear already
+   viewport-clamps it; this should essentially never engage in normal use,
+   it's just a safety net against an unusually large custom color palette). */
+.icon-edit-popup{padding:12px;width:280px;max-height:calc(100vh - 40px);overflow-y:auto}
+/* 4 rows of .ipk-cell (36px) + 3 row-gaps (6px, .ipk-grid's own gap) = 162px.
+   #ipk-upload-pane deliberately excluded — it shares .ipk-grid's id-selector
+   override for a flex-column crop UI, not a swatch grid, and its 220x220px
+   crop canvas would clip badly inside a 162px box. */
+#ipk-icon-grid,#ipk-symbol-grid{max-height:162px;overflow-y:auto}
 /* Right-click context menu (hub.js) — reuses .kind-popup base + .kind-list-item
    rows; Major-module variant appends action rows below the full create-list,
    so it gets the same docked scrollable max-height as .icon-edit-popup above. */
@@ -1274,8 +1282,27 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .li .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .li .acts{display:none;gap:2px;-webkit-user-drag:none}
 .li:hover .acts{display:flex}
+/* Hub's Legacy Import section (Plan part2 #1): one .li-head per legacy
+   target (Director/Navigator/Hero/Writer), grouping that target's own
+   migrate-list rows underneath it. */
+.legacy-target-group{margin-bottom:10px}
+.legacy-target-group:last-child{margin-bottom:0}
+.li-head{
+	display:flex;align-items:center;gap:6px;padding:6px 10px 2px;
+	color:var(--t3);font-size:calc(11px * var(--fsc,1));font-weight:600;
+	text-transform:uppercase;letter-spacing:.05em;
+}
+.li-head .icon{width:13px;height:13px}
 /* Hovering the char-symbol button shouldn't also highlight the whole row */
 .li:has(> div > .char-sym-btn:hover){background:transparent;color:var(--t2)}
+/* Content-item "minor module" leaves in the Nest tree (Plan part4) — a
+   plain, non-draggable .li row (no grip/chevron/context-menu, see
+   buildNestItemRow) one level under their owning module. */
+.nest-item-row{cursor:pointer}
+.nest-item-row .kicon .icon{width:14px;height:14px}
+/* Content item's own dedicated Builder page body (Plan part4) — just a
+   sizing/spacing wrapper around whichever per-kind fields it renders. */
+.item-page-body{padding:14px 18px}
 
 /* World character's linked-object chips: clamped to one row by default so a
    long link list doesn't blow up the card's height; an expand button (shown
@@ -2699,11 +2726,22 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .bpane-head .bnav:disabled{opacity:.35;pointer-events:none}
 .bpane-tabs{display:flex;gap:4px;overflow-x:auto;min-width:0;min-height:32px;flex:1}
 .bpane-tabs::-webkit-scrollbar{height:4px}
-.bpane-tabs .project-tab{flex-shrink:0}
+/* Plan part1 #3: tabs shrink together to fit the bar instead of staying a
+   fixed width and overflowing into the horizontal scrollbar above (kept
+   only as a defensive fallback for a pathological tab count — unreachable
+   in realistic use once .tabs-compact's icon-only floor kicks in). */
+.bpane-tabs .project-tab{flex:1 1 0;min-width:28px;max-width:200px}
 .bpane-tabs.reordering .project-tab{transition:transform .12s ease,opacity .12s ease}
 .bpane-tabs .project-tab.pane-active{background:var(--raised)}
 .bpane-tabs .project-tab.tab-drop-before{box-shadow:inset 2px 0 0 0 var(--accent)}
 .bpane-tabs .project-tab.tab-drop-after{box-shadow:inset -2px 0 0 0 var(--accent)}
+.bpane-tabs .project-tab .tab-kicon{display:none;width:14px;height:14px;flex-shrink:0}
+.bpane-tabs .project-tab .tab-kicon .icon{width:14px;height:14px}
+.bpane-tabs.tabs-compact .project-tab{padding:0 6px;justify-content:center;gap:0}
+.bpane-tabs.tabs-compact .project-tab .tab-name,
+.bpane-tabs.tabs-compact .project-tab .ek,
+.bpane-tabs.tabs-compact .project-tab .tab-dot{display:none}
+.bpane-tabs.tabs-compact .project-tab .tab-kicon{display:flex;align-items:center;justify-content:center}
 .bpane-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px;min-width:0;position:relative}
 .bpane-body.drop-left{box-shadow:inset 4px 0 0 0 var(--accent)}
 .bpane-body.drop-right{box-shadow:inset -4px 0 0 0 var(--accent)}

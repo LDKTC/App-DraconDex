@@ -1133,6 +1133,14 @@ function initDB() {
       }
     } catch (_) {}
   }
+  // Legacy → v3 migration (src/db/migrate_v3.js) flags the source project
+  // once migrated so it stops reappearing in the Legacy Import list —
+  // non-destructive (the original row/data stays, only this flag changes).
+  for (const t of ['project', 'world_project', 'game_project', 'write_project']) {
+    if (hasTable(db, t) && !hasColumn(db, t, 'migrated_v3')) {
+      try { db.prepare(`ALTER TABLE ${t} ADD COLUMN migrated_v3 INTEGER NOT NULL DEFAULT 0`).run(); } catch (_) {}
+    }
+  }
   if (hasTable(db, 'world_novel') && !hasColumn(db, 'world_novel', 'char_category_ref')) {
     try { db.prepare(`ALTER TABLE world_novel ADD COLUMN char_category_ref INTEGER REFERENCES object_category(id) ON DELETE SET NULL`).run(); } catch (_) {}
   }

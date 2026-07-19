@@ -2,10 +2,14 @@
 // ═══ Legacy → v3 migration (progress.md Phase 24) ══════════════════════
 // Lazy, NON-DESTRUCTIVE: one transaction maps a legacy project tree
 // (Director project / Navigator world / Hero game / Writer project) onto
-// a fresh Manager Major + Minors in the Nexus nest. Original rows are
-// never touched — the user removes them manually once satisfied.
-// Triggered from Artisan's per-target legacy list ("นำเข้าเป็น v3").
+// a fresh Manager Major + Minors in the Nexus nest. Original rows/data are
+// never touched or deleted — the source project is only flagged
+// (migrated_v3=1) so it stops being offered again; the user can still
+// remove it manually once satisfied. Triggered from the Nexus Nest Hub's
+// "Legacy Import" section ("นำเข้าเป็น v3", src/renderer/hub.js).
 const { getDB } = require('./core');
+
+const LEGACY_TABLE = { director: 'project', navigator: 'world_project', hero: 'game_project', writer: 'write_project' };
 
 function migrateLegacy(nexusId, target, legacyId) {
   const d = getDB();
@@ -201,6 +205,8 @@ function migrateLegacy(nexusId, target, legacyId) {
     }
 
     else throw new Error(`unknown target ${target}`);
+
+    d.prepare(`UPDATE ${LEGACY_TABLE[target]} SET migrated_v3=1 WHERE id=?`).run(legacyId);
     return majorId;
   });
 
@@ -208,14 +214,15 @@ function migrateLegacy(nexusId, target, legacyId) {
   return { id, counts };
 }
 
-// Legacy project lists for Artisan's migration UI.
+// Legacy project lists for the Nexus Nest Hub's Legacy Import section —
+// excludes anything already flagged migrated_v3 (see migrateLegacy above).
 function listLegacyProjects(target) {
   const d = getDB();
   const sqls = {
-    director: `SELECT id, name FROM project ORDER BY name COLLATE NOCASE`,
-    navigator: `SELECT id, name FROM world_project ORDER BY name COLLATE NOCASE`,
-    hero: `SELECT id, name FROM game_project ORDER BY name COLLATE NOCASE`,
-    writer: `SELECT id, project_name AS name FROM write_project ORDER BY project_name COLLATE NOCASE`,
+    director: `SELECT id, name FROM project WHERE migrated_v3=0 ORDER BY name COLLATE NOCASE`,
+    navigator: `SELECT id, name FROM world_project WHERE migrated_v3=0 ORDER BY name COLLATE NOCASE`,
+    hero: `SELECT id, name FROM game_project WHERE migrated_v3=0 ORDER BY name COLLATE NOCASE`,
+    writer: `SELECT id, project_name AS name FROM write_project WHERE migrated_v3=0 ORDER BY project_name COLLATE NOCASE`,
   };
   try { return d.prepare(sqls[target]).all(); } catch (_) { return []; }
 }

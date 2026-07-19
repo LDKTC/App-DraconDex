@@ -87,22 +87,26 @@ function buildChatScribeMainHtml(m) {
     ${rows}
     <div class="li au-add" onclick="openChatSessionModal(${m.id})">${I.plus}<span class="name">${t('chatNewSession')}</span></div>
   </div>`;
-  const body = d.view === 'transcript' ? buildChatTranscriptHtml(d) : buildChatBubblesHtml(d);
+  const ses = d.sessions.find(s => s.id === d.selectedId);
+  const body = d.view === 'transcript' ? buildChatTranscriptHtml(d) : buildChatBubblesHtml(ses, d.messages);
   return `${toolbar}<div class="author-layout">${column}<div class="author-main chs-main">${body}</div></div>`;
 }
 
 // ── Chat view: bubble stream + input row ────────────────────────────────
-function buildChatBubblesHtml(d) {
-  const ses = d.sessions.find(s => s.id === d.selectedId);
-  if (!ses) return '';
+// Parameterized on (session, messages) rather than reading S.chatScribeData
+// directly (Plan part4) — the session's own dedicated item page
+// (src/renderer/mod/item.js) reuses this exact function with its own
+// freshly-fetched session/messages, distinct ids/send-hook via `opts`.
+function buildChatBubblesHtml(session, messages, opts = {}) {
+  if (!session) return '';
   const resolve = typeof resolveWikiNameCached === 'function' ? resolveWikiNameCached : null;
   let html = '';
   let lastDay = null;
-  for (const g of d.messages) {
+  for (const g of messages) {
     const day = chsDayLabel(g.create_at);
     if (day !== lastDay) {
       lastDay = day;
-      html += `<div class="chs-day" data-no-i18n>${x(day)} · session: ${x(ses.name)}</div>`;
+      html += `<div class="chs-day" data-no-i18n>${x(day)} · session: ${x(session.name)}</div>`;
     }
     html += `<div class="chs-row">
       <div class="chs-bubble">
@@ -115,11 +119,14 @@ function buildChatBubblesHtml(d) {
       </div>
     </div>`;
   }
-  if (!d.messages.length) html = `<div class="empty" style="margin-top:30px"><p>${t('nestEmpty')}</p></div>`;
-  return `<div id="chs-stream" class="chs-stream">${html}</div>
+  if (!messages.length) html = `<div class="empty" style="margin-top:30px"><p>${t('nestEmpty')}</p></div>`;
+  const streamId = opts.streamId || 'chs-stream';
+  const inputId = opts.inputId || 'chs-input';
+  const onSend = opts.onSend || 'sendChatMessage()';
+  return `<div id="${streamId}" class="chs-stream">${html}</div>
     <div class="chs-inputrow">
-      <input id="chs-input" placeholder="${t('chatTypeNote')}" onkeydown="if(event.key==='Enter')sendChatMessage()">
-      <button class="btn btn-p" onclick="sendChatMessage()">${t('chatSend')}</button>
+      <input id="${inputId}" placeholder="${t('chatTypeNote')}" onkeydown="if(event.key==='Enter')${onSend}">
+      <button class="btn btn-p" onclick="${onSend}">${t('chatSend')}</button>
     </div>`;
 }
 
@@ -185,6 +192,7 @@ async function submitChatSession(moduleId, id) {
   }
   closeModal();
   await openModuleNode(moduleId);
+  invalidateNestItems(moduleId, id ? 0 : 1);
   toast(id ? t('saved') : t('created'), 'ok');
 }
 
@@ -195,11 +203,36 @@ async function deleteChatSessionRow(id) {
   const d = S.chatScribeData;
   if (d.selectedId === id) d.selectedId = null;
   await openModuleNode(d.moduleId);
+  invalidateNestItems(d.moduleId, -1);
   toast(t('deleted'), 'ok');
 }
 
-function openChatMessageModal(id) {
-  const g = S.chatScribeData?.messages.find(v => v.id === id);
+// Current session id regardless of which of the two contexts (Plan part4)
+// is showing this message row — the module's own Chat view, or the
+// session's own dedicated item page.
+function chatScribeActiveSessionId() {
+  return S.activeItemNode?.itemKind === 'scribe' ? S.activeItemNode.id : S.chatScribeData?.selectedId;
+}
+
+// Re-render whichever context is currently live after a message CRUD —
+// mirrors the equivalent branch in chronicler.js's saveChroniclerInspectorField.
+async function refreshChatScribeMessages() {
+  if (S.activeItemNode?.itemKind === 'scribe') {
+    await openItemNode('scribe', S.activeItemNode.moduleId, S.activeItemNode.id);
+    return;
+  }
+  const d = S.chatScribeData;
+  if (!d) return;
+  d.messages = await api.chatscribe.getMessages(d.selectedId);
+  const ses = d.sessions.find(s => s.id === d.selectedId);
+  if (ses) ses.message_count = d.messages.length;
+  renderNexusHome();
+}
+
+async function openChatMessageModal(id) {
+  const sessionId = chatScribeActiveSessionId();
+  const messages = sessionId ? await api.chatscribe.getMessages(sessionId) : [];
+  const g = messages.find(v => v.id === id);
   if (!g) return;
   openModal(t('moduleEdit'), `
     <div class="fg"><label>${t('content')}</label><textarea id="cm-text" rows="3">${x(g.message)}</textarea></div>
@@ -215,19 +248,13 @@ async function submitChatMessage(id) {
   if (!text) return;
   await api.chatscribe.updateMessage(id, text);
   closeModal();
-  const d = S.chatScribeData;
-  d.messages = await api.chatscribe.getMessages(d.selectedId);
-  renderNexusHome();
+  await refreshChatScribeMessages();
   toast(t('saved'), 'ok');
 }
 
 async function deleteChatMessageRow(id) {
   if (!await uiConfirm(t('moduleDeleteConfirm'))) return;
   await api.chatscribe.deleteMessage(id);
-  const d = S.chatScribeData;
-  d.messages = await api.chatscribe.getMessages(d.selectedId);
-  const ses = d.sessions.find(s => s.id === d.selectedId);
-  if (ses) ses.message_count = d.messages.length;
-  renderNexusHome();
+  await refreshChatScribeMessages();
   toast(t('deleted'), 'ok');
 }

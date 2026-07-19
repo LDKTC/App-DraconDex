@@ -1,18 +1,17 @@
 'use strict';
-// Artisan module (v3) — create-from-template studio. Pick a target module
-// in the sidebar, then step through the create wizard (startArtisanWizard):
-// a Manager step followed by one step per Minor (artisanV3Spec), each
-// committing its own module row (plus classifier templates / author
-// chapters / drafter content) before moving to the next.
-// Reached from the nexus tile and from the rail shortcut shown inside each
-// project module (openArtisanFromModule in core.js).
-
-const ARTISAN_TARGETS = [
-  { id: 'director',  icon: 'director',  labelKey: 'director' },
-  { id: 'navigator', icon: 'navigator', labelKey: 'navigator' },
-  { id: 'hero',      icon: 'hero',      labelKey: 'hero' },
-  { id: 'writer',    icon: 'writer',    labelKey: 'writer' },
-];
+// Artisan (v3) — create-from-template wizard mechanics only (Plan part2 #1:
+// the standalone Artisan page/nav-rail entry point was removed; this file's
+// old page shell — target picker, migrate-list — was deleted or relocated
+// into the Nexus Nest Hub's own "+" popup and "Legacy Import" section, see
+// src/renderer/hub.js). What's left here is exactly "the old module's
+// structure kept as a template for Nexus Nest": artisanV3Spec describes
+// each of the 4 legacy-fixed-module recipes as a Manager + pre-configured
+// Minors, and startArtisanWizard walks the user through building one, one
+// module at a time, via the same generic module:create/classifier:
+// createTemplate/author:createChapter/module:updateDescription IPC any
+// other module-creation path already uses. Lazy-loaded on demand from
+// hub.js's buildKindListHtml ("Start from template" row) — ARTISAN_TARGETS
+// itself lives in hub.js now, so it's available without a lazy-load there.
 
 // ═══ v3 STRUCTURE TEMPLATES (Phase 23) ═════════════════════════════════
 // The four legacy fixed modules as built-in Nexus-nest templates: each
@@ -147,98 +146,5 @@ async function finishArtisanWizard() {
   await returnToNexus();
   await reloadModuleTree();
   await openModuleNode(managerId);
-}
-
-// ═══ ENTRY / ROUTING ══════════════════════════════════
-function renderArtisanView() {
-  S.view = 'artisan';
-  S.activeModule = 'artisan';
-  let h = `<div class="ph"><h4>${t('artisan')}</h4></div>`;
-  for (const tg of ARTISAN_TARGETS) {
-    h += `<div class="li ${S.artisanTarget === tg.id ? 'active' : ''}" onclick="selectArtisanTarget('${tg.id}')" style="display:flex;align-items:center;gap:8px">
-      <span style="display:flex;align-items:center">${I[tg.icon]}</span>
-      <span class="name" style="flex:1">${t(tg.labelKey)}</span>
-    </div>`;
-  }
-  // The legacy fixed modules moved off the hub into here (Phase 23) —
-  // still reachable until their data is migrated (Phase 24).
-  h += `<div class="ph" style="margin-top:14px"><h4>${t('artLegacySection')}</h4></div>`;
-  for (const tg of ARTISAN_TARGETS) {
-    h += `<div class="li" onclick="selectModule('${tg.id}')" style="display:flex;align-items:center;gap:8px">
-      <span style="display:flex;align-items:center">${I[tg.icon]}</span>
-      <span class="name" style="flex:1">${t(tg.labelKey)}</span>
-    </div>`;
-  }
-  q('#left-panel-inner').innerHTML = h;
-  renderArtisanMain();
-  updateTopNavButton();
-}
-
-function selectArtisanTarget(target) {
-  S.artisanTarget = target;
-  renderArtisanView();
-}
-
-function renderArtisanMain() {
-  if (!S.artisanTarget) {
-    q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
-      <div class="ei">${I.artisan}</div><h3>${t('artisan')}</h3><p>${t('artisanWelcomeText')}</p></div>`;
-    return;
-  }
-  const tg = ARTISAN_TARGETS.find(a => a.id === S.artisanTarget);
-  let h = `<div class="detail-head" style="border-left:4px solid var(--accent);padding-left:12px">
-    <h2 style="margin:0;font-size:1.1em">${t(tg.labelKey)} <span style="color:var(--t3);font-weight:400;font-size:.8em">· ${t('artisanPickTemplate')}</span></h2>
-  </div>
-  <div class="artisan-grid">`;
-  // Built-in v3 structure card first (Phase 23) — creates a Nexus-nest
-  // Major/Minor set instead of a legacy project.
-  const v3Spec = artisanV3Spec(S.artisanTarget, '·');
-  h += `<div class="artisan-card artisan-v3" onclick="startArtisanWizard('${S.artisanTarget}')">
-    <div class="artisan-card-head">
-      <span class="artisan-card-icon">${I[tg.icon]}</span>
-      <h4>${t('artV3Card')} <span class="kind-chip" data-no-i18n>v3</span></h4>
-    </div>
-    <p>${t('artV3CardD')}</p>
-    <div class="artisan-inc">${t('artisanIncludes')}</div>
-    <div class="artisan-inc-list">${v3Spec.minors.map(mn => `<span class="artisan-chip">${x(mn.name)} <small data-no-i18n>${x(kindLabel(mn.kind))}</small></span>`).join('')}</div>
-    <button class="btn btn-p" style="margin-top:10px;width:100%" onclick="event.stopPropagation();startArtisanWizard('${S.artisanTarget}')">${I.plus} ${t('artisanCreate')}</button>
-  </div>`;
-  h += `</div>
-  <div class="detail-head" style="border-left:4px solid var(--border);padding-left:12px;margin-top:22px">
-    <h2 style="margin:0;font-size:1.05em">${t('artMigrateSection')}</h2>
-  </div>
-  <div id="art-migrate-list" class="hlist" style="max-width:560px"><div class="empty" style="padding:14px"><p>…</p></div></div>`;
-  q('#main-inner').innerHTML = h;
-  fillArtisanMigrateList(S.artisanTarget);
-}
-
-// Legacy projects of this target, each importable as a v3 structure
-// (Phase 24 — lazy, non-destructive; original rows stay).
-async function fillArtisanMigrateList(target) {
-  const el = q('#art-migrate-list');
-  if (!el) return;
-  const rows = await api.migrate.list(target);
-  if (S.artisanTarget !== target || !q('#art-migrate-list')) return;
-  el.innerHTML = rows.length ? rows.map(r => `
-    <div class="li">
-      <span class="name">${x(r.name)}</span>
-      <button class="btn btn-s btn-sm" onclick="runArtisanMigration('${target}',${r.id},this)">${t('artMigrateBtn')}</button>
-    </div>`).join('') : `<div class="empty" style="padding:14px"><p>${t('artMigrateEmpty')}</p></div>`;
-}
-
-async function runArtisanMigration(target, legacyId, btn) {
-  if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
-  if (btn) btn.disabled = true;
-  try {
-    const res = await api.migrate.run(S.nexus.id, target, legacyId);
-    const c = res.counts || {};
-    toast(`${t('artMigrateDone')} — ${c.modules} modules · ${c.objects} objects · ${c.events} events · ${c.chapters} chapters · ${c.dialogues} dialogues`, 'ok');
-    await returnToNexus();
-    await reloadModuleTree();
-    if (res.id) await openModuleNode(res.id);
-  } catch (e) {
-    toast(t('vRestoreFailed'), 'error');
-    if (btn) btn.disabled = false;
-  }
 }
 

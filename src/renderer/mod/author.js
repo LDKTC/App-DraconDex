@@ -139,6 +139,7 @@ async function submitAuthorChapter(moduleId, id) {
   }
   closeModal();
   await openModuleNode(moduleId);
+  invalidateNestItems(moduleId, id ? 0 : 1);
   toast(id ? t('saved') : t('created'), 'ok');
 }
 
@@ -149,5 +150,6 @@ async function deleteAuthorChapter(id) {
   const d = S.authorData;
   if (d.selectedId === id) d.selectedId = null;
   await openModuleNode(d.moduleId);
+  invalidateNestItems(d.moduleId, -1);
   toast(t('deleted'), 'ok');
 }

@@ -1,162 +1,19 @@
-// Sage module — Analytics
+// sage.js — buildSageGraph, a dependency-free vanilla-SVG force graph
+// renderer (Plan part2 #2: the legacy nav-rail Sage page that used to live
+// in this file was removed — its analytics reused the Hub's own Sage Hut
+// section, and this file's own page never had any nexus/vault scoping at
+// all). Kept alive here because src/renderer/scribe.js's own vault-graph
+// view independently lazy-loads this exact file to reuse this function.
 
-async function renderSageView() {
-  S.activeModule = 'sage';
-  if (!S.sageTab) S.sageTab = 'dataSize';
-  q('#left-panel-inner').innerHTML = `
-    <div class="ph"><h4>${t('sage')}</h4></div>
-    <div class="panel-item${S.sageTab==='dataSize'?' active':''}" onclick="setSageTab('dataSize')">${t('sageDataSize')}</div>
-    <div class="panel-item${S.sageTab==='objectAmount'?' active':''}" onclick="setSageTab('objectAmount')">${t('sageObjectAmount')}</div>
-    <div class="panel-item${S.sageTab==='linkerList'?' active':''}" onclick="setSageTab('linkerList')">${t('sageLinkerList')}</div>
-    <div class="panel-item${S.sageTab==='linkerGraph'?' active':''}" onclick="setSageTab('linkerGraph')">${t('sageLinkerGraph')}</div>`;
-  await renderSageTab();
-  updateTopNavButton();
-}
-
-function setSageTab(tab) {
-  S.sageTab = tab;
-  renderSageView();
-}
-
-async function renderSageTab() {
-  const mi = q('#main-inner');
-  mi.innerHTML = '';
-  // The graph canvas needs #main-inner as a flex column (same layout Director's
-  // Relation graph uses) so its flex:1 wrap actually fills the available height.
-  mi.classList.toggle('relation-main', S.sageTab === 'linkerGraph');
-  if (S.sageTab === 'dataSize') await renderSageDataSize(mi);
-  else if (S.sageTab === 'objectAmount') await renderSageObjectAmount(mi);
-  else if (S.sageTab === 'linkerList') await renderSageLinkerList(mi);
-  else if (S.sageTab === 'linkerGraph') await renderSageLinkerGraph(mi);
-}
-
-async function renderSageDataSize(container) {
-  const data = await api.sage.getDataSize();
-  const moduleColors = { director:'var(--accent)', navigator:'#22c55e', hero:'#f59e0b', writer:'#8b5cf6' };
-  const moduleIcons = { director: I.director, navigator: I.navigator, hero: I.hero, writer: I.writer };
-  const total = data.reduce((s, m) => s + m.rows, 0);
-  container.innerHTML = `
-    <div style="padding:24px">
-      <h3 style="color:var(--t1);margin-bottom:4px">${t('sageDataSize')}</h3>
-      <p style="color:var(--t3);font-size:13px;margin-bottom:24px">${total} ${t('sageRows')} total</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
-        ${data.map(m => `
-          <div class="sage-card" style="border-left:4px solid ${moduleColors[m.module]||'var(--border)'}">
-            <div class="sage-card-icon">${moduleIcons[m.module]||I.chart}</div>
-            <div class="sage-card-body">
-              <div class="sage-card-name">${m.module.charAt(0).toUpperCase()+m.module.slice(1)}</div>
-              <div class="sage-card-count">${m.rows} <span>${t('sageRows')}</span></div>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-}
-
-async function renderSageObjectAmount(container) {
-  const data = await api.sage.getObjectAmounts();
-  const groups = [
-    { label:'Director', color:'var(--accent)', items:[
-      { key:'projects', label:'Projects' },
-      { key:'categories', label:'Categories' },
-      { key:'objects', label:'Objects' },
-      { key:'timelineEvts', label:'Timeline Events' },
-      { key:'relations', label:'Relations' },
-      { key:'mapAreas', label:'Map Areas' },
-    ]},
-    { label:'Navigator', color:'#22c55e', items:[
-      { key:'worlds', label:'Worlds' },
-      { key:'worldChars', label:'World Characters' },
-      { key:'worldCatObjs', label:'World Cat. Objects' },
-      { key:'worldMaptlEvts', label:'Map Timeline Events' },
-    ]},
-    { label:'Hero', color:'#f59e0b', items:[
-      { key:'games', label:'Games' },
-      { key:'gameChars', label:'Game Characters' },
-      { key:'gameElements', label:'Game Elements' },
-      { key:'dialogueNodes', label:'Dialogue Nodes' },
-      { key:'dialogueEdges', label:'Storyline Edges' },
-      { key:'conversations', label:'Conversations' },
-    ]},
-    { label:'Writer', color:'#8b5cf6', items:[
-      { key:'writeProjects', label:'Writing Projects' },
-      { key:'series', label:'Series' },
-      { key:'books', label:'Books' },
-      { key:'chapters', label:'Chapters' },
-      { key:'notes', label:'Notes' },
-    ]},
-    { label:'Global', color:'var(--t3)', items:[
-      { key:'hashtags', label:'Hashtags' },
-    ]},
-  ];
-  container.innerHTML = `
-    <div style="padding:24px">
-      <h3 style="color:var(--t1);margin-bottom:24px">${t('sageObjectAmount')}</h3>
-      ${groups.map(g => `
-        <div style="margin-bottom:20px">
-          <h4 style="color:${g.color};margin-bottom:8px;font-size:13px;text-transform:uppercase;letter-spacing:1px">${g.label}</h4>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
-            ${g.items.map(item => `
-              <div class="sage-stat-card">
-                <span class="sage-stat-num" style="color:${g.color}">${data[item.key]||0}</span>
-                <span class="sage-stat-label">${item.label}</span>
-              </div>`).join('')}
-          </div>
-        </div>`).join('')}
-    </div>`;
-}
-
-async function renderSageLinkerList(container) {
-  const links = await api.sage.getLinkerList();
-  const typeColors = { project:'var(--accent)', hashtag:'#d97706', world:'#22c55e', game:'#f59e0b', write:'#8b5cf6', series:'#6366f1', object:'#ec4899', world_char:'#14b8a6' };
-  container.innerHTML = `
-    <div style="padding:24px">
-      <h3 style="color:var(--t1);margin-bottom:4px">${t('sageLinkerList')}</h3>
-      <p style="color:var(--t3);font-size:13px;margin-bottom:16px">${links.length} links</p>
-      <table class="sage-table">
-        <thead><tr>
-          <th>${t('sageFrom')}</th><th>${t('sageType')}</th><th>${t('sageTo')}</th><th>${t('sageType')}</th>
-        </tr></thead>
-        <tbody>
-          ${links.map(l => `<tr>
-            <td><span style="color:${typeColors[l.from_type]||'var(--t1)'}">${esc(l.from_name)}</span></td>
-            <td><span class="sage-type-badge" style="background:${typeColors[l.from_type]||'var(--raised)'}">${l.from_type}</span></td>
-            <td><span style="color:${typeColors[l.to_type]||'var(--t1)'}">${esc(l.to_name)}</span></td>
-            <td><span class="sage-type-badge" style="background:${typeColors[l.to_type]||'var(--raised)'}">${l.to_type}</span></td>
-          </tr>`).join('')}
-          ${!links.length ? `<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:24px">No links yet</td></tr>` : ''}
-        </tbody>
-      </table>
-    </div>`;
-}
-
-const SAGE_MODULE_COLORS = { director:'#6366f1', navigator:'#22c55e', hero:'#f59e0b', writer:'#8b5cf6', global:'#d97706' };
-let _sageGraphState = null; // { data, hiddenModules:Set }
-
-async function renderSageLinkerGraph(container) {
-  container.innerHTML = `
-    <div style="padding:16px 24px 8px;display:flex;align-items:center;justify-content:space-between">
-      <h3 style="color:var(--t1);margin-bottom:4px">${t('sageLinkerGraph')}</h3>
-    </div>
-    <div id="sage-graph-wrap" style="flex:1;position:relative;overflow:hidden"></div>`;
-  const data = await api.sage.getLinkerGraph();
-  if (!data.nodes.length) {
-    q('#sage-graph-wrap').innerHTML = `<div class="empty" style="margin-top:60px"><p>No linked data yet</p></div>`;
-    return;
-  }
-  if (!_sageGraphState || _sageGraphState.dataRef !== data) {
-    _sageGraphState = { hiddenModules: _sageGraphState?.hiddenModules || new Set() };
-  }
-  _sageGraphState.dataRef = data;
-  buildSageGraph(data, _sageGraphState.hiddenModules);
-}
-
-// opts (all optional, defaults preserve the Sage behavior):
+// opts (all optional):
 //   container   — selector of the wrap element ('#sage-graph-wrap')
-//   colors      — module → fill color map (SAGE_MODULE_COLORS)
+//   colors      — module → fill color map (caller must always pass this now
+//                 that the old default module→color map was removed with
+//                 the legacy Sage page — Scribe's own caller always does)
 //   onNodeClick — fn(node) fired on a click that wasn't a drag
 // Edges flagged {wiki:true} render dashed in the accent color.
 function buildSageGraph(data, hiddenModules, opts = {}) {
-  const moduleColors = opts.colors || SAGE_MODULE_COLORS;
+  const moduleColors = opts.colors || {};
   const wrap = q(opts.container || '#sage-graph-wrap');
   if (!wrap) return;
   wrap.innerHTML = '';

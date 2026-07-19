@@ -117,9 +117,13 @@ function renderClassifierListDetail(m, d) {
   return `<div class="cls-listdetail"><div class="cls-list">${list}</div><div class="cls-detail">${detail}</div></div>`;
 }
 
-function renderClassifierObjectDetail(m, o) {
+// `templates` defaults to the ambient module-view cache — the item page
+// (Plan part4, src/renderer/mod/item.js) passes its own freshly-fetched
+// templates instead, since it can be opened without the module's own view
+// ever having loaded S.classifierData.
+function renderClassifierObjectDetail(m, o, templates = S.classifierData?.templates || []) {
   let html = `<h3 style="margin-bottom:8px">${x(o.name)}</h3>`;
-  for (const c of (S.classifierData?.templates || [])) {
+  for (const c of templates) {
     html += `<div class="prop"><span class="pk">${x(c.description)}</span>
       <span class="pv" contenteditable="true" data-oid="${o.id}" data-tid="${c.id}" onblur="saveClassifierAttrCell(this)">${x(o.attrMap[c.id] || '')}</span></div>`;
   }
@@ -171,16 +175,19 @@ async function submitClassifierObjectForm(moduleId, objectId) {
   closeModal();
   await loadClassifierData(S.activeModuleNode);
   renderNexusHome();
+  invalidateNestItems(moduleId, objectId ? 0 : 1);
   toast(objectId ? t('saved') : t('created'), 'ok');
 }
 
 async function deleteClassifierObjectRow(objectId) {
   if (!await uiConfirm(t('moduleDeleteConfirm'))) return;
+  const moduleId = S.activeModuleNode?.id;
   await api.classifier.deleteObject(objectId);
   closeModal();
   if (S.classifierSelectedObject === objectId) S.classifierSelectedObject = null;
   await loadClassifierData(S.activeModuleNode);
   renderNexusHome();
+  if (moduleId != null) invalidateNestItems(moduleId, -1);
   toast(t('deleted'), 'ok');
 }
 
