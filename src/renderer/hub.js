@@ -151,6 +151,24 @@ function toggleMajorExpand(id) {
   renderNexusHome();
 }
 
+// Nexus Nest display options (Plan part1 #2) — lightweight setters, deliberately
+// not reusing the generic setUiSetting() since that fires an unwanted toast
+// plus unrelated re-renders meant for the full Settings modal.
+function toggleNestOption(key) {
+  S.settings[key] = !S.settings[key];
+  saveUiSettings();
+  renderNexusHome();
+  const pop = document.querySelector('.nest-options-popup');
+  if (pop) pop.innerHTML = buildNestOptionsPopupHtml();
+}
+function toggleNestSignatureMode() {
+  S.settings.nestSignatureMode = S.settings.nestSignatureMode === 'icon' ? 'name' : 'icon';
+  saveUiSettings();
+  renderNexusHome();
+  const pop = document.querySelector('.nest-options-popup');
+  if (pop) pop.innerHTML = buildNestOptionsPopupHtml();
+}
+
 function buildHubHtml() {
   const sections = [
     { key: 'nest', html: buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
@@ -158,7 +176,8 @@ function buildHubHtml() {
         // needed — quickCreateModule already auto-names + enters inline
         // rename mode for every kind when called with no cat_type decision.
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();quickCreateModule('collector',null)" title="${kindLabel('collector')}">${I[KIND_ICON.collector]}</button>
-         <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>`) },
+         <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>
+         <button class="btn btn-g btn-i" onclick="event.stopPropagation();openNestOptionsPopup(this)" title="${t('nestOptionsTitle')}">${I.options}</button>`) },
     { key: 'kinds', html: buildAccSection('kinds', t('kindBrowser'), buildKindBrowserHtml()) },
     { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows()) },
     { key: 'dock', html: buildAccSection('dock', t('importDock'),
@@ -316,11 +335,20 @@ function buildNestRow(m, depth, parentId) {
   if (isContentKind && !collapsed) ensureNestItemsLoaded(m.id);
   const itemRows = S.nestItems.get(m.id);
   const itemCount = Array.isArray(itemRows) ? itemRows.length : (S.moduleItemCounts[m.id] || 0);
-  const showChev = hasChildren || (isContentKind && itemCount > 0);
+  // Plan part1 #2/#4: the "show minor modules" toggle hides content-item
+  // leaves tree-wide — when off, a content-kind module with only items and
+  // no nested module children shows no chevron at all (nothing to expand).
+  const nestShowItems = S.settings.nestShowItems !== false;
+  const showChev = hasChildren || (nestShowItems && isContentKind && itemCount > 0);
+  // Plan part1 #4: a node with ONLY content-item children (no nested module
+  // children) gets a '+'/'-' glyph pair instead of the caret, same wrapper
+  // attrs/sizing as the caret, just a different inner shape.
+  const onlyLeafChildren = !hasChildren && nestShowItems && isContentKind && itemCount > 0;
   const chev = showChev
-    ? `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" onclick="event.stopPropagation();toggleMajorExpand(${m.id})"><polyline points="${collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>`
+    ? (onlyLeafChildren
+        ? `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" onclick="event.stopPropagation();toggleMajorExpand(${m.id})">${collapsed ? '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' : '<line x1="5" y1="12" x2="19" y2="12"/>'}</svg>`
+        : `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" onclick="event.stopPropagation();toggleMajorExpand(${m.id})"><polyline points="${collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>`)
     : '';
-  const grip = `<span class="grip">⠿</span>`;
   const openable = m.kind !== 'collector';
   const renaming = S.renamingModuleId === m.id;
   // IDE-style depth indentation (Plan part1 #4/#4-2) — capped visually past
@@ -333,25 +361,28 @@ function buildNestRow(m, depth, parentId) {
   // recursion, so these rows structurally cannot inherit drag/drop wiring
   // (no draggable/ondragstart/ondragover/ondrop, no chevron, no context
   // menu) — a content item can never be dragged out of its owning module.
-  const itemsHtml = (isContentKind && !collapsed && Array.isArray(itemRows))
+  const itemsHtml = (nestShowItems && isContentKind && !collapsed && Array.isArray(itemRows))
     ? itemRows.map(it => buildNestItemRow(it, m.kind, m.id, depth + 1)).join('') : '';
-  // draggable is on the whole row, not just the grip icon — the grip was
-  // the only draggable="true" element before, but it's a ~10px target
-  // that's invisible until hover, so a real drag started anywhere else on
-  // the row (name, icon, background — what a user would actually grab)
-  // silently did nothing. Off while renaming so dragging can't fight the
+  const showMajorIcon = S.settings.nestShowMajorIcon !== false;
+  const kindBadge = S.settings.nestSignatureMode === 'icon'
+    ? `<span class="kind kind-icon" data-no-i18n>${I[KIND_ICON[m.kind]] || I.layer}</span>`
+    : `<span class="kind">${x(kindLabel(m.kind))}</span>`;
+  // draggable is on the whole row, not just a dedicated grip icon (Plan
+  // part1 #3 removed the old decorative grip span) — a real drag started
+  // anywhere on the row (name, icon, background — what a user would
+  // actually grab) works. Off while renaming so dragging can't fight the
   // rename `<input>` for the mousedown (a draggable ancestor around a text
   // input makes placing the caret unreliable).
   return `<div class="li${indentCls}${sel}"
       draggable="${renaming ? 'false' : 'true'}" ondragstart="onNestDragStart(event,${m.id},${parentId ?? 'null'})"
       ondragover="onNestDragOver(event,this,${m.id})" ondragleave="onNestDragLeave(event,this)" ondrop="onNestDrop(event,${m.id},${parentId ?? 'null'},this)"
       onclick="${renaming ? '' : `scheduleRowOpen(${m.id})`}" oncontextmenu="openModuleContextMenu(event,${m.id})">
-    ${grip}${chev}
-    <span class="kicon" style="color:${x(col)}" onclick="event.stopPropagation();openModuleIconPopup(${m.id},this)">${moduleIconHtml(m)}</span>
+    ${chev}
+    ${showMajorIcon ? `<span class="kicon" style="color:${x(col)}" onclick="event.stopPropagation();openModuleIconPopup(${m.id},this)">${moduleIconHtml(m)}</span>` : ''}
     ${renaming
       ? `<input id="rename-nest-${m.id}" class="rename-input" value="${x(m.name)}" onclick="event.stopPropagation()" onblur="saveModuleRename(${m.id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value=${x(JSON.stringify(m.name))};this.blur();}">`
       : `<span class="name" ondblclick="event.stopPropagation();cancelRowOpen();startRenameModule(${m.id})">${x(m.name)}</span>`}
-    <span class="kind">${x(kindLabel(m.kind))}</span>
+    ${kindBadge}
     <span class="acts">
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id},this)" title="${t('addMinorModule')}">${I.plus}</button>
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();openModuleEditModal(${m.id})" title="${t('moduleEdit')}">${I.edit}</button>
@@ -365,8 +396,9 @@ function buildNestItemRow(item, itemKind, moduleId, depth) {
   const reg = ITEM_KIND[itemKind];
   const active = S.activeItemNode?.itemKind === itemKind && S.activeItemNode?.moduleId === moduleId && S.activeItemNode?.id === item.id;
   const indentCls = ` indent${Math.min(depth, 5)}`;
+  const showIcon = !!S.settings.nestShowMinorIcon;
   return `<div class="li${indentCls}${active ? ' sel' : ''} nest-item-row" onclick="openItemNode('${itemKind}',${moduleId},${item.id})">
-    <span class="kicon" style="color:var(--t3)">${reg.icon()}</span>
+    ${showIcon ? `<span class="kicon" style="color:var(--t3)">${reg.icon()}</span>` : ''}
     <span class="name">${x(reg.nameOf(item))}</span>
   </div>`;
 }
@@ -699,6 +731,31 @@ async function toggleNavPinAndRefresh(id) {
   await reloadModuleTree();
   const pop = document.querySelector('.nav-pin-popup');
   if (pop) pop.innerHTML = buildNavPinListHtml();
+}
+
+// Nexus Nest display options popup (Plan part1 #2) — 4 toggles driven by
+// S.settings, same .kind-popup + positionPopupNear idiom as every other
+// popup in this file.
+function openNestOptionsPopup(anchor) {
+  closeAllPopups();
+  if (!anchor) return;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup nest-options-popup';
+  pop.innerHTML = buildNestOptionsPopupHtml();
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  positionPopupNear(pop, anchor.getBoundingClientRect());
+}
+function buildNestOptionsPopupHtml() {
+  const s = S.settings;
+  const row = (onclick, on, labelKey) =>
+    `<div class="togglerow nest-opt-row" onclick="${onclick}"><span class="tg${on ? ' on' : ''}"></span>${t(labelKey)}</div>`;
+  return [
+    row("toggleNestOption('nestShowItems')", s.nestShowItems !== false, 'nestOptShowItems'),
+    row("toggleNestOption('nestShowMajorIcon')", s.nestShowMajorIcon !== false, 'nestOptShowMajorIcon'),
+    row("toggleNestOption('nestShowMinorIcon')", !!s.nestShowMinorIcon, 'nestOptShowMinorIcon'),
+    row('toggleNestSignatureMode()', s.nestSignatureMode === 'icon', 'nestOptSignatureIcon'),
+  ].join('');
 }
 
 // ═══ Kind-picker popup — instant create ════════════════════════════════

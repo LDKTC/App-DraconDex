@@ -6,24 +6,24 @@
 -
 -----
 part 1
-- [ ] hub
-    - [ ] 1.minor module -> icon ชิดกับguidelineเกินไป ขยับออกมาเล็กน้อย
-    - [ ] 2.nexus nest header -> เพิ่ม option menu เมื่อคลิกจะเปิดเป็นpopupmenu
-        - [ ] menu 1.switch toggle เพื่อเปิดปิดการแสดงminor module
-        - [ ] menu 2.switch toggle module icon เปิดปิด icon ด้านหน้าmodule
-        - [ ] menu 3.switch module signature mode, 2 mode name และ icon.
+- [x] hub
+    - [x] 1.minor module -> icon ชิดกับguidelineเกินไป ขยับออกมาเล็กน้อย
+    - [x] 2.nexus nest header -> เพิ่ม option menu เมื่อคลิกจะเปิดเป็นpopupmenu
+        - [x] menu 1.switch toggle เพื่อเปิดปิดการแสดงminor module
+        - [x] menu 2.switch toggle module icon เปิดปิด icon ด้านหน้าmodule
+        - [x] menu 3.switch module signature mode, 2 mode name และ icon.
             - mode name จะแสดงชื่อmoduleด้านหลังของชื่อของ module บนnest, default
             - mode icon จะแสดงicon ปรับจำmodule แทนที่ของชื่อmoduleด้านหลังชื่อ module บนnest
-    - [ ] 3.nexus nest list -> module list, ปุ่มdragable ด้านหน้าให้นำออกเพราะไม่จำเป็นต้องใช้, เพราะสามารถdrag ด้วยการลากบนbuttonได้เลย
-    - [ ] 4.nexus nest list -> major module list, เพิ่มเงื่อนไขหากในmodule ไหนมี minor moduleอยู่เพียงอย่างเดียวโดยไม่มีmajor moduleเป็นchild ให้เปลี่ยนiconตัวขยาย จาก '>' เป็น '+' และตัวเปิดจาก '∨' เป็น '-'
-- [ ] style.css
-    - [ ] 1.div-hub body -> ให้ชิดขอบdiv left panel innerไปเลย, อาจจะมีpadding 1px
-        - [ ] 1.module list button -> ไม่ต้องมีborder, ไม่ต้องมีmagin, ลดpadding top-bottom เหลือ 1-2px
-        - [ ] 2.div acc-head -> ลดpaddingลงเหลือ 1-2px
+    - [x] 3.nexus nest list -> module list, ปุ่มdragable ด้านหน้าให้นำออกเพราะไม่จำเป็นต้องใช้, เพราะสามารถdrag ด้วยการลากบนbuttonได้เลย
+    - [x] 4.nexus nest list -> major module list, เพิ่มเงื่อนไขหากในmodule ไหนมี minor moduleอยู่เพียงอย่างเดียวโดยไม่มีmajor moduleเป็นchild ให้เปลี่ยนiconตัวขยาย จาก '>' เป็น '+' และตัวเปิดจาก '∨' เป็น '-'
+- [x] style.css
+    - [x] 1.div-hub body -> ให้ชิดขอบdiv left panel innerไปเลย, อาจจะมีpadding 1px
+        - [x] 1.module list button -> ไม่ต้องมีborder, ไม่ต้องมีmagin, ลดpadding top-bottom เหลือ 1-2px
+        - [x] 2.div acc-head -> ลดpaddingลงเหลือ 1-2px
         - ปรับให้คล้ายกับ vS code explorer
-    - [ ] 2.div left-inner foot -> div.ph nexus vault head, ลดขนาด padding เหลิอ 1-2px, ไม่มี magin 
-    - [ ] 3.div search bar -> ลด padding เป็น 1-2px, เอาmaginออก
-    - [ ] 4.nav navside bar -> ลด padding เป็น 1-2px, เอาmagin left-right ของbuttonออก
+    - [x] 2.div left-inner foot -> div.ph nexus vault head, ลดขนาด padding เหลิอ 1-2px, ไม่มี magin 
+    - [x] 3.div search bar -> ลด padding เป็น 1-2px, เอาmaginออก
+    - [x] 4.nav navside bar -> ลด padding เป็น 1-2px, เอาmagin left-right ของbuttonออก
 part 2
 - [ ] hub page
     - [ ] 1.เรียกดูตามประเภท บนhubให้ย้ายไปเปิดเป็นhubใหม่ผ่าน button บนnavsidebar
