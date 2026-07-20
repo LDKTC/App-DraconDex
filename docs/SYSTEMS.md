@@ -358,13 +358,26 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
   ปรับให้รับ opts เพิ่ม (`container`, `colors`, `labels`, `onNodeClick`) แบบ
   backward-compatible เพื่อให้ Scribe graph view (v2.8) เรียกใช้ร่วมกันได้
 
-### Import/Export DB (v2.8 ขยายเพิ่ม)
+### Import/Export DB (v2.8 ขยายเพิ่ม, Plan part2 เพิ่ม cross-version compat)
 - `importDatabaseMerge` (src/db/core.js) นอกจากรวมข้อมูลเดิม ตอนนี้รวม
   `nexus`, `note_folder`, `note` ด้วย (จับคู่ตามชื่อ/title, แถวที่ nexus/folder
   หา match ไม่เจอจะข้าม) แล้ว **rebuild wiki_link index ใหม่ทั้งหมด** หลัง merge
   เผื่อเนื้อหาที่นำเข้ามามี `[[wikilink]]`
 - โปรเจกต์ที่นำเข้ามาโดยไม่มี `nexus_ref` (จาก DB เก่ากว่า v2.8) จะถูก adopt
   เข้า vault แรกที่เจอ เหมือน migration ตอนบูต
+- **ไฟล์เก่ามาก (v1.x/v2.x) ที่เป็น WAL journal mode แต่ไม่มี `-wal` sidecar
+  แนบมา** จะทำให้ `node-sqlite3-wasm` ล่มทันทีตอนเปิดอ่าน — `importDatabaseMerge`
+  จึงคัดลอกไฟล์ที่เลือกไปไว้ที่ temp ก่อนเสมอ (ไม่แตะไฟล์ต้นฉบับ) แล้วแก้
+  header byte 18-19 กลับเป็น legacy rollback journal (เหมือนที่ `getDB()`
+  ทำกับไฟล์ของแอปเองอยู่แล้ว) ก่อนเปิดอ่าน — verify แล้วกับไฟล์ตัวอย่างจริงใน
+  `old_db_data/` (v1.1.0, v1.2.2) ว่า import ผ่านและ merge ข้อมูลได้ครบ
+- คอลัมน์ `relation_type.color` ก็มี `hasColumn` guard เพิ่มแล้ว (schema เก่ามาก
+  ไม่มีคอลัมน์นี้ — เดิม unconditional SELECT ทำให้ transaction ทั้งก้อน rollback)
+- **Import DB hub** (`openImportDbHub`, src/renderer/core.js): เคลียร์
+  `S.activeModuleNode` + เรียก `renderModuleRail()` ตอนเข้าโหมด ไม่ให้ icon
+  module เดิมที่ pin ไว้ค้าง `.active` ในแถบ nav; และเพิ่ม `folder` เข้า
+  `IMPORT_DB_READONLY_NS` (preload.js) เพราะ folder CRUD ของ Director ไม่เคย
+  ถูกบล็อกตอน read-only mode มาก่อน
 
 ### Cloud Sync — Supabase (prototype, 2026-07-17)
 

@@ -19,6 +19,44 @@
 
 ---
 
+## 2026-07-20 — Import DB: รองรับไฟล์ .db เก่ามาก (v1.x/v2.x), แก้ icon ค้าง, ปิดช่อง write (Plan part2)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/core.js`, `src/renderer/core.js`, `preload.js`
+- อะไรเปลี่ยน:
+  - **แก้ bug บล็อกทั้งหมด**: ไฟล์ตัวอย่างจริงใน `old_db_data/` (v1.1.0,
+    v1.2.2) เป็น WAL journal mode แต่ไม่มี `-wal` sidecar แนบมา —
+    `node-sqlite3-wasm` ล่มทันทีตอน `importDatabaseMerge` เปิดอ่าน (reproduce
+    แล้วตรง ๆ ด้วย scratch copy) เพิ่ม `forceLegacyJournalMode()` (ดึงมาจาก
+    logic เดิมใน `getDB()`) แล้วให้ `importDatabaseMerge` คัดลอกไฟล์ที่เลือกไป
+    temp ก่อนเสมอ (ไม่แตะไฟล์ต้นฉบับ), copy `-wal`/`-shm` มาด้วยถ้ามี, ไม่งั้น
+    patch header แทน แล้วค่อยเปิดอ่านจาก temp — ลบ temp ทิ้งหลัง merge เสร็จ
+    (finally block, ครอบ `source.close()` ด้วย)
+  - **แก้ bug column-mismatch**: `relation_type` merge block เดิม
+    `SELECT relation_name, color FROM relation_type` แบบ unconditional — ไฟล์
+    v1.1.0 ไม่มีคอลัมน์ `color` เลย ทำให้ transaction ทั้งก้อน rollback (ไม่ใช่
+    แค่แถว relation_type) เพิ่ม `hasColumn` guard เหมือน pattern เดิมที่ใช้กับ
+    `timeline_event.story`/`hashtag.tag_color`
+  - **แก้ bug icon ค้าง**: `openImportDbHub()` ไม่เคยเคลียร์
+    `S.activeModuleNode` หรือเรียก `renderModuleRail()` — module v3 ที่ pin
+    ไว้แล้วเปิดอยู่ก่อนหน้าจะค้าง `.active` ในแถบ nav ทั้งที่กำลังดู Director
+    legacy panel อยู่ เพิ่มทั้งสองบรรทัดตาม pattern เดียวกับ
+    `selectNexus`/`closeNexus`
+  - **ปิดช่อง write**: `IMPORT_DB_READONLY_NS` (preload.js) ไม่มี `folder`
+    (project-folder CRUD ของ Director) มาก่อน — สามารถสร้าง/แก้/ลบโฟลเดอร์ได้
+    ทั้งที่อยู่ใน Import DB read-only mode เพิ่ม `folder` เข้า set
+  - Verify ทั้งหมดด้วย `run-dracondex`'s `web-driver.mjs`: import ไฟล์
+    v1.1.0/v1.2.2 จริงสำเร็จทั้งคู่ (unit-test `importDatabaseMerge` ตรง ๆ ผ่าน
+    stub `electron`), migrate เข้า Nexus Nest ได้ module tree จริงจาก
+    v1.1.0 (120 projects), เข้า Import DB mode แล้ว icon ไม่ค้าง, และยืนยันว่า
+    `folder.create`/`project.create` ถูก reject ขณะ read ยังทำงานปกติ
+- ทำไม: ผู้ใช้มี DraconDex เวอร์ชันเก่าเก็บเป็น branch บน GitHub
+  (`v.2.1.1-dracondex`, `v.2.7.3-dracondex`) และไฟล์ตัวอย่าง v1.1.0/v1.2.2 —
+  ต้องการให้ main เวอร์ชันล่าสุด import ไฟล์เก่าเหล่านั้นได้ แล้วเลือกได้ว่าจะ
+  เปิดแบบ read-only (Import DB) หรือ merge เข้า Nexus Nest จริง — โครงสร้าง
+  ทั้งสองทางเลือกมีอยู่แล้ว (v.3.11.0) ปัญหาคือไฟล์เก่าจริงยัง import ไม่ผ่าน
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` §Import/Export DB, `docs/CHANGELOG.md`
+  (รายการนี้)
+
 ## 2026-07-20 — Nexus Nest tree: แก้ hover ขยาย box, rename autofocus, guide line ชิด icon (Plan part1)
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/hub.js`, `style.css`,

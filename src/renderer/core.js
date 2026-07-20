@@ -1877,11 +1877,16 @@ function selectModule(name) {
 // Plan part2 §2: entry point for the read-only "Import DB" legacy view —
 // reuses selectModule('director') unchanged, just with S.importDbMode
 // already set so updateTopNavButton() un-hides the 4 legacy nav buttons and
-// installImportDbGuard() blocks any mutation IPC call while it's active.
+// preload.js's inv() wrapper blocks any mutation IPC call while it's active.
 function openImportDbHub() {
   S.importDbMode = true;
   api.setImportDbMode(true);
+  // Whatever v3 module was open before switching into this legacy view stays
+  // pinned "active" (with its own icon) in the nav rail otherwise — nothing
+  // else clears S.activeModuleNode or repaints the rail on this path.
+  S.activeModuleNode = null;
   selectModule('director');
+  renderModuleRail();
 }
 
 // ═══ ENTITY NAVIGATION ════════════════════════════════════

@@ -10,8 +10,18 @@ const { contextBridge, ipcRenderer } = require('electron');
 // only ones that view ever calls) — every channel in them is either a
 // `get*` read or an actual mutation, confirmed by reading main.js's full
 // handler list, so "block everything except get*" has no false positives.
+// `folder` (project-folder CRUD, used by Director's own folder sidebar) is
+// part of that same reachable set. `wiki` deliberately isn't included here
+// even though `modals.js`'s saveObject()/scribe.js's rename flow call the
+// mutating api.wiki.renameTarget() from a Director/Scribe-reachable path —
+// it always runs after that same save's own api.object.update()/api.note.*
+// call, which is already gated and rejects first, so renameTarget is never
+// actually reached in read-only mode. Most of wiki's own functions are
+// reads that don't start with "get" (entityPath/quickIndex/backlinks/
+// outgoing/linkCounts/resolve), so blocking the whole namespace here would
+// break those elsewhere in the app instead of adding real protection.
 let importDbMode = false;
-const IMPORT_DB_READONLY_NS = new Set(['project', 'category', 'template', 'object', 'timeline', 'map', 'relation', 'world', 'game', 'write', 'hashtag', 'color']);
+const IMPORT_DB_READONLY_NS = new Set(['project', 'category', 'template', 'object', 'timeline', 'map', 'relation', 'world', 'game', 'write', 'hashtag', 'color', 'folder']);
 const inv = (ch, ...a) => {
   if (importDbMode) {
     const [ns, fn] = ch.split(':');
