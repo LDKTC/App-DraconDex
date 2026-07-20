@@ -19,6 +19,38 @@
 
 ---
 
+## 2026-07-20 — Nexus Nest tree: แก้ hover ขยาย box, rename autofocus, guide line ชิด icon (Plan part1)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/hub.js`, `style.css`,
+  `.claude/skills/run-dracondex/web-driver.mjs`
+- อะไรเปลี่ยน:
+  - **แก้ bug #1**: `.li:hover .acts{display:flex}` เผยปุ่ม `.btn-i` ขนาด
+    28px ซึ่งสูงกว่าความสูงปกติของแถว (~22px) — เพราะ `.li` เป็น
+    `display:flex;align-items:center` ไม่มี height คงที่ จึงยืดตัวสูงขึ้นทุกครั้งที่
+    hover แถวใน Nest tree แทนที่จะแค่ไฮไลต์ เพิ่ม `.li .acts .btn-i{width:18px;
+    height:18px}` ให้พอดีกับความสูงเดิม ไม่ยืด
+  - **เพิ่ม #2**: `quickCreateModule()` (สร้าง module ใหม่แล้วเข้าโหมด rename
+    อัตโนมัติ) ไม่เคย `.focus()/.select()` input ต่างจาก `startRenameModule()`
+    (double-click เพื่อ rename เดิม) ที่ทำอยู่แล้ว — ดึง logic นั้นออกเป็นฟังก์ชัน
+    ร่วม `focusRenameInput(id)` แล้วเรียกจากทั้งสองจุด ทำให้ module ที่เพิ่งสร้าง
+    ได้ cursor + select-all guideword name ทันที พิมพ์ทับได้เลย
+  - **ตรวจสอบ #3**: click นอก input ระหว่าง rename มีอยู่แล้ว (blur handler +
+    `body.renaming-lock` CSS lock) — ทดสอบจริงผ่าน `run-dracondex` แล้วยืนยันว่า
+    บันทึกชื่อและออกจากโหมดถูกต้อง ไม่ต้องแก้โค้ด
+  - **แก้ #4**: เส้น guide line ของ nest tree (`.li.indentN::after`) เคยอยู่ที่
+    `background-position` เท่ากับ `padding-left` ของแถวพอดี (26/42/58/74/90px)
+    ทำให้แนบชิด icon จนดูเหมือนทับกัน ขยับออกมา 6px (20/36/52/68/84px) ให้มีช่องว่างเล็กน้อย
+  - เพิ่มเครื่องมือ `web-driver.mjs`: stub `BrowserWindow.fromWebContents`,
+    `ipcRenderer.on`, และคำสั่ง `hover` ที่ยังขาดอยู่ — แอปเดิมบูตไม่ผ่านใน
+    web-driver เพราะ `window:getId` handler อ่าน `event.sender` จาก event ที่
+    เป็น `null`
+- ทำไม: ผู้ใช้รายงานว่าแถวใน Nest tree "ขยาย" เวลา hover, module ใหม่ต้องคลิก
+  ก่อนถึงจะพิมพ์ชื่อได้, และเส้นแนวตั้งบอกลำดับชั้นไปชนกับ icon หลังจาก commit
+  ก่อนหน้าขยับตำแหน่งเข้ามาใกล้เกินไป
+- Doc ที่อัปเดต: `docs/CHANGELOG.md` (รายการนี้) — ไม่กระทบโครงสร้างใน
+  `docs/SYSTEMS.md`/`docs/FILES.md` (การแก้เป็น CSS/behavior เล็กน้อยในฟังก์ชัน
+  เดิมที่มีอยู่แล้ว)
+
 ## 2026-07-20 — ลดขั้นตอนเริ่มสร้าง Nexus
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/core.js`, `src/renderer/i18n.js`, `style.css`,

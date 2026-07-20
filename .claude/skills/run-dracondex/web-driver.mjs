@@ -42,7 +42,7 @@ const fakeElectron = {
     whenReady: () => new Promise(() => {}), // never create a BrowserWindow
     quit: () => {},
   },
-  BrowserWindow: class { static getAllWindows() { return []; } static getFocusedWindow() { return null; } },
+  BrowserWindow: class { static getAllWindows() { return []; } static getFocusedWindow() { return null; } static fromWebContents() { return null; } },
   ipcMain: { handle: (ch, fn) => handlers.set(ch, fn) },
   dialog: { showSaveDialog: async () => ({ canceled: true }), showOpenDialog: async () => ({ canceled: true }) },
   Menu: { buildFromTemplate: () => ({}), setApplicationMenu: () => {} },
@@ -80,7 +80,7 @@ page.on('pageerror', (e) => console.log('[renderer:pageerror]', e.message));
 await page.exposeFunction('__ipc', async (ch, args) => {
   const fn = handlers.get(ch);
   if (!fn) throw new Error(`no IPC handler for ${ch}`);
-  return sanitize(await fn(null, ...args));
+  return sanitize(await fn({ sender: null }, ...args));
 });
 
 // Run the real preload.js with contextBridge/ipcRenderer shims.
@@ -90,7 +90,10 @@ await page.addInitScript(`
     // preload.js destructures these from require('electron') itself.
     const require = () => ({
       contextBridge: { exposeInMainWorld: (k, v) => { window[k] = v; } },
-      ipcRenderer: { invoke: (ch, ...a) => window.__ipc(ch, a) },
+      // .on() is a fire-and-forget subscribe (e.g. onTabInbound) with no
+      // second Electron window to ever push an event in this single-page
+      // harness — a no-op is enough to stop it throwing during boot.
+      ipcRenderer: { invoke: (ch, ...a) => window.__ipc(ch, a), on: () => {} },
     });
     ${preloadSrc}
   })();
@@ -115,6 +118,7 @@ for (const raw of commands) {
         break;
       }
       case 'click': await page.click(rest, { timeout: 5000 }); console.log(`[click] ${rest}`); break;
+      case 'hover': await page.hover(rest, { timeout: 5000 }); console.log(`[hover] ${rest}`); break;
       case 'dragto': {
         // Real HTML5 drag-and-drop via actual mouse.down/move/up (multiple
         // intermediate moves, like a human drag) — ported from driver.mjs so
