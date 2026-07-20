@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "agent-flow@local-desktop-app-uploads": true
+  },
+  "extraKnownMarketplaces": {
+    "local-desktop-app-uploads": {
+      "source": {
+        "source": "directory",
+        "path": "C:\\Users\\User\\.claude\\plugins\\marketplaces\\local-desktop-app-uploads"
+      }
+    }
+  }
+}
