@@ -893,17 +893,16 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
    would otherwise wipe out a background-image drawn directly on .li. Only
    rows from buildNestRow (hub.js) ever carry an indentN class, so this
    never touches Sage Hut/Import Dock/other .li lists elsewhere. Each
-   level's line sits at that level's own padding-left (26/42/58/74/90,
-   matching .li.indentN above exactly) — i.e. right at the start of that
-   row's own indent box, immediately before its icon — instead of a level
-   back at the ancestor's column, which measured ~40px short of the icon
-   and read as a stray line far to the left of the child it belonged to. */
+   level's line sits 6px inside that level's own padding-left (20/36/52/68/84
+   vs. .li.indentN's 26/42/58/74/90) — a small gap before the icon rather
+   than flush against its left edge (which read as the line touching the
+   icon) or a level back at the ancestor's column (~40px short, stray). */
 .li[class*="indent"]::after{content:'';position:absolute;inset:0;pointer-events:none;background-repeat:no-repeat}
-.li.indent1::after{background-image:linear-gradient(var(--border),var(--border));background-size:1px 100%;background-position:26px 0}
-.li.indent2::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%;background-position:26px 0,42px 0}
-.li.indent3::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%;background-position:26px 0,42px 0,58px 0}
-.li.indent4::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%;background-position:26px 0,42px 0,58px 0,74px 0}
-.li.indent5::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%,1px 100%;background-position:26px 0,42px 0,58px 0,74px 0,90px 0}
+.li.indent1::after{background-image:linear-gradient(var(--border),var(--border));background-size:1px 100%;background-position:20px 0}
+.li.indent2::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%;background-position:20px 0,36px 0}
+.li.indent3::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%;background-position:20px 0,36px 0,52px 0}
+.li.indent4::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%;background-position:20px 0,36px 0,52px 0,68px 0}
+.li.indent5::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%,1px 100%;background-position:20px 0,36px 0,52px 0,68px 0,84px 0}
 .tree-chev{width:9px;height:9px;stroke-width:3;color:var(--t3);flex-shrink:0}
 .li.sel{background:var(--raised);color:var(--t1)}
 /* Nest-tree drag-drop feedback (Plan part1 #4) — top/bottom quarter of a
@@ -1292,6 +1291,11 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .li .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .li .acts{display:none;gap:2px;-webkit-user-drag:none}
 .li:hover .acts{display:flex}
+/* Sized to fit inside the row's own resting height (13.5px text + 2px×2
+   padding) — the default 28px .btn-i would otherwise stretch .li taller
+   the moment .acts appears on hover, turning a highlight into a resize. */
+.li .acts .btn-i{width:18px;height:18px;padding:2px}
+.li .acts .btn-i .icon{width:12px;height:12px}
 /* Hub's Legacy Import section (Plan part2 #1): one .li-head per legacy
    target (Director/Navigator/Hero/Writer), grouping that target's own
    migrate-list rows underneath it. */

@@ -2,6 +2,7 @@
 const { Database: _RawDatabase } = require('node-sqlite3-wasm');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { app } = require('electron');
 
 function adaptDb(rawDb) {
@@ -52,6 +53,25 @@ function adaptDb(rawDb) {
 
 let db;
 
+// A sqlite file's header can declare WAL journal mode (bytes 18-19 = 2,2)
+// with no accompanying -wal sidecar on disk — a shape node-sqlite3-wasm
+// aborts hard trying to open, rather than throwing a catchable error. Forces
+// the header back to legacy rollback-journal mode (1,1) in that case, which
+// is safe since without a -wal file there's nothing WAL-specific to lose.
+function forceLegacyJournalMode(filePath) {
+  try {
+    const hdr = Buffer.alloc(2);
+    const hfd = fs.openSync(filePath, 'r+');
+    fs.readSync(hfd, hdr, 0, 2, 18);
+    if (hdr[0] === 2 || hdr[1] === 2) {
+      hdr[0] = 1; hdr[1] = 1;
+      fs.writeSync(hfd, hdr, 0, 2, 18);
+      fs.fsyncSync(hfd);
+    }
+    fs.closeSync(hfd);
+  } catch (_) {}
+}
+
 function getDB() {
   if (!db) {
     const dbDir = path.dirname(app.getPath('userData'));
@@ -68,19 +88,7 @@ function getDB() {
         if (fs.existsSync(legacyDbPath + '-shm')) fs.renameSync(legacyDbPath + '-shm', dbPath + '-shm');
       } catch (_) {}
     }
-    if (fs.existsSync(dbPath) && !fs.existsSync(dbPath + '-wal')) {
-      try {
-        const hdr = Buffer.alloc(2);
-        const hfd = fs.openSync(dbPath, 'r+');
-        fs.readSync(hfd, hdr, 0, 2, 18);
-        if (hdr[0] === 2 || hdr[1] === 2) {
-          hdr[0] = 1; hdr[1] = 1;
-          fs.writeSync(hfd, hdr, 0, 2, 18);
-          fs.fsyncSync(hfd);
-        }
-        fs.closeSync(hfd);
-      } catch (_) {}
-    }
+    if (fs.existsSync(dbPath) && !fs.existsSync(dbPath + '-wal')) forceLegacyJournalMode(dbPath);
     try { fs.rmSync(dbPath + '.lock', { recursive: true, force: true }); } catch (_) {}
     db = adaptDb(new _RawDatabase(dbPath));
     db.exec("PRAGMA busy_timeout = 5000");
@@ -1484,7 +1492,29 @@ const exportDatabaseTo = async (targetPath) => { fs.copyFileSync(getDatabasePath
 
 function importDatabaseMerge(sourcePath) {
   const target = getDB();
-  const source = adaptDb(new _RawDatabase(sourcePath, { readOnly: true }));
+
+  // Read from a scratch copy, never the picked file itself — the user's own
+  // file must come out untouched. WAL sidecars (if any) are copied along so
+  // not-yet-checkpointed rows in them are still visible; otherwise the copy's
+  // header is patched the same way getDB() patches its own file above, since
+  // node-sqlite3-wasm aborts hard on a WAL-declared header with no sidecar.
+  const tmpPath = path.join(os.tmpdir(), `dracondex-import-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+  fs.copyFileSync(sourcePath, tmpPath);
+  if (fs.existsSync(sourcePath + '-wal')) {
+    try { fs.copyFileSync(sourcePath + '-wal', tmpPath + '-wal'); } catch (_) {}
+    try { fs.copyFileSync(sourcePath + '-shm', tmpPath + '-shm'); } catch (_) {}
+  } else {
+    forceLegacyJournalMode(tmpPath);
+  }
+  const cleanupTmp = () => { for (const suf of ['', '-wal', '-shm']) { try { fs.rmSync(tmpPath + suf, { force: true }); } catch (_) {} } };
+
+  let source;
+  try {
+    source = adaptDb(new _RawDatabase(tmpPath, { readOnly: true }));
+  } catch (e) {
+    cleanupTmp();
+    throw e;
+  }
 
   const summary = {
     colors: 0, folders: 0, projects: 0, categories: 0, templates: 0,
@@ -1748,7 +1778,8 @@ function importDatabaseMerge(sourcePath) {
 
     if (hasTable(source, 'relation_type')) {
       const colorById = hasTable(source, 'use_color') ? source.prepare(`SELECT id, color_code FROM use_color`).all().reduce((m, r) => (m.set(r.id, r.color_code), m), new Map()) : new Map();
-      const rows = source.prepare(`SELECT relation_name, color FROM relation_type`).all();
+      const hasColor = hasColumn(source, 'relation_type', 'color');
+      const rows = source.prepare(`SELECT relation_name, ${hasColor ? 'color' : 'NULL AS color'} FROM relation_type`).all();
       for (const r of rows) summary.relationTypes += target.prepare(`INSERT OR IGNORE INTO relation_type (relation_name, color) VALUES (?, (SELECT id FROM use_color WHERE color_code=?))`).run(r.relation_name, colorById.get(r.color) || null).changes;
     }
 
@@ -2189,7 +2220,12 @@ function importDatabaseMerge(sourcePath) {
 
     target.exec("PRAGMA foreign_keys = ON");
   });
-  tx();
+  try {
+    tx();
+  } finally {
+    try { source.close(); } catch (_) {}
+    cleanupTmp();
+  }
   // Imported content may carry [[wikilinks]]; rebuild the whole index.
   try { require('./wiki').rebuildWikiIndex(); } catch (e) { console.error('wiki reindex after merge:', e); }
   return summary;

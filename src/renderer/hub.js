@@ -886,12 +886,21 @@ async function quickCreateModule(kind, parentId, catType) {
   const created = findModuleNode(moduleId);
   if (created && created.kind !== 'collector') await openModuleNode(moduleId);
   else renderNexusHome();
+  focusRenameInput(moduleId);
 }
 
 // ═══ Inline rename — Nest row + module detail header share one flag ════
 function startRenameModule(id) {
   S.renamingModuleId = id;
   renderNexusHome();
+  focusRenameInput(id);
+}
+
+// Waits for the rename <input> to land in the DOM after a re-render, then
+// focuses it and selects the whole guideword/name so typing replaces it
+// immediately — shared by both the dblclick-to-rename and just-created
+// module paths.
+function focusRenameInput(id) {
   setTimeout(() => {
     const el = q(S.activeModuleNode?.id === id ? `#rename-head-${id}` : `#rename-nest-${id}`);
     el?.focus(); el?.select();

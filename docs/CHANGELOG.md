@@ -19,6 +19,76 @@
 
 ---
 
+## 2026-07-20 — Import DB: รองรับไฟล์ .db เก่ามาก (v1.x/v2.x), แก้ icon ค้าง, ปิดช่อง write (Plan part2)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/core.js`, `src/renderer/core.js`, `preload.js`
+- อะไรเปลี่ยน:
+  - **แก้ bug บล็อกทั้งหมด**: ไฟล์ตัวอย่างจริงใน `old_db_data/` (v1.1.0,
+    v1.2.2) เป็น WAL journal mode แต่ไม่มี `-wal` sidecar แนบมา —
+    `node-sqlite3-wasm` ล่มทันทีตอน `importDatabaseMerge` เปิดอ่าน (reproduce
+    แล้วตรง ๆ ด้วย scratch copy) เพิ่ม `forceLegacyJournalMode()` (ดึงมาจาก
+    logic เดิมใน `getDB()`) แล้วให้ `importDatabaseMerge` คัดลอกไฟล์ที่เลือกไป
+    temp ก่อนเสมอ (ไม่แตะไฟล์ต้นฉบับ), copy `-wal`/`-shm` มาด้วยถ้ามี, ไม่งั้น
+    patch header แทน แล้วค่อยเปิดอ่านจาก temp — ลบ temp ทิ้งหลัง merge เสร็จ
+    (finally block, ครอบ `source.close()` ด้วย)
+  - **แก้ bug column-mismatch**: `relation_type` merge block เดิม
+    `SELECT relation_name, color FROM relation_type` แบบ unconditional — ไฟล์
+    v1.1.0 ไม่มีคอลัมน์ `color` เลย ทำให้ transaction ทั้งก้อน rollback (ไม่ใช่
+    แค่แถว relation_type) เพิ่ม `hasColumn` guard เหมือน pattern เดิมที่ใช้กับ
+    `timeline_event.story`/`hashtag.tag_color`
+  - **แก้ bug icon ค้าง**: `openImportDbHub()` ไม่เคยเคลียร์
+    `S.activeModuleNode` หรือเรียก `renderModuleRail()` — module v3 ที่ pin
+    ไว้แล้วเปิดอยู่ก่อนหน้าจะค้าง `.active` ในแถบ nav ทั้งที่กำลังดู Director
+    legacy panel อยู่ เพิ่มทั้งสองบรรทัดตาม pattern เดียวกับ
+    `selectNexus`/`closeNexus`
+  - **ปิดช่อง write**: `IMPORT_DB_READONLY_NS` (preload.js) ไม่มี `folder`
+    (project-folder CRUD ของ Director) มาก่อน — สามารถสร้าง/แก้/ลบโฟลเดอร์ได้
+    ทั้งที่อยู่ใน Import DB read-only mode เพิ่ม `folder` เข้า set
+  - Verify ทั้งหมดด้วย `run-dracondex`'s `web-driver.mjs`: import ไฟล์
+    v1.1.0/v1.2.2 จริงสำเร็จทั้งคู่ (unit-test `importDatabaseMerge` ตรง ๆ ผ่าน
+    stub `electron`), migrate เข้า Nexus Nest ได้ module tree จริงจาก
+    v1.1.0 (120 projects), เข้า Import DB mode แล้ว icon ไม่ค้าง, และยืนยันว่า
+    `folder.create`/`project.create` ถูก reject ขณะ read ยังทำงานปกติ
+- ทำไม: ผู้ใช้มี DraconDex เวอร์ชันเก่าเก็บเป็น branch บน GitHub
+  (`v.2.1.1-dracondex`, `v.2.7.3-dracondex`) และไฟล์ตัวอย่าง v1.1.0/v1.2.2 —
+  ต้องการให้ main เวอร์ชันล่าสุด import ไฟล์เก่าเหล่านั้นได้ แล้วเลือกได้ว่าจะ
+  เปิดแบบ read-only (Import DB) หรือ merge เข้า Nexus Nest จริง — โครงสร้าง
+  ทั้งสองทางเลือกมีอยู่แล้ว (v.3.11.0) ปัญหาคือไฟล์เก่าจริงยัง import ไม่ผ่าน
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` §Import/Export DB, `docs/CHANGELOG.md`
+  (รายการนี้)
+
+## 2026-07-20 — Nexus Nest tree: แก้ hover ขยาย box, rename autofocus, guide line ชิด icon (Plan part1)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/hub.js`, `style.css`,
+  `.claude/skills/run-dracondex/web-driver.mjs`
+- อะไรเปลี่ยน:
+  - **แก้ bug #1**: `.li:hover .acts{display:flex}` เผยปุ่ม `.btn-i` ขนาด
+    28px ซึ่งสูงกว่าความสูงปกติของแถว (~22px) — เพราะ `.li` เป็น
+    `display:flex;align-items:center` ไม่มี height คงที่ จึงยืดตัวสูงขึ้นทุกครั้งที่
+    hover แถวใน Nest tree แทนที่จะแค่ไฮไลต์ เพิ่ม `.li .acts .btn-i{width:18px;
+    height:18px}` ให้พอดีกับความสูงเดิม ไม่ยืด
+  - **เพิ่ม #2**: `quickCreateModule()` (สร้าง module ใหม่แล้วเข้าโหมด rename
+    อัตโนมัติ) ไม่เคย `.focus()/.select()` input ต่างจาก `startRenameModule()`
+    (double-click เพื่อ rename เดิม) ที่ทำอยู่แล้ว — ดึง logic นั้นออกเป็นฟังก์ชัน
+    ร่วม `focusRenameInput(id)` แล้วเรียกจากทั้งสองจุด ทำให้ module ที่เพิ่งสร้าง
+    ได้ cursor + select-all guideword name ทันที พิมพ์ทับได้เลย
+  - **ตรวจสอบ #3**: click นอก input ระหว่าง rename มีอยู่แล้ว (blur handler +
+    `body.renaming-lock` CSS lock) — ทดสอบจริงผ่าน `run-dracondex` แล้วยืนยันว่า
+    บันทึกชื่อและออกจากโหมดถูกต้อง ไม่ต้องแก้โค้ด
+  - **แก้ #4**: เส้น guide line ของ nest tree (`.li.indentN::after`) เคยอยู่ที่
+    `background-position` เท่ากับ `padding-left` ของแถวพอดี (26/42/58/74/90px)
+    ทำให้แนบชิด icon จนดูเหมือนทับกัน ขยับออกมา 6px (20/36/52/68/84px) ให้มีช่องว่างเล็กน้อย
+  - เพิ่มเครื่องมือ `web-driver.mjs`: stub `BrowserWindow.fromWebContents`,
+    `ipcRenderer.on`, และคำสั่ง `hover` ที่ยังขาดอยู่ — แอปเดิมบูตไม่ผ่านใน
+    web-driver เพราะ `window:getId` handler อ่าน `event.sender` จาก event ที่
+    เป็น `null`
+- ทำไม: ผู้ใช้รายงานว่าแถวใน Nest tree "ขยาย" เวลา hover, module ใหม่ต้องคลิก
+  ก่อนถึงจะพิมพ์ชื่อได้, และเส้นแนวตั้งบอกลำดับชั้นไปชนกับ icon หลังจาก commit
+  ก่อนหน้าขยับตำแหน่งเข้ามาใกล้เกินไป
+- Doc ที่อัปเดต: `docs/CHANGELOG.md` (รายการนี้) — ไม่กระทบโครงสร้างใน
+  `docs/SYSTEMS.md`/`docs/FILES.md` (การแก้เป็น CSS/behavior เล็กน้อยในฟังก์ชัน
+  เดิมที่มีอยู่แล้ว)
+
 ## 2026-07-20 — ลดขั้นตอนเริ่มสร้าง Nexus
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/core.js`, `src/renderer/i18n.js`, `style.css`,
