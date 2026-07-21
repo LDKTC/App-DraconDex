@@ -69,6 +69,22 @@
             - [ ] writer series -> collector
             - [ ] book -> author
             - [ ] book chapter -> author chapter
+            - [ ] chat session -> scribe session
+
+### part 5
+- [ ] 5.1. Project"Manager" Module
+- [ ] 5.2. Category"Classifier" Module
+- [ ] 5.3. Description"Inspector" Module
+- [ ] 5.4. Map"Locator" Module
+- [ ] 5.5. Timeline"Chronicler" Module
+- [ ] 5.6. Story"Narrator" Module
+- [ ] 5.7. Book"Author" Module
+- [ ] 5.8. Chat"Scribe" Module
+- [ ] 5.9. Graph"Designer" Module
+- [ ] 5.10. Relation"Connector" Module
+- [ ] 5.11. Analys"Viewer"
+- [ ] 5.12. Doc"Drafter"
+- [ ] 5.13. Drawing"Sketcher"
 -----
 
 
