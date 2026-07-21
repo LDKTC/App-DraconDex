@@ -14,6 +14,7 @@ part 1
         - [ ] open in new pane >
             - left, right, top, bottom (layout ref from current pane in work)
     - [ ] 4.sage hut header page -> เพราะไม่มีiconเหมือนnexus nest กับimport dock ทำให้ขนาดheaderไม่เท่ากับขนาดheaderอื่นในhub
+    - [ ] 5.nexus nest -> list, ที่มีเครื่องหมาย 'v' หรือ '+' จากการเป็นparent จะทำให้เครื่องหมาย ตรงกับiconของmoduleในลำดับเดียวกัน ทำให้สับสนสำหรับผู้ใช้ ขยับพื้นที่paddingของmoduleที่ไม่มีchild ให้เท่ากับmodule ที่มีchildเพื่อให้iconของmoduleที่อยู่ในลำดับที่เท่ากัน
 part 2 
 - [ ] builder
     - [ ] 1.builder tab -> แทนที่circle icon ด้วย iconจากmoduleนั้นๆ
@@ -36,6 +37,17 @@ part 3
             - [ ] แสดง word preview ที่จะเปลี่ยนไป ทั้งmodule และคำทั่วไป
         - [ ] UI size -> ขนาด UI, ขนาด Text
             - [ ] เพิ่อปุ่มปรับแต่งเพิ่มเติม เป็นActive button เมื่อกดจะแสดงการประแต่งUIแบบAdvanced
+part 4
+- [ ] import
+    - [ ] dbเก่าจะชื่อว่า novel-manager.db และ dracondex.db เพิ่มให้สามารถนำเข้ามาในApp ผ่านimportได้ 
+    - [ ] dbที่importเข้ามาในNexusnest จะแปลงข้อมูลต่อไปนี้เข้ามา
+        - [ ] folder project -> collector
+        - [ ] category template attribute -> classifier template attribute
+        - [ ] category object -> classifier object
+        - [ ] module(director,naviagator,hero,writer) -> parent collector name as (director,navigatornhero,writer) *v.1.x.x จะมีเพียงdirectorที่ชื่อnovel
+        - [ ] colortag link(object,module,folder,etc. that had color) -> module color(object,module,folder,etc. that had color)
+        - [ ] timeline event(dd,mm,yy, h,min) -> chronicler event(dd,mm,yy, h,min) *use event date from timeline date table
+    
 -----
 
 
