@@ -1,11 +1,8 @@
--
-สร้าง procress.md โดยสร้างตามลำดับการทำงานของplanที่สร้าง เพื่อการแบ่งช่วงการทำงาน
--
--
-หลังจากทำเสร็จต้อง x checkbox ด้านล่าง
--
+> สร้าง procress.md โดยสร้างตามลำดับการทำงานของplanที่สร้าง เพื่อการแบ่งช่วงการทำงาน
+---
+> หลังจากทำเสร็จต้อง x checkbox ด้านล่าง
 -----
-part 1
+### part 1
 - [ ] hub
     - [ ] 1.nexus nest guideline -> ขยับให้ตรงกับicon 'v'
     - [ ] 2.hub page header -> เมื่อเปิดแต่ละpage เพิ่มfeatureในการresizable page view
@@ -15,14 +12,16 @@ part 1
             - left, right, top, bottom (layout ref from current pane in work)
     - [ ] 4.sage hut header page -> เพราะไม่มีiconเหมือนnexus nest กับimport dock ทำให้ขนาดheaderไม่เท่ากับขนาดheaderอื่นในhub
     - [ ] 5.nexus nest -> list, ที่มีเครื่องหมาย 'v' หรือ '+' จากการเป็นparent จะทำให้เครื่องหมาย ตรงกับiconของmoduleในลำดับเดียวกัน ทำให้สับสนสำหรับผู้ใช้ ขยับพื้นที่paddingของmoduleที่ไม่มีchild ให้เท่ากับmodule ที่มีchildเพื่อให้iconของmoduleที่อยู่ในลำดับที่เท่ากัน
-part 2 
+  
+### part 2 
 - [ ] builder
     - [ ] 1.builder tab -> แทนที่circle icon ด้วย iconจากmoduleนั้นๆ
     - [ ] 2.builder tab -> module type name, เปลี่ยนสีให้ลดความสว่างลง และอาจจะลดขนาดลงเพื่อให้ user focus เป็นsecondary และให้User focusที่ ชื่อของmoduleเป็นหลัก
     - [ ] 3.builder tab -> module type name, ให้ref จากswitch menu บนhubด้วยหาก กำลังtoggle module type เป็น icon mode อยู่ให้แสดง module type บน tab เป็นiconด้วยเช่นกัน
     - [ ] 4.builder tab -> icon ของmodule บน tab ไม่ว่าจะอยู่ในmode ย่อหรือขยาย ให้ใช้สีของmoduleนั้น
     - [ ] 5.builder tab -> เมื่อcursorชี้ไปที่builder tab ให้แสดงปุ่มclose tabขึ้นมาก่อนเป็นอันดับแรกในmode ย่อtab
-part 3
+  
+### part 3
 - [ ] status bar
     - [ ] 1.status a bar ยังแสดงข้อมูลผิด module majorกับminor
 - [ ] setting
@@ -37,17 +36,39 @@ part 3
             - [ ] แสดง word preview ที่จะเปลี่ยนไป ทั้งmodule และคำทั่วไป
         - [ ] UI size -> ขนาด UI, ขนาด Text
             - [ ] เพิ่อปุ่มปรับแต่งเพิ่มเติม เป็นActive button เมื่อกดจะแสดงการประแต่งUIแบบAdvanced
-part 4
+    
+### part 4
 - [ ] import
     - [ ] dbเก่าจะชื่อว่า novel-manager.db และ dracondex.db เพิ่มให้สามารถนำเข้ามาในApp ผ่านimportได้ 
     - [ ] dbที่importเข้ามาในNexusnest จะแปลงข้อมูลต่อไปนี้เข้ามา
         - [ ] folder project -> collector
-        - [ ] category template attribute -> classifier template attribute
-        - [ ] category object -> classifier object
-        - [ ] module(director,naviagator,hero,writer) -> parent collector name as (director,navigatornhero,writer) *v.1.x.x จะมีเพียงdirectorที่ชื่อnovel
-        - [ ] colortag link(object,module,folder,etc. that had color) -> module color(object,module,folder,etc. that had color)
-        - [ ] timeline event(dd,mm,yy, h,min) -> chronicler event(dd,mm,yy, h,min) *use event date from timeline date table
-    
+        - [ ] module novel"Director" -> collector named "Director"
+            - [ ] project list -> manager
+            - [ ] category template attribute -> classifier template attribute
+            - [ ] category object -> classifier object
+            - [ ] module(director,naviagator,hero,writer) -> parent collector name as (director,navigatornhero,writer) *v.1.x.x จะมีเพียงdirectorที่ชื่อnovel
+            - [ ] colortag link(object,module,folder,etc. that had color) -> module color(object,module,folder,etc. that had color)
+            - [ ] timeline event(dd,mm,yy, h,min) -> chronicler event(dd,mm,yy, h,min) *use event date from timeline date table
+            - [ ] map area(x,y) -> locator area(x,y) *use location from map area
+        - [ ] module world"Navigator" -> collector named "Navigator"
+            - [ ] project list -> manager
+            - [ ] category charactor -> classifier charactor
+            - [ ] world origin category template -> classifier object template 
+            - [ ] world origin category -> classifier object
+            - [ ] map timeline event -> wanderer event *import link from db and link from locator
+            - [ ] map timeline object link -> wanderer event object locating *import link from charactor and category
+        - [ ] module game"Hero" -> collector named "Hero"
+            - [ ] project list -> manager
+            - [ ] category element template -> classifier object template
+            - [ ] category element -> classifier element
+            - [ ] charactor object -> classifier charactor
+            - [ ] story dialogue -> narrator dialogue
+            - [ ] story dialogue conversation -> narrator dialogue convesation
+        - [ ] module write"writer" -> collector named "Writer"
+            - [ ] project list -> manager
+            - [ ] writer series -> collector
+            - [ ] book -> author
+            - [ ] book chapter -> author chapter
 -----
 
 
