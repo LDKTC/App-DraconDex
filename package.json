@@ -1,6 +1,6 @@
 {
   "name": "DraconDex",
-  "version": "3.11.2",
+  "version": "3.11.3",
   "description": "Novel data management app",
   "main": "main.js",
   "scripts": {

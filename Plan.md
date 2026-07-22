@@ -4,14 +4,14 @@
 -----
 ### part 1
 #### hub
-- [ ] 1.nexus nest guideline -> ขยับให้ตรงกับicon 'v'
-- [ ] 2.hub page header -> เมื่อเปิดแต่ละpage เพิ่มfeatureในการresizable page view
-- [ ] 3.context menu -> ในcontext menu เมื่อกดright clickที่บนmoduleที่มีbuilder-ของตัวเอง เพื่อbutton 
-    - [ ] open in new window
-    - [ ] open in new pane >
+- [x] 1.nexus nest guideline -> ขยับให้ตรงกับicon 'v'
+- [x] 2.hub page header -> เมื่อเปิดแต่ละpage เพิ่มfeatureในการresizable page view
+- [x] 3.context menu -> ในcontext menu เมื่อกดright clickที่บนmoduleที่มีbuilder-ของตัวเอง เพื่อbutton 
+    - [x] open in new window
+    - [x] open in new pane >
         - left, right, top, bottom (layout ref from current pane in work)
-- [ ] 4.sage hut header page -> เพราะไม่มีiconเหมือนnexus nest กับimport dock ทำให้ขนาดheaderไม่เท่ากับขนาดheaderอื่นในhub
-- [ ] 5.nexus nest -> list, ที่มีเครื่องหมาย 'v' หรือ '+' จากการเป็นparent จะทำให้เครื่องหมาย ตรงกับiconของmoduleในลำดับเดียวกัน ทำให้สับสนสำหรับผู้ใช้ ขยับพื้นที่paddingของmoduleที่ไม่มีchild ให้เท่ากับmodule ที่มีchildเพื่อให้iconของmoduleที่อยู่ในลำดับที่เท่ากัน
+- [x] 4.sage hut header page -> เพราะไม่มีiconเหมือนnexus nest กับimport dock ทำให้ขนาดheaderไม่เท่ากับขนาดheaderอื่นในhub
+- [x] 5.nexus nest -> list, ที่มีเครื่องหมาย 'v' หรือ '+' จากการเป็นparent จะทำให้เครื่องหมาย ตรงกับiconของmoduleในลำดับเดียวกัน ทำให้สับสนสำหรับผู้ใช้ ขยับพื้นที่paddingของmoduleที่ไม่มีchild ให้เท่ากับmodule ที่มีchildเพื่อให้iconของmoduleที่อยู่ในลำดับที่เท่ากัน
   
 ### part 2 
 #### builder

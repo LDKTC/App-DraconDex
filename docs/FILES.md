@@ -151,7 +151,7 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `hub.js` | 781 | Nexus nest hub: module rail (+ `goToNexusNestHub` home button, ปุ่มแรกในแถบ ก่อน "+create"), accordion (Nest/Sage Hut/Import Dock — แต่ละ section มี `.acc-body` เลื่อนแยกกันเองผ่าน `#hub-body` flex layout, ดู style.css), nest tree drag-drop (โมดูลไหนก็ reparent ข้าม parent ได้ ไม่ล็อกเฉพาะ top-level แล้ว — `onNestDrop`), context menu (ปุ่ม "Create" เปิด hover submenu แทนการแสดง kind-list แบนราบเดิม — `openCreateSubmenu`/`positionSubmenuNear`)/rename/duplicate/move-to/pin, icon popup, `buildModuleDetailHtml` |
+| `hub.js` | ~1240 (เดิมเอกสารว่า 781 — ตัวเลขนี้ตกค้างมาหลายรอบ ยังไม่ได้ sync เต็ม) | Nexus nest hub: module rail (+ `goToNexusNestHub` home button, ปุ่มแรกในแถบ ก่อน "+create"), accordion (Nest/Sage Hut/Import Dock — แต่ละ section มี `.acc-body` เลื่อนแยกกันเองผ่าน `#hub-body` flex layout, ดู style.css), nest tree drag-drop (โมดูลไหนก็ reparent ข้าม parent ได้ ไม่ล็อกเฉพาะ top-level แล้ว — `onNestDrop`), `buildNestRow`/`buildNestItemRow` เรนเดอร์ `.tree-chev-spacer` แทนที่ chevron ว่างเปล่าเมื่อแถวไม่มี child (Plan part1 #5 — กัน `.kicon` เลื่อนซ้ายไม่ตรงคอลัมน์กับแถวข้างเคียง), context menu (ปุ่ม "Create" เปิด hover submenu แทนการแสดง kind-list แบนราบเดิม — `openCreateSubmenu`/`positionSubmenuNear`)/rename/duplicate/move-to/pin/**"เปิดในหน้าต่างใหม่"**+**"เปิดใน Pane ใหม่ ▸"** (เฉพาะ module ที่มี Builder page เอง คือไม่ใช่ `collector` — `openModuleInNewWindow`/`openModuleInNewPane`/`openPaneDirectionSubmenu`/`buildPaneDirectionListHtml`, Plan part1 #3), icon popup, `buildModuleDetailHtml`, `wrapPageView` (ห่อ Sage Hut/Import Dock file-preview/Kind Browser ด้วย resize handle — Plan part1 #2) |
 | `builder.js` | 618 | Editor-group shell — recursive split-pane layout tree (`builderSplitPane`/`builderClosePane`, ซ้อนได้ไม่จำกัดชั้น, Part 4), tab drag-reorder/cross-pane move/pop-out เป็นหน้าต่างแยก, toggle Module Inspector dock, auto-split เมื่อลาก tab ไปวางขอบ pane; `pruneStaleLayoutElements` กวาด DOM ที่หลงเหลือจาก legacy view (เช่น Scribe, Nexus picker — เขียนทับ `#main-inner.innerHTML` ตรงๆ) ออกก่อน re-render grid ทุกครั้ง กัน pane ค้างที่ปิดไม่ได้ |
 | `inspector.js` | 148 | Module Inspector dock: description/แท็ก/แอตทริบิวต์/ลิงก์/ปุ่ม Version History |
 | `iconpicker.js` | 266 | Icon/Color picker ฝัง (ไอคอนแอป/symbol เดิม/อัปโหลด+crop วงกลม) |
@@ -172,8 +172,8 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | `mod/connector.js` | — | UI ของ kind `connector` |
 | `mod/sketcher.js` | — | UI ของ kind `sketcher` |
 | `mod/designer.js` | — | UI ของ kind `designer` |
-| `mod/sagehut.js` | 134 | Hub section: สถิติวอลต์ (ใช้ `db/sage.js` บางฟังก์ชัน) |
-| `mod/fileviewer.js` | 249 | Hub section: Import Dock — list/link ไฟล์ + viewer read-only ใน Builder |
+| `mod/sagehut.js` | 139 | Hub section: สถิติวอลต์ (ใช้ `db/sage.js` บางฟังก์ชัน); header มีไอคอน `I.sage` แล้ว (Plan part1 #4, เดิมไม่มีไอคอนทำให้ header สูงไม่เท่า Nexus Nest); `buildSageHutHtml` ห่อด้วย `wrapPageView` (Plan part1 #2) |
+| `mod/fileviewer.js` | 284 | Hub section: Import Dock — list/link ไฟล์ + viewer read-only ใน Builder; `buildFileViewerHtml` ห่อด้วย `wrapPageView` (Plan part1 #2) |
 
 `vendor/` เพิ่ม konva/d3 เดิมยังใช้ร่วม (ไม่มีไฟล์ vendor ใหม่ในรอบนี้)
 
@@ -285,6 +285,11 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   `trackRecentEntity`
 - **IDE shell (v2.8)**: `updateStatusBar()` (footer: vault/item/word count/
   save state), `bindGlobalShortcuts()` (Ctrl+P/E/N/W/Tab), `openExplorer()`
+- **Drag-to-resize handles** (mousedown → document-level mousemove/mouseup →
+  localStorage-persist, ค่า clamp คนละช่วง): `startLeftPanelResize`
+  (sidebar), `startPageViewResize` (Sage Hut/Import Dock file-preview/Kind
+  Browser page — `S.pageViewWidth`, clamp 480px–ความกว้าง pane จริง, Plan
+  part1 #2) — คู่กับ `startInspectorResize` ใน `inspector.js`
 
 ### director.js (~650 บรรทัด)
 - sidebar โปรเจกต์ (`renderProjectSidebar`, โฟลเดอร์พับได้ `tglFolder`),

@@ -49,12 +49,15 @@ function buildSageHutHtml() {
       <div class="czoom" data-no-i18n><span class="cn-count">${d.graph.nodes.length} nodes · ${d.graph.edges.length} links</span></div>
     </div>`;
   else body = buildSageHutBarsHtml(d, d.tab === 'dataSize');
-  return `<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
-      <h2 style="margin:0;font-size:1.15em">Sage Hut <span class="kind-chip" data-no-i18n>Analytics</span></h2>
+  return wrapPageView(`<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
+      <h2 style="margin:0;font-size:1.15em;display:flex;align-items:center;gap:8px">
+        <span class="kicon" style="color:var(--accent)" data-no-i18n>${I.sage}</span>
+        Sage Hut <span class="kind-chip" data-no-i18n>Analytics</span>
+      </h2>
       <div class="drafter-hint">${t('sageHutSubtitle')} ${x(S.nexus.name)}</div>
     </div>
     <div class="classifier-toolbar">${viewBar}</div>
-    ${tiles}${body}`;
+    ${tiles}${body}`);
 }
 
 // ── Per-module bars (Data size / Object amount) ─────────────────────────
