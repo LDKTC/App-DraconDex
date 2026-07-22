@@ -82,11 +82,15 @@
     - [ ] เพิ่มปุ่มเพิ่มlevelstep ของattribute สามารถกรอกเลเวลเองได้เช่น 3, 5, 999 ลงในช่องlevel
 - [ ] 4.classifier element -> condition
     - [ ] เพิ่มช่องแสดงcondition กรอกเงื่อนไขสำหรับattribute
-- [ ] 5.classifier attribute -> เพิ่มให้สามารถเลือกการแสดงผลได้โดยมีรูปแบบการแสดงดังนี้ โดยจะแสดงในdetail view
+- [ ] 5.classifier attribute -> เพิ่มให้สามารถเลือกการแสดงผลของattributeในclassifierได้โดยมีรูปแบบการแสดงดังนี้ โดยจะแสดงในdetail view
     - [ ] Textbox, Default
     - [ ] Text Area, 
     - [ ] Date box, (dd/mm/yy, h:min)
-    - [ ] 
+- [ ] 6.classifier relation view -> เพิ่มrelation listโดยแสดงด้านล่างGraphของrelation โดยrelation จะนับเป็นการlinkของobject/element/charactor
+    - [ ] เพิ่มปุ่มcreate relation โดยอยู่ที่มุมซ้ายด้านล่างของgraph, เมื่อเปิดจะมีmodalแสดงโดยจะแสดงข้อมูลให้เลือกดังนี้
+        - insert boxสำหรับกรอกชื่อของrelation โดยมีระบบrecent useแสดงชื่อrelationที่ใช้ล่าสุด 3 ชื่อเป็นlist โดยจะsortตามตัวอักษรที่กำลังพิมพ์
+        - object/element/charactor select box โดยมี 2 boxให้เลือก object/element/charactor โดยแสดงในrowเดียวกัน
+        - เลือกสีสำหรับrelation line
 #### Description"Inspector" Module
 - [ ] 1.เพิ่มการจัดระเบียบข้อมูลบนTextBoxด้วย การใส่Tab
 - [ ] 2.เพิ่มCtrl+z Ctrl+Shift+z UndoRedo บนหน้ากระดาษ
