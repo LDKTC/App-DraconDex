@@ -39,37 +39,37 @@
     
 ### part 4
 #### import
-- [ ] 1.dbเก่าจะชื่อว่า novel-manager.db และ dracondex.db เพิ่มให้สามารถนำเข้ามาในApp ผ่านimportได้ 
-- [ ] 2.dbที่importเข้ามาในNexusnest จะแปลงข้อมูลต่อไปนี้เข้ามา
-    - [ ] folder project -> collector
-    - [ ] module novel"Director" -> collector named "Director"
-        - [ ] project list -> manager
-        - [ ] category template attribute -> classifier template attribute
-        - [ ] category object -> classifier object
-        - [ ] module(director,naviagator,hero,writer) -> parent collector name as (director,navigatornhero,writer) *v.1.x.x จะมีเพียงdirectorที่ชื่อnovel
-        - [ ] colortag link(object,module,folder,etc. that had color) -> module color(object,module,folder,etc. that had color)
-        - [ ] timeline event(dd,mm,yy, h,min) -> chronicler event(dd,mm,yy, h,min) *use event date from timeline date table
-        - [ ] map area(x,y) -> locator area(x,y) *use location from map area
-    - [ ] module world"Navigator" -> collector named "Navigator"
-        - [ ] project list -> manager
-        - [ ] category charactor -> classifier charactor
-        - [ ] world origin category template -> classifier object template 
-        - [ ] world origin category -> classifier object
-        - [ ] map timeline event -> wanderer event *import link from db and link from locator
-        - [ ] map timeline object link -> wanderer event object locating *import link from charactor and category
-    - [ ] module game"Hero" -> collector named "Hero"
-        - [ ] project list -> manager
-        - [ ] category element template -> classifier object template
-        - [ ] category element -> classifier element
-        - [ ] charactor object -> classifier charactor
-        - [ ] story dialogue -> narrator dialogue
-        - [ ] story dialogue conversation -> narrator dialogue convesation
-    - [ ] module write"writer" -> collector named "Writer"
-        - [ ] project list -> manager
-        - [ ] writer series -> collector
-        - [ ] book -> author
-        - [ ] book chapter -> author chapter
-        - [ ] chat session -> scribe session
+- [x] 1.dbเก่าจะชื่อว่า novel-manager.db และ dracondex.db เพิ่มให้สามารถนำเข้ามาในApp ผ่านimportได้ 
+- [x] 2.dbที่importเข้ามาในNexusnest จะแปลงข้อมูลต่อไปนี้เข้ามา
+    - [x] folder project -> collector
+    - [x] module novel"Director" -> collector named "Director"
+        - [x] project list -> manager
+        - [x] category template attribute -> classifier template attribute
+        - [x] category object -> classifier object
+        - [x] module(director,naviagator,hero,writer) -> parent collector name as (director,navigatornhero,writer) *v.1.x.x จะมีเพียงdirectorที่ชื่อnovel
+        - [x] colortag link(object,module,folder,etc. that had color) -> module color(object,module,folder,etc. that had color)
+        - [x] timeline event(dd,mm,yy, h,min) -> chronicler event(dd,mm,yy, h,min) *use event date from timeline date table
+        - [x] map area(x,y) -> locator area(x,y) *use location from map area
+    - [x] module world"Navigator" -> collector named "Navigator"
+        - [x] project list -> manager
+        - [x] category charactor -> classifier charactor
+        - [x] world origin category template -> classifier object template 
+        - [x] world origin category -> classifier object
+        - [x] map timeline event -> wanderer event *import link from db and link from locator
+        - [x] map timeline object link -> wanderer event object locating *import link from charactor and category
+    - [x] module game"Hero" -> collector named "Hero"
+        - [x] project list -> manager
+        - [x] category element template -> classifier object template
+        - [x] category element -> classifier element
+        - [x] charactor object -> classifier charactor
+        - [x] story dialogue -> narrator dialogue
+        - [x] story dialogue conversation -> narrator dialogue convesation
+    - [x] module write"writer" -> collector named "Writer"
+        - [x] project list -> manager
+        - [x] writer series -> collector
+        - [x] book -> author
+        - [x] book chapter -> author chapter
+        - [x] chat session -> scribe session
 
 ### part 5
 #### Project"Manager" Module
@@ -95,7 +95,14 @@
 - [ ] 1.เพิ่มการจัดระเบียบข้อมูลบนTextBoxด้วย การใส่Tab
 - [ ] 2.เพิ่มCtrl+z Ctrl+Shift+z UndoRedo บนหน้ากระดาษ
 #### Map"Locator" Module
+- [ ] 1.ให้ชื่อareaบนgraph ขยับให้ตรงกับจุดตรงกลางของarea shape
 #### Timeline"Chronicler" Module
+- [ ] 1.date บนgraphของoneline ไม่ต้องมีชื่อเดือนหรือปีที่เป็นDefaultที่แสดง ให้ใช้โดยอ้างอิงกับevent date 
+    - ไม่ต้องแสดงชื่อเดือน ให้แสดงเลขเดือนแทน, เดือนdefault คือ 12 สามารถเพิ่มขึ้นได้หากevent เดือนที่มากกว่า 12
+    - เลขปีสามารถติดลบได้ โดนแสดงก็ต่อเมื่อมีeventที่ปีติดลบ
+- [ ] 2.มีเพียง 1 timeline/ 1 chronicler โดยcompare viewจะแสดงtimeline ของChronicler นั้น และมีช่องให้เลือก Chroniclerอื่น เพื่อนำมาcompare กับchroniclerนี้
+- [ ] 3.เพิ่ม view ใหม่ "calendar" โดยจะแสดงหน้าต่างเป็นปฏิทิน และแสดงeventในตารางเวลา
+    - เปิดให้ผู้ใช้สามารถตั้งค่าการแสดงผลได้เช่น 1 เดือนมีกี่วัน, 1 สัปดาห์มีกี่วัน, 1 ปีมีกี่เดือน และสามารถให้ผู้ใช้สามารถสร้างเดือน
 #### Story"Narrator" Module
 #### Book"Author" Module
 #### Chat"Scribe" Module

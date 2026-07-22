@@ -1,25 +1,26 @@
 'use strict';
 // ═══ Legacy → v3 migration (progress.md Phase 24, rewritten for Plan.md
-// part 2 §2) ═════════════════════════════════════════════════════════════
+// part 2 §2, rewritten again for Plan.md part 4) ═══════════════════════════
 // Lazy, NON-DESTRUCTIVE: one transaction maps a legacy project tree
 // (Director project / Navigator world / Hero game / Writer project / Scribe
-// notes) onto a fresh Manager Major + real child module rows in the Nexus
-// nest. Original rows/data are never touched or deleted — the source is
-// only flagged (migrated_v3=1) so it stops being offered again. Triggered
-// from the new "Import as Nexus Nest" choice in the import-choice modal
-// (src/renderer/hub.js openImportChoiceModal), which itself now fires off
-// the Import DB nav button's file-merge flow rather than the old Hub
-// "Legacy Import" accordion.
+// notes) onto a fresh top-level collector + real child module rows in the
+// Nexus nest. Original rows/data are never touched or deleted — the source
+// is only flagged (migrated_v3=1) so it stops being offered again. Triggered
+// from the "Import as Nexus Nest" choice in the import-choice modal
+// (src/renderer/hub.js openImportChoiceModal), which itself fires off the
+// Import DB nav button's file-merge flow.
 //
-// Every legacy object/event/area becomes a REAL child `module`-table row
-// (kind 'inspector') rather than the old classifier_object/timeline_event
-// content-item rows — this is a deliberate fidelity trade-off (confirmed
-// with the user): objects lose their typed/searchable per-template columns
-// in exchange for showing up as real Nest-tree nodes. One consequence: the
-// owning classifier/chronicler/locator module's own native view (table/
-// timeline/map) has nothing to show natively since its own content tables
-// stay empty — the migrated data lives as sibling Nest-tree children
-// instead, opened the same way any other module is.
+// Every legacy object/event/map-area becomes a REAL typed content row
+// (classifier_object/classifier_template/classifier_attribute,
+// timeline_event/timeline_date, map_area/map_point) in its owning module's
+// own native table, matching Plan.md part 4's mapping table literally.
+// This supersedes the previous "Decision #4" trade-off (every legacy
+// object/event/area flattened into a plain 'inspector' module's markdown
+// description) — that was a deliberate simplification at the time, but
+// part 4 asks for real typed, searchable content instead, so this version
+// reverses it. Legacy colors need no conversion: `use_color` is a single
+// shared table referenced by both the legacy and v3 schemas, so a legacy
+// color id is already a valid v3 color id.
 const { getDB } = require('./core');
 
 const LEGACY_TABLE = { director: 'project', navigator: 'world_project', hero: 'game_project', writer: 'write_project', scribe: 'note' };
@@ -29,74 +30,74 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
   const module_ = require('./module');
   const viewer = require('./viewer');
   const author = require('./author');
-  const counts = { modules: 0, objects: 0, events: 0, chapters: 0, dialogues: 0, relations: 0 };
+  const classifier = require('./classifier');
+  const timeline = require('./timeline');
+  const map = require('./map');
+  const wanderer = require('./wanderer');
+  const chatscribe = require('./chatscribe');
+  const counts = { modules: 0, objects: 0, events: 0, areas: 0, chapters: 0, dialogues: 0, relations: 0, wandererPins: 0, chatMessages: 0 };
 
-  const mkModule = (parentId, name, kind, catType) => {
+  const mkModule = (parentId, name, kind, catType, color) => {
     counts.modules++;
-    return module_.createModule({ nexus_ref: nexusId, parent_id: parentId, name, kind, cat_type: catType || null });
+    return module_.createModule({ nexus_ref: nexusId, parent_id: parentId, name, kind, cat_type: catType || null, color: color || null });
   };
 
-  // Decision #4: legacy structured attributes get flattened into freeform
-  // markdown on the new inspector module, since there's no longer a
-  // classifier_template/classifier_attribute pair backing them.
-  const attrsToMarkdown = (note, pairs) => {
-    const lines = [];
-    if (note) lines.push(note, '');
-    for (const [label, value] of pairs) {
-      if (value == null || value === '') continue;
-      lines.push(`- **${label}:** ${value}`);
+  // Idempotent find-or-create for a named child module — used for the
+  // top-level "Director"/"Navigator"/"Hero"/"Writer" wrapper collector,
+  // Director's project_folder level, and Writer's series level, so
+  // importing multiple legacy projects across separate migrateLegacy calls
+  // doesn't create duplicate wrapper nodes.
+  const findOrCreateChild = (parentId, name, kind) => {
+    const existing = d.prepare(
+      `SELECT id FROM module WHERE nexus_ref=? AND parent_id IS ? AND kind=? AND name=?`
+    ).get(nexusId, parentId, kind, name);
+    return existing ? existing.id : mkModule(parentId, name, kind);
+  };
+
+  // category: {name, color}; templates: [{id, description, attribute_type}];
+  // objects: [{legacyId, name, color, note, values: [[legacyTemplateId, value], ...]}]
+  // Shared by Director/Navigator/Hero — only the source table names differ
+  // per branch below, the target shape is identical real classifier content.
+  const mkClassifierWithContent = (parentId, category, catType, templates, objects) => {
+    const cid = mkModule(parentId, category.name, 'classifier', catType, category.color);
+    const tplMap = new Map(); // legacy template id -> new classifier_template id
+    for (const tp of templates) {
+      const newTplId = classifier.createTemplate(cid, tp.description, tp.attribute_type, false, false, null);
+      tplMap.set(tp.id, newTplId);
     }
-    return lines.join('\n').trim();
-  };
-
-  const mkClassifierContainer = (parentId, name, catType) => mkModule(parentId, name, 'classifier', catType);
-
-  // object: {name, note, values:[...] aligned to templates[{name}]}
-  const mkObjectModule = (classifierId, obj, templates) => {
-    const mid = mkModule(classifierId, obj.name, 'inspector');
-    const body = attrsToMarkdown(obj.note, templates.map((tp, i) => [tp.name, obj.values?.[i]]));
-    if (body) module_.updateModuleDescription(mid, body);
-    counts.objects++;
-    return mid;
-  };
-
-  const mkChroniclerContainer = (parentId, name) => {
-    const mid = mkModule(parentId, name, 'chronicler');
-    d.prepare(`INSERT INTO timeline (line_name, module_ref) VALUES (?,?)`).run(name, mid);
-    return mid;
-  };
-
-  // event: {name, story, date:{day,month,years,hour,minute}}
-  const mkEventModule = (chroniclerId, ev) => {
-    const mid = mkModule(chroniclerId, ev.name || '—', 'inspector');
-    if (ev.story) module_.updateModuleDescription(mid, ev.story);
-    if (ev.date) {
-      for (const [k, v] of [['day', ev.date.day], ['month', ev.date.month], ['years', ev.date.years], ['hour', ev.date.hour], ['minute', ev.date.minute]]) {
-        if (v != null && v !== 0) module_.upsertModuleAttr(mid, null, k, String(v));
+    const objMap = new Map(); // legacy object id -> new classifier_object id
+    for (const o of objects) {
+      const oid = classifier.createObject(cid, o.name, o.color);
+      if (o.note) classifier.updateObjectNote(oid, o.note);
+      for (const [legacyTplId, value] of o.values) {
+        if (value == null || value === '') continue;
+        const newTplId = tplMap.get(legacyTplId);
+        if (newTplId) classifier.upsertAttr(oid, newTplId, value);
       }
+      if (o.legacyId != null) objMap.set(o.legacyId, oid);
+      counts.objects++;
     }
+    return { cid, objMap };
+  };
+
+  const mkChroniclerEvent = (timelineId, ev) => {
+    const dateId = timeline.getOrCreateDate(ev.day, ev.month, ev.years, ev.hour, ev.minute);
+    const id = d.prepare(`INSERT INTO timeline_event (timeline_id,event_name,start_at,color,story) VALUES (?,?,?,?,?)`)
+      .run(timelineId, ev.name, dateId, ev.color || null, ev.story || null).lastInsertRowid;
     counts.events++;
-    return mid;
+    return id;
   };
 
-  const mkLocatorContainer = (parentId, name) => {
-    const mid = mkModule(parentId, name, 'locator');
-    d.prepare(`INSERT INTO map (map_name, module_ref) VALUES (?,?)`).run(name, mid);
-    return mid;
+  const mkLocatorArea = (mapId, area) => {
+    const aid = map.createMapArea(mapId, area.name, area.color).lastInsertRowid;
+    const ins = d.prepare(`INSERT INTO map_point (area_id,point_order,x,y) VALUES (?,?,?,?)`);
+    (area.points || []).forEach((p, i) => ins.run(aid, i, p.x, p.y));
+    counts.areas++;
+    return aid;
   };
 
-  // area: {name, points:[{x,y}]}
-  const mkAreaModule = (locatorId, area) => {
-    const mid = mkModule(locatorId, area.name || '—', 'inspector');
-    if (area.points?.length) {
-      const body = '| x | y |\n|---|---|\n' + area.points.map(p => `| ${p.x} | ${p.y} |`).join('\n');
-      module_.updateModuleDescription(mid, body);
-    }
-    return mid;
-  };
-
-  // Decision #5: descriptions stay combined into one module per project,
-  // just as an 'inspector' module now instead of 'drafter'.
+  // Decision #5 (unchanged): descriptions stay combined into one 'inspector'
+  // module per project — free-text notes have no typed home to go to.
   const mkDescriptionNote = (parentId, name, rows) => {
     const body = rows.map(r => `## ${r.attribute_name || '—'}\n\n${r.attribute_text || ''}`).join('\n\n');
     if (!body.trim()) return null;
@@ -109,7 +110,10 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
   // (the only legacy source with a dedicated relation-instance schema) →
   // one 'connector' module whose saved filter scopes to this project's own
   // classifier/chronicler modules, with real entity_relation edges between
-  // the migrated object/event inspector modules created above.
+  // the migrated classifier_object/timeline_event rows — using the same
+  // entity-key scheme viewer.js's own index already uses for those tables
+  // (cobj_<id> / tlev_<id>), now that objects/events are real content rows
+  // rather than 'inspector' modules (which used module_<id> keys).
   const mkRelationConnector = (parentId, name, legacyProjectId, moduleIds, objModMap, eventModMap) => {
     const relRows = d.prepare(`SELECT * FROM relation WHERE project_id=?`).all(legacyProjectId);
     if (!relRows.length || !moduleIds.length) return null;
@@ -119,15 +123,15 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
       const typeName = r.relation_type ? d.prepare(`SELECT relation_name FROM relation_type WHERE id=?`).get(r.relation_type)?.relation_name : null;
       for (const e of d.prepare(`SELECT * FROM relation_obob WHERE relation_id=?`).all(r.id)) {
         const from = objModMap.get(e.object_from), to = objModMap.get(e.object_to);
-        if (from && to) { viewer.createEntityRelation(nexusId, `module_${from}`, `module_${to}`, typeName); counts.relations++; }
+        if (from && to) { viewer.createEntityRelation(nexusId, `cobj_${from}`, `cobj_${to}`, typeName); counts.relations++; }
       }
       for (const e of d.prepare(`SELECT * FROM relation_obtl WHERE relation_id=?`).all(r.id)) {
         const from = objModMap.get(e.object_from), to = eventModMap.get(e.timeline_to);
-        if (from && to) { viewer.createEntityRelation(nexusId, `module_${from}`, `module_${to}`, typeName); counts.relations++; }
+        if (from && to) { viewer.createEntityRelation(nexusId, `cobj_${from}`, `tlev_${to}`, typeName); counts.relations++; }
       }
       for (const e of d.prepare(`SELECT * FROM relation_tltl WHERE relation_id=?`).all(r.id)) {
         const from = eventModMap.get(e.timeline_from), to = eventModMap.get(e.timeline_to);
-        if (from && to) { viewer.createEntityRelation(nexusId, `module_${from}`, `module_${to}`, typeName); counts.relations++; }
+        if (from && to) { viewer.createEntityRelation(nexusId, `tlev_${from}`, `tlev_${to}`, typeName); counts.relations++; }
       }
     }
     return connId;
@@ -139,37 +143,45 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
     if (target === 'director') {
       const p = d.prepare(`SELECT * FROM project WHERE id=?`).get(legacyId);
       if (!p) throw new Error('project not found');
-      majorId = mkModule(null, p.name, 'manager');
+      const directorId = findOrCreateChild(null, 'Director', 'collector');
+      let parentId = directorId;
+      if (p.folder_id) {
+        const folder = d.prepare(`SELECT * FROM project_folder WHERE id=?`).get(p.folder_id);
+        if (folder) parentId = findOrCreateChild(directorId, folder.name, 'collector');
+      }
+      majorId = mkModule(parentId, p.name, 'manager', null, p.project_color);
       const scopeIds = [];
       const objModMap = new Map();
       const eventModMap = new Map();
 
       for (const cat of d.prepare(`SELECT * FROM object_category WHERE project_id=?`).all(legacyId)) {
         const tpls = d.prepare(`SELECT * FROM object_template WHERE category_id=? ORDER BY display_order, id`).all(cat.id);
-        const cid = mkClassifierContainer(majorId, cat.category_name, 'object');
+        const objs = d.prepare(`SELECT * FROM object WHERE category_id=?`).all(cat.id).map(o => ({
+          legacyId: o.id, name: o.name, color: o.color, note: o.note,
+          values: tpls.map(tp => [tp.id, d.prepare(`SELECT attribute_value FROM object_attribute WHERE object_id=? AND template_id=?`).get(o.id, tp.id)?.attribute_value]),
+        }));
+        const { cid, objMap } = mkClassifierWithContent(majorId, { name: cat.category_name, color: cat.color }, 'object', tpls, objs);
         scopeIds.push(cid);
-        for (const o of d.prepare(`SELECT * FROM object WHERE category_id=?`).all(cat.id)) {
-          const values = tpls.map(tp => d.prepare(`SELECT attribute_value FROM object_attribute WHERE object_id=? AND template_id=?`).get(o.id, tp.id)?.attribute_value);
-          const mid = mkObjectModule(cid, { name: o.name, note: o.note, values }, tpls.map(tp => ({ name: tp.description })));
-          objModMap.set(o.id, mid);
-        }
+        for (const [k, v] of objMap) objModMap.set(k, v);
       }
 
       for (const tl of d.prepare(`SELECT * FROM timeline WHERE project_id=?`).all(legacyId)) {
-        const cid = mkChroniclerContainer(majorId, tl.line_name || p.name);
+        const cid = mkModule(majorId, tl.line_name || p.name, 'chronicler');
+        const newTlId = d.prepare(`INSERT INTO timeline (line_name, module_ref, color) VALUES (?,?,?)`).run(tl.line_name || p.name, cid, tl.color || null).lastInsertRowid;
         scopeIds.push(cid);
         const evs = d.prepare(`
-          SELECT te.id, te.event_name, te.story, td.day, td.month, td.years, td.hour, td.minute
+          SELECT te.id, te.event_name, te.story, te.color, td.day, td.month, td.years, td.hour, td.minute
           FROM timeline_event te JOIN timeline_date td ON te.start_at=td.id WHERE te.timeline_id=?
         `).all(tl.id);
-        for (const ev of evs) eventModMap.set(ev.id, mkEventModule(cid, { name: ev.event_name, story: ev.story, date: ev }));
+        for (const ev of evs) eventModMap.set(ev.id, mkChroniclerEvent(newTlId, { name: ev.event_name || '—', story: ev.story, color: ev.color, ...ev }));
       }
 
       for (const mp of d.prepare(`SELECT * FROM map WHERE project_id=?`).all(legacyId)) {
-        const lid = mkLocatorContainer(majorId, mp.map_name || p.name);
+        const lid = mkModule(majorId, mp.map_name || p.name, 'locator');
+        const newMapId = d.prepare(`INSERT INTO map (map_name, module_ref, color) VALUES (?,?,?)`).run(mp.map_name || p.name, lid, mp.color || null).lastInsertRowid;
         for (const a of d.prepare(`SELECT * FROM map_area WHERE map_id=?`).all(mp.id)) {
           const points = d.prepare(`SELECT x, y FROM map_point WHERE area_id=? ORDER BY point_order`).all(a.id);
-          mkAreaModule(lid, { name: a.area_name, points });
+          mkLocatorArea(newMapId, { name: a.area_name || '—', color: a.color, points });
         }
       }
 
@@ -186,53 +198,87 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
     else if (target === 'navigator') {
       const w = d.prepare(`SELECT * FROM world_project WHERE id=?`).get(legacyId);
       if (!w) throw new Error('world not found');
-      majorId = mkModule(null, w.name, 'manager');
+      const navigatorId = findOrCreateChild(null, 'Navigator', 'collector');
+      majorId = mkModule(navigatorId, w.name, 'manager', null, w.color);
       const scopeIds = [];
 
-      const chars = d.prepare(`SELECT * FROM world_character WHERE world_ref=?`).all(legacyId);
+      const chars = d.prepare(`SELECT * FROM world_character WHERE world_ref=?`).all(legacyId).map(c => ({ legacyId: c.id, name: c.name, color: c.color, note: null, values: [] }));
       if (chars.length) {
-        const cid = mkClassifierContainer(majorId, 'Characters', 'character');
+        const { cid } = mkClassifierWithContent(majorId, { name: 'Characters', color: null }, 'character', [], chars);
         scopeIds.push(cid);
-        for (const c of chars) mkObjectModule(cid, { name: c.name, note: null, values: [] }, []);
       }
 
       for (const cat of d.prepare(`SELECT * FROM world_orig_category WHERE world_ref=?`).all(legacyId)) {
         const tpls = d.prepare(`SELECT * FROM world_orig_template WHERE category_id=? ORDER BY display_order, id`).all(cat.id);
-        const cid = mkClassifierContainer(majorId, cat.category_name, 'object');
+        const objs = d.prepare(`SELECT * FROM world_orig_object WHERE category_id=?`).all(cat.id).map(o => ({
+          legacyId: o.id, name: o.name, color: o.color, note: o.note,
+          values: tpls.map(tp => [tp.id, d.prepare(`SELECT attribute_value FROM world_orig_attribute WHERE object_id=? AND template_id=?`).get(o.id, tp.id)?.attribute_value]),
+        }));
+        const { cid } = mkClassifierWithContent(majorId, { name: cat.category_name, color: cat.color }, 'object', tpls, objs);
         scopeIds.push(cid);
-        for (const o of d.prepare(`SELECT * FROM world_orig_object WHERE category_id=?`).all(cat.id)) {
-          const values = tpls.map(tp => d.prepare(`SELECT attribute_value FROM world_orig_attribute WHERE object_id=? AND template_id=?`).get(o.id, tp.id)?.attribute_value);
-          mkObjectModule(cid, { name: o.name, note: o.note, values }, tpls.map(tp => ({ name: tp.description })));
-        }
       }
 
+      // Locator + Chronicler containers, keyed so the new wanderer support
+      // below can point at whichever migrated map/timeline they came from.
+      const locatorByMapId = new Map(); // legacy map.id -> new locator module id
       for (const wm of d.prepare(`
         SELECT wm.id AS wmid, m.id AS map_id, m.map_name FROM world_map wm JOIN map m ON wm.map_ref=m.id
         WHERE wm.world_ref=?`).all(legacyId)) {
-        const lid = mkLocatorContainer(majorId, wm.map_name || w.name);
+        const lid = mkModule(majorId, wm.map_name || w.name, 'locator');
+        const newMapId = d.prepare(`INSERT INTO map (map_name, module_ref) VALUES (?,?)`).run(wm.map_name || w.name, lid).lastInsertRowid;
+        locatorByMapId.set(wm.map_id, lid);
         for (const a of d.prepare(`SELECT * FROM map_area WHERE map_id=?`).all(wm.map_id)) {
           const points = d.prepare(`SELECT x, y FROM map_point WHERE area_id=? ORDER BY point_order`).all(a.id);
-          mkAreaModule(lid, { name: a.area_name, points });
+          mkLocatorArea(newMapId, { name: a.area_name || '—', color: a.color, points });
         }
       }
 
+      const chroniclerByTimelineId = new Map(); // legacy world_timeline.id -> {moduleId, eventMap}
       for (const tl of d.prepare(`SELECT * FROM world_timeline WHERE world_ref=?`).all(legacyId)) {
-        const cid = mkChroniclerContainer(majorId, tl.name);
+        const cid = mkModule(majorId, tl.name, 'chronicler');
+        const newTlId = d.prepare(`INSERT INTO timeline (line_name, module_ref) VALUES (?,?)`).run(tl.name, cid).lastInsertRowid;
         scopeIds.push(cid);
         const evs = d.prepare(`
-          SELECT td.day, td.month, td.years, td.hour, td.minute
-          FROM world_timeline_event te JOIN world_timeline_date td ON te.date_ref=td.id WHERE te.timeline_ref=?
+          SELECT wte.id, td.day, td.month, td.years, td.hour, td.minute
+          FROM world_timeline_event wte JOIN world_timeline_date td ON wte.date_ref=td.id WHERE wte.timeline_ref=?
         `).all(tl.id);
-        for (const r of evs) mkEventModule(cid, { name: `${r.day}/${r.month}/${r.years}`, story: null, date: r });
+        const eventMap = new Map(); // legacy world_timeline_event.id -> new timeline_event.id
+        for (const r of evs) eventMap.set(r.id, mkChroniclerEvent(newTlId, { name: `${r.day}/${r.month}/${r.years}`, ...r }));
+        chroniclerByTimelineId.set(tl.id, { moduleId: cid, eventMap, worldMapRef: tl.world_map_ref });
+      }
+
+      // New: wanderer. Each world_timeline plotted on a world_map becomes a
+      // 'wanderer' module pointing at the matching migrated locator +
+      // chronicler (via module_ui, the same key convention wanderer.js's own
+      // renderer reads), with one map_event pin per timeline object-link.
+      for (const [tlId, info] of chroniclerByTimelineId) {
+        if (!info.worldMapRef) continue;
+        const wm = d.prepare(`SELECT map_ref FROM world_map WHERE id=?`).get(info.worldMapRef);
+        const locatorId = wm ? locatorByMapId.get(wm.map_ref) : null;
+        const tl = d.prepare(`SELECT name FROM world_timeline WHERE id=?`).get(tlId);
+        const wandererId = mkModule(majorId, tl?.name || 'Wanderer', 'wanderer');
+        if (locatorId) module_.setModuleUi(wandererId, 'mapModule', String(locatorId));
+        module_.setModuleUi(wandererId, 'timelineModule', String(info.moduleId));
+        for (const [legacyEventId, newEventId] of info.eventMap) {
+          for (const link of d.prepare(`SELECT * FROM world_timeline_object WHERE event_ref=?`).all(legacyEventId)) {
+            const point = link.point_ref ? d.prepare(`SELECT x, y FROM world_timeline_point WHERE id=?`).get(link.point_ref) : null;
+            const entityName = link.world_object_ref
+              ? d.prepare(`SELECT ob.name FROM world_object wo JOIN object ob ON wo.object_ref=ob.id WHERE wo.id=?`).get(link.world_object_ref)?.name
+              : link.world_character_ref
+                ? d.prepare(`SELECT name FROM world_character WHERE id=?`).get(link.world_character_ref)?.name
+                : null;
+            wanderer.createMapEvent(wandererId, newEventId, entityName || null, point?.x || 0, point?.y || 0, null);
+            counts.wandererPins++;
+          }
+        }
       }
 
       const descs = d.prepare(`SELECT * FROM world_description WHERE world_ref=?`).all(legacyId);
       if (descs.length) mkDescriptionNote(majorId, w.name, descs);
 
-      // Decision #6: Navigator has no relation-instance table of its own —
-      // fold its new classifier/chronicler modules into whichever Director
-      // connector(s) were created earlier in this same import batch instead
-      // of creating a dedicated connector for Navigator.
+      // Decision #6 (unchanged): Navigator has no relation-instance table of
+      // its own — fold its new classifier/chronicler modules into whichever
+      // Director connector(s) were created earlier in this same import batch.
       if (scopeIds.length && batchCtx?.directorConnectors?.length) {
         for (const dc of batchCtx.directorConnectors) {
           const cur = JSON.parse(module_.getModuleUi(dc.id).filterDef || '{}');
@@ -245,34 +291,37 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
     else if (target === 'hero') {
       const g = d.prepare(`SELECT * FROM game_project WHERE id=?`).get(legacyId);
       if (!g) throw new Error('game not found');
-      majorId = mkModule(null, g.name, 'manager');
+      const heroId = findOrCreateChild(null, 'Hero', 'collector');
+      majorId = mkModule(heroId, g.name, 'manager', null, g.color_ref);
 
       const ctpls = d.prepare(`SELECT * FROM game_char_template WHERE game_ref=?`).all(legacyId);
       const chars = d.prepare(`SELECT * FROM game_character WHERE game_ref=?`).all(legacyId);
       if (chars.length || ctpls.length) {
-        const cid = mkClassifierContainer(majorId, 'Characters', 'character');
-        for (const c of chars) {
-          const values = ctpls.map(tp => d.prepare(`
+        const objs = chars.map(c => ({
+          legacyId: c.id, name: c.name, color: c.color_ref, note: c.memo,
+          values: ctpls.map(tp => [tp.id, d.prepare(`
             SELECT attribute_text FROM game_char_attribute WHERE char_ref=? AND template_ref=? ORDER BY level DESC LIMIT 1
-          `).get(c.id, tp.id)?.attribute_text);
-          mkObjectModule(cid, { name: c.name, note: c.memo, values }, ctpls.map(tp => ({ name: tp.attribute_name })));
-        }
+          `).get(c.id, tp.id)?.attribute_text]),
+        }));
+        const tpls = ctpls.map(tp => ({ id: tp.id, description: tp.attribute_name, attribute_type: tp.attribute_type }));
+        mkClassifierWithContent(majorId, { name: 'Characters', color: null }, 'character', tpls, objs);
       }
 
       for (const col of d.prepare(`SELECT * FROM game_collection WHERE game_ref=?`).all(legacyId)) {
         const tpls = d.prepare(`SELECT * FROM game_col_template WHERE collection_ref=?`).all(col.id);
-        const cid = mkClassifierContainer(majorId, col.name, 'element');
-        for (const e of d.prepare(`SELECT * FROM game_col_element WHERE collection_ref=?`).all(col.id)) {
-          const values = tpls.map(tp => d.prepare(`
+        const objs = d.prepare(`SELECT * FROM game_col_element WHERE collection_ref=?`).all(col.id).map(e => ({
+          legacyId: e.id, name: e.name, color: e.color_ref, note: null,
+          values: tpls.map(tp => [tp.id, d.prepare(`
             SELECT attribute_text FROM game_col_attribute WHERE element_ref=? AND template_ref=? ORDER BY level DESC LIMIT 1
-          `).get(e.id, tp.id)?.attribute_text);
-          mkObjectModule(cid, { name: e.name, note: null, values }, tpls.map(tp => ({ name: tp.attribute_name })));
-        }
+          `).get(e.id, tp.id)?.attribute_text]),
+        }));
+        const tplRows = tpls.map(tp => ({ id: tp.id, description: tp.attribute_name, attribute_type: tp.attribute_type }));
+        mkClassifierWithContent(majorId, { name: col.name, color: col.color_ref }, 'element', tplRows, objs);
       }
 
       // game_story's dialogue graph already lands as real, module-tree-native
-      // rows (story_dialogue/story_talk/story_edge) — unchanged from before,
-      // no decision #4 treatment needed here.
+      // rows (story_dialogue/story_talk/story_edge) — unchanged, no
+      // flattening was ever done here.
       const charName = new Map(d.prepare(`SELECT id, name FROM game_character WHERE game_ref=?`).all(legacyId).map(c => [c.id, c.name]));
       for (const st of d.prepare(`SELECT * FROM game_story WHERE game_ref=?`).all(legacyId)) {
         const mid = mkModule(majorId, st.name, 'narrator');
@@ -300,11 +349,14 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
     else if (target === 'writer') {
       const wp = d.prepare(`SELECT * FROM write_project WHERE id=?`).get(legacyId);
       if (!wp) throw new Error('write project not found');
-      majorId = mkModule(null, wp.project_name, 'manager');
+      const writerId = findOrCreateChild(null, 'Writer', 'collector');
+      majorId = mkModule(writerId, wp.project_name, 'manager', null, wp.color);
 
+      // New: series -> collector, between the Writer wrapper and each book.
       for (const se of d.prepare(`SELECT * FROM write_series WHERE project_id=?`).all(legacyId)) {
+        const seriesId = findOrCreateChild(majorId, se.name, 'collector');
         for (const bk of d.prepare(`SELECT * FROM write_book WHERE series_id=?`).all(se.id)) {
-          const mid = mkModule(majorId, bk.name, 'author');
+          const mid = mkModule(seriesId, bk.name, 'author', null, bk.color);
           for (const ch of d.prepare(`SELECT * FROM write_chapter WHERE book_id=? ORDER BY chapter_order, id`).all(bk.id)) {
             const chId = author.createBookChapter(mid, ch.name);
             if (ch.chapter_content) author.updateBookChapterContent(chId, ch.chapter_content);
@@ -313,14 +365,22 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
         }
       }
 
-      // Bug fix: write_note itself has no content column — the markdown
-      // lives in child write_chat rows, ordered by chat_order. The old code
-      // passed null content here, silently producing empty notes.
-      for (const nt of d.prepare(`SELECT * FROM write_note WHERE project_id=?`).all(legacyId)) {
-        const chatRows = d.prepare(`SELECT chat FROM write_chat WHERE note_id=? ORDER BY chat_order`).all(nt.id);
-        const mid = mkModule(majorId, nt.notename, 'inspector');
-        const content = chatRows.map(r => r.chat).join('\n\n');
-        if (content) module_.updateModuleDescription(mid, content);
+      // New: chat session -> real ChatScribe session, replacing the old
+      // inspector-flatten. write_note has no content column itself — the
+      // text lives in child write_chat rows, ordered by chat_order, and
+      // becomes one chat_message per row instead of one joined blob.
+      const notes = d.prepare(`SELECT * FROM write_note WHERE project_id=?`).all(legacyId);
+      if (notes.length) {
+        const scribeId = findOrCreateChild(majorId, 'Chat', 'scribe');
+        for (const nt of notes) {
+          const sessionId = chatscribe.createChatSession(scribeId, nt.notename);
+          const chatRows = d.prepare(`SELECT chat FROM write_chat WHERE note_id=? ORDER BY chat_order`).all(nt.id);
+          for (const row of chatRows) {
+            if (!row.chat) continue;
+            chatscribe.createChatMessage(sessionId, row.chat);
+            counts.chatMessages++;
+          }
+        }
       }
     }
 

@@ -12,12 +12,18 @@
 const WANDERER_VIEWS = ['dual', 'map', 'timeline'];
 const WANDERER_VIEW_LABEL = { dual: 'Dual', map: 'Map', timeline: 'Timeline' };
 
+// Walks the full tree (arbitrary nesting depth, not just root + one level —
+// see Plan part1 #4) so a wanderer nested any number of levels deep can
+// still find its Locator/Chronicler siblings.
 function wandererModulesOfKind(kind) {
   const out = [];
-  for (const major of S.moduleTree) {
-    if (major.kind === kind) out.push(major);
-    for (const c of (major.children || [])) if (c.kind === kind) out.push(c);
-  }
+  const walk = (nodes) => {
+    for (const n of nodes) {
+      if (n.kind === kind) out.push(n);
+      if (n.children?.length) walk(n.children);
+    }
+  };
+  walk(S.moduleTree);
   return out;
 }
 
