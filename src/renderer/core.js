@@ -309,6 +309,30 @@ function openModal(title,body) {
 }
 function closeModal() { q('#modal-overlay').classList.add('hidden'); }
 
+// ═══ FLOATING (MODELESS) PANEL ══════════════════════════════════════════
+// Like openModal/closeModal but with no full-viewport backdrop/click-catcher
+// — the background app stays interactive while the panel is open (Plan
+// part3 setting#2 "modeless window"). Used by the Preferences panel and the
+// custom-theme editor.
+function openFloatingPanel(id, title, bodyHtml, {width=880, height=600, onClose} = {}) {
+  closeFloatingPanel(id); // idempotent re-open
+  const el = document.createElement('div');
+  el.className = 'floating-panel';
+  el.id = id;
+  el.style.width = width+'px';
+  el.style.height = height+'px';
+  el.innerHTML = `
+    <div class="fp-head"><span data-no-i18n>${title}</span>
+      <button class="fp-close" onclick="closeFloatingPanel('${id}')">${I.close}</button></div>
+    <div class="fp-body">${bodyHtml}</div>`;
+  document.body.appendChild(el);
+  if (onClose) el._onClose = onClose;
+}
+function closeFloatingPanel(id) {
+  const el = q(`#${id}`);
+  if (el) { el._onClose?.(); el.remove(); }
+}
+
 // Custom in-app confirm dialog. Replaces native window.confirm(), which on
 // Electron leaves the renderer unable to receive mouse input until the window
 // is re-focused (or DevTools is opened) — the long-standing "UI frozen after
@@ -493,6 +517,7 @@ function setUiSetting(key, value){
   saveUiSettings();
   applyUiSettings();
   renderSettingsMenu();
+  if(q('#prefs-panel')) renderPreferencesPanel();
   translateStaticChrome();
   renderProjectTabs();
   if(key === 'language') switchView(S.view || 'projects');
@@ -531,7 +556,7 @@ function updateUiSizeLabel(value){
 // data-theme to sample the computed vars, then restore it — all synchronous,
 // so the browser never paints an intermediate theme. Result is cached.
 let THEME_PALETTE_CACHE = null;
-const THEME_SWATCH_VARS = ['--bg','--raised','--accent','--accentH','--t1'];
+const THEME_SWATCH_VARS = ['--bg','--raised','--accent','--accentH','--t1']; // quick-dropdown swatch strip
 function getThemePalettes(){
   if(THEME_PALETTE_CACHE) return THEME_PALETTE_CACHE;
   const body = document.body;
@@ -540,11 +565,42 @@ function getThemePalettes(){
   for(const theme of UI_THEME_OPTIONS){
     body.dataset.theme = theme;
     const cs = getComputedStyle(body);
-    cache[theme] = THEME_SWATCH_VARS.map(v => cs.getPropertyValue(v).trim());
+    // Full CUSTOM_THEME_TOKENS superset (not just THEME_SWATCH_VARS) so the
+    // Preferences theme-grid mockup (Plan part3) can use the same cache.
+    cache[theme] = Object.fromEntries(CUSTOM_THEME_TOKENS.map(tok => [tok, cs.getPropertyValue(tok).trim()]));
   }
   if(prev === undefined) delete body.dataset.theme; else body.dataset.theme = prev;
   THEME_PALETTE_CACHE = cache;
   return cache;
+}
+
+// Shared by the quick settings dropdown and the Preferences panel (Plan
+// part3) so both surfaces render the identical control from one source.
+function nameModeSegHtml(){
+  return `<div class="name-mode-seg">
+    <button class="btn ${S.settings.nameMode !== 'classic' ? 'btn-p' : 'btn-s'}" onclick="setUiSetting('nameMode','unique')" data-no-i18n>Unique</button>
+    <button class="btn ${S.settings.nameMode === 'classic' ? 'btn-p' : 'btn-s'}" onclick="setUiSetting('nameMode','classic')" data-no-i18n>Classic</button>
+  </div>
+  <div class="settings-hint">${t('moduleNameModeHint')}</div>`;
+}
+function uiSizeSlidersHtml(){
+  return `
+    <div class="settings-group">
+      <div class="settings-label settings-label-row">
+        <span>${t('uiSize')}</span>
+        <span id="settings-size-value">${S.settings.size}%</span>
+      </div>
+      <input class="settings-slider" type="range" min="${UI_SIZE_MIN}" max="${UI_SIZE_MAX}" step="${UI_SIZE_STEP}" value="${S.settings.size}" oninput="updateUiSizeLabel(this.value)" onchange="setUiSizeFromSlider(this.value)">
+      <div class="settings-slider-scale"><span>${UI_SIZE_MIN}%</span><span>100%</span><span>${UI_SIZE_MAX}%</span></div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label settings-label-row">
+        <span>${t('fontSize')}</span>
+        <span id="settings-font-value">${S.settings.fontScale || 100}%</span>
+      </div>
+      <input class="settings-slider" type="range" min="80" max="130" step="5" value="${S.settings.fontScale || 100}" oninput="setFontScaleFromSlider(this.value)">
+      <div class="settings-slider-scale"><span>80%</span><span>100%</span><span>130%</span></div>
+    </div>`;
 }
 
 function renderSettingsMenu(){
@@ -553,8 +609,8 @@ function renderSettingsMenu(){
   const palettes = getThemePalettes();
   const themeOptions = UI_THEME_OPTIONS.map(theme => {
     const active = S.settings.theme === theme;
-    const swatches = (palettes[theme] || []).map(c =>
-      `<i style="background:${c}"></i>`
+    const swatches = THEME_SWATCH_VARS.map(v =>
+      `<i style="background:${palettes[theme]?.[v] || ''}"></i>`
     ).join('');
     return `<button type="button" class="theme-item${active?' active':''}" onclick="setUiSetting('theme','${theme}')" title="${t(theme)}">
         <span class="theme-swatches">${swatches}</span>
@@ -585,6 +641,7 @@ function renderSettingsMenu(){
       <span>${t('settings')}</span>
       <button class="settings-close" onclick="toggleSettingsMenu(false)" title="${t('close')}">x</button>
     </div>
+    <button class="btn btn-p" style="width:100%;margin-bottom:8px" onclick="toggleSettingsMenu(false);openPreferencesPanel()">${I.settings} ${t('preferencesOpen')}</button>
     <div class="settings-group">
       <div class="settings-label">${t('theme')}</div>
       <div class="theme-list">
@@ -598,29 +655,10 @@ function renderSettingsMenu(){
         ${languageOptions}
       </select>
     </div>
-    <div class="settings-group">
-      <div class="settings-label settings-label-row">
-        <span>${t('uiSize')}</span>
-        <span id="settings-size-value">${S.settings.size}%</span>
-      </div>
-      <input class="settings-slider" type="range" min="${UI_SIZE_MIN}" max="${UI_SIZE_MAX}" step="${UI_SIZE_STEP}" value="${S.settings.size}" oninput="updateUiSizeLabel(this.value)" onchange="setUiSizeFromSlider(this.value)">
-      <div class="settings-slider-scale"><span>${UI_SIZE_MIN}%</span><span>100%</span><span>${UI_SIZE_MAX}%</span></div>
-    </div>
-    <div class="settings-group">
-      <div class="settings-label settings-label-row">
-        <span>${t('fontSize')}</span>
-        <span id="settings-font-value">${S.settings.fontScale || 100}%</span>
-      </div>
-      <input class="settings-slider" type="range" min="80" max="130" step="5" value="${S.settings.fontScale || 100}" oninput="setFontScaleFromSlider(this.value)">
-      <div class="settings-slider-scale"><span>80%</span><span>100%</span><span>130%</span></div>
-    </div>
+    ${uiSizeSlidersHtml()}
     <div class="settings-group">
       <div class="settings-label">${t('moduleNameMode')}</div>
-      <div class="name-mode-seg">
-        <button class="btn ${S.settings.nameMode !== 'classic' ? 'btn-p' : 'btn-s'}" onclick="setUiSetting('nameMode','unique')" data-no-i18n>Unique</button>
-        <button class="btn ${S.settings.nameMode === 'classic' ? 'btn-p' : 'btn-s'}" onclick="setUiSetting('nameMode','classic')" data-no-i18n>Classic</button>
-      </div>
-      <div class="settings-hint">${t('moduleNameModeHint')}</div>
+      ${nameModeSegHtml()}
     </div>
     <div class="settings-group">
       <div class="settings-label">${t('versionLimit')}</div>
@@ -637,6 +675,127 @@ async function setVersionLimit(v){
   toast(t('applied'),'ok');
 }
 
+// ═══ PREFERENCES PANEL (Plan part3 setting#2) ═══════════════════════════
+// Modeless floating panel with sidebar navigation, reached from the quick
+// settings dropdown's "Preferences..." button. Deeper/richer surface for
+// theme (grid+mockup+duplicate+gradient), language (list+preview) and UI
+// size (sliders+advanced numeric entry) — the quick dropdown stays as the
+// fast flat picker for the same underlying S.settings.
+const PREFS_SECTIONS = ['theme', 'language', 'uisize'];
+function openPreferencesPanel(section = S.prefsSection || 'theme'){
+  S.prefsSection = section;
+  openFloatingPanel('prefs-panel', `${I.settings} ${t('preferencesOpen')}`, prefsBodyHtml(), {width:900, height:620});
+}
+function selectPrefsSection(key){
+  S.prefsSection = key;
+  renderPreferencesPanel();
+}
+function renderPreferencesPanel(){
+  const body = q('#prefs-panel .fp-body');
+  if(body) body.innerHTML = prefsBodyHtml();
+}
+function prefsBodyHtml(){
+  const nav = PREFS_SECTIONS.map(k =>
+    `<button type="button" class="prefs-nav-item${S.prefsSection===k?' active':''}" onclick="selectPrefsSection('${k}')">${t('prefs_'+k)}</button>`
+  ).join('');
+  const content = S.prefsSection === 'theme' ? prefsThemeSectionHtml()
+    : S.prefsSection === 'language' ? prefsLanguageSectionHtml()
+    : prefsUiSizeSectionHtml();
+  return `<div class="prefs-shell"><div class="prefs-sidebar">${nav}</div><div class="prefs-content">${content}</div></div>`;
+}
+
+// ── Theme color section: grid of mini mockups instead of the quick
+// dropdown's flat swatch list, plus duplicate + the custom-theme "+" box.
+function themeGridCellHtml(key, name, vars, {active, isCustom} = {}){
+  const rawId = isCustom ? key.split(':')[1] : null;
+  return `<div class="prefs-theme-cell${active?' active':''}" onclick="setUiSetting('theme','${key}')">
+    <div class="ctm-preview mini" style="background:${x(vars['--bg'])};border-color:${x(vars['--border'])}">
+      <div class="ctm-pv-side" style="background:${x(vars['--surface'])}">
+        <i class="ctm-pv-acc" style="background:${x(vars['--accent'])}"></i>
+        <i style="background:${x(vars['--raised'])}"></i>
+        <i style="background:${x(vars['--raised'])}"></i>
+      </div>
+      <div class="ctm-pv-main">
+        <span class="ctm-pv-txt w80" style="color:${x(vars['--t2'])}"></span>
+        <span class="ctm-pv-txt w60" style="color:${x(vars['--t3'])}"></span>
+        <span class="ctm-pv-btn" style="background:${x(vars['--accent'])}"></span>
+      </div>
+    </div>
+    <div class="prefs-theme-name" data-no-i18n>${x(name)}</div>
+    <div class="prefs-theme-tools">
+      <span onclick="event.stopPropagation();duplicateTheme('${key}')" title="${t('duplicate')}">⧉</span>
+      ${isCustom ? `<span onclick="event.stopPropagation();openCustomThemeModal('${rawId}')" title="${t('edit')}">✎</span>
+                    <span onclick="event.stopPropagation();deleteCustomTheme('${rawId}')" title="${t('delete')}">×</span>` : ''}
+    </div>
+    ${active ? '<span class="prefs-theme-check">✓</span>' : ''}
+  </div>`;
+}
+function prefsThemeSectionHtml(){
+  const palettes = getThemePalettes();
+  const builtins = UI_THEME_OPTIONS.map(key =>
+    themeGridCellHtml(key, t(key), palettes[key] || {}, {active: S.settings.theme === key})
+  ).join('');
+  const customs = (S.settings.customThemes || []).map(ct =>
+    themeGridCellHtml(`custom:${ct.id}`, ct.name, ct.vars || {}, {active: S.settings.theme === `custom:${ct.id}`, isCustom: true})
+  ).join('');
+  const addBox = `<div class="prefs-theme-cell prefs-theme-add" onclick="openCustomThemeModal()" title="${t('customThemeNew')}">+</div>`;
+  return `<div class="settings-label">${t('theme')}</div><div class="prefs-theme-grid">${builtins}${customs}${addBox}</div>`;
+}
+
+// ── Languages section: real list box + live translation preview (reads
+// straight from the L locale table, no separate preview data needed) +
+// the module name-mode control underneath.
+// kcFolder/kcProject/kcCategory are the Classic-mode module-kind labels
+// (KIND_CLASSIC_KEY) — real translated strings, unlike the Unique-mode kind
+// names (KIND_LABEL), which are intentionally locale-invariant by design.
+const PREFS_LANG_PREVIEW_KEYS = ['settings', 'theme', 'uiSize', 'kcFolder', 'kcProject', 'kcCategory', 'edit', 'delete'];
+function previewLangStrings(lang){
+  return PREFS_LANG_PREVIEW_KEYS.map(k => L[lang]?.[k] || L.en[k] || k);
+}
+function prefsLangPreviewHtml(lang){
+  return previewLangStrings(lang).map(s => `<div data-no-i18n>${x(s)}</div>`).join('');
+}
+function prefsPreviewLang(lang){
+  S.prefsPreviewLang = lang;
+  const el = q('.prefs-lang-preview');
+  if (el) el.innerHTML = prefsLangPreviewHtml(lang);
+}
+function prefsLanguageSectionHtml(){
+  const rows = UI_LANGUAGE_OPTIONS.map(lang => `
+    <div class="lang-item${S.settings.language===lang?' active':''}" onmouseenter="prefsPreviewLang('${lang}')" onclick="setUiSetting('language','${lang}')">
+      <span>${LANGUAGE_LABELS[lang]}</span>${S.settings.language===lang?'<span class="theme-check">✓</span>':''}
+    </div>`).join('');
+  return `<div class="settings-label">${t('language')}</div>
+    <div class="prefs-lang-shell">
+      <div class="lang-list">${rows}</div>
+      <div class="prefs-lang-preview">${prefsLangPreviewHtml(S.prefsPreviewLang || S.settings.language)}</div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">${t('moduleNameMode')}</div>
+      ${nameModeSegHtml()}
+    </div>`;
+}
+
+// ── UI size section: the same sliders as the quick dropdown, plus an
+// "Advanced" reveal for typed exact-percent entry (the sliders snap to
+// step 5) — reuses S.settings.size/fontScale through the same setUiSetting
+// path, no new state surface.
+function prefsUiSizeSectionHtml(){
+  return `<div class="settings-label">${t('uiSize')}</div>
+    ${uiSizeSlidersHtml()}
+    <button class="btn ${S.prefsAdvanced ? 'btn-p' : 'btn-s'}" onclick="togglePrefsAdvanced()">${t('advanced')}</button>
+    ${S.prefsAdvanced ? `<div class="prefs-advanced">
+      <div class="fg"><label>${t('uiSize')} (%)</label>
+        <input class="settings-number" type="number" min="${UI_SIZE_MIN}" max="${UI_SIZE_MAX}" value="${S.settings.size}" onchange="setUiSetting('size', this.value)"></div>
+      <div class="fg"><label>${t('fontSize')} (%)</label>
+        <input class="settings-number" type="number" min="80" max="130" value="${S.settings.fontScale || 100}" onchange="setUiSetting('fontScale', this.value)"></div>
+    </div>` : ''}`;
+}
+function togglePrefsAdvanced(){
+  S.prefsAdvanced = !S.prefsAdvanced;
+  renderPreferencesPanel();
+}
+
 // ═══ CUSTOM THEME EDITOR (Phase 22, mockup 27) ═════════════════════════
 function currentPaletteVars(){
   const cs = getComputedStyle(document.body);
@@ -645,27 +804,79 @@ function currentPaletteVars(){
   return out;
 }
 
+const isGradientValue = (v) => String(v || '').trim().startsWith('linear-gradient(');
+// Parses "linear-gradient(<deg>deg, <hex1>, <hex2>)" back into its parts;
+// falls back to a sane default if the stored string doesn't match (e.g. a
+// hand-edited import).
+function parseGradient(v){
+  const m = /linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]{3,6}),\s*(#[0-9a-fA-F]{3,6})\)/.exec(String(v || ''));
+  return m ? { deg: Number(m[1]), start: toHex6(m[2]), end: toHex6(m[3]) } : { deg: 135, start: '#6366f1', end: '#ec4899' };
+}
+
+function ctmRowHtml(tok, vars){
+  if (tok !== '--accent') {
+    const hex = toHex6(vars[tok]);
+    return `<div class="ctm-row">
+      <span class="ctm-tok" data-no-i18n>${tok}</span>
+      <input type="color" class="ctm-color" data-tok="${tok}" value="${x(hex)}" oninput="ctmSync(this)">
+      <input class="ctm-hex" data-tok="${tok}" value="${x(hex)}" oninput="ctmSyncHex(this)" data-no-i18n>
+      <span class="ctm-sample" style="color:${x(hex)}" data-no-i18n>Aa</span>
+    </div>`;
+  }
+  // --accent is the only token with a Solid/Gradient toggle (Plan part3):
+  // gradients only render correctly in background contexts, and --accent is
+  // the one token used that way almost everywhere (buttons, tab dots,
+  // checkmarks) — the other 9 tokens are used as plain color/border-color,
+  // where a gradient string is invalid CSS and would just fall back, so
+  // they stay solid-only rather than growing the same UI unnecessarily.
+  const isGrad = !!S.ctmAccentGradient;
+  const grad = isGrad
+    ? (isGradientValue(vars[tok]) ? parseGradient(vars[tok]) : { deg: 135, start: toHex6(vars[tok]), end: '#ec4899' })
+    : null;
+  const solidHex = grad ? grad.start : toHex6(vars[tok]);
+  return `<div class="ctm-row">
+    <span class="ctm-tok" data-no-i18n>${tok}</span>
+    <input type="color" class="ctm-color" data-tok="${tok}" value="${x(solidHex)}" oninput="ctmSync(this)">
+    <input class="ctm-hex" data-tok="${tok}" value="${x(solidHex)}" oninput="ctmSyncHex(this)" data-no-i18n>
+    <span class="ctm-sample" style="color:${x(solidHex)}" data-no-i18n>Aa</span>
+    <div class="ctm-grad-toggle">
+      <button type="button" class="btn btn-sm ${!isGrad ? 'btn-p' : 'btn-s'}" onclick="ctmSetAccentMode(false)">${t('solid')}</button>
+      <button type="button" class="btn btn-sm ${isGrad ? 'btn-p' : 'btn-s'}" onclick="ctmSetAccentMode(true)">${t('gradient')}</button>
+    </div>
+    ${isGrad ? `
+    <input type="color" class="ctm-grad-end" id="ctm-grad-end" value="${x(grad.end)}" oninput="ctmPaint()">
+    <input class="settings-number ctm-grad-deg" id="ctm-grad-deg" type="number" min="0" max="360" value="${grad.deg}" oninput="ctmPaint()">` : ''}
+  </div>`;
+}
+
+function ctmSetAccentMode(isGrad){
+  S.ctmAccentGradient = isGrad;
+  const rows = q('#ctm-rows');
+  if (rows) { const vars = ctmVars(); rows.innerHTML = CUSTOM_THEME_TOKENS.map(tok => ctmRowHtml(tok, vars)).join(''); }
+  ctmPaint();
+}
+
 function openCustomThemeModal(id = null){
   const ct = id ? (S.settings.customThemes || []).find(c => c.id === id) : null;
   const vars = ct ? { ...ct.vars } : currentPaletteVars();
-  const rows = CUSTOM_THEME_TOKENS.map(tok => `
-    <div class="ctm-row">
-      <span class="ctm-tok" data-no-i18n>${tok}</span>
-      <input type="color" class="ctm-color" data-tok="${tok}" value="${x(toHex6(vars[tok]))}" oninput="ctmSync(this)">
-      <input class="ctm-hex" data-tok="${tok}" value="${x(toHex6(vars[tok]))}" oninput="ctmSyncHex(this)" data-no-i18n>
-    </div>`).join('');
-  openModal(`🎨 Custom Theme — ${t('customThemeNew')}`, `
+  S.ctmAccentGradient = isGradientValue(vars['--accent']);
+  const rows = CUSTOM_THEME_TOKENS.map(tok => ctmRowHtml(tok, vars)).join('');
+  openFloatingPanel('ctm-panel', `🎨 Custom Theme — ${t('customThemeNew')}`, `
     <div class="ctm-grid">
       <div>
         <div class="fg"><label>${t('name')} *</label><input id="ctm-name" value="${x(ct?.name || '')}"></div>
         <div class="settings-label" style="padding:0 0 6px" data-no-i18n>Palette (10)</div>
-        <div class="ctm-rows">${rows}</div>
+        <div class="ctm-rows" id="ctm-rows">${rows}</div>
       </div>
       <div>
         <div class="settings-label" style="padding:0 0 6px" data-no-i18n>Preview</div>
         <div class="ctm-preview" id="ctm-preview">
           <div class="ctm-pv-side"><i class="ctm-pv-acc"></i><i></i><i></i></div>
-          <div class="ctm-pv-main"><i class="w60"></i><i class="w80"></i><i class="w40"></i><i class="ctm-pv-btn"></i></div>
+          <div class="ctm-pv-main">
+            <span class="ctm-pv-txt w80" data-no-i18n>Aa Sample Text</span>
+            <span class="ctm-pv-txt w60" data-no-i18n>Aa Sample</span>
+            <button type="button" class="ctm-pv-btn" data-no-i18n>${t('save')}</button>
+          </div>
         </div>
         <div class="settings-hint">${t('customThemeHint')}</div>
       </div>
@@ -673,9 +884,9 @@ function openCustomThemeModal(id = null){
     <div class="mfoot">
       <button class="btn btn-s" onclick="importCustomPalette()">${t('customThemeImport')}</button>
       <button class="btn btn-s" onclick="exportCustomPalette()">${t('customThemeExport')}</button>
-      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-s" onclick="closeFloatingPanel('ctm-panel')">${t('cancel')}</button>
       <button class="btn btn-p" onclick="saveCustomTheme(${id ? `'${id}'` : 'null'})">${t('save')}</button>
-    </div>`);
+    </div>`, {width:640, height:560});
   ctmPaint();
 }
 
@@ -688,20 +899,28 @@ const toHex6 = (c) => {
 
 function ctmVars(){
   const out = {};
-  document.querySelectorAll('#modal .ctm-color').forEach(el => { out[el.dataset.tok] = el.value; });
+  document.querySelectorAll('#ctm-panel .ctm-color').forEach(el => { out[el.dataset.tok] = el.value; });
+  if (S.ctmAccentGradient) {
+    const endEl = q('#ctm-grad-end'), degEl = q('#ctm-grad-deg');
+    if (endEl && degEl) out['--accent'] = `linear-gradient(${Number(degEl.value) || 135}deg, ${out['--accent']}, ${endEl.value})`;
+  }
   return out;
 }
 
 function ctmSync(colorEl){
-  const hex = document.querySelector(`#modal .ctm-hex[data-tok="${colorEl.dataset.tok}"]`);
+  const hex = document.querySelector(`#ctm-panel .ctm-hex[data-tok="${colorEl.dataset.tok}"]`);
   if (hex) hex.value = colorEl.value;
+  const sample = colorEl.closest('.ctm-row')?.querySelector('.ctm-sample');
+  if (sample) sample.style.color = colorEl.value;
   ctmPaint();
 }
 
 function ctmSyncHex(hexEl){
   if (!/^#[0-9a-fA-F]{6}$/.test(hexEl.value.trim())) return;
-  const color = document.querySelector(`#modal .ctm-color[data-tok="${hexEl.dataset.tok}"]`);
+  const color = document.querySelector(`#ctm-panel .ctm-color[data-tok="${hexEl.dataset.tok}"]`);
   if (color) color.value = hexEl.value.trim();
+  const sample = hexEl.closest('.ctm-row')?.querySelector('.ctm-sample');
+  if (sample) sample.style.color = hexEl.value.trim();
   ctmPaint();
 }
 
@@ -714,8 +933,10 @@ function ctmPaint(){
   pv.querySelector('.ctm-pv-side').style.background = v['--surface'];
   pv.querySelectorAll('.ctm-pv-side i:not(.ctm-pv-acc)').forEach(el => el.style.background = v['--raised']);
   pv.querySelector('.ctm-pv-acc').style.background = v['--accent'];
-  pv.querySelectorAll('.ctm-pv-main i:not(.ctm-pv-btn)').forEach(el => el.style.background = v['--t3']);
-  pv.querySelector('.ctm-pv-btn').style.background = v['--accent'];
+  pv.querySelectorAll('.ctm-pv-txt').forEach(el => el.style.color = v['--t2']);
+  const btn = pv.querySelector('.ctm-pv-btn');
+  btn.style.background = v['--accent'];
+  btn.style.color = '#fff';
 }
 
 function saveCustomTheme(id){
@@ -731,7 +952,7 @@ function saveCustomTheme(id){
     ct.name = name;
     ct.vars = vars;
   }
-  closeModal();
+  closeFloatingPanel('ctm-panel');
   setUiSetting('theme', `custom:${ct.id}`);
 }
 
@@ -741,7 +962,36 @@ function deleteCustomTheme(id){
   saveUiSettings();
   applyUiSettings();
   renderSettingsMenu();
+  if (q('#prefs-panel')) renderPreferencesPanel();
   toast(t('deleted'),'ok');
+}
+
+// Duplicates a built-in or custom theme into a new, always-editable custom
+// theme entry (Plan part3: "duplicated from standard becomes editable").
+// Built-ins are sampled from their live computed palette (same trick
+// getThemePalettes() uses); custom themes just clone their stored vars.
+function duplicateTheme(key){
+  const isCustom = key.startsWith('custom:');
+  let name, vars;
+  if (isCustom) {
+    const ct = (S.settings.customThemes || []).find(c => `custom:${c.id}` === key);
+    if (!ct) return;
+    name = ct.name; vars = { ...ct.vars };
+  } else {
+    name = t(key);
+    const prev = document.body.dataset.theme;
+    document.body.dataset.theme = key;
+    const cs = getComputedStyle(document.body);
+    vars = Object.fromEntries(CUSTOM_THEME_TOKENS.map(tok => [tok, toHex6(cs.getPropertyValue(tok).trim())]));
+    document.body.dataset.theme = prev;
+  }
+  S.settings.customThemes = S.settings.customThemes || [];
+  const ct = { id: String(Date.now()), name: `${name} ${t('duplicate')}`, vars };
+  S.settings.customThemes.push(ct);
+  saveUiSettings();
+  renderSettingsMenu();
+  if (q('#prefs-panel')) renderPreferencesPanel();
+  toast(t('duplicated'), 'ok');
 }
 
 function exportCustomPalette(){
@@ -754,14 +1004,13 @@ async function importCustomPalette(){
   const raw = prompt(t('customThemeImport'));
   if (!raw) return;
   try {
-    const vars = JSON.parse(raw);
-    for (const tok of CUSTOM_THEME_TOKENS) {
-      if (!vars[tok]) continue;
-      const color = document.querySelector(`#modal .ctm-color[data-tok="${tok}"]`);
-      const hex = document.querySelector(`#modal .ctm-hex[data-tok="${tok}"]`);
-      if (color) color.value = toHex6(vars[tok]);
-      if (hex) hex.value = toHex6(vars[tok]);
-    }
+    const imported = JSON.parse(raw);
+    // Merge onto the current values so a partial JSON (missing tokens)
+    // leaves those tokens untouched, matching the prior behavior.
+    const merged = { ...ctmVars(), ...imported };
+    S.ctmAccentGradient = isGradientValue(merged['--accent']);
+    const rows = q('#ctm-rows');
+    if (rows) rows.innerHTML = CUSTOM_THEME_TOKENS.map(tok => ctmRowHtml(tok, merged)).join('');
     ctmPaint();
   } catch (_) { toast(t('vRestoreFailed'), 'error'); }
 }
@@ -2015,7 +2264,7 @@ function updateStatusBar(patch = {}) {
   // Section A status-bar spec): `Major › Minor` + `Major|Minor · Kind`.
   const mNode = (!S.activeModule && S.activeModuleNode) ? S.activeModuleNode : null;
   if (mNode) {
-    const major = mNode.parent_id != null && typeof findModuleNode === 'function' ? findModuleNode(mNode.parent_id) : null;
+    const major = mNode.parent_id != null && typeof moduleRootAncestor === 'function' ? moduleRootAncestor(mNode) : null;
     const crumb = major ? `${x(major.name)} › <b>${x(mNode.name)}</b>` : `<b>${x(mNode.name)}</b>`;
     parts.push(`<span class="sb-item sb-crumb">${crumb}</span>`);
     parts.push(`<span class="sb-badge" data-no-i18n>${mNode.parent_id != null ? 'Minor' : 'Major'} · ${x(kindLabel(mNode.kind))}</span>`);

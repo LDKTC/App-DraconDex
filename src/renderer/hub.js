@@ -84,6 +84,19 @@ function findModuleNode(id, nodes = S.moduleTree) {
   return null;
 }
 
+// Walks parent_id up to the true root ancestor (Plan part3 status-bar fix —
+// nesting depth is arbitrary since Plan part1 #4, so a single parent_id hop
+// is not necessarily the root). Returns null if `m` is already the root.
+function moduleRootAncestor(m) {
+  let cur = m;
+  while (cur.parent_id != null) {
+    const p = findModuleNode(cur.parent_id);
+    if (!p) break;
+    cur = p;
+  }
+  return cur.id === m.id ? null : cur;
+}
+
 // True if `targetId` is `node` itself or nested anywhere under it — used to
 // block a drag-drop that would nest a module inside its own subtree.
 function isSelfOrDescendant(node, targetId) {

@@ -15,27 +15,27 @@
   
 ### part 2 
 #### builder
-- [ ] 1.builder tab -> แทนที่circle icon ด้วย iconจากmoduleนั้นๆ
-- [ ] 2.builder tab -> module type name, เปลี่ยนสีให้ลดความสว่างลง และอาจจะลดขนาดลงเพื่อให้ user focus เป็นsecondary และให้User focusที่ ชื่อของmoduleเป็นหลัก
-- [ ] 3.builder tab -> module type name, ให้ref จากswitch menu บนhubด้วยหาก กำลังtoggle module type เป็น icon mode อยู่ให้แสดง module type บน tab เป็นiconด้วยเช่นกัน
-- [ ] 4.builder tab -> icon ของmodule บน tab ไม่ว่าจะอยู่ในmode ย่อหรือขยาย ให้ใช้สีของmoduleนั้น
-- [ ] 5.builder tab -> เมื่อcursorชี้ไปที่builder tab ให้แสดงปุ่มclose tabขึ้นมาก่อนเป็นอันดับแรกในmode ย่อtab
+- [x] 1.builder tab -> แทนที่circle icon ด้วย iconจากmoduleนั้นๆ
+- [x] 2.builder tab -> module type name, เปลี่ยนสีให้ลดความสว่างลง และอาจจะลดขนาดลงเพื่อให้ user focus เป็นsecondary และให้User focusที่ ชื่อของmoduleเป็นหลัก
+- [x] 3.builder tab -> module type name, ให้ref จากswitch menu บนhubด้วยหาก กำลังtoggle module type เป็น icon mode อยู่ให้แสดง module type บน tab เป็นiconด้วยเช่นกัน
+- [x] 4.builder tab -> icon ของmodule บน tab ไม่ว่าจะอยู่ในmode ย่อหรือขยาย ให้ใช้สีของmoduleนั้น
+- [x] 5.builder tab -> เมื่อcursorชี้ไปที่builder tab ให้แสดงปุ่มclose tabขึ้นมาก่อนเป็นอันดับแรกในmode ย่อtab
   
 ### part 3
 #### status bar
-- [ ] 1.status a bar ยังแสดงข้อมูลผิด module majorกับminor
+- [x] 1.status a bar ยังแสดงข้อมูลผิด module majorกับminor
 #### setting
-- [ ] 1.theme div box -> ให้แสดงผลheight ของbox แค่ 4 listต่อครั้ง
-- [ ] 2.preferences page -> สร้าง modeless window แบบ sidebar navigation layout โดยมี sidebar menuดังนี้
-    - [ ] Theme color -> แสดงชุดtheme เป็นgrid box โดยมีภาพmockup UIของthemeนั้นๆแสดงอยู่, custom them grid เป็นbox ที่มีเครื่องหมาย '+' ตรงกลางbox 
-        - [ ] เปลี่ยน custom theme modal ให้เปลี่ยนไปใช้modeless window, เพิ่ม text ในcolor preview และอื่นๆที่แสดงสีได้
-        - [ ] theme list เพิ่มให้สามารถduplicate themeได้ โดยเมื่อduplicateมาจากstandard จะสามารถeditได้
-        - [ ] custom theme, เพิ่มระบบ gradiant color 
-    - [ ] Langauges -> list box ที่มีภาษาให้เลือก
-        - [ ] module name modeอยู่ด้านใต้ list boxให้เลือก
-        - [ ] แสดง word preview ที่จะเปลี่ยนไป ทั้งmodule และคำทั่วไป
-    - [ ] UI size -> ขนาด UI, ขนาด Text
-        - [ ] เพิ่อปุ่มปรับแต่งเพิ่มเติม เป็นActive button เมื่อกดจะแสดงการประแต่งUIแบบAdvanced
+- [x] 1.theme div box -> ให้แสดงผลheight ของbox แค่ 4 listต่อครั้ง
+- [x] 2.preferences page -> สร้าง modeless window แบบ sidebar navigation layout โดยมี sidebar menuดังนี้
+    - [x] Theme color -> แสดงชุดtheme เป็นgrid box โดยมีภาพmockup UIของthemeนั้นๆแสดงอยู่, custom them grid เป็นbox ที่มีเครื่องหมาย '+' ตรงกลางbox 
+        - [x] เปลี่ยน custom theme modal ให้เปลี่ยนไปใช้modeless window, เพิ่ม text ในcolor preview และอื่นๆที่แสดงสีได้
+        - [x] theme list เพิ่มให้สามารถduplicate themeได้ โดยเมื่อduplicateมาจากstandard จะสามารถeditได้
+        - [x] custom theme, เพิ่มระบบ gradiant color 
+    - [x] Langauges -> list box ที่มีภาษาให้เลือก
+        - [x] module name modeอยู่ด้านใต้ list boxให้เลือก
+        - [x] แสดง word preview ที่จะเปลี่ยนไป ทั้งmodule และคำทั่วไป
+    - [x] UI size -> ขนาด UI, ขนาด Text
+        - [x] เพิ่อปุ่มปรับแต่งเพิ่มเติม เป็นActive button เมื่อกดจะแสดงการประแต่งUIแบบAdvanced
     
 ### part 4
 #### import
@@ -75,7 +75,18 @@
 #### Project"Manager" Module
 - [ ] 1.
 #### Category"Classifier" Module
-- [ ] 1.
+- [ ] 1.ใช้Detail Viewเป็นDefault
+- [ ] 2.object/element/charactor สามารถเลือกเปลี่ยนIconได้
+- [ ] 3.classifier element -> levelable
+    - [ ] เพิ่มช่องแสดงlevelให้กับAttributeที่มีlevelable
+    - [ ] เพิ่มปุ่มเพิ่มlevelstep ของattribute สามารถกรอกเลเวลเองได้เช่น 3, 5, 999 ลงในช่องlevel
+- [ ] 4.classifier element -> condition
+    - [ ] เพิ่มช่องแสดงcondition กรอกเงื่อนไขสำหรับattribute
+- [ ] 5.classifier attribute -> เพิ่มให้สามารถเลือกการแสดงผลได้โดยมีรูปแบบการแสดงดังนี้ โดยจะแสดงในdetail view
+    - [ ] Textbox, Default
+    - [ ] Text Area, 
+    - [ ] Date box, (dd/mm/yy, h:min)
+    - [ ] 
 #### Description"Inspector" Module
 - [ ] 1.เพิ่มการจัดระเบียบข้อมูลบนTextBoxด้วย การใส่Tab
 - [ ] 2.เพิ่มCtrl+z Ctrl+Shift+z UndoRedo บนหน้ากระดาษ

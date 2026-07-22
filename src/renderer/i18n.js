@@ -7,6 +7,7 @@ const L = {
   en: {
     nexusTourOption:'Show me a quick tour after creating this Nexus',
     settings:'Settings', theme:'Theme', language:'Language', uiSize:'UI Size', cancel:'Cancel',
+    preferencesOpen:'Preferences...', prefs_theme:'Theme', prefs_language:'Language', prefs_uisize:'UI Size', solid:'Solid', gradient:'Gradient', advanced:'Advanced',
     gameCollections:'Collections', gameCollectionNew:'New Collection', gameElementNew:'New Element',
     gameConversations:'Conversations', gameConvNew:'Add Conversation', gameAddEdge:'Link Dialogue',
     gameSelectNovel:'Select Novel', gameImportObj:'Add to game', gameFields:'Fields', gameLevel:'Level',
@@ -114,6 +115,7 @@ const L = {
   ja: {
     nexusTourOption:'この Nexus を作成したあと、簡単なツアーを表示する',
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
+    preferencesOpen:'環境設定...', prefs_theme:'テーマ', prefs_language:'言語', prefs_uisize:'UIサイズ', solid:'単色', gradient:'グラデーション', advanced:'詳細設定',
     gameCollections:'コレクション', gameCollectionNew:'新規コレクション', gameElementNew:'新規エレメント',
     gameConversations:'会話', gameConvNew:'会話を追加', gameAddEdge:'ダイアログを接続',
     gameSelectNovel:'小説を選択', gameImportObj:'ゲームに追加', gameFields:'フィールド', gameLevel:'レベル',
@@ -221,6 +223,7 @@ const L = {
   ko: {
     nexusTourOption:'이 Nexus를 만든 뒤 빠른 둘러보기를 표시합니다',
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
+    preferencesOpen:'환경설정...', prefs_theme:'테마', prefs_language:'언어', prefs_uisize:'UI 크기', solid:'단색', gradient:'그라데이션', advanced:'고급',
     gameCollections:'컬렉션', gameCollectionNew:'새 컬렉션', gameElementNew:'새 엘리먼트',
     gameConversations:'대화', gameConvNew:'대화 추가', gameAddEdge:'다이얼로그 연결',
     gameSelectNovel:'소설 선택', gameImportObj:'게임에 추가', gameFields:'필드', gameLevel:'레벨',
@@ -328,6 +331,7 @@ const L = {
   th: {
     nexusTourOption:'แสดงทัวร์แนะนำหลังสร้าง Nexus นี้',
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
+    preferencesOpen:'การตั้งค่าเพิ่มเติม...', prefs_theme:'ธีม', prefs_language:'ภาษา', prefs_uisize:'ขนาด UI', solid:'สีทึบ', gradient:'ไล่สี', advanced:'ขั้นสูง',
     gameCollections:'คอลเลกชัน', gameCollectionNew:'คอลเลกชันใหม่', gameElementNew:'เพิ่ม Element',
     gameConversations:'บทสนทนา', gameConvNew:'เพิ่มบทสนทนา', gameAddEdge:'เชื่อม Dialogue',
     gameSelectNovel:'เลือกนิยาย', gameImportObj:'เพิ่มเข้าเกม', gameFields:'Fields', gameLevel:'เลเวล',
@@ -435,6 +439,7 @@ const L = {
   zh: {
     nexusTourOption:'创建此 Nexus 后显示快速导览',
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
+    preferencesOpen:'偏好设置...', prefs_theme:'主题', prefs_language:'语言', prefs_uisize:'界面大小', solid:'纯色', gradient:'渐变', advanced:'高级',
     gameCollections:'收藏集', gameCollectionNew:'新建收藏集', gameElementNew:'新建元素',
     gameConversations:'对话', gameConvNew:'添加对话', gameAddEdge:'连接对话节点',
     gameSelectNovel:'选择小说', gameImportObj:'添加到游戏', gameFields:'字段', gameLevel:'等级',
@@ -542,6 +547,7 @@ const L = {
   vi: {
     nexusTourOption:'Hiển thị chuyến tham quan nhanh sau khi tạo Nexus này',
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
+    preferencesOpen:'Tùy chọn...', prefs_theme:'Giao diện', prefs_language:'Ngôn ngữ', prefs_uisize:'Kích thước UI', solid:'Màu đơn', gradient:'Chuyển sắc', advanced:'Nâng cao',
     gameCollections:'Bộ sưu tập', gameCollectionNew:'Bộ sưu tập mới', gameElementNew:'Element mới',
     gameConversations:'Hội thoại', gameConvNew:'Thêm hội thoại', gameAddEdge:'Nối Dialogue',
     gameSelectNovel:'Chọn tiểu thuyết', gameImportObj:'Thêm vào game', gameFields:'Trường', gameLevel:'Cấp độ',
@@ -649,6 +655,7 @@ const L = {
   id: {
     nexusTourOption:'Tampilkan tur singkat setelah membuat Nexus ini',
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
+    preferencesOpen:'Preferensi...', prefs_theme:'Tema', prefs_language:'Bahasa', prefs_uisize:'Ukuran UI', solid:'Solid', gradient:'Gradien', advanced:'Lanjutan',
     gameCollections:'Koleksi', gameCollectionNew:'Koleksi Baru', gameElementNew:'Elemen Baru',
     gameConversations:'Percakapan', gameConvNew:'Tambah Percakapan', gameAddEdge:'Hubungkan Dialog',
     gameSelectNovel:'Pilih Novel', gameImportObj:'Tambah ke game', gameFields:'Bidang', gameLevel:'Level',
@@ -756,6 +763,7 @@ const L = {
   es: {
     nexusTourOption:'Mostrar un recorrido rápido después de crear este Nexus',
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
+    preferencesOpen:'Preferencias...', prefs_theme:'Tema', prefs_language:'Idioma', prefs_uisize:'Tamaño de la interfaz', solid:'Sólido', gradient:'Degradado', advanced:'Avanzado',
     gameCollections:'Colecciones', gameCollectionNew:'Nueva colección', gameElementNew:'Nuevo elemento',
     gameConversations:'Conversaciones', gameConvNew:'Añadir conversación', gameAddEdge:'Enlazar diálogo',
     gameSelectNovel:'Elegir novela', gameImportObj:'Añadir al juego', gameFields:'Campos', gameLevel:'Nivel',
@@ -863,6 +871,7 @@ const L = {
   pt: {
     nexusTourOption:'Mostrar um tour rápido após criar este Nexus',
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
+    preferencesOpen:'Preferências...', prefs_theme:'Tema', prefs_language:'Idioma', prefs_uisize:'Tamanho da interface', solid:'Sólido', gradient:'Gradiente', advanced:'Avançado',
     gameCollections:'Coleções', gameCollectionNew:'Nova coleção', gameElementNew:'Novo elemento',
     gameConversations:'Conversas', gameConvNew:'Adicionar conversa', gameAddEdge:'Ligar diálogo',
     gameSelectNovel:'Escolher romance', gameImportObj:'Adicionar ao jogo', gameFields:'Campos', gameLevel:'Nível',
@@ -970,6 +979,7 @@ const L = {
   fr: {
     nexusTourOption:'Afficher une courte visite après la création de ce Nexus',
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
+    preferencesOpen:'Préférences...', prefs_theme:'Thème', prefs_language:'Langue', prefs_uisize:'Taille de l\'interface', solid:'Uni', gradient:'Dégradé', advanced:'Avancé',
     gameCollections:'Collections', gameCollectionNew:'Nouvelle collection', gameElementNew:'Nouvel élément',
     gameConversations:'Conversations', gameConvNew:'Ajouter une conversation', gameAddEdge:'Lier le dialogue',
     gameSelectNovel:'Choisir un roman', gameImportObj:'Ajouter au jeu', gameFields:'Champs', gameLevel:'Niveau',
@@ -1077,6 +1087,7 @@ const L = {
   de: {
     nexusTourOption:'Nach dem Erstellen dieses Nexus eine kurze Tour anzeigen',
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
+    preferencesOpen:'Einstellungen...', prefs_theme:'Design', prefs_language:'Sprache', prefs_uisize:'UI-Größe', solid:'Einfarbig', gradient:'Verlauf', advanced:'Erweitert',
     gameCollections:'Sammlungen', gameCollectionNew:'Neue Sammlung', gameElementNew:'Neues Element',
     gameConversations:'Gespräche', gameConvNew:'Gespräch hinzufügen', gameAddEdge:'Dialog verbinden',
     gameSelectNovel:'Roman wählen', gameImportObj:'Zum Spiel hinzufügen', gameFields:'Felder', gameLevel:'Stufe',
@@ -1184,6 +1195,7 @@ const L = {
   ru: {
     nexusTourOption:'Показать короткий обзор после создания этого Nexus',
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
+    preferencesOpen:'Настройки...', prefs_theme:'Тема', prefs_language:'Язык', prefs_uisize:'Размер интерфейса', solid:'Сплошной', gradient:'Градиент', advanced:'Дополнительно',
     gameCollections:'Коллекции', gameCollectionNew:'Новая коллекция', gameElementNew:'Новый элемент',
     gameConversations:'Разговоры', gameConvNew:'Добавить разговор', gameAddEdge:'Связать диалог',
     gameSelectNovel:'Выбрать роман', gameImportObj:'Добавить в игру', gameFields:'Поля', gameLevel:'Уровень',
@@ -1291,6 +1303,7 @@ const L = {
   it: {
     nexusTourOption:'Mostra un breve tour dopo aver creato questo Nexus',
     settings:'Impostazioni', theme:'Tema', language:'Lingua', uiSize:'Dimensione UI', cancel:'Annulla',
+    preferencesOpen:'Preferenze...', prefs_theme:'Tema', prefs_language:'Lingua', prefs_uisize:'Dimensione UI', solid:'Tinta unita', gradient:'Sfumatura', advanced:'Avanzate',
     gameCollections:'Collezioni', gameCollectionNew:'Nuova collezione', gameElementNew:'Nuovo elemento',
     gameConversations:'Conversazioni', gameConvNew:'Aggiungi conversazione', gameAddEdge:'Collega dialogo',
     gameSelectNovel:'Seleziona romanzo', gameImportObj:'Aggiungi al gioco', gameFields:'Campi', gameLevel:'Livello',
@@ -1398,6 +1411,7 @@ const L = {
   nl: {
     nexusTourOption:'Toon een korte rondleiding na het maken van deze Nexus',
     settings:'Instellingen', theme:'Thema', language:'Taal', uiSize:'UI-grootte', cancel:'Annuleren',
+    preferencesOpen:'Voorkeuren...', prefs_theme:'Thema', prefs_language:'Taal', prefs_uisize:'UI-grootte', solid:'Effen', gradient:'Verloop', advanced:'Geavanceerd',
     gameCollections:'Collecties', gameCollectionNew:'Nieuwe collectie', gameElementNew:'Nieuw element',
     gameConversations:'Gesprekken', gameConvNew:'Gesprek toevoegen', gameAddEdge:'Dialoog koppelen',
     gameSelectNovel:'Roman selecteren', gameImportObj:'Aan game toevoegen', gameFields:'Velden', gameLevel:'Niveau',
@@ -1505,6 +1519,7 @@ const L = {
   pl: {
     nexusTourOption:'Pokaż krótki przewodnik po utworzeniu tego Nexusa',
     settings:'Ustawienia', theme:'Motyw', language:'Język', uiSize:'Rozmiar UI', cancel:'Anuluj',
+    preferencesOpen:'Preferencje...', prefs_theme:'Motyw', prefs_language:'Język', prefs_uisize:'Rozmiar UI', solid:'Jednolity', gradient:'Gradient', advanced:'Zaawansowane',
     gameCollections:'Kolekcje', gameCollectionNew:'Nowa kolekcja', gameElementNew:'Nowy element',
     gameConversations:'Rozmowy', gameConvNew:'Dodaj rozmowę', gameAddEdge:'Połącz dialog',
     gameSelectNovel:'Wybierz powieść', gameImportObj:'Dodaj do gry', gameFields:'Pola', gameLevel:'Poziom',
@@ -1612,6 +1627,7 @@ const L = {
   uk: {
     nexusTourOption:'Показати короткий огляд після створення цього Nexus',
     settings:'Налаштування', theme:'Тема', language:'Мова', uiSize:'Розмір інтерфейсу', cancel:'Скасувати',
+    preferencesOpen:'Налаштування...', prefs_theme:'Тема', prefs_language:'Мова', prefs_uisize:'Розмір інтерфейсу', solid:'Суцільний', gradient:'Градієнт', advanced:'Додатково',
     gameCollections:'Колекції', gameCollectionNew:'Нова колекція', gameElementNew:'Новий елемент',
     gameConversations:'Розмови', gameConvNew:'Додати розмову', gameAddEdge:'Зв’язати діалог',
     gameSelectNovel:'Вибрати роман', gameImportObj:'Додати до гри', gameFields:'Поля', gameLevel:'Рівень',
@@ -1719,6 +1735,7 @@ const L = {
   tr: {
     nexusTourOption:'Bu Nexus oluşturulduktan sonra kısa bir tur göster',
     settings:'Ayarlar', theme:'Tema', language:'Dil', uiSize:'Arayüz Boyutu', cancel:'İptal',
+    preferencesOpen:'Tercihler...', prefs_theme:'Tema', prefs_language:'Dil', prefs_uisize:'Arayüz Boyutu', solid:'Düz', gradient:'Gradyan', advanced:'Gelişmiş',
     gameCollections:'Koleksiyonlar', gameCollectionNew:'Yeni koleksiyon', gameElementNew:'Yeni öğe',
     gameConversations:'Konuşmalar', gameConvNew:'Konuşma ekle', gameAddEdge:'Diyalog bağla',
     gameSelectNovel:'Roman seç', gameImportObj:'Oyuna ekle', gameFields:'Alanlar', gameLevel:'Seviye',
@@ -1826,6 +1843,7 @@ const L = {
   qd: {
     nexusTourOption:'Sheweth a swyft tour after thy Nexus be kryneth',
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
+    preferencesOpen:'Vharokk Draav...', prefs_theme:'Skalith', prefs_language:'Zhorvex', prefs_uisize:'Skaal Draav', solid:'Vokh Solyd', gradient:'Vokh Flowyth', advanced:'Draconith',
     gameCollections:'Kolvexa', gameCollectionNew:'Kolvexa Nyr', gameElementNew:'Elym Nyr',
     gameConversations:'Vorlakks', gameConvNew:'Vorlakk Zenn', gameAddEdge:'Dialyth Vynk',
     gameSelectNovel:'Novyth Choozz', gameImportObj:'Zenn ta Gamyth', gameFields:'Feldyra', gameLevel:'Skaalyth',

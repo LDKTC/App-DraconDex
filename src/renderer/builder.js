@@ -269,7 +269,10 @@ function builderTabMeta(key) {
   if (ref.kind === 'module') {
     const m = findModuleNode(ref.id);
     if (!m) return null;
-    return { name: m.name, badge: kindLabel(m.kind), color: m.color_code || 'var(--accent)', icon: moduleIconHtml(m) };
+    return {
+      name: m.name, badge: kindLabel(m.kind), badgeIcon: I[KIND_ICON[m.kind]] || '',
+      color: m.color_code || 'var(--accent)', icon: moduleIconHtml(m),
+    };
   }
   if (ref.kind === 'file') {
     const f = (S.importFiles || []).find(v => v.id === ref.id) || (S.filePreview?.id === ref.id ? S.filePreview : null);
@@ -462,10 +465,9 @@ function builderPaneHeadHtml(i, pane, focused) {
       ondragover="onTabDragOver(event,this)" ondragleave="onTabDragLeave(event,this)" ondrop="onTabDrop(event,${i},'${x(key)}',this)"
       ondragend="onTabDragEnd(event,${i},'${x(key)}')"
       onclick="builderSwitchTab(${i},'${x(key)}')" title="${x(meta.name)}">
-      <span class="tab-dot" style="background:${x(meta.color)}"></span>
-      <span class="tab-kicon">${meta.icon || ''}</span>
+      <span class="tab-kicon" style="color:${x(meta.color)}">${meta.icon || ''}</span>
       <span class="tab-name">${x(meta.name)}</span>
-      <span class="ek" data-no-i18n>${x(meta.badge)}</span>
+      <span class="ek" data-no-i18n>${S.settings.nestSignatureMode === 'icon' && meta.badgeIcon ? meta.badgeIcon : x(meta.badge)}</span>
       ${S.isPopup ? `<span class="tab-close" onclick="event.stopPropagation();builderMoveTabToMain(${i},'${x(key)}')" title="${t('moveToMainWindow')}">${I.return}</span>` : ''}
       <span class="tab-close" onclick="event.stopPropagation();builderCloseTab(${i},'${x(key)}')" title="${t('closeTab')}">&times;</span>
     </div>`;
