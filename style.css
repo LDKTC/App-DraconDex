@@ -893,17 +893,28 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhi
    would otherwise wipe out a background-image drawn directly on .li. Only
    rows from buildNestRow (hub.js) ever carry an indentN class, so this
    never touches Sage Hut/Import Dock/other .li lists elsewhere. Each
-   level's line sits 6px inside that level's own padding-left (20/36/52/68/84
-   vs. .li.indentN's 26/42/58/74/90) — a small gap before the icon rather
-   than flush against its left edge (which read as the line touching the
-   icon) or a level back at the ancestor's column (~40px short, stray). */
+   level's line sits at that level's own chevron center (Plan part1 #1) —
+   .tree-chev/.tree-chev-spacer (both 9px) is the row's first flex child,
+   flush against .li.indentN's own padding-left, so the line x-position is
+   padding-left(N) + 4.5 (26/42/58/74/90 + 4.5 = 30.5/46.5/62.5/78.5/94.5).
+   Every row at a given depth now reserves that chevron/spacer box (Plan
+   part1 #5), so this alignment holds for every row shape, not just ones
+   that happen to show a real chevron glyph. */
 .li[class*="indent"]::after{content:'';position:absolute;inset:0;pointer-events:none;background-repeat:no-repeat}
-.li.indent1::after{background-image:linear-gradient(var(--border),var(--border));background-size:1px 100%;background-position:20px 0}
-.li.indent2::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%;background-position:20px 0,36px 0}
-.li.indent3::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%;background-position:20px 0,36px 0,52px 0}
-.li.indent4::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%;background-position:20px 0,36px 0,52px 0,68px 0}
-.li.indent5::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%,1px 100%;background-position:20px 0,36px 0,52px 0,68px 0,84px 0}
-.tree-chev{width:9px;height:9px;stroke-width:3;color:var(--t3);flex-shrink:0}
+.li.indent1::after{background-image:linear-gradient(var(--border),var(--border));background-size:1px 100%;background-position:30.5px 0}
+.li.indent2::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%;background-position:30.5px 0,46.5px 0}
+.li.indent3::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%;background-position:30.5px 0,46.5px 0,62.5px 0}
+.li.indent4::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%;background-position:30.5px 0,46.5px 0,62.5px 0,78.5px 0}
+.li.indent5::after{background-image:linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border)),linear-gradient(var(--border),var(--border));background-size:1px 100%,1px 100%,1px 100%,1px 100%,1px 100%;background-position:30.5px 0,46.5px 0,62.5px 0,78.5px 0,94.5px 0}
+/* .icon.tree-chev (not bare .tree-chev): the generic .icon{width:1em;
+   height:1em} rule further down this file has equal specificity and would
+   otherwise win by source order, since every .tree-chev SVG also carries
+   the .icon class — silently inflating the chevron past its intended 9px
+   and breaking the guide-line/spacer alignment math above. Confirmed live
+   (getBoundingClientRect) before this fix: a real chevron rendered ~4.5px
+   wider than .tree-chev-spacer despite both being declared 9px. */
+.icon.tree-chev{width:9px;height:9px;stroke-width:3;color:var(--t3);flex-shrink:0}
+.tree-chev-spacer{width:9px;height:9px;flex-shrink:0}
 .li.sel{background:var(--raised);color:var(--t1)}
 /* Nest-tree drag-drop feedback (Plan part1 #4) — top/bottom quarter of a
    row previews a sibling reorder there, the middle half previews nesting
@@ -1245,6 +1256,14 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 
 .panel-resize-handle{width:5px;flex-shrink:0;cursor:col-resize;background:transparent}
 .panel-resize-handle:hover,.panel-resize-handle.is-resizing{background:var(--accent)}
+/* Plan part1 #2: resizable page view (Sage Hut / Import Dock file preview /
+   Kind Browser) — #page-view-resize reuses .panel-resize-handle as-is. When
+   S.pageViewWidth is unset .page-view has no inline style, so flex:1 1 auto
+   fills the shell and .page-view-filler collapses to 0 — identical to
+   today's full-width behavior until the user actually drags the handle. */
+.page-view-shell{display:flex;height:100%}
+.page-view{flex:1 1 auto;min-width:0;overflow:auto}
+.page-view-filler{flex:1 1 auto}
 #app.left-panel-collapsed #left-panel-resize{display:none}
 #left-panel-foot{flex-shrink:0;border-top:1px solid var(--border);padding:0}
 #left-panel-foot:empty{display:none}

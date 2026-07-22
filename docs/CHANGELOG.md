@@ -19,6 +19,18 @@
 
 ---
 
+## 2026-07-22 — แก้ Hub 5 จุด: guideline/icon alignment, resizable page view, context menu open-in-new-window/pane, Sage Hut header icon (Plan.md Part 1)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/hub.js`, `src/renderer/core.js`, `src/renderer/mod/sagehut.js`, `src/renderer/mod/fileviewer.js`, `src/renderer/i18n.js`, `style.css`, `Plan.md`
+- อะไรเปลี่ยน:
+  - **#1+#5 Nest tree — guideline กับ icon column ไม่ตรงกัน**: `buildNestRow`/`buildNestItemRow` เดิมปล่อย chevron เป็น string ว่างเมื่อแถวไม่มี child (ไม่ใช่ placeholder) ทำให้ `.kicon` เลื่อนซ้ายกว่าแถวข้างเคียงที่มี chevron จริง — เพิ่ม `<span class="tree-chev-spacer">` ขนาดเท่า `.tree-chev` (9×9px) แทนที่ string ว่าง แก้ `.li.indentN::after` guideline ให้คำนวณตำแหน่งจากจุดกึ่งกลาง chevron จริง (`paddingLeft(N)+4.5`) แทนค่าคงที่เดิม (`paddingLeft(N)-6`) ที่ไม่ตรงกับตำแหน่งจริงของ chevron เลย
+    - **บั๊กที่เจอระหว่างตรวจสอบสด (live-verified ผ่าน `run-dracondex`'s `web-driver.mjs`)**: `.tree-chev{width:9px;height:9px}` ถูก `.icon{width:1em;height:1em}` (ทีหลังในไฟล์ specificity เท่ากัน) ทับค่าจริงโดยไม่รู้ตัว — วัดจาก `getBoundingClientRect()` สด พบ chevron จริงกว้างเกิน spacer ~4.5px ทำให้เลขคำนวณ alignment ผิดไปด้วย แก้ด้วย compound selector `.icon.tree-chev{...}` (specificity สูงกว่า `.icon` เฉย ๆ แน่นอน ไม่พึ่ง source order) ยืนยันซ้ำหลังแก้: chevron/spacer ทั้งคู่ 9px ตรงกันเป๊ะทุก indent depth
+  - **#2 Hub page — resizable page view**: หน้า Sage Hut/Import Dock file-preview/Kind Browser (ไม่มี resize lever เดิมเหมือน Module Detail ที่มี `#inspector-resize` อยู่แล้ว) ห่อด้วย `wrapPageView()` ใหม่ (`hub.js`) ให้ resize handle (`#page-view-resize`, reuse `.panel-resize-handle`) — `startPageViewResize`/`S.pageViewWidth` (`core.js`) ตาม pattern เดียวกับ `startLeftPanelResize`/`startInspectorResize` เดิม clamp 480px–ความกว้าง pane จริง persist ผ่าน localStorage
+  - **#3 Context menu — "เปิดในหน้าต่างใหม่"/"เปิดใน Pane ใหม่ ▸"**: เพิ่มใน `buildModuleContextMenuHtml` เฉพาะ module ที่ `kind !== 'collector'` (มี Builder page เอง) — `openModuleInNewWindow` (เรียก `api.window.openBuilderTab` เดิมตรง ๆ), `openModuleInNewPane`/`openPaneDirectionSubmenu`/`buildPaneDirectionListHtml` (submenu ซ้าย/ขวา/บน/ล่าง reuse hover-submenu pattern เดียวกับ "Create" submenu เดิม, เรียก `builderSplitPane`+`builderFocusPane` เดิมตรง ๆ) — ไม่ต้องแก้ main.js/preload.js เลย ทุกอย่าง wire ไว้แล้วจาก Builder pop-out/split-pane เดิม
+  - **#4 Sage Hut header ไม่มี icon**: `buildSageHutHtml`'s `<h2>` เพิ่ม `display:flex;align-items:center;gap:8px` + `<span class="kicon">${I.sage}</span>` (icon เดิมที่ใช้กับ Sage Hut builder-tab badge อยู่แล้ว) ให้ header สูงเท่า Nexus Nest module detail header
+- ทำไม: `Plan.md` Part 1 (5 checklist items) — งานปรับแต่ง Hub เล็ก ๆ ตามที่ user เขียนไว้
+- Doc ที่อัปเดต: `docs/FILES.md` (`hub.js`/`mod/sagehut.js`/`mod/fileviewer.js`/`core.js` renderer section — เลขบรรทัด+ฟังก์ชันใหม่); `docs/SYSTEMS.md` **ไม่แตะ** — ยังไม่มี section เฉพาะของ v3 Hub/Builder system เลย (gap เดิมที่ถูก flag ไว้ตั้งแต่รอบก่อน ๆ ใน `procress.md`, ยังคงเป็น scope ที่ใหญ่กว่ารอบนี้)
+
 ## 2026-07-20 — Import DB: รองรับไฟล์ .db เก่ามาก (v1.x/v2.x), แก้ icon ค้าง, ปิดช่อง write (Plan part2)
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/db/core.js`, `src/renderer/core.js`, `preload.js`

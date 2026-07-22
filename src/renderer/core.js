@@ -62,6 +62,7 @@ const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
 const INSPECTOR_COLLAPSED_KEY = 'novel-manager-inspector-collapsed';
 const LEFT_PANEL_WIDTH_KEY = 'novel-manager-left-panel-width';
 const INSPECTOR_WIDTH_KEY = 'novel-manager-inspector-width';
+const PAGE_VIEW_WIDTH_KEY = 'novel-manager-page-view-width';
 const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
 const HUB_OPEN_KEY = 'novel-manager-hub-open';
 
@@ -141,6 +142,7 @@ const S = {
   inspectorCollapsed:localStorage.getItem(INSPECTOR_COLLAPSED_KEY) === '1',
   leftPanelWidth:Number(localStorage.getItem(LEFT_PANEL_WIDTH_KEY)) || 264,
   inspectorWidth:Number(localStorage.getItem(INSPECTOR_WIDTH_KEY)) || 290,
+  pageViewWidth:Number(localStorage.getItem(PAGE_VIEW_WIDTH_KEY)) || null, // Plan part1 #2: null = fill pane (default)
   // Navigator module state
   world:null, worldTab:'original', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null, worldHashtagId:null,
   worldOrigCat:null, worldOrigObject:null, worldOrigCatView:'list', worldNovelOpen:new Set(),
@@ -398,6 +400,36 @@ document.addEventListener('mouseup', () => {
   leftPanelResizeState = null;
   q('#left-panel-resize')?.classList.remove('is-resizing');
   localStorage.setItem(LEFT_PANEL_WIDTH_KEY, String(S.leftPanelWidth));
+});
+
+// Plan part1 #2: resizable page view for Hub pages that have no other
+// resize lever (Sage Hut / Import Dock file preview / Kind Browser) — same
+// mousedown/document-mousemove/document-mouseup + localStorage-persist
+// pattern as startLeftPanelResize/startInspectorResize above. Clamped at a
+// 480px floor (full page content needs more room than the inspector dock's
+// 220px) and the live pane width as the ceiling, so dragging past full
+// width is simply a no-op instead of overflowing.
+let pageViewResizeState = null;
+function startPageViewResize(ev) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  const el = q('.page-view');
+  if (!el) return;
+  pageViewResizeState = { startX: ev.clientX, startWidth: el.getBoundingClientRect().width };
+  q('#page-view-resize')?.classList.add('is-resizing');
+}
+document.addEventListener('mousemove', (ev) => {
+  if (!pageViewResizeState) return;
+  const shellW = q('.page-view-shell')?.getBoundingClientRect().width || 99999;
+  S.pageViewWidth = Math.max(480, Math.min(shellW, pageViewResizeState.startWidth + (ev.clientX - pageViewResizeState.startX)));
+  const el = q('.page-view');
+  if (el) { el.style.flex = `0 0 ${S.pageViewWidth}px`; el.style.maxWidth = S.pageViewWidth + 'px'; }
+});
+document.addEventListener('mouseup', () => {
+  if (!pageViewResizeState) return;
+  pageViewResizeState = null;
+  q('#page-view-resize')?.classList.remove('is-resizing');
+  localStorage.setItem(PAGE_VIEW_WIDTH_KEY, String(S.pageViewWidth));
 });
 
 function t(key){

@@ -282,12 +282,27 @@ function goToKindBrowserHub() {
   renderNexusHome();
 }
 
+// Plan part1 #2: resizable page view — Sage Hut / Import Dock file preview /
+// Kind Browser have no other resize lever (unlike Module Detail, which
+// already gets one via the Module Inspector dock's own #inspector-resize),
+// so wrap their existing full-page markup in a shell with a drag handle.
+// S.pageViewWidth unset ⇒ .page-view has no inline style ⇒ fills the shell
+// exactly as before this feature existed.
+function wrapPageView(innerHtml) {
+  const w = S.pageViewWidth;
+  return `<div class="page-view-shell">
+    <div class="page-view" style="${w ? `flex:0 0 ${w}px;max-width:${w}px` : ''}">${innerHtml}</div>
+    <div id="page-view-resize" class="panel-resize-handle" onmousedown="startPageViewResize(event)" title="${t('resizePageView')}"></div>
+    <div class="page-view-filler"></div>
+  </div>`;
+}
+
 function buildKindBrowserPageHtml() {
-  return `<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
+  return wrapPageView(`<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
       <h2 style="margin:0;font-size:1.15em">${x(t('kindBrowser'))}</h2>
       <div class="drafter-hint">${x(S.nexus.name)}</div>
     </div>
-    <div class="acc-body" style="display:block">${buildKindBrowserHtml()}</div>`;
+    <div class="acc-body" style="display:block">${buildKindBrowserHtml()}</div>`);
 }
 
 // ═══ IMPORT-CHOICE MODAL (Plan part2 §2) ════════════════════════════════
@@ -390,7 +405,10 @@ function buildNestRow(m, depth, parentId) {
     ? (onlyLeafChildren
         ? `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" onclick="event.stopPropagation();toggleMajorExpand(${m.id})">${collapsed ? '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' : '<line x1="5" y1="12" x2="19" y2="12"/>'}</svg>`
         : `<svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" onclick="event.stopPropagation();toggleMajorExpand(${m.id})"><polyline points="${collapsed ? '9 18 15 12 9 6' : '6 9 12 15 18 9'}"/></svg>`)
-    : '';
+    // Plan part1 #5: reserve the same box a real chevron would occupy even
+    // when this row has none, so .kicon lines up in a column with sibling
+    // rows at the same depth that DO show a chevron.
+    : '<span class="tree-chev-spacer"></span>';
   const openable = m.kind !== 'collector';
   const renaming = S.renamingModuleId === m.id;
   // IDE-style depth indentation (Plan part1 #4/#4-2) — capped visually past
@@ -440,6 +458,7 @@ function buildNestItemRow(item, itemKind, moduleId, depth) {
   const indentCls = ` indent${Math.min(depth, 5)}`;
   const showIcon = !!S.settings.nestShowMinorIcon;
   return `<div class="li${indentCls}${active ? ' sel' : ''} nest-item-row" onclick="openItemNode('${itemKind}',${moduleId},${item.id})">
+    <span class="tree-chev-spacer"></span>
     ${showIcon ? `<span class="kicon" style="color:var(--t3)">${reg.icon()}</span>` : ''}
     <span class="name">${x(reg.nameOf(item))}</span>
   </div>`;
@@ -641,6 +660,31 @@ function openCreateSubmenu(ev, parentId) {
   positionSubmenuNear(pop, ev.currentTarget.getBoundingClientRect());
 }
 
+// Plan part1 #3: "Open in new pane" direction flyout — same hover-submenu
+// shape as openCreateSubmenu above, reusing its singular .ctx-submenu
+// guard/close-timer as-is (only one flyout is ever open at a time; "Create"
+// and this one never hover simultaneously).
+function buildPaneDirectionListHtml(id) {
+  return [
+    ['left', t('paneDirLeft')], ['right', t('paneDirRight')],
+    ['top', t('paneDirTop')], ['bottom', t('paneDirBottom')],
+  ].map(([dir, label]) =>
+    `<div class="kind-list-item" onclick="closeAllPopups();openModuleInNewPane(${id},'${dir}')"><span class="kli-name">${x(label)}</span></div>`
+  ).join('');
+}
+function openPaneDirectionSubmenu(ev, id) {
+  cancelCtxSubmenuClose();
+  if (document.querySelector('.ctx-submenu')) return;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup kind-list-popup ctx-submenu';
+  pop.innerHTML = buildPaneDirectionListHtml(id);
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  pop.addEventListener('mouseenter', cancelCtxSubmenuClose);
+  pop.addEventListener('mouseleave', scheduleCtxSubmenuClose);
+  positionSubmenuNear(pop, ev.currentTarget.getBoundingClientRect());
+}
+
 // Cursor-anchored popup helper — inline onclick= attributes can't close over
 // a live event object once the popup's own click handler runs later, so the
 // last right-click point is stashed on S and read back here.
@@ -673,6 +717,32 @@ function openModuleContextMenu(ev, id) {
   positionPopupNear(pop, ctxAnchor(ev).getBoundingClientRect());
 }
 
+// Plan part1 #3: pop a module's own Builder page into a fresh floating
+// window — mirrors builderPopOutTab's own api.window.openBuilderTab call,
+// but without its builderCloseTab step, since nothing existing is being
+// moved/closed here (the module opens in the new window while the current
+// pane/tab, if any, is left untouched).
+async function openModuleInNewWindow(id) {
+  const m = findModuleNode(id);
+  if (!m) return;
+  await api.window.openBuilderTab(S.nexus.id, builderPageKey({ kind: 'module', id }));
+}
+
+const PANE_DIR_MAP = { left: ['h', true], right: ['h', false], top: ['v', true], bottom: ['v', false] };
+// Plan part1 #3: split the currently-focused Builder pane in the requested
+// direction and open the module straight into the freshly created pane —
+// same (dir,newFirst) convention already used by the drag-to-edge auto-split
+// (onBodyDrop): left/top put the new pane before the original, right/bottom
+// put it after.
+async function openModuleInNewPane(id, dir) {
+  const m = findModuleNode(id);
+  if (!m) return;
+  const [axis, newFirst] = PANE_DIR_MAP[dir];
+  const newIdx = builderSplitPane(builderState().focused, axis, newFirst);
+  if (newIdx == null) return;
+  await builderFocusPane(newIdx, { kind: 'module', id });
+}
+
 function buildModuleContextMenuHtml(id, isMajor, pinned) {
   let html = '';
   if (isMajor) {
@@ -692,6 +762,18 @@ function buildModuleContextMenuHtml(id, isMajor, pinned) {
         <span class="kicon" style="color:${x(KIND_COLOR.collector)}">${I[KIND_ICON.collector]}</span>
         <span class="kli-text"><span class="kli-name">${x(kindLabel('collector'))}</span><span class="kli-desc">${t(KIND_DESC_KEY.collector)}</span></span>
       </div>`;
+  }
+  // Plan part1 #3: modules with their own Builder page (any kind except the
+  // pure-folder Collector, see KIND_MAIN_BUILDER) get "open in a new window"
+  // and a hover "open in a new pane" direction submenu.
+  const m = findModuleNode(id);
+  if (m && m.kind !== 'collector') {
+    html += `
+    <div class="kind-list-item" onclick="closeAllPopups();openModuleInNewWindow(${id})"><span class="kli-name">${x(t('openInNewWindow'))}</span></div>
+    <div class="kind-list-item kli-submenu-parent" onmouseenter="openPaneDirectionSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
+      <span class="kli-name">${x(t('openInNewPane'))}</span><span class="kli-arrow">›</span>
+    </div>
+    <div class="ctx-sep"></div>`;
   }
   html += `
     <div class="kind-list-item" onclick="closeAllPopups();startRenameModule(${id})"><span class="kli-name">${x(t('rename'))}</span></div>

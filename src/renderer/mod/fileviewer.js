@@ -156,7 +156,7 @@ function buildFileViewerHtml() {
   const linkerChip = f.entity
     ? `<span class="htag lk" data-no-i18n onclick="openEntityByKey('${x(f.linker_key)}')">[[${x(f.entity.name)}]]</span>`
     : `<span class="pv ghost">${t('notLinked')}</span>`;
-  return `<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
+  return wrapPageView(`<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
       <h2 style="margin:0;font-size:1.15em" data-no-i18n>${x(f.file_name)} <span class="kind-chip" data-no-i18n>File</span></h2>
       <div class="drafter-hint" data-no-i18n>${fvBytes(f.file_size)}${f.file_type === 'docx' ? ` · ${t('importDocxLater')}` : ''}</div>
     </div>
@@ -168,7 +168,7 @@ function buildFileViewerHtml() {
       <span style="flex:1"></span>
       <button class="btn btn-s" onclick="openImportLinkerModal(${f.id})">${t('changeLinker')}</button>
       <button class="btn btn-d" onclick="deleteImportFileRow(${f.id})">${t('delete')}</button>
-    </div>`;
+    </div>`);
 }
 
 function fileViewerZoom(dz) {
