@@ -96,14 +96,29 @@
 - [ ] 2.เพิ่มCtrl+z Ctrl+Shift+z UndoRedo บนหน้ากระดาษ
 #### Map"Locator" Module
 - [ ] 1.ให้ชื่อareaบนgraph ขยับให้ตรงกับจุดตรงกลางของarea shape
+- [ ] 2.เพิ่มให้สามารถขยับ area ทั้งชิ้นพร้อมกันได้หาก ใช้tool ลากบนพื้นที่ของareaโดยตรง
 #### Timeline"Chronicler" Module
 - [ ] 1.date บนgraphของoneline ไม่ต้องมีชื่อเดือนหรือปีที่เป็นDefaultที่แสดง ให้ใช้โดยอ้างอิงกับevent date 
     - ไม่ต้องแสดงชื่อเดือน ให้แสดงเลขเดือนแทน, เดือนdefault คือ 12 สามารถเพิ่มขึ้นได้หากevent เดือนที่มากกว่า 12
     - เลขปีสามารถติดลบได้ โดนแสดงก็ต่อเมื่อมีeventที่ปีติดลบ
 - [ ] 2.มีเพียง 1 timeline/ 1 chronicler โดยcompare viewจะแสดงtimeline ของChronicler นั้น และมีช่องให้เลือก Chroniclerอื่น เพื่อนำมาcompare กับchroniclerนี้
 - [ ] 3.เพิ่ม view ใหม่ "calendar" โดยจะแสดงหน้าต่างเป็นปฏิทิน และแสดงeventในตารางเวลา
-    - เปิดให้ผู้ใช้สามารถตั้งค่าการแสดงผลได้เช่น 1 เดือนมีกี่วัน, 1 สัปดาห์มีกี่วัน, 1 ปีมีกี่เดือน และสามารถให้ผู้ใช้สามารถสร้างเดือน
+    - เปิดให้ผู้ใช้สามารถตั้งค่าการแสดงผลได้เช่น 1 เดือนมีกี่วัน, 1 สัปดาห์มีกี่วัน, 1 ปีมีกี่เดือน และสามารถให้ผู้ใช้สามารถตั้งชื่อวัน/เดือน ได้
+- [ ] 4.สีที่เลือกบนmodal ของdownline ย้ายให้กดที่circleของevent listเพื่อเปิดicon selector popup โดยเพิ่มระบบiconให้กับeventสามารถเลือกใช้ได้ และจะแสดงขึ้นมาบนlist และgraph
+#### Map-Timeline"Wanderer" Module
+- [ ] 1.select box ของ locator กับ chronicler ไม่ต้องแสดงlist "เลือกlocator" และ "เลือกchronicler"
+- [ ] 2.ทำให้Mapที่แสดงไม่สามารถแตะต้องarea ของmapได้ และให้tool linkของwanderer สามารถคลิกสร้างlinkผ่าน บนareaได้เลยโดยไม่แตะที่area 
+- [ ] 3.แสดงgraphของtimelineด้านใต้ของgraph map เป็นแบบoneline
+- [ ] 4.ระบบlinkที่สร้าง ไม่ใช่linkกับevent แต่ให้เลือกobject/element/charactor เพื่อมาlinkกับMapและDateของtimeline
+    - ขั้นตอนการใช้งาน : ให้เลือกEventจากบนTimeline Graph และกดสร้างlinkลงบนmap objectก็จะแสดงเมื่อเลือกEventนั้นๆ
+    - object/element/charactor ที่ใช้linkมาจากclassifierทั้งหมดในnexus แต่สามารถใช้filterเพื่อกรองของที่ต้องเอามาlinkได้ และfilter จะถูกบันทึกไว้ในWandererนั้น
+- [ ] 5.นำ view Map&Timelineออก, เพิ่มViewใหม่ "Area" แสดงArea Listด้านขวาของMap โดยมีGraph Timelineอยู่ด้านล่าง
+    - Area list มีtoggle open/close dropdown listอีกที โดยlistแสดงการเก็บ linkของobject/element/charactor
+    - Area list จะเปิดdropdown toggleเป็นOne at the timeเท่านั้น และเมื่อopenอยู่ MapะแสดงAreaนั้นและของที่อยู่ด้านในเท่านั้น
+    - Area dropdown list มีปุ่มสำหรับAdd object/element/charactor โดยจะแสดงเฉพาะที่ถูกlinkกับwandererนี้เท่านั้น 
 #### Story"Narrator" Module
+- [ ] 1.ทำให้guide word และ zoom overlayที่อยู่บนgraph กลายเป็นoverlay ที่ไม่ขยับเมื่อเลื่อนGraph
+- [ ] 2.เพิ่มให้ผู้พูดสามารถLinkกับObject/Element/Charactor ของClassifierได้หากต้องการ โดยสามารถfilter object/element/charactorได้ โดยจะบันทึกไว้ที่Narratorนั้นเลย
 #### Book"Author" Module
 #### Chat"Scribe" Module
 #### Graph"Designer" Module
