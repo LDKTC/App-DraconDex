@@ -119,7 +119,15 @@
 #### Story"Narrator" Module
 - [ ] 1.ทำให้guide word และ zoom overlayที่อยู่บนgraph กลายเป็นoverlay ที่ไม่ขยับเมื่อเลื่อนGraph
 - [ ] 2.เพิ่มให้ผู้พูดสามารถLinkกับObject/Element/Charactor ของClassifierได้หากต้องการ โดยสามารถfilter object/element/charactorได้ โดยจะบันทึกไว้ที่Narratorนั้นเลย
+- [ ] 3.notice textที่เขียนว่า "ให้เลือกtextปลายทาง" ให้ย้ายขั้นมาแสดงตรงกลางบนของgraph โดยslide inจากด้านบนแทน
+- [ ] 4.view ใหม่ "Dialogue" โดยจะแสดงListของDialogueทั้งหมดพร้อมปุ่ม Toggle open/close เพื่อเปิดdropdown boxที่มีdetail ของDialogueนั้น
+    - โดยเพิ่มDescription ให้กับทุกDialogue โดยDescriptionจะแสดงบนnode ในboard viewด้วย
+    - dialogue list ที่ด้านล่างชื่อdialogueจะแสดงจำนวนตัวละครในdialogueนั้น โดยจะนับที่ชื่อไม่ซ้ำ พร้อมแสดงจำนวนบทสนทนามีจำนวนกี่บรรทัด
 #### Book"Author" Module
+- [ ] 1.เพิ่มการปรับตัวอักษรแบบพิเศษเช่น Bold, Underline, ตัวเอียง, ขีดฆ่า, ตัวลอย(รูปแบบยกกำลัง)
+- [ ] 2.เพิ่มการจัดเรียงหน้ากระดาษ Text Align, Left, Center, Right, Stretch, paragraph, เพิ่มตัวเว้นที่เช่น Tab
+- [ ] 3.เพิ่มให้สามารถจัดเรียงตอนได้แบบอิสระ สามารถขยับขึ้นลงได้
+- [ ] 4.สามารถตั้งเลขบท และชื่อด้านหน้าเองได้เช่น ตอนที่1.5 หรือ โน้ตตัวที่ 3/4 โดยจะสร้างเรียงเป็น +1 จากเลขจำนวนเต็มด้านหน้าทศนิยมเสมอเช่น 1.5 ตอนต่อไปคือ 2
 #### Chat"Scribe" Module
 #### Graph"Designer" Module
 #### Relation"Connector" Module
