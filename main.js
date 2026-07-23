@@ -53,7 +53,7 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
     backgroundColor: '#050506',
     frame: false,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, 'Image', 'DraconDex-IconApp.png'),
+    icon: path.join(__dirname, 'Image', 'DraconDex_Icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

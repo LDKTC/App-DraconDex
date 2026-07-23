@@ -1187,7 +1187,7 @@ function updateTopNavButton(){
   if(logoBtn){
     logoBtn.innerHTML = inModule
       ? I.return
-      : `<img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex">`;
+      : `<img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex">`;
     const title = !inModule ? 'DraconDex' : S.project ? tr('Back to project list') : S.world ? tr('Back to world list') : tr('Back to Nexus');
     logoBtn.setAttribute('title', title);
     logoBtn.classList.toggle('is-return', inModule);
@@ -1894,7 +1894,7 @@ function buildBuilderPageHtml() {
     : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
     : (S.kindBrowserPage && typeof buildKindBrowserPageHtml === 'function') ? buildKindBrowserPageHtml()
     : `<div class="empty" style="margin-top:80px">
-    <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+    <div class="ei"><img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
     <h3>${x(S.nexus.name)}</h3>
     <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;
@@ -1960,7 +1960,7 @@ function renderNexusPicker() {
         <button class="btn btn-p btn-sm" onclick="openWelcomeModal()">+ ${t('nexusNew')}</button>
       </div>`;
     q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
-      <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+      <div class="ei"><img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
       <h3>${t('nexusWelcomeTitle')}</h3>
       <p>${t('nexusEmpty')}</p>
       <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-top:18px">
@@ -1984,7 +1984,7 @@ function renderNexusPicker() {
         </button>
       </div>`).join('')}`;
   q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
-    <div class="ei"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:48px;width:48px;opacity:.35"></div>
+    <div class="ei"><img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
     <h3>${t('nexusWelcomeTitle')}</h3>
     <p>${t('nexusSelect')}</p>
   </div>`;
@@ -2038,7 +2038,7 @@ function closeNexus() {
 function openWelcomeModal() {
   openModal(t('wmTitle'), `
     <div style="text-align:center">
-      <div class="ei" style="margin:0 auto 6px;width:44px"><img src="Image/DraconDex-SymbolWhite.png" class="brand-img" alt="DraconDex" style="height:44px;width:44px;opacity:.5"></div>
+      <div class="ei" style="margin:0 auto 6px;width:56px"><img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:56px;width:56px;opacity:.5"></div>
       <p style="color:var(--t2);margin:0 0 18px">${t('wmText')}</p>
       <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
         <button class="btn btn-p" style="min-width:200px" onclick="welcomeCreateNexus()">${t('wmCreateNew')}</button>

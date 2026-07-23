@@ -618,8 +618,8 @@ select option{background:var(--surface);color:var(--t1)}
 	width:44px;height:38px;display:flex;align-items:center;justify-content:center;
 	color:var(--t2);flex-shrink:0;
 }
-.tab-brand .icon{width:18px;height:18px}
-.tab-brand .brand-img{height:18px;width:18px}
+.tab-brand .icon{width:24px;height:24px}
+.tab-brand .brand-img{height:24px;width:24px}
 #project-tabs{
 	display:flex;align-items:flex-end;gap:2px;min-width:0;max-width:60vw;
 	height:100%;overflow-x:auto;overflow-y:hidden;padding-top:5px;
@@ -745,48 +745,48 @@ select option{background:var(--surface);color:var(--t1)}
 }
 .nav-logo{font-size:calc(22px * var(--fsc,1));padding:6px 0 12px}
 .nav-logo-btn{
-	width:40px;height:40px;border:none;
+	width:44px;height:44px;border:none;
 	background:transparent;border-radius:var(--r);
 	cursor:pointer;color:var(--t2);
 	display:flex;align-items:center;justify-content:center;
-	padding:6px 0 12px;margin-bottom:2px;
+	padding:0;margin-bottom:2px;
 	transition:all var(--ease);-webkit-app-region:no-drag;
 }
 .nav-logo-btn:hover{background:var(--hover);color:var(--t1)}
 .nav-logo-btn.is-return{color:var(--accent)}
-.brand-img{height:24px;width:24px;object-fit:contain;display:block;content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="daylight"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="moonlight"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
-body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="redEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="clearSky"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="clearStar"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="afterRain"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
-body[data-theme="rainbow"] .brand-img{content:url('Image/DraconDex-SymbolColor.png')}
-body[data-theme="atDawn"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="atDusk"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="atDay"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="clearAurora"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="atTwilight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="atSunset"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="clearComet"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="atDaybreak"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="afterSunset"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="atSunrise"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="atNight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="atNoon"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="clearDusk"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="atMidnight"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="clearMoon"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="clearGalaxy"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="clearNebula"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="afterStorm"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="afterSnow"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="atMorning"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="clearSun"] .brand-img{content:url('Image/DraconDex-SymbolBlack.png')}
-body[data-theme="atEvening"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
-body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex-SymbolWhite.png')}
+.brand-img{height:30px;width:30px;object-fit:contain;display:block;content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="daylight"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="moonlight"] .brand-img{content:url('Image/DraconDex_Color.png')}
+body[data-theme="midnight"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="redEclipse"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="clearSky"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="clearStar"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="afterRain"] .brand-img{content:url('Image/DraconDex_Color.png')}
+body[data-theme="rainbow"] .brand-img{content:url('Image/DraconDex_Color.png')}
+body[data-theme="atDawn"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="atDusk"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="atDay"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="blueEclipse"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="clearAurora"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="atTwilight"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="atSunset"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="clearComet"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="atDaybreak"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="afterSunset"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="atSunrise"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="atNight"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="atNoon"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="clearDusk"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="atMidnight"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="clearMoon"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="clearGalaxy"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="clearNebula"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="afterStorm"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="afterSnow"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="atMorning"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="clearSun"] .brand-img{content:url('Image/DraconDex_WhiteIn.png')}
+body[data-theme="atEvening"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
+body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex_WhiteOut.png')}
 .nav-btn{
 	width:40px;height:40px;border:none;
 	background:transparent; border-radius:var(--r);
@@ -2244,7 +2244,7 @@ textarea.table-inline-input{resize:vertical}
 .date-sep{color:var(--t3);font-size:calc(14px * var(--fsc,1));font-weight:600;padding:0 1px;user-select:none}
 
 /* Nav logo icon sizes */
-.nav-logo-btn .icon{width:20px;height:20px}
+.nav-logo-btn .icon{width:24px;height:24px}
 
 /* Writer module */
 .series-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:12px 0}

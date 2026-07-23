@@ -1,6 +1,6 @@
 {
   "name": "DraconDex",
-  "version": "3.13.0",
+  "version": "3.13.1",
   "description": "Novel data management app",
   "main": "main.js",
   "scripts": {
@@ -41,7 +41,7 @@
     ],
     "win": {
       "signAndEditExecutable": false,
-      "icon": "Image/DraconDex-IconApp.png",
+      "icon": "Image/DraconDex_Icon.ico",
       "target": [
         {
           "target": "dir",
