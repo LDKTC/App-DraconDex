@@ -1582,6 +1582,19 @@ async function closeProjectTab(id){
   returnToProjectList();
 }
 
+// Shared `svg:<I-key>` / `sym:<glyph>` / `img:<dataURI>` icon-ref renderer
+// (the value shape iconPicker() writes) — used by hub.js's moduleIconHtml
+// and Classifier's own object icons.
+function iconRefHtml(ref, fallbackHtml) {
+  if (ref) {
+    if (ref.startsWith('sym:')) return `<span class="kicon-glyph">${x(ref.slice(4))}</span>`;
+    if (ref.startsWith('img:')) return `<img src="${x(ref.slice(4))}" class="kicon-img-icon" alt="">`;
+    const key = ref.startsWith('svg:') ? ref.slice(4) : ref;
+    if (I[key]) return I[key];
+  }
+  return fallbackHtml;
+}
+
 // ═══ COLOR PICKER ══════════════════════════════════════
 function buildColorSwatches(colors, selId){
   return colors.map(c =>
@@ -1917,6 +1930,7 @@ function runBuilderMounts() {
   if (S.activeModuleNode?.kind === 'scribe' && typeof mountChatScribe === 'function') mountChatScribe();
   if (S.activeModuleNode?.kind === 'drafter' && typeof mountDrafterEditor === 'function') mountDrafterEditor(S.activeModuleNode);
   if (S.activeModuleNode?.kind === 'connector' && typeof mountConnectorBoard === 'function') mountConnectorBoard();
+  if (S.activeModuleNode?.kind === 'classifier' && S.classifierView === 'relationCat' && typeof mountClassifierRelationGraph === 'function') mountClassifierRelationGraph();
   if (S.activeModuleNode?.kind === 'sketcher' && typeof mountSketcherBoard === 'function') {
     mountSketcherBoard();
     mountSketcherExtras();

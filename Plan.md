@@ -73,27 +73,26 @@
 
 ### part 5
 #### Project"Manager" Module
-- [ ] 1.
 #### Category"Classifier" Module
-- [ ] 1.ใช้Detail Viewเป็นDefault
-- [ ] 2.object/element/charactor สามารถเลือกเปลี่ยนIconได้
-- [ ] 3.classifier element -> levelable
-    - [ ] เพิ่มช่องแสดงlevelให้กับAttributeที่มีlevelable
-    - [ ] เพิ่มปุ่มเพิ่มlevelstep ของattribute สามารถกรอกเลเวลเองได้เช่น 3, 5, 999 ลงในช่องlevel
-- [ ] 4.classifier element -> condition
-    - [ ] เพิ่มช่องแสดงcondition กรอกเงื่อนไขสำหรับattribute
-- [ ] 5.classifier attribute -> เพิ่มให้สามารถเลือกการแสดงผลของattributeในclassifierได้โดยมีรูปแบบการแสดงดังนี้ โดยจะแสดงในdetail view
-    - [ ] Textbox, Default
-    - [ ] Text Area, 
-    - [ ] Date box, (dd/mm/yy, h:min)
-- [ ] 6.classifier relation view -> เพิ่มrelation listโดยแสดงด้านล่างGraphของrelation โดยrelation จะนับเป็นการlinkของobject/element/charactor
-    - [ ] เพิ่มปุ่มcreate relation โดยอยู่ที่มุมซ้ายด้านล่างของgraph, เมื่อเปิดจะมีmodalแสดงโดยจะแสดงข้อมูลให้เลือกดังนี้
+- [x] 1.ใช้Detail Viewเป็นDefault
+- [x] 2.object/element/charactor สามารถเลือกเปลี่ยนIconได้
+- [x] 3.classifier element -> levelable
+    - [x] เพิ่มช่องแสดงlevelให้กับAttributeที่มีlevelable
+    - [x] เพิ่มปุ่มเพิ่มlevelstep ของattribute สามารถกรอกเลเวลเองได้เช่น 3, 5, 999 ลงในช่องlevel
+- [x] 4.classifier element -> condition
+    - [x] เพิ่มช่องแสดงcondition กรอกเงื่อนไขสำหรับattribute
+- [x] 5.classifier attribute -> เพิ่มให้สามารถเลือกการแสดงผลของattributeในclassifierได้โดยมีรูปแบบการแสดงดังนี้ โดยจะแสดงในdetail view
+    - [x] Textbox, Default
+    - [x] Text Area, 
+    - [x] Date box, (dd/mm/yy, h:min)
+- [x] 6.classifier relation view -> เพิ่มrelation listโดยแสดงด้านล่างGraphของrelation โดยrelation จะนับเป็นการlinkของobject/element/charactor
+    - [x] เพิ่มปุ่มcreate relation โดยอยู่ที่มุมซ้ายด้านล่างของgraph, เมื่อเปิดจะมีmodalแสดงโดยจะแสดงข้อมูลให้เลือกดังนี้
         - insert boxสำหรับกรอกชื่อของrelation โดยมีระบบrecent useแสดงชื่อrelationที่ใช้ล่าสุด 3 ชื่อเป็นlist โดยจะsortตามตัวอักษรที่กำลังพิมพ์
         - object/element/charactor select box โดยมี 2 boxให้เลือก object/element/charactor โดยแสดงในrowเดียวกัน
         - เลือกสีสำหรับrelation line
 #### Description"Inspector" Module
-- [ ] 1.เพิ่มการจัดระเบียบข้อมูลบนTextBoxด้วย การใส่Tab
-- [ ] 2.เพิ่มCtrl+z Ctrl+Shift+z UndoRedo บนหน้ากระดาษ
+- [x] 1.เพิ่มการจัดระเบียบข้อมูลบนTextBoxด้วย การใส่Tab
+- [x] 2.เพิ่มCtrl+z Ctrl+Shift+z UndoRedo บนหน้ากระดาษ
 #### Map"Locator" Module
 - [ ] 1.ให้ชื่อareaบนgraph ขยับให้ตรงกับจุดตรงกลางของarea shape
 - [ ] 2.เพิ่มให้สามารถขยับ area ทั้งชิ้นพร้อมกันได้หาก ใช้tool ลากบนพื้นที่ของareaโดยตรง
@@ -128,6 +127,9 @@
 - [ ] 2.เพิ่มการจัดเรียงหน้ากระดาษ Text Align, Left, Center, Right, Stretch, paragraph, เพิ่มตัวเว้นที่เช่น Tab
 - [ ] 3.เพิ่มให้สามารถจัดเรียงตอนได้แบบอิสระ สามารถขยับขึ้นลงได้
 - [ ] 4.สามารถตั้งเลขบท และชื่อด้านหน้าเองได้เช่น ตอนที่1.5 หรือ โน้ตตัวที่ 3/4 โดยระบบสร้างอัตโนมัติของบทต่อไป จะสร้างเรียงเป็น +1 จากเลขจำนวนเต็มด้านหน้าทศนิยมเสมอ เช่น 1.5 ตอนต่อไปคือ 2
+- [ ] 5.เพิ่มviewใหม่ "Book" โดยจะแสดงเนื้อหาเป็นหน้ากระดาษ แบบรวมทุกChapter โดย จะตัดเนื้อหาขึ้นหน้าใหม่ทันทีที่ขั้นchapterใหม่ หรือพิมพ์เกินหน้ากระดาษ
+    - ด้านซ้ายแสดงchapterที่กำลังอ่านอยู่ในตอนนี้เป็นเหมือนTopic list
+    - เพิ่มให้สามารถexportเป็นไฟล์docได้
 #### Chat"Scribe" Module
 - [ ] 1.chat bubble บนChat view เพิ่มระบบfeatureให้ขยับซ้ายขวาได้ และสามารถเปลี่ยนสีของbubbleได้
 - [ ] 2.เพิ่มFeature ในการAdd linkขึ้นมา และส่งในchat เป็นBubbleได้
@@ -136,9 +138,26 @@
 - [ ] 2.เพิ่มเปลี่ยนscrollmouse เป็นZoomin/ZoomOut
 - [ ] 3.หัวลูกศรของของLineให้ชี้ไปที่ขอบของnode แทนที่จะเป็นแกนกลาง
 #### Relation"Connector" Module
+- [ ] 1.เพิ่มระบบZoom graphด้วยscrollmouse
 #### Analys"Viewer"
 #### Doc"Drafter"
+- [ ] 1.เพิ่มการExportเป็นไฟล์txt/.mdได้
+- [ ] 2.functionอื่นๆที่ใช้ได้เช่น checkbox, partline, codebox, และอื่นๆของmdไฟล์
 #### Drawing"Sketcher"
+
+### part 6
+#### module filter
+- [ ] 1.แก้ไขระบบfilterของmoduleต่างๆ ให้เป็นระบบfilter คล้ายแบบapp obsidian ที่จะมีfilter ให้เลือกหลายประเภท และสามารถใส่ตัวกรองหลายชุดเพื่อแสดงสิ่งที่อยู่ในตัวกรองแบบunion โดยกรองที่จะใช้มี
+    - ประเภทของmodule
+    - childของmodule
+    - hashtag
+    - และอื่นๆ
+    - โดยมีระบบกรองแบบระบุตัวกำหนดเช่น
+    - is, is not, start with, ends with, contain และอื่นๆ
+- [ ] 2.แก้ไขfilter modal เป็นการเปิดpopup แทน
+#### modal
+- [ ] 1.modalของtaglink เปลี่ยนเป็นpopup แทน
+- [ ] 1.modal create module / description modal -> redo UI UXใหม่รู้สึกว่ายังไม่สวยพอ
 -----
 
 

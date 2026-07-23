@@ -217,11 +217,53 @@ function createMarkdownEditor(container, opts) {
           if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); acceptAc(); return; }
           if (e.key === 'Escape') { e.preventDefault(); hideAc(); return; }
         }
-        if (e.key === 'Tab') { // keep Tab inside the editor (indent)
+        if (e.key === 'Tab') { // keep Tab inside the editor (indent/outdent)
           e.preventDefault();
           const s = ta.selectionStart, epos = ta.selectionEnd;
-          ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(epos);
-          ta.selectionStart = ta.selectionEnd = s + 2;
+          if (s === epos) {
+            if (e.shiftKey) {
+              const lineStart = ta.value.lastIndexOf('\n', s - 1) + 1;
+              const lead = ta.value.slice(lineStart, s).match(/^ {1,2}/);
+              const removed = lead ? lead[0].length : 0;
+              if (removed) ta.value = ta.value.slice(0, lineStart) + ta.value.slice(lineStart + removed);
+              ta.selectionStart = ta.selectionEnd = Math.max(lineStart, s - removed);
+            } else {
+              ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(epos);
+              ta.selectionStart = ta.selectionEnd = s + 2;
+            }
+          } else {
+            // Range selection spanning one or more lines — indent/outdent
+            // every selected line at once, code-editor style.
+            const blockStart = ta.value.lastIndexOf('\n', s - 1) + 1;
+            const nlIdx = ta.value.indexOf('\n', epos);
+            const blockEnd = nlIdx === -1 ? ta.value.length : nlIdx;
+            const lines = ta.value.slice(blockStart, blockEnd).split('\n');
+            let firstDelta = 0;
+            const newLines = lines.map((line, i) => {
+              if (e.shiftKey) {
+                const m = line.match(/^ {1,2}/);
+                const removed = m ? m[0].length : 0;
+                if (i === 0) firstDelta = -removed;
+                return removed ? line.slice(removed) : line;
+              }
+              if (i === 0) firstDelta = 2;
+              return '  ' + line;
+            });
+            const oldLen = blockEnd - blockStart;
+            const newBlock = newLines.join('\n');
+            ta.value = ta.value.slice(0, blockStart) + newBlock + ta.value.slice(blockEnd);
+            ta.selectionStart = Math.max(blockStart, s + firstDelta);
+            ta.selectionEnd = Math.max(ta.selectionStart, epos + (newBlock.length - oldLen));
+          }
+          ta.dispatchEvent(new Event('input'));
+          return;
+        }
+        // Ctrl+Z already works natively for a plain <textarea>; Chromium
+        // doesn't bind Ctrl+Shift+Z to redo for text fields by default, so
+        // that one case needs an explicit nudge.
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+          e.preventDefault();
+          document.execCommand('redo');
           ta.dispatchEvent(new Event('input'));
         }
       });

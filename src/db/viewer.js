@@ -69,17 +69,25 @@ function viewerIndex(nexusId) {
 }
 
 // ── Connector relations ─────────────────────────────────────────────────
+// Also the data source for Classifier's relation view (Plan part5 #6) —
+// entity_relation is a generic key->key table, not Connector-specific.
 const getEntityRelations = (nexusId) => getDB().prepare(`
-  SELECT * FROM entity_relation WHERE nexus_ref=? ORDER BY id
+  SELECT er.*, uc.color_code FROM entity_relation er
+  LEFT JOIN use_color uc ON uc.id = er.color
+  WHERE er.nexus_ref=? ORDER BY er.id
 `).all(nexusId);
 
-const createEntityRelation = (nexusId, fromKey, toKey, label) => getDB().prepare(`
-  INSERT INTO entity_relation (nexus_ref, from_key, to_key, label) VALUES (?,?,?,?)
+const createEntityRelation = (nexusId, fromKey, toKey, label, colorId) => getDB().prepare(`
+  INSERT INTO entity_relation (nexus_ref, from_key, to_key, label, color) VALUES (?,?,?,?,?)
   ON CONFLICT(from_key, to_key, label) DO NOTHING
-`).run(nexusId, fromKey, toKey, label || null).lastInsertRowid;
+`).run(nexusId, fromKey, toKey, label || null, colorId || null).lastInsertRowid;
 
-const updateEntityRelation = (id, label) =>
-  getDB().prepare(`UPDATE entity_relation SET label=? WHERE id=?`).run(label || null, id);
+// colorId===undefined (Connector's existing 2-arg call site) preserves the
+// current color instead of wiping it — Connector never sets a color, so a
+// plain label edit there must not clear one Classifier's modal set.
+const updateEntityRelation = (id, label, colorId) => colorId === undefined
+  ? getDB().prepare(`UPDATE entity_relation SET label=? WHERE id=?`).run(label || null, id)
+  : getDB().prepare(`UPDATE entity_relation SET label=?, color=? WHERE id=?`).run(label || null, colorId || null, id);
 
 const deleteEntityRelation = (id) =>
   getDB().prepare(`DELETE FROM entity_relation WHERE id=?`).run(id);

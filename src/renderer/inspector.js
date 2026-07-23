@@ -100,7 +100,7 @@ document.addEventListener('mouseup', () => {
 // resolved through each kind's view-label dict when its renderer is loaded.
 function inspectorViewLabel(m, ui) {
   const v = ui?.activeView || ui?.view;
-  if (m.kind === 'classifier') return (typeof CLASSIFIER_VIEW_LABEL !== 'undefined' && CLASSIFIER_VIEW_LABEL[v]) || 'Table';
+  if (m.kind === 'classifier') return (typeof CLASSIFIER_VIEW_LABEL !== 'undefined' && CLASSIFIER_VIEW_LABEL[v]) || 'Detail';
   if (m.kind === 'manager') return (typeof MANAGER_VIEW_LABEL !== 'undefined' && MANAGER_VIEW_LABEL[v]) || 'Cards';
   if (m.kind === 'chronicler') return (typeof CHRONICLER_VIEW_LABEL !== 'undefined' && CHRONICLER_VIEW_LABEL[v]) || 'One-line';
   if (m.kind === 'wanderer') return (typeof WANDERER_VIEW_LABEL !== 'undefined' && WANDERER_VIEW_LABEL[v]) || 'Dual';

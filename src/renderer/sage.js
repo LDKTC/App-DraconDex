@@ -11,7 +11,9 @@
 //                 that the old default module→color map was removed with
 //                 the legacy Sage page — Scribe's own caller always does)
 //   onNodeClick — fn(node) fired on a click that wasn't a drag
-// Edges flagged {wiki:true} render dashed in the accent color.
+// Edges flagged {wiki:true} render dashed in the accent color. A node may
+// set its own {fill} to override its module's group color (Classifier's
+// relation view does this for per-object coloring).
 function buildSageGraph(data, hiddenModules, opts = {}) {
   const moduleColors = opts.colors || {};
   const wrap = q(opts.container || '#sage-graph-wrap');
@@ -97,7 +99,7 @@ function buildSageGraph(data, hiddenModules, opts = {}) {
     g.dataset.id = n.id;
     const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
     c.setAttribute('r', n.r);
-    c.setAttribute('fill', moduleColors[n.module]||'var(--raised)');
+    c.setAttribute('fill', n.fill || moduleColors[n.module]||'var(--raised)');
     c.setAttribute('stroke','var(--bg)'); c.setAttribute('stroke-width','2');
     const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
     txt.setAttribute('text-anchor','middle'); txt.setAttribute('y', n.r + 12);

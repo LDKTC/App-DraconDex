@@ -64,13 +64,7 @@ const MIGRATE_TARGETS = [...ARTISAN_TARGETS, { id: 'scribe', icon: 'story', labe
 // `sym:<glyph>`, stored verbatim in module.icon. Falls back to the kind's
 // default icon when unset.
 function moduleIconHtml(m) {
-  if (m.icon) {
-    if (m.icon.startsWith('sym:')) return `<span class="kicon-glyph">${x(m.icon.slice(4))}</span>`;
-    if (m.icon.startsWith('img:')) return `<img src="${x(m.icon.slice(4))}" class="kicon-img-icon" alt="">`;
-    const key = m.icon.startsWith('svg:') ? m.icon.slice(4) : m.icon;
-    if (I[key]) return I[key];
-  }
-  return I[KIND_ICON[m.kind]] || I.layer;
+  return iconRefHtml(m.icon, I[KIND_ICON[m.kind]] || I.layer);
 }
 
 function findModuleNode(id, nodes = S.moduleTree) {

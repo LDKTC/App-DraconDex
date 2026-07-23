@@ -29,24 +29,24 @@ const nexusOfObjectRow = (id) => getDB().prepare(`
   SELECT m.nexus_ref FROM classifier_object o JOIN module m ON o.module_ref=m.id WHERE o.id=?
 `).get(id)?.nexus_ref ?? null;
 
-function createObject(moduleRef, name, colorId) {
+function createObject(moduleRef, name, colorId, icon) {
   const d = getDB();
   const maxOrder = d.prepare(`SELECT COALESCE(MAX(display_order),-1) AS m FROM classifier_object WHERE module_ref=?`).get(moduleRef).m;
-  const id = d.prepare(`INSERT INTO classifier_object (module_ref, name, color, display_order) VALUES (?,?,?,?)`)
-    .run(moduleRef, name, colorId || null, maxOrder + 1).lastInsertRowid;
+  const id = d.prepare(`INSERT INTO classifier_object (module_ref, name, color, icon, display_order) VALUES (?,?,?,?,?)`)
+    .run(moduleRef, name, colorId || null, icon || null, maxOrder + 1).lastInsertRowid;
   wiki.resolveDanglingLinks(name, nexusOfObjectRow(id));
   versions.recordVersion(moduleRef, 'object', `+ ${name}`,
     { op: 'classifierObjectDelete', args: { objectId: id } });
   return id;
 }
 
-const updateObject = (id, name, colorId) => {
-  const cur = getDB().prepare(`SELECT name, color, module_ref FROM classifier_object WHERE id=?`).get(id);
-  const r = getDB().prepare(`UPDATE classifier_object SET name=?, color=?, update_at=datetime('now') WHERE id=?`).run(name, colorId || null, id);
+const updateObject = (id, name, colorId, icon) => {
+  const cur = getDB().prepare(`SELECT name, color, icon, module_ref FROM classifier_object WHERE id=?`).get(id);
+  const r = getDB().prepare(`UPDATE classifier_object SET name=?, color=?, icon=?, update_at=datetime('now') WHERE id=?`).run(name, colorId || null, icon || null, id);
   if (cur && cur.name !== name) wiki.renameWikiTarget(`cobj_${id}`, cur.name, name);
-  if (cur && (cur.name !== name || (cur.color || null) !== (colorId || null))) {
+  if (cur && (cur.name !== name || (cur.color || null) !== (colorId || null) || (cur.icon || null) !== (icon || null))) {
     versions.recordVersion(cur.module_ref, 'objectEdit', `${cur.name}${cur.name !== name ? ` → ${name}` : ''}`,
-      { op: 'classifierObject', args: { objectId: id, name: cur.name, colorId: cur.color } });
+      { op: 'classifierObject', args: { objectId: id, name: cur.name, colorId: cur.color, icon: cur.icon } });
   }
   return r;
 };
@@ -62,7 +62,7 @@ const deleteObject = (id) => {
   const r = getDB().prepare(`DELETE FROM classifier_object WHERE id=?`).run(id);
   getDB().prepare(`DELETE FROM wiki_link WHERE src_key=?`).run(`cobj_${id}`);
   if (prev) versions.recordVersion(prev.module_ref, 'objectDel', prev.name,
-    { op: 'classifierObjectInsert', args: { moduleRef: prev.module_ref, name: prev.name, colorId: prev.color, note: prev.note } });
+    { op: 'classifierObjectInsert', args: { moduleRef: prev.module_ref, name: prev.name, colorId: prev.color, icon: prev.icon, note: prev.note } });
   return r;
 };
 
@@ -77,22 +77,22 @@ const getObjectTemplates = (moduleRef, objectRef) => getDB().prepare(`
   SELECT * FROM classifier_template WHERE module_ref=? AND (object_ref IS NULL OR object_ref=?) ORDER BY display_order, id
 `).all(moduleRef, objectRef);
 
-function createTemplate(moduleRef, description, attributeType, levelable, hasCondition, objectRef) {
+function createTemplate(moduleRef, description, attributeType, levelable, hasCondition, objectRef, levelSteps) {
   const d = getDB();
   const maxOrder = d.prepare(`SELECT COALESCE(MAX(display_order),-1) AS m FROM classifier_template WHERE module_ref=?`).get(moduleRef).m;
   return d.prepare(`
-    INSERT INTO classifier_template (module_ref, object_ref, description, attribute_type, levelable, has_condition, display_order)
-    VALUES (?,?,?,?,?,?,?)
-  `).run(moduleRef, objectRef || null, description, attributeType || 'text', levelable ? 1 : 0, hasCondition ? 1 : 0, maxOrder + 1).lastInsertRowid;
+    INSERT INTO classifier_template (module_ref, object_ref, description, attribute_type, levelable, has_condition, level_steps, display_order)
+    VALUES (?,?,?,?,?,?,?,?)
+  `).run(moduleRef, objectRef || null, description, attributeType || 'text', levelable ? 1 : 0, hasCondition ? 1 : 0, levelSteps || null, maxOrder + 1).lastInsertRowid;
 }
 
-const updateTemplate = (id, description, attributeType, levelable, hasCondition) => {
+const updateTemplate = (id, description, attributeType, levelable, hasCondition, levelSteps) => {
   const prev = getDB().prepare(`SELECT * FROM classifier_template WHERE id=?`).get(id);
   const r = getDB().prepare(`
-    UPDATE classifier_template SET description=?, attribute_type=?, levelable=?, has_condition=?, update_at=datetime('now') WHERE id=?
-  `).run(description, attributeType || 'text', levelable ? 1 : 0, hasCondition ? 1 : 0, id);
+    UPDATE classifier_template SET description=?, attribute_type=?, levelable=?, has_condition=?, level_steps=?, update_at=datetime('now') WHERE id=?
+  `).run(description, attributeType || 'text', levelable ? 1 : 0, hasCondition ? 1 : 0, levelSteps || null, id);
   if (prev) versions.recordVersion(prev.module_ref, 'template', `${prev.description} → ${description}`,
-    { op: 'classifierTemplate', args: { templateId: id, description: prev.description, attributeType: prev.attribute_type, levelable: prev.levelable, hasCondition: prev.has_condition } });
+    { op: 'classifierTemplate', args: { templateId: id, description: prev.description, attributeType: prev.attribute_type, levelable: prev.levelable, hasCondition: prev.has_condition, levelSteps: prev.level_steps } });
   return r;
 };
 
@@ -127,9 +127,17 @@ const upsertAttr = (objectId, templateId, value) => {
   return r;
 };
 
+// Condition is metadata about an attribute's value, not the value itself —
+// kept in its own column/upsert so every existing attribute_value consumer
+// (Table view, saveClassifierAttrCell) stays untouched.
+const upsertAttrCondition = (objectId, templateId, value) => getDB().prepare(`
+  INSERT INTO classifier_attribute (object_ref, template_ref, condition_value) VALUES (?,?,?)
+  ON CONFLICT(object_ref, template_ref) DO UPDATE SET condition_value=excluded.condition_value, update_at=datetime('now')
+`).run(objectId, templateId, value);
+
 module.exports = {
   setCatType,
   getObjects, getObject, createObject, updateObject, updateObjectNote, deleteObject,
   getTemplates, getObjectTemplates, createTemplate, updateTemplate, deleteTemplate, countObjectTemplates,
-  getAttrs, upsertAttr,
+  getAttrs, upsertAttr, upsertAttrCondition,
 };

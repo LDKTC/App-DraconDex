@@ -28,11 +28,11 @@ const ITEM_KIND = {
         api.classifier.getAttrs(o.id),
         api.classifier.getObjectTemplates(m.id, o.id),
       ]);
-      const attrMap = {};
-      for (const a of attrs) attrMap[a.template_ref] = a.attribute_value;
+      const attrMap = {}, conditionMap = {};
+      for (const a of attrs) { attrMap[a.template_ref] = a.attribute_value; conditionMap[a.template_ref] = a.condition_value; }
       const templates = objTemplates.filter(tp => tp.object_ref == null);
       const hydrated = {
-        ...o, attrMap,
+        ...o, attrMap, conditionMap,
         privateTemplates: objTemplates.filter(tp => tp.object_ref === o.id)
           .map(tp => ({ id: tp.id, description: tp.description, value: attrMap[tp.id] || '' })),
       };

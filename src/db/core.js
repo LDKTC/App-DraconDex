@@ -1144,6 +1144,18 @@ function initDB() {
   if (!hasColumn(db, 'relation_type', 'color')) {
     try { db.prepare(`ALTER TABLE relation_type ADD COLUMN color INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
   }
+  if (!hasColumn(db, 'classifier_object', 'icon')) {
+    try { db.prepare(`ALTER TABLE classifier_object ADD COLUMN icon TEXT`).run(); } catch (_) {}
+  }
+  if (!hasColumn(db, 'classifier_template', 'level_steps')) {
+    try { db.prepare(`ALTER TABLE classifier_template ADD COLUMN level_steps TEXT`).run(); } catch (_) {}
+  }
+  if (!hasColumn(db, 'classifier_attribute', 'condition_value')) {
+    try { db.prepare(`ALTER TABLE classifier_attribute ADD COLUMN condition_value TEXT`).run(); } catch (_) {}
+  }
+  if (!hasColumn(db, 'entity_relation', 'color')) {
+    try { db.prepare(`ALTER TABLE entity_relation ADD COLUMN color INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
+  }
   if (hasTable(db, 'world_project') && !hasColumn(db, 'world_project', 'color')) {
     try {
       db.prepare(`ALTER TABLE world_project ADD COLUMN color INTEGER REFERENCES use_color(id)`).run();

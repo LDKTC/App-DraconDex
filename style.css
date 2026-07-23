@@ -1095,11 +1095,18 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .cls-listdetail{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;min-height:260px}
 .cls-list{width:200px;flex-shrink:0;border-right:1px solid var(--border);padding:6px}
 .cls-detail{flex:1;padding:14px 16px;min-width:0}
-.cls-relation-wrap{position:relative;min-height:260px;border:1px solid var(--border);border-radius:var(--r);
-	background-image:linear-gradient(rgba(46,46,63,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(46,46,63,.35) 1px,transparent 1px);
-	background-size:24px 24px}
-.cls-reldot{position:absolute;width:110px;padding:8px;border:1.5px solid;border-radius:var(--r);
-	background:var(--surface);font-size:calc(11.5px * var(--fsc,1));color:var(--t1);text-align:center}
+.cls-rel-wrap{display:flex;flex-direction:column;gap:10px}
+.cls-rel-add{align-self:flex-start}
+.cls-rel-list{margin-top:2px}
+.cls-rel-swatch{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.cls-rel-recent-lbl{font-size:calc(10.5px * var(--fsc,1));color:var(--t3);margin:6px 0 4px}
+.cls-rel-endpoints{display:flex;gap:10px}
+.cls-rel-endpoints>div{flex:1}
+.pv-input,.pv-textarea{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;
+	color:var(--t1);font-size:calc(12px * var(--fsc,1));padding:5px 8px;font-family:inherit}
+.pv-textarea{min-height:60px;resize:vertical}
+.cls-lvsteps{display:inline-flex;gap:4px;margin-left:8px}
+.cls-cond-row{margin-top:-2px}
 
 /* Manager view (progress.md Phase 6) */
 .mgr-card{display:flex;flex-direction:column;align-items:center;gap:4px}

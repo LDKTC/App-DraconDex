@@ -162,18 +162,19 @@ h('module:getLinks',    (id)          => db.getModuleLinks(id));
 h('classifier:setCatType',        (id,ct)              => db.setCatType(id,ct));
 h('classifier:getObjects',        (mref)                => db.getObjects(mref));
 h('classifier:getObject',         (id)                  => db.getObject(id));
-h('classifier:createObject',      (mref,n,c)            => db.createObject(mref,n,c));
-h('classifier:updateObject',      (id,n,c)              => db.updateObject(id,n,c));
+h('classifier:createObject',      (mref,n,c,ic)         => db.createObject(mref,n,c,ic));
+h('classifier:updateObject',      (id,n,c,ic)           => db.updateObject(id,n,c,ic));
 h('classifier:updateObjectNote',  (id,note)             => db.updateObjectNote(id,note));
 h('classifier:deleteObject',      (id)                  => db.deleteObject(id));
 h('classifier:getTemplates',      (mref)                => db.getTemplates(mref));
 h('classifier:getObjectTemplates',(mref,oref)           => db.getObjectTemplates(mref,oref));
-h('classifier:createTemplate',    (mref,d,t,lv,c,oref)  => db.createTemplate(mref,d,t,lv,c,oref));
-h('classifier:updateTemplate',    (id,d,t,lv,c)         => db.updateTemplate(id,d,t,lv,c));
+h('classifier:createTemplate',    (mref,d,t,lv,c,oref,ls)=> db.createTemplate(mref,d,t,lv,c,oref,ls));
+h('classifier:updateTemplate',    (id,d,t,lv,c,ls)      => db.updateTemplate(id,d,t,lv,c,ls));
 h('classifier:deleteTemplate',    (id)                  => db.deleteTemplate(id));
 h('classifier:countObjectTemplates', (oref)             => db.countObjectTemplates(oref));
 h('classifier:getAttrs',          (oid)                 => db.getAttrs(oid));
 h('classifier:upsertAttr',        (oid,tid,v)           => db.upsertAttr(oid,tid,v));
+h('classifier:upsertAttrCondition', (oid,tid,v)         => db.upsertAttrCondition(oid,tid,v));
 
 // TimeMap "Wanderer" (v3 Phase 9) — MapEvent Link pins
 h('wanderer:list',   (mref)                 => db.getMapEvents(mref));
@@ -216,8 +217,8 @@ h('chatscribe:deleteMessage', (id)     => db.deleteChatMessage(id));
 // Analys "Viewer" / Relation "Connector" (v3 Phase 14)
 h('viewer:index',          (nx)         => db.viewerIndex(nx));
 h('viewer:getRelations',   (nx)         => db.getEntityRelations(nx));
-h('viewer:createRelation', (nx,f,tk,l)  => db.createEntityRelation(nx,f,tk,l));
-h('viewer:updateRelation', (id,l)       => db.updateEntityRelation(id,l));
+h('viewer:createRelation', (nx,f,tk,l,c)  => db.createEntityRelation(nx,f,tk,l,c));
+h('viewer:updateRelation', (id,l,c)       => db.updateEntityRelation(id,l,c));
 h('viewer:deleteRelation', (id)         => db.deleteEntityRelation(id));
 
 // Drawing "Sketcher" (v3 Phase 15) — pages, strokes, pins, PNG export
