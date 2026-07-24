@@ -9,6 +9,7 @@ const { getDB } = require('./core');
 const getDialogues = (moduleRef) => getDB().prepare(`
   SELECT d.*, uc.color_code,
     (SELECT COUNT(*) FROM story_talk t WHERE t.dialogue_ref = d.id) AS talk_count,
+    (SELECT COUNT(DISTINCT speaker) FROM story_talk t WHERE t.dialogue_ref = d.id AND speaker IS NOT NULL AND speaker != '') AS speaker_count,
     (SELECT t.speaker || CASE WHEN t.speaker IS NOT NULL AND t.speaker != '' THEN ': ' ELSE '' END || COALESCE(t.talk_sentence,'')
        FROM story_talk t WHERE t.dialogue_ref = d.id ORDER BY t.talk_order, t.id LIMIT 1) AS snippet
   FROM story_dialogue d
@@ -24,6 +25,10 @@ const createDialogue = (moduleRef, name, colorId, xPos, yPos) =>
 const updateDialogue = (id, name, colorId) =>
   getDB().prepare(`UPDATE story_dialogue SET name=?, color=?, update_at=datetime('now') WHERE id=?`)
     .run(name, colorId || null, id);
+
+const updateDialogueDescription = (id, description) =>
+  getDB().prepare(`UPDATE story_dialogue SET description=?, update_at=datetime('now') WHERE id=?`)
+    .run(description || null, id);
 
 const updateDialoguePos = (id, xPos, yPos) =>
   getDB().prepare(`UPDATE story_dialogue SET pos_x=?, pos_y=?, update_at=datetime('now') WHERE id=?`)
@@ -54,22 +59,22 @@ const getTalks = (dialogueRef) => getDB().prepare(`
   SELECT * FROM story_talk WHERE dialogue_ref = ? ORDER BY talk_order, id
 `).all(dialogueRef);
 
-const createTalk = (dialogueRef, speaker, sentence) => {
+const createTalk = (dialogueRef, speaker, sentence, linkerKey) => {
   const d = getDB();
   const maxOrder = d.prepare(`SELECT COALESCE(MAX(talk_order),-1) AS m FROM story_talk WHERE dialogue_ref=?`).get(dialogueRef).m;
-  return d.prepare(`INSERT INTO story_talk (dialogue_ref,speaker,talk_sentence,talk_order) VALUES (?,?,?,?)`)
-    .run(dialogueRef, speaker || null, sentence || null, maxOrder + 1).lastInsertRowid;
+  return d.prepare(`INSERT INTO story_talk (dialogue_ref,speaker,talk_sentence,talk_order,linker_key) VALUES (?,?,?,?,?)`)
+    .run(dialogueRef, speaker || null, sentence || null, maxOrder + 1, linkerKey || null).lastInsertRowid;
 };
 
-const updateTalk = (id, speaker, sentence) =>
-  getDB().prepare(`UPDATE story_talk SET speaker=?, talk_sentence=?, update_at=datetime('now') WHERE id=?`)
-    .run(speaker || null, sentence || null, id);
+const updateTalk = (id, speaker, sentence, linkerKey) =>
+  getDB().prepare(`UPDATE story_talk SET speaker=?, talk_sentence=?, linker_key=?, update_at=datetime('now') WHERE id=?`)
+    .run(speaker || null, sentence || null, linkerKey || null, id);
 
 const deleteTalk = (id) =>
   getDB().prepare(`DELETE FROM story_talk WHERE id=?`).run(id);
 
 module.exports = {
-  getDialogues, createDialogue, updateDialogue, updateDialoguePos, deleteDialogue,
+  getDialogues, createDialogue, updateDialogue, updateDialogueDescription, updateDialoguePos, deleteDialogue,
   getEdges, createEdge, updateEdgeLabel, deleteEdge,
   getTalks, createTalk, updateTalk, deleteTalk,
 };

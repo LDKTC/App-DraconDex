@@ -8,9 +8,11 @@
 // Hero story graph (src/renderer/hero.js renderHeroStory et al.); data
 // lives in the module-scoped story_* tables (src/db/narrator.js).
 
-const NARRATOR_VIEWS = ['board', 'routes', 'reader'];
-const NARRATOR_VIEW_LABEL = { board: 'Board', routes: 'Routes', reader: 'Reader' };
+const NARRATOR_VIEWS = ['board', 'routes', 'reader', 'dialogue'];
+const NARRATOR_VIEW_LABEL = { board: 'Board', routes: 'Routes', reader: 'Reader', dialogue: 'Dialogue' };
 const narratorZoom = {}; // moduleId -> scale (board zoom persists per module per session)
+const narratorPan = {}; // moduleId -> {x,y} (Plan part5 #1 — pan is a translate now, not scrollLeft/scrollTop)
+const NARRATOR_LINK_TYPES = ['note', 'object', 'character', 'chapter', 'project', 'module', 'chat'];
 
 async function loadNarratorData(m) {
   const [dialogues, edges, ui] = await Promise.all([
@@ -50,12 +52,55 @@ function buildNarratorMainHtml(m) {
   }
   if (d.view === 'routes') return `${toolbar}${buildNarratorRoutesHtml(d)}`;
   if (d.view === 'reader') return `${toolbar}${buildNarratorReaderHtml(d)}`;
+  if (d.view === 'dialogue') return `${toolbar}${buildNarratorDialogueListHtml(d)}`;
   return `${toolbar}${buildNarratorBoardHtml(m, d)}`;
+}
+
+// ── Dialogue list view (Plan part5 #4) ──────────────────────────────────
+// One dropdown open at a time (single id, not a Set) — same precedent as
+// Chronicler's inspectorEventId.
+function buildNarratorDialogueListHtml(d) {
+  let html = `<div class="objlist">`;
+  for (const dl of d.dialogues) {
+    const open = d.openDialogueId === dl.id;
+    html += `<div class="chr-insp-row${open ? ' open' : ''}">
+      <div class="objrow" onclick="toggleNarratorDialogueOpen(${dl.id})">
+        <div class="odot" style="background:${x(dl.color_code || '#6366f1')}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="oname">${x(dl.name)}</div>
+          <div style="font-size:12px;color:var(--t3);margin-top:2px" data-no-i18n>${dl.speaker_count || 0} ${t('speaker')} · ${dl.talk_count || 0} ${t('conversation')}</div>
+        </div>
+        <svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="${open ? '6 9 12 15 18 9' : '9 18 15 12 9 6'}"/></svg>
+      </div>
+      ${open ? `<div class="chr-insp-body">
+        <div class="fg"><label>${t('description')}</label><textarea onchange="saveNarratorDialogueDescription(${dl.id},this)">${x(dl.description || '')}</textarea></div>
+      </div>` : ''}
+    </div>`;
+  }
+  return html + `</div>`;
+}
+
+function toggleNarratorDialogueOpen(id) {
+  const d = S.narratorData;
+  d.openDialogueId = d.openDialogueId === id ? null : id;
+  renderNexusHome();
+}
+
+async function saveNarratorDialogueDescription(id, el) {
+  const d = S.narratorData;
+  const dl = d.dialogues.find(dd => dd.id === id);
+  if (!dl) return;
+  const description = el.value.trim();
+  if (description === (dl.description || '')) return;
+  await api.narrator.updateDialogueDescription(id, description);
+  dl.description = description;
+  toast(t('saved'), 'ok');
 }
 
 // ── Board view ──────────────────────────────────────────────────────────
 function buildNarratorBoardHtml(m, d) {
   const scale = narratorZoom[m.id] || 1;
+  const pan = narratorPan[m.id] || { x: 0, y: 0 };
   // Branch count = dialogues with more than one outgoing edge (mockup 11's
   // czoom shows "Route: N ทางแยก").
   const outDeg = new Map();
@@ -74,11 +119,12 @@ function buildNarratorBoardHtml(m, d) {
       </div>
       ${dl.snippet ? `<div class="nn-snippet">${x(dl.snippet)}</div>` : `<div class="nn-snippet ghost">${t('conversation')} · 0</div>`}
       ${dl.talk_count ? `<div class="nn-count">${dl.talk_count} ${t('conversation')}</div>` : ''}
+      ${dl.description ? `<div class="nn-desc">${x(dl.description)}</div>` : ''}
     </div>`;
   }
   const board = `
   <div id="nar-graph-wrap" class="nar-board">
-    <div id="nar-graph" style="transform:scale(${scale})">
+    <div id="nar-graph" style="transform:translate(${pan.x}px,${pan.y}px) scale(${scale})">
       <svg id="nar-edges" width="2400" height="1600">
         <defs><marker id="nar-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--t3)"/>
@@ -86,6 +132,7 @@ function buildNarratorBoardHtml(m, d) {
       </svg>
       ${nodes}
     </div>
+    <div id="nar-notice" class="nar-notice"></div>
     <div class="chint">${t('narratorPanHint')}</div>
     <div class="czoom">
       <span class="zbtn" onclick="zoomNarrator(-1)">−</span>
@@ -133,23 +180,35 @@ function mountNarratorBoard() {
   initNarratorNodes();
 }
 
-// Right-drag pans the scrollable wrap — same gesture as the Hero story
-// graph and every other v3 canvas.
+// Right-drag pans #nar-graph itself via translate (Plan part5 #1) — the
+// wrap (.nar-board) never scrolls anymore, so .chint/.czoom/.nar-notice
+// (siblings of #nar-graph, outside its transform) stay fixed through both
+// pan and zoom, the same way Locator's Konva stage pans/zooms internally
+// without ever scrolling its own wrapper.
+function narratorTransform(moduleId) {
+  const scale = narratorZoom[moduleId] || 1;
+  const pan = narratorPan[moduleId] || { x: 0, y: 0 };
+  return `translate(${pan.x}px,${pan.y}px) scale(${scale})`;
+}
+
 function initNarratorPan() {
   const wrap = q('#nar-graph-wrap');
-  if (!wrap) return;
+  const graph = q('#nar-graph');
+  const d = S.narratorData;
+  if (!wrap || !graph || !d) return;
   wrap.addEventListener('contextmenu', (e) => e.preventDefault());
-  let panning = false, sx = 0, sy = 0, sl = 0, st = 0;
+  let panning = false, sx = 0, sy = 0, s0 = { x: 0, y: 0 };
   wrap.addEventListener('mousedown', (e) => {
     if (e.button !== 2) return;
     panning = true;
-    sx = e.clientX; sy = e.clientY; sl = wrap.scrollLeft; st = wrap.scrollTop;
+    sx = e.clientX; sy = e.clientY;
+    s0 = narratorPan[d.moduleId] || { x: 0, y: 0 };
     wrap.classList.add('is-panning');
   });
   window.addEventListener('mousemove', (e) => {
     if (!panning) return;
-    wrap.scrollLeft = sl - (e.clientX - sx);
-    wrap.scrollTop = st - (e.clientY - sy);
+    narratorPan[d.moduleId] = { x: s0.x + (e.clientX - sx), y: s0.y + (e.clientY - sy) };
+    graph.style.transform = narratorTransform(d.moduleId);
   });
   window.addEventListener('mouseup', () => { panning = false; wrap.classList.remove('is-panning'); });
   wrap.addEventListener('wheel', (e) => { if (e.ctrlKey) { e.preventDefault(); zoomNarrator(e.deltaY < 0 ? 1 : -1); } }, { passive: false });
@@ -162,7 +221,7 @@ function zoomNarrator(dir) {
   const next = Math.max(0.4, Math.min(2.5, cur * (dir > 0 ? 1.15 : 1 / 1.15)));
   narratorZoom[d.moduleId] = next;
   const graph = q('#nar-graph');
-  if (graph) graph.style.transform = `scale(${next})`;
+  if (graph) graph.style.transform = narratorTransform(d.moduleId);
   const lvl = q('#nar-zoom-lvl');
   if (lvl) lvl.textContent = `${Math.round(next * 100)}%`;
 }
@@ -210,20 +269,37 @@ function initNarratorNodes() {
       if (d.edgeFrom && d.edgeFrom !== id) {
         await api.narrator.createEdge(d.moduleId, d.edgeFrom, id, null);
         d.edgeFrom = null;
+        hideNarratorNotice();
         await openModuleNode(d.moduleId);
       } else {
         d.selectedId = d.selectedId === id ? null : id;
         d.edgeFrom = null;
+        hideNarratorNotice();
         await openModuleNode(d.moduleId);
       }
     });
   });
 }
 
+let _narNoticeTimer = null;
+function showNarratorNotice(msg) {
+  const el = q('#nar-notice');
+  if (!el) return;
+  el.textContent = tr(msg);
+  el.classList.add('show');
+  clearTimeout(_narNoticeTimer);
+  _narNoticeTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+function hideNarratorNotice() {
+  const el = q('#nar-notice');
+  if (el) el.classList.remove('show');
+  clearTimeout(_narNoticeTimer);
+}
+
 function startNarratorEdge(dialId) {
   const d = S.narratorData;
   d.edgeFrom = dialId;
-  toast(t('narratorPickTarget'), 'ok');
+  showNarratorNotice(t('narratorPickTarget'));
   document.querySelectorAll('.nar-node').forEach(n =>
     n.classList.toggle('edge-from', Number(n.dataset.dial) === dialId));
 }
@@ -239,10 +315,13 @@ function buildNarratorConvHtml(d) {
         onblur="saveNarratorTalk(${tk.id},this,'speaker')">
       <input class="nt-text" value="${x(tk.talk_sentence || '')}" placeholder="…"
         onblur="saveNarratorTalk(${tk.id},this,'text')">
+      <button class="btn btn-g btn-i${tk.linker_key ? ' act' : ''}" onclick="openNarratorTalkLinkModal(${tk.id})" title="${t('moduleLink')}">${I.relation}</button>
       <button class="btn btn-g btn-i" onclick="deleteNarratorTalk(${tk.id})" title="${t('delete')}">${I.delete}</button>
     </div>`).join('');
   return `<div class="nar-conv">
-    <div class="ph"><h4 style="border-left:3px solid ${x(col)};padding-left:8px">${x(dl.name)} · ${t('conversation')}</h4></div>
+    <div class="ph"><h4 style="border-left:3px solid ${x(col)};padding-left:8px">${x(dl.name)} · ${t('conversation')}</h4>
+      <button class="btn btn-g btn-i" onclick="openNarratorLinkFilterModal(${d.moduleId})" title="${t('narratorLinkFilter')}">${I.edit}</button>
+    </div>
     <div class="nar-talks">${rows || `<div class="empty" style="padding:14px"><p>${t('nestEmpty')}</p></div>`}</div>
     <div class="nar-talk nar-talk-new">
       <input id="nt-new-speaker" class="nt-speaker" placeholder="${t('speaker')}">
@@ -259,7 +338,7 @@ async function saveNarratorTalk(id, el, field) {
   const speaker = field === 'speaker' ? el.value.trim() : (tk.speaker || '');
   const text = field === 'text' ? el.value : (tk.talk_sentence || '');
   if (speaker === (tk.speaker || '') && text === (tk.talk_sentence || '')) return;
-  await api.narrator.updateTalk(id, speaker, text);
+  await api.narrator.updateTalk(id, speaker, text, tk.linker_key || null);
   tk.speaker = speaker; tk.talk_sentence = text;
 }
 
@@ -271,6 +350,73 @@ async function addNarratorTalk() {
   if (!text) return;
   await api.narrator.createTalk(d.selectedId, speaker, text);
   await openModuleNode(d.moduleId);
+}
+
+// Plan part5 Narrator #2: per-talk-line link to any vault entity, filtered
+// by an allowlist of quickIndex types saved on the module itself
+// (module_ui.narratorLinkFilter) — same JSON-blob convention Chronicler's
+// calendarConfig already uses.
+async function narratorLinkFilterTypes(moduleId) {
+  const ui = await api.module.getUi(moduleId);
+  try {
+    const arr = ui.narratorLinkFilter ? JSON.parse(ui.narratorLinkFilter) : null;
+    return Array.isArray(arr) && arr.length ? arr : null;
+  } catch (_) { return null; }
+}
+
+async function openNarratorTalkLinkModal(talkId) {
+  const d = S.narratorData;
+  const tk = d.talks.find(t2 => t2.id === talkId);
+  if (!tk || !S.nexus) return;
+  const [ix, allow] = await Promise.all([api.wiki.quickIndex(S.nexus.id), narratorLinkFilterTypes(d.moduleId)]);
+  const filtered = allow ? ix.filter(e => allow.includes(e.type)) : ix;
+  const opts = `<option value="">--</option>` + filtered.map(e =>
+    `<option value="${x(e.key)}" ${tk.linker_key === e.key ? 'selected' : ''}>${x(e.name)} (${x(e.type)})</option>`).join('');
+  openModal(t('moduleLink'), `
+    <div class="fg"><label>${t('moduleLink')}</label><select id="nt-link-key">${opts}</select></div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="submitNarratorTalkLink(${talkId})">${t('save')}</button>
+    </div>`);
+}
+
+async function submitNarratorTalkLink(talkId) {
+  const d = S.narratorData;
+  const tk = d.talks.find(t2 => t2.id === talkId);
+  if (!tk) return;
+  const key = q('#nt-link-key')?.value || null;
+  await api.narrator.updateTalk(talkId, tk.speaker || '', tk.talk_sentence || '', key);
+  tk.linker_key = key;
+  closeModal();
+  await openModuleNode(d.moduleId);
+  toast(t('saved'), 'ok');
+}
+
+async function openNarratorLinkFilterModal(moduleId) {
+  const allow = (await narratorLinkFilterTypes(moduleId)) || [];
+  const rows = NARRATOR_LINK_TYPES.map(ty => `
+    <div class="togglerow" onclick="toggleNarratorLinkFilterType(this)" data-type="${ty}">
+      <span class="tg${allow.includes(ty) ? ' on' : ''}"></span><span data-no-i18n>${ty}</span>
+    </div>`).join('');
+  openModal(t('narratorLinkFilter'), `
+    <div id="nar-link-filter-rows">${rows}</div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveNarratorLinkFilter(${moduleId})">${t('save')}</button>
+    </div>`);
+}
+
+function toggleNarratorLinkFilterType(el) {
+  el.querySelector('.tg').classList.toggle('on');
+}
+
+async function saveNarratorLinkFilter(moduleId) {
+  const allow = [...document.querySelectorAll('#nar-link-filter-rows .togglerow')]
+    .filter(row => row.querySelector('.tg').classList.contains('on'))
+    .map(row => row.dataset.type);
+  await api.module.setUi(moduleId, 'narratorLinkFilter', JSON.stringify(allow));
+  closeModal();
+  toast(t('saved'), 'ok');
 }
 
 async function deleteNarratorTalk(id) {

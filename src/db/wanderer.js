@@ -1,8 +1,12 @@
 'use strict';
 // TimeMap "Wanderer" (progress.md Phase 9) — MapEvent Link pins. Each row is
 // a pin on the wanderer's referenced Locator map, bound to a Chronicler
-// event whose start date/time the pin displays. The joined date parts mirror
-// timeline.js's getEvents() shape so the renderer can reuse fmtDate().
+// event whose start date/time the pin displays, and (Plan part5 W4) a
+// linker_key referencing any vault entity (module, classifier object,
+// character, chapter, note, …) — same convention as sketch_pin/import_file/
+// design_node, resolved renderer-side via api.wiki.resolveKeys. The joined
+// date parts mirror timeline.js's getEvents() shape so the renderer can
+// reuse fmtDate().
 const { getDB } = require('./core');
 
 const getMapEvents = (moduleRef) => getDB().prepare(`
@@ -16,13 +20,13 @@ const getMapEvents = (moduleRef) => getDB().prepare(`
   ORDER BY me.id
 `).all(moduleRef);
 
-const createMapEvent = (moduleRef, eventRef, label, xPos, yPos, areaRef) =>
-  getDB().prepare(`INSERT INTO map_event (module_ref,event_ref,label,x,y,area_ref) VALUES (?,?,?,?,?,?)`)
-    .run(moduleRef, eventRef || null, label || null, Number(xPos) || 0, Number(yPos) || 0, areaRef || null).lastInsertRowid;
+const createMapEvent = (moduleRef, eventRef, linkerKey, xPos, yPos, areaRef) =>
+  getDB().prepare(`INSERT INTO map_event (module_ref,event_ref,linker_key,x,y,area_ref) VALUES (?,?,?,?,?,?)`)
+    .run(moduleRef, eventRef || null, linkerKey || null, Number(xPos) || 0, Number(yPos) || 0, areaRef || null).lastInsertRowid;
 
-const updateMapEvent = (id, eventRef, label, xPos, yPos) =>
-  getDB().prepare(`UPDATE map_event SET event_ref=?, label=?, x=?, y=?, update_at=datetime('now') WHERE id=?`)
-    .run(eventRef || null, label || null, Number(xPos) || 0, Number(yPos) || 0, id);
+const updateMapEvent = (id, eventRef, linkerKey, xPos, yPos, areaRef) =>
+  getDB().prepare(`UPDATE map_event SET event_ref=?, linker_key=?, x=?, y=?, area_ref=?, update_at=datetime('now') WHERE id=?`)
+    .run(eventRef || null, linkerKey || null, Number(xPos) || 0, Number(yPos) || 0, areaRef || null, id);
 
 const deleteMapEvent = (id) =>
   getDB().prepare(`DELETE FROM map_event WHERE id=?`).run(id);

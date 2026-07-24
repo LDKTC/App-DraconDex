@@ -177,15 +177,16 @@ h('classifier:upsertAttr',        (oid,tid,v)           => db.upsertAttr(oid,tid
 h('classifier:upsertAttrCondition', (oid,tid,v)         => db.upsertAttrCondition(oid,tid,v));
 
 // TimeMap "Wanderer" (v3 Phase 9) — MapEvent Link pins
-h('wanderer:list',   (mref)                 => db.getMapEvents(mref));
-h('wanderer:create', (mref,ev,lb,px,py,ar)  => db.createMapEvent(mref,ev,lb,px,py,ar));
-h('wanderer:update', (id,ev,lb,px,py)       => db.updateMapEvent(id,ev,lb,px,py));
-h('wanderer:delete', (id)                   => db.deleteMapEvent(id));
+h('wanderer:list',   (mref)                     => db.getMapEvents(mref));
+h('wanderer:create', (mref,ev,key,px,py,ar)     => db.createMapEvent(mref,ev,key,px,py,ar));
+h('wanderer:update', (id,ev,key,px,py,ar)       => db.updateMapEvent(id,ev,key,px,py,ar));
+h('wanderer:delete', (id)                       => db.deleteMapEvent(id));
 
 // Story "Narrator" (v3 Phase 10) — Dialogue route board
 h('narrator:getDialogues',   (mref)             => db.getDialogues(mref));
 h('narrator:createDialogue', (mref,n,c,px,py)   => db.createDialogue(mref,n,c,px,py));
 h('narrator:updateDialogue', (id,n,c)           => db.updateDialogue(id,n,c));
+h('narrator:updateDialogueDescription', (id,desc) => db.updateDialogueDescription(id,desc));
 h('narrator:updateDialoguePos', (id,px,py)      => db.updateDialoguePos(id,px,py));
 h('narrator:deleteDialogue', (id)               => db.deleteDialogue(id));
 h('narrator:getEdges',       (mref)             => db.getEdges(mref));
@@ -193,8 +194,8 @@ h('narrator:createEdge',     (mref,f,to,lb)     => db.createEdge(mref,f,to,lb));
 h('narrator:updateEdgeLabel',(id,lb)            => db.updateEdgeLabel(id,lb));
 h('narrator:deleteEdge',     (id)               => db.deleteEdge(id));
 h('narrator:getTalks',       (did)              => db.getTalks(did));
-h('narrator:createTalk',     (did,sp,tx)        => db.createTalk(did,sp,tx));
-h('narrator:updateTalk',     (id,sp,tx)         => db.updateTalk(id,sp,tx));
+h('narrator:createTalk',     (did,sp,tx,lk)     => db.createTalk(did,sp,tx,lk));
+h('narrator:updateTalk',     (id,sp,tx,lk)      => db.updateTalk(id,sp,tx,lk));
 h('narrator:deleteTalk',     (id)               => db.deleteTalk(id));
 
 // Book "Author" (v3 Phase 11) — chapters
@@ -203,6 +204,8 @@ h('author:createChapter',  (mref,n)    => db.createBookChapter(mref,n));
 h('author:renameChapter',  (id,n)      => db.renameBookChapter(id,n));
 h('author:updateContent',  (id,c)      => db.updateBookChapterContent(id,c));
 h('author:deleteChapter',  (id)        => db.deleteBookChapter(id));
+h('author:setChapterLabel', (id,lb)    => db.setBookChapterLabel(id,lb));
+h('author:moveChapter',    (mref,ids)  => db.moveBookChapter(mref,ids));
 
 // Chat "Scribe" (v3 Phase 12) — sessions + bubble messages
 h('chatscribe:getSessions',   (mref)   => db.getChatSessions(mref));
@@ -213,6 +216,7 @@ h('chatscribe:getMessages',   (sref)   => db.getChatMessages(sref));
 h('chatscribe:createMessage', (sref,t) => db.createChatMessage(sref,t));
 h('chatscribe:updateMessage', (id,t)   => db.updateChatMessage(id,t));
 h('chatscribe:deleteMessage', (id)     => db.deleteChatMessage(id));
+h('chatscribe:updateMessageStyle', (id,c,s) => db.updateMessageStyle(id,c,s));
 
 // Analys "Viewer" / Relation "Connector" (v3 Phase 14)
 h('viewer:index',          (nx)         => db.viewerIndex(nx));
@@ -327,6 +331,21 @@ h('sketcher:exportPng', async (name, dataUrl) => {
   return { saved: res.filePath };
 });
 
+// Plan part5 Author #5: ".doc" export is plain HTML wrapped in a Word
+// namespace shell — Word opens this natively, no docx-generation library
+// needed (package.json has none, and this app is offline-first).
+h('author:exportDoc', async (name, html) => {
+  const win = BrowserWindow.getFocusedWindow();
+  const res = await dialog.showSaveDialog(win, {
+    defaultPath: `${name || 'book'}.doc`,
+    filters: [{ name: 'Word Document', extensions: ['doc'] }],
+  });
+  if (res.canceled || !res.filePath) return { canceled: true };
+  const shell = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset="utf-8"></head><body>${html}</body></html>`;
+  fs.writeFileSync(res.filePath, shell, 'utf8');
+  return { saved: res.filePath };
+});
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));
@@ -398,6 +417,7 @@ h('timeline:getEvents',  (tlid) => db.getEvents(tlid));
 h('timeline:createEvent',(tlid,n,sid,eid,c,story) => db.createEvent(tlid,n,sid,eid,c,story));
 h('timeline:updateEvent',(id,n,sid,eid,c,story) => db.updateEvent(id,n,sid,eid,c,story));
 h('timeline:updateEventStory',(id,story) => db.updateEventStory(id,story));
+h('timeline:updateEventIcon',(id,icon,color) => db.updateEventIcon(id,icon,color));
 h('timeline:deleteEvent',(id) => db.deleteEvent(id));
 
 // Relation

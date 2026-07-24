@@ -137,7 +137,7 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | `author.js` | 55 | หนังสือ/บทของ kind `author` (`createBookChapter`/`updateBookChapterContent`) |
 | `narrator.js` | 75 | กราฟบทสนทนาของ kind `narrator` (`story_dialogue/story_talk/story_edge`) |
 | `chatscribe.js` | 82 | โน้ตแชทของ kind `scribe` (ChatScribe) |
-| `wanderer.js` | 30 | เข็มหมุด TimeMap ของ kind `wanderer` (`map_event`) |
+| `wanderer.js` | ~35 | เข็มหมุด TimeMap ของ kind `wanderer` (`map_event`) — pin อ้างอิง vault entity ใดก็ได้ผ่านคอลัมน์ `linker_key` (เหมือน `sketch_pin`/`import_file`/`design_node`) แทน `label` เดิม (คอลัมน์เก่ายังอยู่ แต่ไม่อ่าน/เขียนแล้ว); `createMapEvent`/`updateMapEvent` รับ `area_ref` ด้วย (Plan part5 W4) |
 | `sketcher.js` | 68 | หน้าวาดฟรีแฮนด์ของ kind `sketcher` |
 | `designer.js` | 40 | ไดอะแกรมของ kind `designer` |
 | `viewer.js` | 90 | saved-filter lens ของ kind `viewer`/`connector` |
@@ -162,9 +162,9 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | `mod/manager.js` | — | UI ของ kind `manager` |
 | `mod/detail.js` | — | UI ของ kind `inspector` ("Detail") |
 | `mod/classifier.js` | — | UI ของ kind `classifier` |
-| `mod/locator.js` | — | UI ของ kind `locator` (รียูส `map.js` เดิม) |
-| `mod/chronicler.js` | — | UI ของ kind `chronicler` (รียูส `timeline.js` เดิม) |
-| `mod/wanderer.js` | — | UI ของ kind `wanderer` |
+| `mod/locator.js` | — | UI ของ kind `locator` (รียูส `map.js` เดิม — area label ใช้ shoelace centroid จาก hull จริงแทน vertex-average เดิม, ลาก area ทั้งชิ้นได้จากการลากใน fill โดยตรง ไม่ใช่แค่ vertex, Plan part5 L1/L2) |
+| `mod/chronicler.js` | ~600 | UI ของ kind `chronicler` (รียูส `timeline.js` เดิม) — จำกัด 1 timeline line/module, Compare view เลือก chronicler module อื่นแทน line อื่น (`modulesOfKind('chronicler')`, core.js); view ใหม่ `calendar` (ปฏิทิน raw year/month/day, ตั้งค่า days/week·days/month·months/year·ชื่อวัน-เดือนได้ผ่าน `module_ui.calendarConfig`); คลิก dot ของ event เปิด icon-picker popup แทน color swatch เดิม (`openChroniclerEventIconPopup`) |
+| `mod/wanderer.js` | ~270 | UI ของ kind `wanderer` — view `dual` เดิมถูกแทนที่ด้วย `area` (Map + Area List ข้างกัน + oneline timeline ด้านล่าง, `S.wandererData.openAreaId` เปิดได้ทีละ area); area บนแผนที่เป็น terrain เฉยๆ ไม่ react ต่อคลิกอีกต่อไป, คลิกบน area ในโหมด placing เปิด modal สร้าง link ได้เลย (ไม่ต้องคลิกที่ว่าง); link modal เลือก vault entity ใดก็ได้ผ่าน `api.wiki.quickIndex` (ไม่ใช่แค่ classifier object/element/character) แทน label ข้อความอิสระเดิม (Plan part5 W1-W5) |
 | `mod/narrator.js` | — | UI ของ kind `narrator` |
 | `mod/author.js` | — | UI ของ kind `author` |
 | `mod/chatscribe.js` | — | UI ของ kind `scribe` (ChatScribe) |
@@ -205,11 +205,11 @@ vault-head), `src/renderer/i18n.js` (+41 คีย์ `sync*` ครบ 18 local
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `core.js` | ~1400 | เปิด/adapt DB, **schema ทั้งหมด ~78 ตาราง** (v2.8 เพิ่ม `nexus`, `note_folder`, `note`, `wiki_link`), migrations (legacy Navigator, Hero v2.6, Writer v2.7, **Nexus v2.8** `migrateNexusV28` — adopt project เก่าเข้า vault เริ่มต้น + backfill `wiki_link` ครั้งแรก), seed สัญลักษณ์, `ensureIndexes()`, export/import-merge (v2.8 รวม nexus/note ด้วย แล้ว `rebuildWikiIndex()` หลัง merge) |
+| `core.js` | ~1400 | เปิด/adapt DB, **schema ทั้งหมด ~78 ตาราง** (v2.8 เพิ่ม `nexus`, `note_folder`, `note`, `wiki_link`), migrations (legacy Navigator, Hero v2.6, Writer v2.7, **Nexus v2.8** `migrateNexusV28` — adopt project เก่าเข้า vault เริ่มต้น + backfill `wiki_link` ครั้งแรก), seed สัญลักษณ์, `ensureIndexes()`, export/import-merge (v2.8 รวม nexus/note ด้วย แล้ว `rebuildWikiIndex()` หลัง merge); Plan part5: additive columns `timeline_event.icon TEXT`, `map_event.linker_key TEXT` (`map_event.label` เดิมยังอยู่แต่เลิกใช้แล้ว) |
 | `nexus.js` | 41 | (v2.8) CRUD ของ Nexus vault: `getNexuses` (พร้อมนับ project ต่อ vault), `getNexus/createNexus/updateNexus`, `deleteNexus` (คืน `{blocked,count}` ถ้ายังมี project อยู่) |
 | `director.js` | ~155 | folder / project / project_description / category / template / object / attribute + `searchAll` (ค้นหา global) — v2.8: `getProjects/searchAll` รับ `nexusId`, `createProject` เซ็ต `nexus_ref`, `createObject/updateObject/updateObjectNote` hook เข้า wiki reindex/resolve |
 | `color.js` | 27 | ตาราง `use_color`: getAll/add/markUsed/getRecent/delete |
-| `timeline.js` | 68 | timeline / `getOrCreateDate` (normalize วันที่สมมุติ) / event CRUD + story |
+| `timeline.js` | ~70 | timeline / `getOrCreateDate` (normalize วันที่สมมุติ) / event CRUD + story; `timeline_event.icon TEXT` คอลัมน์ใหม่ (additive), `updateEventIcon(id,icon,color)` เซฟ icon+color พร้อมกันจาก event dot popup (Plan part5 C4) |
 | `map.js` | 34 | map / area / จุด polygon (`setPoints` ลบ-แทรกใหม่ทั้งชุด) |
 | `relation.js` | 126 | relation_type + relation 3 ชนิด (OBOB/OBTL/TLTL) + query รวม object/event ของโปรเจกต์ + ลิงก์ของ event |
 | `hashtag.js` | 67 | ตาราง hashtag + mapping project/object/event + query "ใครใช้แท็กนี้" |

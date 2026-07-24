@@ -9,22 +9,18 @@
 // the Locator's map row, same as loadLocatorData); the timeline pane
 // reuses chronicler.js's one-line strip + shared pan/zoom interactions.
 
-const WANDERER_VIEWS = ['dual', 'map', 'timeline'];
-const WANDERER_VIEW_LABEL = { dual: 'Dual', map: 'Map', timeline: 'Timeline' };
+const WANDERER_VIEWS = ['area', 'map', 'timeline'];
+const WANDERER_VIEW_LABEL = { area: 'Area', map: 'Map', timeline: 'Timeline' };
 
-// Walks the full tree (arbitrary nesting depth, not just root + one level —
-// see Plan part1 #4) so a wanderer nested any number of levels deep can
-// still find its Locator/Chronicler siblings.
-function wandererModulesOfKind(kind) {
-  const out = [];
-  const walk = (nodes) => {
-    for (const n of nodes) {
-      if (n.kind === kind) out.push(n);
-      if (n.children?.length) walk(n.children);
-    }
-  };
-  walk(S.moduleTree);
-  return out;
+// Resolves each link's linker_key to its actual vault entity (module,
+// classifier object, character, chapter, note, …) in one batched call —
+// same pattern designer.js's loadDesignerData uses for design_node pins.
+async function resolveWandererLinks(links) {
+  const keys = links.map(l => l.linker_key).filter(Boolean);
+  const ents = keys.length ? await api.wiki.resolveKeys(keys) : [];
+  const byKey = new Map(ents.map(e => [e.key, e]));
+  for (const l of links) l.entity = l.linker_key ? (byKey.get(l.linker_key) || null) : null;
+  return links;
 }
 
 async function loadWandererData(m) {
@@ -34,16 +30,17 @@ async function loadWandererData(m) {
   await loadModule('src/renderer/timeline.js');
   await ensureKonva();
   const ui = await api.module.getUi(m.id);
-  const locators = wandererModulesOfKind('locator');
-  const chroniclers = wandererModulesOfKind('chronicler');
+  const locators = modulesOfKind('locator');
+  const chroniclers = modulesOfKind('chronicler');
   const mapModuleId = Number(ui.mapModule) || null;
   const timelineModuleId = Number(ui.timelineModule) || null;
-  const view = WANDERER_VIEWS.includes(ui.activeView) ? ui.activeView : 'dual';
+  const view = WANDERER_VIEWS.includes(ui.activeView) ? ui.activeView : 'area';
+  const prev = (S.wandererData && S.wandererData.moduleId === m.id) ? S.wandererData : null;
 
-  let map = null;
+  let map = null, areas = [];
   if (mapModuleId && locators.find(l => l.id === mapModuleId)) {
     map = await api.map.getOrCreateModuleMap(mapModuleId);
-    const areas = await api.map.getAreas(map.id);
+    areas = await api.map.getAreas(map.id);
     await Promise.all(areas.map(async (a) => { mapState.pointsByArea[a.id] = await api.map.getPoints(a.id); }));
   }
   // A Chronicler can own several timeline lines — a MapEvent may bind to an
@@ -55,9 +52,11 @@ async function loadWandererData(m) {
     const perLine = await Promise.all(lines.map(l => api.timeline.getEvents(l.id)));
     events = sortChroniclerEvents(perLine.flat());
   }
-  const links = await api.wanderer.list(m.id);
+  const links = await resolveWandererLinks(await api.wanderer.list(m.id));
+  let openAreaId = prev?.openAreaId ?? null;
+  if (openAreaId && !areas.find(a => a.id === openAreaId)) openAreaId = null;
   S.map = map;
-  S.wandererData = { moduleId: m.id, locators, chroniclers, mapModuleId, timelineModuleId, map, timeline, events, links, view };
+  S.wandererData = { moduleId: m.id, locators, chroniclers, mapModuleId, timelineModuleId, map, areas, timeline, events, links, view, openAreaId };
 }
 
 async function setWandererRef(moduleId, key, value) {
@@ -81,6 +80,66 @@ function toggleWandererPlacing() {
   toast(d.placing ? t('wandererPlaceHint') : t('cancel'), '');
 }
 
+// ═══ Area view (Plan part5 W5) ══════════════════════════════════════════
+// Only one area's dropdown open at a time (single id, not a Set — same
+// precedent as Chronicler's inspectorEventId); when open, the map narrows
+// to just that area (see the kind-branch filter in map.js's renderMapBoard).
+function toggleWandererAreaOpen(areaId) {
+  const d = S.wandererData;
+  d.openAreaId = d.openAreaId === areaId ? null : areaId;
+  renderNexusHome();
+}
+
+function buildWandererAreaListHtml(d) {
+  const areas = d.areas || [];
+  if (!areas.length) return `<div class="wnd-arealist-pane"><div class="empty" style="padding:16px 8px"><p data-no-i18n>No areas yet</p></div></div>`;
+  const rows = areas.map(area => {
+    const open = d.openAreaId === area.id;
+    const areaLinks = d.links.filter(l => l.area_ref === area.id);
+    return `<div class="wnd-area-row">
+      <div class="objrow" onclick="toggleWandererAreaOpen(${area.id})">
+        <div class="dot" style="background:${area.color_code || '#06b6d4'}"></div>
+        <div style="flex:1;min-width:0"><div class="oname">${x(area.area_name || '—')}</div></div>
+        <svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="${open ? '6 9 12 15 18 9' : '9 18 15 12 9 6'}"/></svg>
+      </div>
+      ${open ? `<div class="wnd-area-body">
+        ${areaLinks.length ? areaLinks.map(l => `<div class="objrow" style="padding:4px 0">
+          <div class="dot" style="background:${l.entity?.color || '#f97316'}"></div>
+          <div style="flex:1;min-width:0">${x(l.entity?.name || '—')}</div>
+        </div>`).join('') : `<div class="empty" style="padding:6px 0;font-size:12px" data-no-i18n>No links yet</div>`}
+        <button class="btn btn-g" style="margin-top:6px" onclick="openWandererAreaAddPicker(${area.id})">${I.plus} ${t('moduleLink')}</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+  return `<div class="wnd-arealist-pane">${rows}</div>`;
+}
+
+// "Add object/element/character" only offers entities already linked to
+// THIS wanderer module (d.links) — not a fresh nexus-wide quickIndex pick —
+// assigning one into the area just reassigns that link's area_ref.
+function openWandererAreaAddPicker(areaId) {
+  const d = S.wandererData;
+  if (!d.links.length) { toast(t('wandererNeedsRefs'), 'err'); return; }
+  const opts = d.links.map(l => `<option value="${l.id}">${x(l.entity?.name || '—')}</option>`).join('');
+  openModal(t('moduleLink'), `
+    <div class="fg"><label>${t('moduleLink')}</label><select id="wnd-area-add-link">${opts}</select></div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="submitWandererAreaAdd(${areaId})">${t('save')}</button>
+    </div>`);
+}
+
+async function submitWandererAreaAdd(areaId) {
+  const d = S.wandererData;
+  const link = d.links.find(l => l.id === Number(q('#wnd-area-add-link').value));
+  if (!link) return;
+  await api.wanderer.update(link.id, link.event_ref, link.linker_key, link.x, link.y, areaId);
+  closeModal();
+  d.links = await resolveWandererLinks(await api.wanderer.list(d.moduleId));
+  renderNexusHome();
+  toast(t('saved'), 'ok');
+}
+
 function buildWandererMainHtml(m) {
   const d = (S.wandererData && S.wandererData.moduleId === m.id) ? S.wandererData : null;
   if (!d) return `<div class="empty" style="margin-top:40px"><div class="ei">${moduleIconHtml(m)}</div><h3>${x(m.name)}</h3></div>`;
@@ -90,8 +149,8 @@ function buildWandererMainHtml(m) {
     ${WANDERER_VIEWS.map(v => `<span class="vitem${v === d.view ? ' act' : ''}" onclick="setWandererView('${v}')">${WANDERER_VIEW_LABEL[v]}</span>`).join('')}
   </div>`;
   const toolbar = `<div class="classifier-toolbar">
-    <select onchange="setWandererRef(${m.id},'mapModule',this.value)" title="${t('pickLocatorRef')}">${opt(d.locators, d.mapModuleId, t('pickLocatorRef'))}</select>
-    <select onchange="setWandererRef(${m.id},'timelineModule',this.value)" title="${t('pickChroniclerRef')}">${opt(d.chroniclers, d.timelineModuleId, t('pickChroniclerRef'))}</select>
+    <select onchange="setWandererRef(${m.id},'mapModule',this.value)" title="${t('pickLocatorRef')}">${opt(d.locators, d.mapModuleId, '')}</select>
+    <select onchange="setWandererRef(${m.id},'timelineModule',this.value)" title="${t('pickChroniclerRef')}">${opt(d.chroniclers, d.timelineModuleId, '')}</select>
     ${d.map && d.timeline ? `<button id="wnd-place-btn" class="btn ${d.placing ? 'btn-p' : 'btn-s'}" onclick="toggleWandererPlacing()">${I.pin} ${t('addMapEvent')}</button>` : ''}
     ${viewBar}
   </div>`;
@@ -113,7 +172,12 @@ function buildWandererMainHtml(m) {
   const tlPane = `<div class="wnd-tl-pane" id="wanderer-tl-host"></div>`;
   if (d.view === 'map') return `${toolbar}${refLine}<div class="wanderer-split">${mapPane}</div>`;
   if (d.view === 'timeline') return `${toolbar}${refLine}<div class="wanderer-split">${tlPane}</div>`;
-  return `${toolbar}${refLine}<div class="wanderer-split">${mapPane}${tlPane}</div>`;
+  // 'area': map + Area List side by side, oneline timeline strip below —
+  // replaces the old 'dual' (Map & Timeline) view.
+  return `${toolbar}${refLine}<div class="wanderer-split">
+    <div class="wnd-area-top">${mapPane}${buildWandererAreaListHtml(d)}</div>
+    ${tlPane}
+  </div>`;
 }
 
 // Post-DOM hook (registered in renderNexusHome beside mountLocatorBoard):
@@ -134,7 +198,7 @@ async function mountWandererBoard() {
     const host = q('#wanderer-tl-host');
     if (host) {
       host.innerHTML = d.events.length
-        ? buildChroniclerOneLineHtml(d.events, d.timeline.id, d.timeline.color_code || '#06b6d4')
+        ? await buildChroniclerOneLineHtml(d.events, d.timeline.id, d.timeline.color_code || '#06b6d4')
         : `<div class="empty" style="padding:20px"><p>${t('noEventsYet')}</p></div>`;
       if (d.events.length) bindTimelineGraphInteractions(d.timeline.id);
       decorateWandererTimeline(host);
@@ -169,11 +233,14 @@ function addWandererPins() {
   const layer = konvaStage.getLayers()[0];
   if (!layer) return;
   const scale = konvaStage.scaleX() || 1;
-  for (const link of d.links) {
+  // Area view (W5): when one area's dropdown is open, only its own links show.
+  const pinLinks = d.openAreaId ? d.links.filter(l => l.area_ref === d.openAreaId) : d.links;
+  for (const link of pinLinks) {
     const selectedRing = d.selectedEvent && link.event_ref === d.selectedEvent;
+    const pinColor = link.entity?.color || '#f97316';
     const pin = new Konva.Circle({
       x: link.x, y: link.y, radius: 8 / scale,
-      fill: '#f97316', stroke: selectedRing ? '#fff' : 'rgba(255,255,255,.8)',
+      fill: pinColor, stroke: selectedRing ? '#fff' : 'rgba(255,255,255,.8)',
       strokeWidth: (selectedRing ? 3.5 : 2) / scale,
       wandererPin: true, draggable: true,
     });
@@ -182,15 +249,15 @@ function addWandererPins() {
     });
     pin.on('dragend', async () => {
       const pos = pin.position();
-      await api.wanderer.update(link.id, link.event_ref, link.label, pos.x, pos.y);
+      await api.wanderer.update(link.id, link.event_ref, link.linker_key, pos.x, pos.y, link.area_ref);
       link.x = pos.x; link.y = pos.y;
     });
     const when = link.s_day != null ? fmtDate(link.s_day, link.s_month, link.s_years, link.s_hour, link.s_minute) : '—';
     const label = new Konva.Text({
       x: link.x, y: link.y - (16 / scale),
-      text: `Link: ${link.label || link.event_name || '—'}\n⏱ ${when}`,
+      text: `${link.entity?.name || '—'}\n⏱ ${when}`,
       fontSize: 12.5 / scale, lineHeight: 1.3,
-      fill: '#f97316', align: 'center',
+      fill: pinColor, align: 'center',
       listening: false, mapLabel: true,
     });
     label.offsetX(label.width() / 2);
@@ -201,50 +268,61 @@ function addWandererPins() {
   layer.batchDraw();
 }
 
-// In placing mode a left-click on empty map space drops the new pin there.
+// In placing mode a left-click on empty map space OR directly on an area
+// (Plan part5 W2 — areas are inert terrain here, not a select/edit target)
+// drops the new pin there; only an existing pin itself is excluded so its
+// own click handler (open-for-edit) isn't hijacked.
 function bindWandererStageClick() {
   if (!konvaStage) return;
   konvaStage.on('click.wanderer', (e) => {
     const d = S.wandererData;
-    if (!d?.placing || e.evt.button !== 0 || e.target !== konvaStage) return;
+    if (!d?.placing || e.evt.button !== 0 || e.target?.attrs?.wandererPin) return;
     const pointer = konvaStage.getPointerPosition();
     const wx = (pointer.x - konvaStage.x()) / konvaStage.scaleX();
     const wy = (pointer.y - konvaStage.y()) / konvaStage.scaleY();
+    const areaId = e.target?.attrs?.areaId ?? null;
     d.placing = false;
-    openMapEventModal(null, { x: wx, y: wy });
+    openMapEventModal(null, { x: wx, y: wy, areaId });
   });
 }
 
 // ═══ Link (MapEvent) CRUD ═══════════════════════════════════════════════
-function openMapEventModal(id, pos = null) {
+// Plan part5 W4: a link picks a vault entity (module, classifier object,
+// character, chapter, note, …) via the same quickIndex picker designer.js
+// uses for its pin modal, tied to a Chronicler event for its date — not a
+// free-text label anymore.
+async function openMapEventModal(id, pos = null) {
   const d = S.wandererData;
   const link = id ? d.links.find(l => l.id === id) : null;
   const px = link ? link.x : (pos?.x ?? 0);
   const py = link ? link.y : (pos?.y ?? 0);
+  const areaId = link ? (link.area_ref ?? null) : (pos?.areaId ?? null);
   const evOptions = d.events.map(ev => {
     const when = fmtDate(ev.s_day, ev.s_month, ev.s_years, ev.s_hour, ev.s_minute);
     return `<option value="${ev.id}" ${link?.event_ref === ev.id ? 'selected' : ''}>${x(ev.event_name || '—')} — ${x(when)}</option>`;
   }).join('');
+  const ix = await api.wiki.quickIndex(S.nexus.id);
+  const keyOptions = `<option value="">--</option>` + ix.map(e =>
+    `<option value="${x(e.key)}" ${link?.linker_key === e.key ? 'selected' : ''}>${x(e.name)} (${x(e.type)})</option>`).join('');
   openModal(link ? t('mapEventEdit') : t('addMapEvent'), `
-    <div class="fg"><label>${t('name')}</label><input id="wnd-lb" value="${x(link?.label || '')}"></div>
+    <div class="fg"><label>${t('moduleLink')}</label><select id="wnd-key">${keyOptions}</select></div>
     <div class="fg"><label>${t('wandererPickTime')}</label><select id="wnd-ev">${evOptions}</select></div>
     <div class="fg"><label data-no-i18n>x · y</label><span class="pv ghost" data-no-i18n>${Math.round(px)} · ${Math.round(py)}</span></div>
     <div class="mfoot">
       ${link ? `<button class="btn btn-d" onclick="deleteMapEventRow(${link.id})">${t('delete')}</button>` : ''}
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
-      <button class="btn btn-p" onclick="submitMapEventForm(${id ?? 'null'},${px},${py})">${link ? t('save') : t('create')}</button>
+      <button class="btn btn-p" onclick="submitMapEventForm(${id ?? 'null'},${px},${py},${areaId ?? 'null'})">${link ? t('save') : t('create')}</button>
     </div>`);
-  setTimeout(() => q('#wnd-lb').focus(), 60);
 }
 
-async function submitMapEventForm(id, px, py) {
+async function submitMapEventForm(id, px, py, areaId) {
   const d = S.wandererData;
-  const label = q('#wnd-lb').value.trim();
+  const key = q('#wnd-key').value || null;
   const eventRef = Number(q('#wnd-ev').value) || null;
-  if (id) await api.wanderer.update(id, eventRef, label, px, py);
-  else await api.wanderer.create(d.moduleId, eventRef, label, px, py, null);
+  if (id) await api.wanderer.update(id, eventRef, key, px, py, areaId ?? null);
+  else await api.wanderer.create(d.moduleId, eventRef, key, px, py, areaId ?? null);
   closeModal();
-  d.links = await api.wanderer.list(d.moduleId);
+  d.links = await resolveWandererLinks(await api.wanderer.list(d.moduleId));
   await mountWandererBoard();
   toast(id ? t('saved') : t('created'), 'ok');
 }
@@ -254,7 +332,7 @@ async function deleteMapEventRow(id) {
   await api.wanderer.delete(id);
   closeModal();
   const d = S.wandererData;
-  d.links = await api.wanderer.list(d.moduleId);
+  d.links = await resolveWandererLinks(await api.wanderer.list(d.moduleId));
   await mountWandererBoard();
   toast(t('deleted'), 'ok');
 }

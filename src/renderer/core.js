@@ -200,6 +200,22 @@ let timelineGraphCleanup = null;
 let konvaStage = null;
 const mapState = { viewByMap:{}, pointsByArea:{} };
 
+// Walks the full module tree (arbitrary nesting depth) for every node of a
+// given kind — shared by Wanderer (locator/chronicler ref pickers) and
+// Chronicler (Compare-view module picker) so neither has to reach into the
+// other's file (chronicler.js loads before wanderer.js in index.html).
+function modulesOfKind(kind) {
+  const out = [];
+  const walk = (nodes) => {
+    for (const n of nodes) {
+      if (n.kind === kind) out.push(n);
+      if (n.children?.length) walk(n.children);
+    }
+  };
+  walk(S.moduleTree);
+  return out;
+}
+
 async function init() {
   applyUiSettings();
   S.colors       = await api.color.getAll();
@@ -1926,7 +1942,10 @@ function runBuilderMounts() {
     mountNarratorBoard();
     if (S.narratorData?.view === 'reader') mountNarratorReader();
   }
-  if (S.activeModuleNode?.kind === 'author' && typeof mountAuthorEditor === 'function') mountAuthorEditor();
+  if (S.activeModuleNode?.kind === 'author' && typeof mountAuthorEditor === 'function') {
+    mountAuthorEditor();
+    if (S.authorData?.view === 'book' && typeof mountAuthorBook === 'function') mountAuthorBook();
+  }
   if (S.activeModuleNode?.kind === 'scribe' && typeof mountChatScribe === 'function') mountChatScribe();
   if (S.activeModuleNode?.kind === 'drafter' && typeof mountDrafterEditor === 'function') mountDrafterEditor(S.activeModuleNode);
   if (S.activeModuleNode?.kind === 'connector' && typeof mountConnectorBoard === 'function') mountConnectorBoard();

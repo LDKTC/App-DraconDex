@@ -1147,6 +1147,35 @@ function initDB() {
   if (!hasColumn(db, 'classifier_object', 'icon')) {
     try { db.prepare(`ALTER TABLE classifier_object ADD COLUMN icon TEXT`).run(); } catch (_) {}
   }
+  if (!hasColumn(db, 'timeline_event', 'icon')) {
+    try { db.prepare(`ALTER TABLE timeline_event ADD COLUMN icon TEXT`).run(); } catch (_) {}
+  }
+  // Wanderer link redesign (Plan part5 W4): a pin now references any vault
+  // entity (module, classifier object, character, chapter, note, …) via the
+  // same linker_key convention as sketch_pin/import_file/design_node,
+  // instead of a free-text label. `label` stays for old rows but is no
+  // longer read/written by the renderer.
+  if (!hasColumn(db, 'map_event', 'linker_key')) {
+    try { db.prepare(`ALTER TABLE map_event ADD COLUMN linker_key TEXT`).run(); } catch (_) {}
+  }
+  // Scribe chat bubble color + left/right side (Plan part5 Scribe #1).
+  if (!hasColumn(db, 'chat_message', 'color')) {
+    try { db.prepare(`ALTER TABLE chat_message ADD COLUMN color INTEGER REFERENCES use_color(id)`).run(); } catch (_) {}
+  }
+  if (!hasColumn(db, 'chat_message', 'side')) {
+    try { db.prepare(`ALTER TABLE chat_message ADD COLUMN side TEXT DEFAULT 'r'`).run(); } catch (_) {}
+  }
+  // Narrator per-talk-line vault-entity link + per-dialogue description (Plan part5 Narrator #2/#4).
+  if (!hasColumn(db, 'story_talk', 'linker_key')) {
+    try { db.prepare(`ALTER TABLE story_talk ADD COLUMN linker_key TEXT`).run(); } catch (_) {}
+  }
+  if (!hasColumn(db, 'story_dialogue', 'description')) {
+    try { db.prepare(`ALTER TABLE story_dialogue ADD COLUMN description TEXT`).run(); } catch (_) {}
+  }
+  // Author custom chapter label, e.g. "1.5" (Plan part5 Author #4).
+  if (!hasColumn(db, 'book_chapter', 'chapter_label')) {
+    try { db.prepare(`ALTER TABLE book_chapter ADD COLUMN chapter_label TEXT`).run(); } catch (_) {}
+  }
   if (!hasColumn(db, 'classifier_template', 'level_steps')) {
     try { db.prepare(`ALTER TABLE classifier_template ADD COLUMN level_steps TEXT`).run(); } catch (_) {}
   }

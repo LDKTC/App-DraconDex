@@ -52,7 +52,6 @@ function buildTimelineRulerSvg(minTs, maxTs, xFromTs, LINE_Y){
   if(!(maxTs > minTs)) return '';
   const spanDays = (maxTs-minTs)/86400000;
   const byYear = spanDays > 365*4;
-  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const start = new Date(minTs);
   let cursor = byYear
     ? Date.UTC(start.getUTCFullYear(), 0, 1)
@@ -64,7 +63,7 @@ function buildTimelineRulerSvg(minTs, maxTs, xFromTs, LINE_Y){
     if(cursor >= minTs){
       const cx = xFromTs(cursor);
       const d = new Date(cursor);
-      const label = byYear ? String(d.getUTCFullYear()) : `${monthNames[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+      const label = byYear ? String(d.getUTCFullYear()) : String(d.getUTCMonth()+1);
       svg += `<line class="tl-ruler-tick" data-tick-ts="${cursor}" x1="${cx}" y1="${LINE_Y-14}" x2="${cx}" y2="${LINE_Y+14}" stroke="var(--border)" stroke-width="1.5" opacity="0.55"/>
         <text class="tl-ruler-label" data-tick-ts="${cursor}" x="${cx}" y="${LINE_Y+30}" text-anchor="middle" font-size="10.5" fill="var(--t3)">${label}</text>`;
     }

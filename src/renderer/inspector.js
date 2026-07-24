@@ -103,7 +103,7 @@ function inspectorViewLabel(m, ui) {
   if (m.kind === 'classifier') return (typeof CLASSIFIER_VIEW_LABEL !== 'undefined' && CLASSIFIER_VIEW_LABEL[v]) || 'Detail';
   if (m.kind === 'manager') return (typeof MANAGER_VIEW_LABEL !== 'undefined' && MANAGER_VIEW_LABEL[v]) || 'Cards';
   if (m.kind === 'chronicler') return (typeof CHRONICLER_VIEW_LABEL !== 'undefined' && CHRONICLER_VIEW_LABEL[v]) || 'One-line';
-  if (m.kind === 'wanderer') return (typeof WANDERER_VIEW_LABEL !== 'undefined' && WANDERER_VIEW_LABEL[v]) || 'Dual';
+  if (m.kind === 'wanderer') return (typeof WANDERER_VIEW_LABEL !== 'undefined' && WANDERER_VIEW_LABEL[v]) || 'Area';
   if (m.kind === 'narrator') return (typeof NARRATOR_VIEW_LABEL !== 'undefined' && NARRATOR_VIEW_LABEL[v]) || 'Board';
   if (m.kind === 'author') return (typeof AUTHOR_VIEW_LABEL !== 'undefined' && AUTHOR_VIEW_LABEL[v]) || 'Editor';
   if (m.kind === 'scribe') return (typeof CHATSCRIBE_VIEW_LABEL !== 'undefined' && CHATSCRIBE_VIEW_LABEL[v]) || 'Chat';

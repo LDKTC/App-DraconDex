@@ -44,6 +44,8 @@ const updateEvent = (id, n, sid, eid, c, story) =>
   getDB().prepare(`UPDATE timeline_event SET event_name=?,start_at=?,end_at=?,color=?,story=?,update_at=datetime('now') WHERE id=?`).run(n, sid, eid || null, c || null, story || null, id);
 const updateEventStory = (id, story) =>
   getDB().prepare(`UPDATE timeline_event SET story=?, update_at=datetime('now') WHERE id=?`).run(story || null, id);
+const updateEventIcon = (id, icon, color) =>
+  getDB().prepare(`UPDATE timeline_event SET icon=?, color=?, update_at=datetime('now') WHERE id=?`).run(icon || null, color || null, id);
 const deleteEvent = (id) =>
   getDB().prepare(`DELETE FROM timeline_event WHERE id=?`).run(id);
 
@@ -74,6 +76,6 @@ module.exports = {
   getTimelines, createTimeline, updateTimeline, deleteTimeline,
   getModuleTimelines, createModuleTimeline,
   getOrCreateDate,
-  getEvents, createEvent, updateEvent, updateEventStory, deleteEvent,
+  getEvents, createEvent, updateEvent, updateEventStory, updateEventIcon, deleteEvent,
   getEventTags, setEventTags, addEventTag, removeEventTag, getEventsByHashtag,
 };

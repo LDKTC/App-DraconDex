@@ -48,7 +48,8 @@ const deleteChatSession = (id) => {
 };
 
 const getChatMessages = (sessionRef) => getDB().prepare(`
-  SELECT * FROM chat_message WHERE session_ref = ? ORDER BY id
+  SELECT g.*, uc.color_code FROM chat_message g LEFT JOIN use_color uc ON g.color=uc.id
+  WHERE g.session_ref = ? ORDER BY g.id
 `).all(sessionRef);
 
 const createChatMessage = (sessionRef, message) => {
@@ -76,7 +77,10 @@ const deleteChatMessage = (id) => {
   return r;
 };
 
+const updateMessageStyle = (id, color, side) =>
+  getDB().prepare(`UPDATE chat_message SET color=?, side=? WHERE id=?`).run(color || null, side || 'r', id);
+
 module.exports = {
   getChatSessions, createChatSession, renameChatSession, deleteChatSession,
-  getChatMessages, createChatMessage, updateChatMessage, deleteChatMessage,
+  getChatMessages, createChatMessage, updateChatMessage, deleteChatMessage, updateMessageStyle,
 };

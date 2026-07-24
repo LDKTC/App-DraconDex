@@ -58,12 +58,9 @@ const ITEM_KIND = {
     icon: () => I.book,
     async list(moduleId) { return api.author.getChapters(moduleId); },
     nameOf: (c) => c.name,
-    async renderBody() { return `<div id="author-item-editor" class="scribe-editor"></div>`; },
+    async renderBody() { return `<div id="author-item-editor" class="scribe-editor au-editor"></div>`; },
     mount(node) {
-      createMarkdownEditor(q('#author-item-editor'), {
-        title: node.item.name, content: node.item.chapter_content || '', srcKey: `bchp_${node.item.id}`,
-        save: async (c) => { await api.author.updateContent(node.item.id, c); node.item.chapter_content = c; },
-      });
+      mountAuthorRichEditor(q('#author-item-editor'), node.item);
     },
   },
   scribe: {
@@ -77,7 +74,11 @@ const ITEM_KIND = {
         streamId: 'item-chs-stream', inputId: 'item-chs-input', onSend: `sendItemChatMessage(${s.id})`,
       });
     },
-    mount() { const el = q('#item-chs-stream'); if (el) el.scrollTop = el.scrollHeight; },
+    mount() {
+      const el = q('#item-chs-stream');
+      if (el) el.scrollTop = el.scrollHeight;
+      bindChatBubbleDrag('item-chs-stream');
+    },
   },
   designer: {
     badgeKey: 'itemBadgeDesignNode',

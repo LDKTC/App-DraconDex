@@ -94,45 +94,45 @@
 - [x] 1.เพิ่มการจัดระเบียบข้อมูลบนTextBoxด้วย การใส่Tab
 - [x] 2.เพิ่มCtrl+z Ctrl+Shift+z UndoRedo บนหน้ากระดาษ
 #### Map"Locator" Module
-- [ ] 1.ให้ชื่อareaบนgraph ขยับให้ตรงกับจุดตรงกลางของarea shape
-- [ ] 2.เพิ่มให้สามารถขยับ area ทั้งชิ้นพร้อมกันได้หาก ใช้tool ลากบนพื้นที่ของareaโดยตรง
+- [x] 1.ให้ชื่อareaบนgraph ขยับให้ตรงกับจุดตรงกลางของarea shape
+- [x] 2.เพิ่มให้สามารถขยับ area ทั้งชิ้นพร้อมกันได้หาก ใช้tool ลากบนพื้นที่ของareaโดยตรง
 #### Timeline"Chronicler" Module
-- [ ] 1.date บนgraphของoneline ไม่ต้องมีชื่อเดือนหรือปีที่เป็นDefaultที่แสดง ให้ใช้โดยอ้างอิงกับevent date 
+- [x] 1.date บนgraphของoneline ไม่ต้องมีชื่อเดือนหรือปีที่เป็นDefaultที่แสดง ให้ใช้โดยอ้างอิงกับevent date 
     - ไม่ต้องแสดงชื่อเดือน ให้แสดงเลขเดือนแทน, เดือนdefault คือ 12 สามารถเพิ่มขึ้นได้หากevent เดือนที่มากกว่า 12
     - เลขปีสามารถติดลบได้ โดนแสดงก็ต่อเมื่อมีeventที่ปีติดลบ
-- [ ] 2.มีเพียง 1 timeline/ 1 chronicler โดยcompare viewจะแสดงtimeline ของChronicler นั้น และมีช่องให้เลือก Chroniclerอื่น เพื่อนำมาcompare กับchroniclerนี้
-- [ ] 3.เพิ่ม view ใหม่ "calendar" โดยจะแสดงหน้าต่างเป็นปฏิทิน และแสดงeventในตารางเวลา
+- [x] 2.มีเพียง 1 timeline/ 1 chronicler โดยcompare viewจะแสดงtimeline ของChronicler นั้น และมีช่องให้เลือก Chroniclerอื่น เพื่อนำมาcompare กับchroniclerนี้
+- [x] 3.เพิ่ม view ใหม่ "calendar" โดยจะแสดงหน้าต่างเป็นปฏิทิน และแสดงeventในตารางเวลา
     - เปิดให้ผู้ใช้สามารถตั้งค่าการแสดงผลได้เช่น 1 เดือนมีกี่วัน, 1 สัปดาห์มีกี่วัน, 1 ปีมีกี่เดือน และสามารถให้ผู้ใช้สามารถตั้งชื่อวัน/เดือน ได้
-- [ ] 4.สีที่เลือกบนmodal ของdownline ย้ายให้กดที่circleของevent listเพื่อเปิดicon selector popup โดยเพิ่มระบบiconให้กับeventสามารถเลือกใช้ได้ และจะแสดงขึ้นมาบนlist และgraph
+- [x] 4.สีที่เลือกบนmodal ของdownline ย้ายให้กดที่circleของevent listเพื่อเปิดicon selector popup โดยเพิ่มระบบiconให้กับeventสามารถเลือกใช้ได้ และจะแสดงขึ้นมาบนlist และgraph
 #### Map-Timeline"Wanderer" Module
-- [ ] 1.select box ของ locator กับ chronicler ไม่ต้องแสดงlist "เลือกlocator" และ "เลือกchronicler"
-- [ ] 2.ทำให้Mapที่แสดงไม่สามารถแตะต้องarea ของmapได้ และให้tool linkของwanderer สามารถคลิกสร้างlinkผ่าน บนareaได้เลยโดยไม่แตะที่area 
-- [ ] 3.แสดงgraphของtimelineด้านใต้ของgraph map เป็นแบบoneline
-- [ ] 4.ระบบlinkที่สร้าง ไม่ใช่linkกับevent แต่ให้เลือกobject/element/charactor เพื่อมาlinkกับMapและDateของtimeline
+- [x] 1.select box ของ locator กับ chronicler ไม่ต้องแสดงlist "เลือกlocator" และ "เลือกchronicler"
+- [x] 2.ทำให้Mapที่แสดงไม่สามารถแตะต้องarea ของmapได้ และให้tool linkของwanderer สามารถคลิกสร้างlinkผ่าน บนareaได้เลยโดยไม่แตะที่area 
+- [x] 3.แสดงgraphของtimelineด้านใต้ของgraph map เป็นแบบoneline
+- [x] 4.ระบบlinkที่สร้าง ไม่ใช่linkกับevent แต่ให้เลือกobject/element/charactor เพื่อมาlinkกับMapและDateของtimeline
     - ขั้นตอนการใช้งาน : ให้เลือกEventจากบนTimeline Graph และกดสร้างlinkลงบนmap objectก็จะแสดงเมื่อเลือกEventนั้นๆ
     - object/element/charactor ที่ใช้linkมาจากclassifierทั้งหมดในnexus แต่สามารถใช้filterเพื่อกรองของที่ต้องเอามาlinkได้ และfilter จะถูกบันทึกไว้ในWandererนั้น
-- [ ] 5.นำ view Map&Timelineออก, เพิ่มViewใหม่ "Area" แสดงArea Listด้านขวาของMap โดยมีGraph Timelineอยู่ด้านล่าง
+- [x] 5.นำ view Map&Timelineออก, เพิ่มViewใหม่ "Area" แสดงArea Listด้านขวาของMap โดยมีGraph Timelineอยู่ด้านล่าง
     - Area list มีtoggle open/close dropdown listอีกที โดยlistแสดงการเก็บ linkของobject/element/charactor
     - Area list จะเปิดdropdown toggleเป็นOne at the timeเท่านั้น และเมื่อopenอยู่ MapะแสดงAreaนั้นและของที่อยู่ด้านในเท่านั้น
     - Area dropdown list มีปุ่มสำหรับAdd object/element/charactor โดยจะแสดงเฉพาะที่ถูกlinkกับwandererนี้เท่านั้น 
 #### Story"Narrator" Module
-- [ ] 1.ทำให้guide word และ zoom overlayที่อยู่บนgraph กลายเป็นoverlay ที่ไม่ขยับเมื่อเลื่อนGraph
-- [ ] 2.เพิ่มให้ผู้พูดสามารถLinkกับObject/Element/Charactor ของClassifierได้หากต้องการ โดยสามารถfilter object/element/charactorได้ โดยจะบันทึกไว้ที่Narratorนั้นเลย
-- [ ] 3.notice textที่เขียนว่า "ให้เลือกtextปลายทาง" ให้ย้ายขั้นมาแสดงตรงกลางบนของgraph โดยslide inจากด้านบนแทน
-- [ ] 4.view ใหม่ "Dialogue" โดยจะแสดงListของDialogueทั้งหมดพร้อมปุ่ม Toggle open/close เพื่อเปิดdropdown boxที่มีdetail ของDialogueนั้น
+- [x] 1.ทำให้guide word และ zoom overlayที่อยู่บนgraph กลายเป็นoverlay ที่ไม่ขยับเมื่อเลื่อนGraph
+- [x] 2.เพิ่มให้ผู้พูดสามารถLinkกับObject/Element/Charactor ของClassifierได้หากต้องการ โดยสามารถfilter object/element/charactorได้ โดยจะบันทึกไว้ที่Narratorนั้นเลย
+- [x] 3.notice textที่เขียนว่า "ให้เลือกtextปลายทาง" ให้ย้ายขั้นมาแสดงตรงกลางบนของgraph โดยslide inจากด้านบนแทน
+- [x] 4.view ใหม่ "Dialogue" โดยจะแสดงListของDialogueทั้งหมดพร้อมปุ่ม Toggle open/close เพื่อเปิดdropdown boxที่มีdetail ของDialogueนั้น
     - โดยเพิ่มDescription ให้กับทุกDialogue โดยDescriptionจะแสดงบนnode ในboard viewด้วย
     - dialogue list ที่ด้านล่างชื่อdialogueจะแสดงจำนวนตัวละครในdialogueนั้น โดยจะนับที่ชื่อไม่ซ้ำ พร้อมแสดงจำนวนบทสนทนามีจำนวนกี่บรรทัด
 #### Book"Author" Module
-- [ ] 1.เพิ่มการปรับตัวอักษรแบบพิเศษเช่น Bold, Underline, ตัวเอียง, ขีดฆ่า, ตัวลอย(รูปแบบยกกำลัง)
-- [ ] 2.เพิ่มการจัดเรียงหน้ากระดาษ Text Align, Left, Center, Right, Stretch, paragraph, เพิ่มตัวเว้นที่เช่น Tab
-- [ ] 3.เพิ่มให้สามารถจัดเรียงตอนได้แบบอิสระ สามารถขยับขึ้นลงได้
-- [ ] 4.สามารถตั้งเลขบท และชื่อด้านหน้าเองได้เช่น ตอนที่1.5 หรือ โน้ตตัวที่ 3/4 โดยระบบสร้างอัตโนมัติของบทต่อไป จะสร้างเรียงเป็น +1 จากเลขจำนวนเต็มด้านหน้าทศนิยมเสมอ เช่น 1.5 ตอนต่อไปคือ 2
-- [ ] 5.เพิ่มviewใหม่ "Book" โดยจะแสดงเนื้อหาเป็นหน้ากระดาษ แบบรวมทุกChapter โดย จะตัดเนื้อหาขึ้นหน้าใหม่ทันทีที่ขั้นchapterใหม่ หรือพิมพ์เกินหน้ากระดาษ
+- [x] 1.เพิ่มการปรับตัวอักษรแบบพิเศษเช่น Bold, Underline, ตัวเอียง, ขีดฆ่า, ตัวลอย(รูปแบบยกกำลัง)
+- [x] 2.เพิ่มการจัดเรียงหน้ากระดาษ Text Align, Left, Center, Right, Stretch, paragraph, เพิ่มตัวเว้นที่เช่น Tab
+- [x] 3.เพิ่มให้สามารถจัดเรียงตอนได้แบบอิสระ สามารถขยับขึ้นลงได้
+- [x] 4.สามารถตั้งเลขบท และชื่อด้านหน้าเองได้เช่น ตอนที่1.5 หรือ โน้ตตัวที่ 3/4 โดยระบบสร้างอัตโนมัติของบทต่อไป จะสร้างเรียงเป็น +1 จากเลขจำนวนเต็มด้านหน้าทศนิยมเสมอ เช่น 1.5 ตอนต่อไปคือ 2
+- [x] 5.เพิ่มviewใหม่ "Book" โดยจะแสดงเนื้อหาเป็นหน้ากระดาษ แบบรวมทุกChapter โดย จะตัดเนื้อหาขึ้นหน้าใหม่ทันทีที่ขั้นchapterใหม่ หรือพิมพ์เกินหน้ากระดาษ
     - ด้านซ้ายแสดงchapterที่กำลังอ่านอยู่ในตอนนี้เป็นเหมือนTopic list
     - เพิ่มให้สามารถexportเป็นไฟล์docได้
 #### Chat"Scribe" Module
-- [ ] 1.chat bubble บนChat view เพิ่มระบบfeatureให้ขยับซ้ายขวาได้ และสามารถเปลี่ยนสีของbubbleได้
-- [ ] 2.เพิ่มFeature ในการAdd linkขึ้นมา และส่งในchat เป็นBubbleได้
+- [x] 1.chat bubble บนChat view เพิ่มระบบfeatureให้ขยับซ้ายขวาได้ และสามารถเปลี่ยนสีของbubbleได้
+- [x] 2.เพิ่มFeature ในการAdd linkขึ้นมา และส่งในchat เป็นBubbleได้
 #### Graph"Designer" Module
 - [ ] 1.module linkเพิ่มระบบที่สามารถfilterได้
 - [ ] 2.เพิ่มเปลี่ยนscrollmouse เป็นZoomin/ZoomOut

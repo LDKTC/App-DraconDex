@@ -108,13 +108,15 @@ function buildChatBubblesHtml(session, messages, opts = {}) {
       lastDay = day;
       html += `<div class="chs-day" data-no-i18n>${x(day)} · session: ${x(session.name)}</div>`;
     }
-    html += `<div class="chs-row">
-      <div class="chs-bubble">
+    const bg = g.color_code ? ` style="background:${x(g.color_code)}"` : '';
+    html += `<div class="chs-row${g.side === 'l' ? ' left' : ''}">
+      <div class="chs-bubble" data-msg-id="${g.id}"${bg}>
         <span class="chs-text">${_mdInline(g.message, resolve)}</span>
         <span class="chs-time" data-no-i18n>${chsTime(g.create_at)}</span>
         <span class="chs-acts">
-          <button class="btn btn-g btn-i" onclick="openChatMessageModal(${g.id})" title="${t('edit')}">${I.edit}</button>
-          <button class="btn btn-g btn-i" onclick="deleteChatMessageRow(${g.id})" title="${t('delete')}">${I.delete}</button>
+          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openChatBubbleColorPopup(${g.id},this)" title="${t('color')}">${I.layer}</button>
+          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openChatMessageModal(${g.id})" title="${t('edit')}">${I.edit}</button>
+          <button class="btn btn-g btn-i" onclick="event.stopPropagation();deleteChatMessageRow(${g.id})" title="${t('delete')}">${I.delete}</button>
         </span>
       </div>
     </div>`;
@@ -125,9 +127,126 @@ function buildChatBubblesHtml(session, messages, opts = {}) {
   const onSend = opts.onSend || 'sendChatMessage()';
   return `<div id="${streamId}" class="chs-stream">${html}</div>
     <div class="chs-inputrow">
+      <button class="btn btn-s btn-i" onclick="openChatLinkPicker('${inputId}')" title="${t('moduleLink')}">${I.relation}</button>
       <input id="${inputId}" placeholder="${t('chatTypeNote')}" onkeydown="if(event.key==='Enter')${onSend}">
       <button class="btn btn-p" onclick="${onSend}">${t('chatSend')}</button>
     </div>`;
+}
+
+// Plan part5 Scribe #2: a message is already plain markdown-with-wikilinks
+// text (see _mdInline above / reindexChatSession in src/db/chatscribe.js),
+// so "insert a link" needs no new schema/message-type — just splice a
+// `[[Name]]` at the input's cursor, same quickIndex picker pattern already
+// used by Wanderer's/Designer's link pickers.
+let _chsLinkInputId = 'chs-input';
+function openChatLinkPicker(inputId) {
+  _chsLinkInputId = inputId || 'chs-input';
+  if (!S.nexus) return;
+  api.wiki.quickIndex(S.nexus.id).then(ix => {
+    const opts = ix.map(e => `<option value="${x(e.name)}">${x(e.name)} (${x(e.type)})</option>`).join('');
+    openModal(t('moduleLink'), `
+      <div class="fg"><label>${t('moduleLink')}</label><select id="chs-link-pick">${opts}</select></div>
+      <div class="mfoot">
+        <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+        <button class="btn btn-p" onclick="submitChatLinkInsert()">${t('create')}</button>
+      </div>`);
+  });
+}
+
+function submitChatLinkInsert() {
+  const name = q('#chs-link-pick')?.value;
+  closeModal();
+  if (!name) return;
+  const input = q(`#${_chsLinkInputId}`);
+  if (!input) return;
+  const linkText = `[[${name}]]`;
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
+  input.value = input.value.slice(0, start) + linkText + input.value.slice(end);
+  input.focus();
+  const pos = start + linkText.length;
+  input.setSelectionRange(pos, pos);
+}
+
+// Plan part5 Scribe #1: color popup — same click-to-popup, live-save idiom
+// as Chronicler's openChroniclerEventIconPopup, but the leaner colorPicker()
+// (core.js) instead of iconPicker() since a chat bubble has no icon.
+async function openChatBubbleColorPopup(msgId, anchor) {
+  closeAllPopups();
+  if (!anchor) return;
+  const sessionId = chatScribeActiveSessionId();
+  const messages = sessionId ? await api.chatscribe.getMessages(sessionId) : [];
+  const g = messages.find(m => m.id === msgId);
+  if (!g) return;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup icon-edit-popup';
+  pop.innerHTML = await colorPicker(g.color || null);
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => {
+    e.stopPropagation();
+    if (e.target.closest('.cswatch')) saveChatBubbleColorLive(msgId);
+  });
+  positionPopupNear(pop, anchor.getBoundingClientRect());
+}
+
+async function saveChatBubbleColorLive(msgId) {
+  const color = q('#sel-color')?.value || null;
+  const sessionId = chatScribeActiveSessionId();
+  const messages = sessionId ? await api.chatscribe.getMessages(sessionId) : [];
+  const g = messages.find(m => m.id === msgId);
+  await api.chatscribe.updateMessageStyle(msgId, color, g?.side || 'r');
+  await refreshChatScribeMessages();
+}
+
+// Plan part5 Scribe #1: drag a bubble left/right to flip which side it sits
+// on (a real slide gesture, not a click-toggle) — delegated to the stream
+// container so re-renders don't accumulate duplicate listeners; the
+// AbortController-based re-bind idiom mirrors bindTimelineGraphInteractions
+// in src/renderer/timeline.js.
+let _chsDragCleanup = null;
+function bindChatBubbleDrag(streamId) {
+  if (_chsDragCleanup) _chsDragCleanup();
+  const stream = q(`#${streamId}`);
+  if (!stream) return;
+  const controller = new AbortController();
+  _chsDragCleanup = () => controller.abort();
+  let dragEl = null, startX = 0, moved = false;
+  stream.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    const bubble = e.target.closest('.chs-bubble');
+    if (!bubble || e.target.closest('.chs-acts')) return;
+    dragEl = bubble; startX = e.clientX; moved = false;
+  }, { signal: controller.signal });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragEl) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 4) moved = true;
+    const row = dragEl.closest('.chs-row');
+    const maxW = row ? row.offsetWidth : 300;
+    const clamped = Math.max(-maxW, Math.min(maxW, dx));
+    dragEl.style.transform = `translateX(${clamped}px)`;
+  }, { signal: controller.signal });
+  document.addEventListener('mouseup', async (e) => {
+    if (!dragEl) return;
+    const bubble = dragEl; dragEl = null;
+    if (!moved) { bubble.style.transform = ''; return; }
+    const dx = e.clientX - startX;
+    bubble.style.transform = '';
+    const row = bubble.closest('.chs-row');
+    const threshold = (row?.offsetWidth || 300) * 0.25;
+    const msgId = Number(bubble.dataset.msgId);
+    const sessionId = chatScribeActiveSessionId();
+    const messages = sessionId ? await api.chatscribe.getMessages(sessionId) : [];
+    const g = messages.find(m => m.id === msgId);
+    const curSide = g?.side || 'r';
+    let side = curSide;
+    if (dx < -threshold) side = 'l';
+    else if (dx > threshold) side = 'r';
+    if (side !== curSide) {
+      await api.chatscribe.updateMessageStyle(msgId, g?.color || null, side);
+      await refreshChatScribeMessages();
+    }
+  }, { signal: controller.signal });
 }
 
 // Post-DOM hook (registered in renderNexusHome): keep the stream pinned to
@@ -137,6 +256,7 @@ function mountChatScribe() {
   if (!d || S.activeModuleNode?.id !== d.moduleId || d.view !== 'chat') return;
   const stream = q('#chs-stream');
   if (stream) stream.scrollTop = stream.scrollHeight;
+  bindChatBubbleDrag('chs-stream');
 }
 
 async function sendChatMessage() {
