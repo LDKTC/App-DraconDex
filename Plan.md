@@ -134,15 +134,15 @@
 - [x] 1.chat bubble บนChat view เพิ่มระบบfeatureให้ขยับซ้ายขวาได้ และสามารถเปลี่ยนสีของbubbleได้
 - [x] 2.เพิ่มFeature ในการAdd linkขึ้นมา และส่งในchat เป็นBubbleได้
 #### Graph"Designer" Module
-- [ ] 1.module linkเพิ่มระบบที่สามารถfilterได้
-- [ ] 2.เพิ่มเปลี่ยนscrollmouse เป็นZoomin/ZoomOut
-- [ ] 3.หัวลูกศรของของLineให้ชี้ไปที่ขอบของnode แทนที่จะเป็นแกนกลาง
+- [x] 1.module linkเพิ่มระบบที่สามารถfilterได้
+- [x] 2.เพิ่มเปลี่ยนscrollmouse เป็นZoomin/ZoomOut
+- [x] 3.หัวลูกศรของของLineให้ชี้ไปที่ขอบของnode แทนที่จะเป็นแกนกลาง
 #### Relation"Connector" Module
-- [ ] 1.เพิ่มระบบZoom graphด้วยscrollmouse
+- [x] 1.เพิ่มระบบZoom graphด้วยscrollmouse
 #### Analys"Viewer"
 #### Doc"Drafter"
-- [ ] 1.เพิ่มการExportเป็นไฟล์txt/.mdได้
-- [ ] 2.functionอื่นๆที่ใช้ได้เช่น checkbox, partline, codebox, และอื่นๆของmdไฟล์
+- [x] 1.เพิ่มการExportเป็นไฟล์txt/.mdได้
+- [x] 2.functionอื่นๆที่ใช้ได้เช่น checkbox, partline, codebox, และอื่นๆของmdไฟล์
 #### Drawing"Sketcher"
 
 ### part 6

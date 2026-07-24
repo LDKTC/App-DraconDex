@@ -52,6 +52,10 @@ function createMarkdownEditor(container, opts) {
     ['B', '**', '**', false], ['I', '*', '*', false],
     ['H1', '# ', '', true], ['H2', '## ', '', true],
     ['"', '> ', '', true], ['•—', '- ', '', true], ['[[]]', '[[', ']]', false],
+    // Plan part5 Drafter #2: mdRender() already renders this syntax
+    // (checkbox/hr/code-block) — these are just toolbar shortcuts to
+    // insert it, no rendering changes needed.
+    ['☑', '- [ ] ', '', true], ['—', '\n---\n', '', true], ['{ }', '```\n', '\n```', false],
   ];
   container.innerHTML = `
     <div class="mded-head">

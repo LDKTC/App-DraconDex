@@ -15,6 +15,7 @@ const DG_SHAPES = ['box', 'circle', 'diamond', 'text'];
 const DG_SHAPE_GLYPH = { box: '▭', circle: '○', diamond: '◇', text: 'T' };
 
 const dgState = { zoom: {}, edgeFrom: null }; // render-only
+const DESIGNER_LINK_TYPES = ['note', 'object', 'character', 'chapter', 'project', 'module', 'chat'];
 
 async function loadDesignerData(m) {
   const [nodes, edges, ui] = await Promise.all([
@@ -62,6 +63,7 @@ function buildDesignerMainHtml(m) {
         <span class="zsep"></span>
         <button class="btn btn-g btn-i${dgState.edgeFrom !== null ? ' act' : ''}" onclick="startDesignEdge()" title="${t('edgeTool')}">↦</button>
         <button class="btn btn-g btn-i" onclick="openDesignPinModal()" title="${t('pinModuleLink')}">🔗</button>
+        <button class="btn btn-g btn-i" onclick="openDesignerLinkFilterModal(${m.id})" title="${t('narratorLinkFilter')}">${I.edit}</button>
       </div>
       <div class="chint" data-no-i18n>${t('designerHint')}</div>
       <div class="czoom" data-no-i18n>
@@ -86,6 +88,26 @@ function mountDesignerBoard() {
   if (lbl) lbl.textContent = `${Math.round(zoomOf() * 100)}%`;
 
   const byId = new Map(d.nodes.map(n => [n.id, n]));
+  // Real node-edge trim (Plan part5 Designer #3): find where the line from
+  // a's center toward b actually exits a's rendered box/ellipse, instead of
+  // a hardcoded guess radius that doesn't track real (text-driven) node
+  // size. `el` is looked up by the data-node id set on each node div below.
+  const dgBoundaryPoint = (cx, cy, dxv, dyv, el, isCircle) => {
+    const hw = (el?.offsetWidth || 110) / 2, hh = (el?.offsetHeight || 40) / 2;
+    if (isCircle) {
+      const denom = Math.sqrt((dxv * dxv) / (hw * hw) + (dyv * dyv) / (hh * hh)) || 1;
+      return { x: cx + dxv / denom, y: cy + dyv / denom };
+    }
+    // ponytail: rectangle-ray intersection on the real bounding box — for
+    // diamond this trims to its bbox, not its true rotated-square outline,
+    // so diagonal corners slightly overshoot; acceptable since diamond
+    // labels are short/fixed-size, not the long-label overflow this item
+    // is actually about.
+    const sx = dxv !== 0 ? hw / Math.abs(dxv) : Infinity;
+    const sy = dyv !== 0 ? hh / Math.abs(dyv) : Infinity;
+    const s = Math.min(sx, sy, 1e6);
+    return { x: cx + dxv * s, y: cy + dyv * s };
+  };
   const drawEdges = () => {
     let html = `<defs><marker id="dg-arrow" viewBox="0 0 10 10" refX="9" refY="5"
       markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -93,12 +115,12 @@ function mountDesignerBoard() {
     for (const e2 of d.edges) {
       const a = byId.get(e2.from_ref), b = byId.get(e2.to_ref);
       if (!a || !b) continue;
-      // trim the line to stop at the node's rough radius so the arrow shows
       const dx = b.x - a.x, dy = b.y - a.y;
-      const len = Math.hypot(dx, dy) || 1;
-      const rA = a.shape === 'circle' ? 55 : 34, rB = b.shape === 'circle' ? 55 : 38;
-      const ax = a.x + dx / len * rA, ay = a.y + dy / len * rA;
-      const bx2 = b.x - dx / len * rB, by2 = b.y - dy / len * rB;
+      const elA = stage.querySelector(`[data-node="${a.id}"]`);
+      const elB = stage.querySelector(`[data-node="${b.id}"]`);
+      const pA = dgBoundaryPoint(a.x, a.y, dx, dy, elA, a.shape === 'circle');
+      const pB = dgBoundaryPoint(b.x, b.y, -dx, -dy, elB, b.shape === 'circle');
+      const ax = pA.x, ay = pA.y, bx2 = pB.x, by2 = pB.y;
       html += `<line x1="${ax}" y1="${ay}" x2="${bx2}" y2="${by2}" stroke="var(--t3)"
         stroke-width="1.6" marker-end="url(#dg-arrow)" opacity="0.9"></line>`;
       if (e2.label) {
@@ -109,7 +131,6 @@ function mountDesignerBoard() {
     }
     svg.innerHTML = html;
   };
-  drawEdges();
   // edge label double-click -> edit
   svg.addEventListener('dblclick', (ev) => {
     const el = ev.target.closest('.dg-edge-label');
@@ -120,6 +141,7 @@ function mountDesignerBoard() {
   for (const n of d.nodes) {
     const el = document.createElement('div');
     el.className = `dg-node dg-${n.shape}${n.linker_key ? ' dg-pin' : ''}${dgState.edgeFrom === n.id ? ' edge-from' : ''}`;
+    el.dataset.node = n.id;
     el.style.left = `${n.x}px`;
     el.style.top = `${n.y}px`;
     const col = n.color || DG_COLORS[1];
@@ -170,6 +192,7 @@ function mountDesignerBoard() {
     });
     stage.appendChild(el);
   }
+  drawEdges(); // after node creation — trim math reads real node DOM sizes
 
   // center viewport on nodes
   if (!board.dataset.scrolled) {
@@ -200,7 +223,6 @@ function mountDesignerBoard() {
     window.addEventListener('pointerup', up);
   });
   board.addEventListener('wheel', (e2) => {
-    if (!e2.ctrlKey) return;
     e2.preventDefault();
     designerZoomBy(e2.deltaY < 0 ? 0.1 : -0.1);
   }, { passive: false });
@@ -261,8 +283,7 @@ function dgArmEdgePick() {
     const el = ev.target.closest('.dg-node');
     if (!el) { stage.removeEventListener('pointerdown', once, true); return; }
     const d = S.designerData;
-    const idx = [...stage.querySelectorAll('.dg-node')].indexOf(el);
-    const n = d.nodes[idx];
+    const n = d.nodes.find(nn => nn.id === Number(el.dataset.node));
     if (n) {
       dgState.edgeFrom = n.id;
       el.classList.add('edge-from');
@@ -361,18 +382,56 @@ async function deleteDesignEdgeRow(id) {
   toast(t('deleted'), 'ok');
 }
 
+// Plan part5 Designer #1: type-allowlist filter over the quickIndex picker,
+// same module_ui JSON-blob convention as Narrator's narratorLinkFilter.
+async function designerLinkFilterTypes(moduleId) {
+  const ui = await api.module.getUi(moduleId);
+  try {
+    const arr = ui.designerLinkFilter ? JSON.parse(ui.designerLinkFilter) : null;
+    return Array.isArray(arr) && arr.length ? arr : null;
+  } catch (_) { return null; }
+}
+
 async function openDesignPinModal() {
   const d = S.designerData;
-  const ix = await api.wiki.quickIndex(S.nexus.id);
+  const [ix, allow] = await Promise.all([api.wiki.quickIndex(S.nexus.id), designerLinkFilterTypes(d.moduleId)]);
+  const filtered = allow ? ix.filter(e2 => allow.includes(e2.type)) : ix;
   openModal(t('pinModuleLink'), `
     <div class="fg"><label>${t('moduleLink')}</label>
-      <select id="dgp-key">${ix.map(e2 =>
+      <select id="dgp-key">${filtered.map(e2 =>
         `<option value="${x(e2.key)}">${x(e2.name)} (${x(e2.type)})</option>`).join('')}
       </select></div>
     <div class="mfoot">
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
       <button class="btn btn-p" onclick="submitDesignPin()">${t('create')}</button>
     </div>`);
+}
+
+async function openDesignerLinkFilterModal(moduleId) {
+  const allow = (await designerLinkFilterTypes(moduleId)) || [];
+  const rows = DESIGNER_LINK_TYPES.map(ty => `
+    <div class="togglerow" onclick="toggleDesignerLinkFilterType(this)" data-type="${ty}">
+      <span class="tg${allow.includes(ty) ? ' on' : ''}"></span><span data-no-i18n>${ty}</span>
+    </div>`).join('');
+  openModal(t('narratorLinkFilter'), `
+    <div id="dg-link-filter-rows">${rows}</div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" onclick="saveDesignerLinkFilter(${moduleId})">${t('save')}</button>
+    </div>`);
+}
+
+function toggleDesignerLinkFilterType(el) {
+  el.querySelector('.tg').classList.toggle('on');
+}
+
+async function saveDesignerLinkFilter(moduleId) {
+  const allow = [...document.querySelectorAll('#dg-link-filter-rows .togglerow')]
+    .filter(row => row.querySelector('.tg').classList.contains('on'))
+    .map(row => row.dataset.type);
+  await api.module.setUi(moduleId, 'designerLinkFilter', JSON.stringify(allow));
+  closeModal();
+  toast(t('saved'), 'ok');
 }
 
 async function submitDesignPin() {

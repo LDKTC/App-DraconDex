@@ -169,9 +169,10 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | `mod/author.js` | — | UI ของ kind `author` |
 | `mod/chatscribe.js` | — | UI ของ kind `scribe` (ChatScribe) |
 | `mod/viewer.js` | — | UI ของ kind `viewer` |
-| `mod/connector.js` | — | UI ของ kind `connector` |
+| `mod/drafter.js` | — | UI ของ kind `drafter` — blank markdown page; export button (`exportDrafterFile`) เขียนไฟล์ .md/.txt ผ่าน `api.drafter.exportFile` (Plan part5) |
+| `mod/connector.js` | — | UI ของ kind `connector` — scroll-wheel ซูมได้ตรงๆ ไม่ต้องกด Ctrl แล้ว, hint text แยกเป็น `connectorPanHint` ของตัวเอง (Plan part5) |
 | `mod/sketcher.js` | — | UI ของ kind `sketcher` |
-| `mod/designer.js` | — | UI ของ kind `designer` |
+| `mod/designer.js` | — | UI ของ kind `designer` — scroll-wheel ซูมตรงๆ, node-edge arrow ใช้ขนาด DOM จริง (`data-node` attr) แทน radius เดา, link picker มี type-filter (`designerLinkFilter`, module_ui) (Plan part5) |
 | `mod/sagehut.js` | 139 | Hub section: สถิติวอลต์ (ใช้ `db/sage.js` บางฟังก์ชัน); header มีไอคอน `I.sage` แล้ว (Plan part1 #4, เดิมไม่มีไอคอนทำให้ header สูงไม่เท่า Nexus Nest); `buildSageHutHtml` ห่อด้วย `wrapPageView` (Plan part1 #2) |
 | `mod/fileviewer.js` | 284 | Hub section: Import Dock — list/link ไฟล์ + viewer read-only ใน Builder; `buildFileViewerHtml` ห่อด้วย `wrapPageView` (Plan part1 #2) |
 
@@ -253,6 +254,11 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 - cache ชื่อ entity ทั้ง vault (`refreshWikiCache/resolveWikiNameCached`) ให้
   `mdRender` resolve ลิงก์แบบ synchronous ได้ตอน preview
 - รายงาน word count/สถานะ save เข้า `updateStatusBar()` ของ core.js
+- `FMT_ACTIONS` (toolbar เมื่อ `opts.toolbar:true`, ปัจจุบันมีแค่ Drafter ที่เปิดใช้)
+  เพิ่ม 3 ปุ่มใหม่ (Plan part5 Drafter #2): checkbox (`- [ ] `, line-prefix),
+  hr (`\n---\n`, line-prefix), code block (` ``` ` wrap-selection) — เป็น
+  shortcut แทรก syntax ที่ `mdRender()` (markdown.js) รองรับอยู่แล้ว ไม่ได้
+  แก้ rendering ใดๆ
 
 ### core.js (~1700 บรรทัด) — โครงหลักของ renderer
 - **State**: object `S` (view, activeModule, project/category/object,

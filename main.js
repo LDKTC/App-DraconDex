@@ -346,6 +346,21 @@ h('author:exportDoc', async (name, html) => {
   return { saved: res.filePath };
 });
 
+// Plan part5 Drafter #1: content is already raw markdown text — no HTML
+// shell needed, just write the string as-is. Both extensions are offered
+// as separate filter groups so the save dialog's own format dropdown lets
+// the user pick .md vs .txt in one step.
+h('drafter:exportFile', async (name, ext, content) => {
+  const win = BrowserWindow.getFocusedWindow();
+  const res = await dialog.showSaveDialog(win, {
+    defaultPath: `${name || 'document'}.${ext || 'md'}`,
+    filters: [{ name: 'Markdown', extensions: ['md'] }, { name: 'Text', extensions: ['txt'] }],
+  });
+  if (res.canceled || !res.filePath) return { canceled: true };
+  fs.writeFileSync(res.filePath, content ?? '', 'utf8');
+  return { saved: res.filePath };
+});
+
 // Wiki-link index
 h('wiki:resolve',      (name,nx)   => db.resolveWikiName(name,nx));
 h('wiki:backlinks',    (key)       => db.getBacklinks(key));

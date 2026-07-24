@@ -19,6 +19,17 @@
 
 ---
 
+## 2026-07-24 — Plan.md part5 เสร็จสมบูรณ์: Designer link-filter/scroll-zoom/arrow-trim, Connector scroll-zoom, Drafter export + toolbar
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/mod/designer.js`, `src/renderer/mod/connector.js`, `src/renderer/mod/drafter.js`, `src/renderer/mdeditor.js`, `main.js`, `preload.js`, `src/renderer/i18n.js`, `Plan.md`
+- อะไรเปลี่ยน:
+  - **Designer**: scroll-wheel ซูมตรงๆ ไม่ต้องกด Ctrl แล้ว (ลบ `ctrlKey` gate); node-edge arrow trim เดิมใช้ radius เดา (`rA/rB` hardcode) ทำให้ node ที่ label ยาวมี gap ระหว่างเส้นกับขอบ node — แก้เป็นวัดขนาดจริงจาก DOM (`data-node` attr ใหม่บน node div + `dgBoundaryPoint()` คำนวณจุดตัดขอบจริง: ellipse formula สำหรับ circle, rectangle-ray intersection สำหรับ box/diamond/pin/text) พร้อมแก้บั๊กลำดับเรียก `drawEdges()` เดิมที่ถูกเรียกก่อน node DOM element จะถูกสร้าง (ใช้ได้เพราะ radius เดิมไม่พึ่ง DOM เลย แต่จะพังทันทีถ้าไม่ย้ายมาเรียกหลัง node loop); เพิ่ม type-filter สำหรับ module-link picker (`designerLinkFilter` ใน module_ui, มิเรอร์ pattern เดียวกับ Narrator's `narratorLinkFilter`)
+  - **Connector**: scroll-wheel ซูมตรงๆ เช่นกัน (ลบ `ctrlKey` gate); hint text เดิมใช้ `narratorPanHint` ร่วมกับ Narrator (ซึ่งยังคง Ctrl-gated) — แยกเป็น `connectorPanHint` ของตัวเองแทนที่จะแก้ key ที่ใช้ร่วมกัน
+  - **Drafter**: ปุ่ม Export ใหม่เขียนไฟล์ .md/.txt ตรงๆ (`drafter:exportFile` IPC, โมเดลจาก `author:exportDoc` แต่เขียน string ธรรมดาไม่ต้องห่อ HTML) — save dialog มี filter group ทั้ง Markdown/.md และ Text/.txt ให้เลือกในตัว; เพิ่ม 3 ปุ่ม toolbar shortcut (checkbox/hr/code-block) ใน `FMT_ACTIONS` ที่ใช้ร่วมกับ editor อื่นๆ (แต่ปัจจุบันมีแค่ Drafter ที่เปิด `toolbar:true`) — `mdRender()` รองรับ syntax พวกนี้อยู่แล้ว ไม่ได้แก้ rendering
+  - เพิ่ม i18n key ใหม่ `connectorPanHint`, `narratorLinkFilter`(ใช้ซ้ำ), `exportFile` ครบ 18 locale, แก้ `designerHint` ให้ตรงกับพฤติกรรมใหม่ (ไม่มี "Ctrl+" แล้ว)
+- ทำไม: `Plan.md` part5 หมวด Designer/Connector/Drafter (6 checklist items สุดท้าย) — ปิด part5 ครบทุกข้อ (part6 ยังเหลืองานอยู่)
+- Doc ที่อัปเดต: `docs/FILES.md` (`mod/designer.js`, `mod/connector.js`, `mod/drafter.js` — เพิ่มแถวใหม่ที่หายไปเดิม, `mdeditor.js` section เพิ่ม FMT_ACTIONS ใหม่); `docs/SYSTEMS.md` **ไม่แตะ** — v3 module kinds เหล่านี้ยังไม่มี section เฉพาะเหมือนเดิม (gap ที่ระบุไว้แล้วใน `CLAUDE.md`)
+
 ## 2026-07-24 — Plan.md part5: Locator area-drag/centroid fix, Chronicler compare-by-module/calendar/event-icon, Wanderer link redesign + Area view
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/map.js`, `src/renderer/timeline.js`, `src/renderer/mod/chronicler.js`, `src/renderer/mod/wanderer.js`, `src/renderer/inspector.js`, `src/renderer/core.js`, `src/db/core.js`, `src/db/timeline.js`, `src/db/wanderer.js`, `main.js`, `preload.js`, `style.css`, `Plan.md`

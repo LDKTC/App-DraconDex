@@ -127,6 +127,9 @@ contextBridge.exposeInMainWorld('api', {
     moveChapter:   (mref,ids) => inv('author:moveChapter', mref,ids),
     exportDoc:     (n,html)  => inv('author:exportDoc', n,html),
   },
+  drafter: {
+    exportFile: (n,ext,c) => inv('drafter:exportFile', n,ext,c),
+  },
   chatscribe: {
     getSessions:   (mref)    => inv('chatscribe:getSessions', mref),
     createSession: (mref,n)  => inv('chatscribe:createSession', mref,n),

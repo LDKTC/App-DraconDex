@@ -8,16 +8,18 @@
 // on the module_<id> key kind that every module already has.
 
 const DRAFTER_VIEW_LABEL = { edit: 'Edit', read: 'Read' };
+let _drafterEditor = null; // Plan part5 Drafter #1: live editor ref for the export button
 
 function buildDrafterMainHtml(m) {
-  return `<div class="drafter-hint">${t('drafterHint')}</div>
+  return `<div class="drafter-hint">${t('drafterHint')}
+      <button class="btn btn-s btn-i" style="float:right" onclick="exportDrafterFile(${m.id})" title="${t('exportFile')}">${I.document}</button></div>
     <div id="drafter-editor" class="scribe-editor" style="height:calc(100vh - 250px)"></div>`;
 }
 
 function mountDrafterEditor(m) {
   const el = q('#drafter-editor');
   if (!el) return;
-  createMarkdownEditor(el, {
+  _drafterEditor = createMarkdownEditor(el, {
     title: m.name,
     content: m.description || '',
     srcKey: `module_${m.id}`,
@@ -33,4 +35,11 @@ function mountDrafterEditor(m) {
       }
     },
   });
+}
+
+async function exportDrafterFile(moduleId) {
+  const m = findModuleNode(moduleId);
+  const content = _drafterEditor ? _drafterEditor.getContent() : (m?.description || '');
+  const res = await api.drafter.exportFile(m?.name || 'document', 'md', content);
+  if (!res?.canceled) toast(t('saved'), 'ok');
 }

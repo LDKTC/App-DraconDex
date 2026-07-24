@@ -73,7 +73,7 @@ function buildConnectorMainHtml(m) {
       <div id="cn-board" class="nar-board cn-board">
         <div id="cn-graph"><svg id="cn-edges"></svg></div>
       </div>
-      <div class="chint" data-no-i18n>${t('narratorPanHint')}</div>
+      <div class="chint" data-no-i18n>${t('connectorPanHint')}</div>
       <div class="czoom" data-no-i18n>
         <button class="btn btn-g btn-i" onclick="connectorZoomBy(-0.15)">−</button>
         <span id="cn-zoom-label">100%</span>
@@ -184,7 +184,6 @@ function mountConnectorBoard() {
     window.addEventListener('pointerup', up);
   });
   board.addEventListener('wheel', (e2) => {
-    if (!e2.ctrlKey) return;
     e2.preventDefault();
     connectorZoomBy(e2.deltaY < 0 ? 0.1 : -0.1);
   }, { passive: false });
