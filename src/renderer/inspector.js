@@ -27,14 +27,16 @@ function buildInspectorHtml(m) {
 
     <div class="insp-label">${t('moduleDetailSpec')}</div>
     <div class="prop"><span class="pk">${t('moduleKind')}</span><span class="pv" data-no-i18n>${x(kindLabel(m.kind))}</span></div>
-    <div class="insp-desc-wrap">
-      <textarea id="insp-desc" rows="3" placeholder="${t('addDetail')}"
-        onblur="saveModuleDescription(${m.id})">${x(m.description || '')}</textarea>
-    </div>
+    ${m.kind === 'inspector'
+      ? `<div class="insp-desc-wrap insp-desc-static">
+          ${m.description ? `<div class="md-preview">${mdRender(m.description)}</div>` : `<p class="pv ghost">${t('addDetail')}</p>`}
+          <p class="insp-desc-hint">${t('inspectorDescEditElsewhere')}</p>
+        </div>`
+      : `<div class="insp-desc-wrap"><div id="insp-desc-editor" class="insp-desc-editor"></div></div>`}
     <div class="prop"><span class="pk">${t('tagLink')}</span></div>
-    <div class="insp-chips">
+    <div class="insp-chips" id="insp-tag-chips">
       ${d.tags.map(tg => `<span class="htag" style="border-color:${x(tg.color_code || '#6366f1')};color:${x(tg.color_code || '#6366f1')}">#${x(tg.tag_name)}</span>`).join('')}
-      <button class="btn btn-g btn-i" onclick="openModuleTagModal(${m.id})" title="${t('tagLink')}">${I.plus}</button>
+      <button class="btn btn-g btn-i" onclick="openModuleTagPopup(${m.id}, this)" title="${t('tagLink')}">${I.plus}</button>
     </div>
 
     <div class="insp-label">${t('moduleAttribute')}</div>
@@ -117,13 +119,24 @@ function inspectorViewLabel(m, ui) {
   return '—';
 }
 
-async function saveModuleDescription(moduleId) {
-  const el = q('#insp-desc');
+// `inspector`-kind modules skip this — mod/detail.js already runs a full
+// createMarkdownEditor over the identical module_<id> srcKey in the main
+// pane for that kind, and mounting a second live instance here would let
+// either one silently clobber the other's unsaved edits.
+function mountInspectorDescEditor(m) {
+  if (m.kind === 'inspector') return;
+  const el = q('#insp-desc-editor');
   if (!el) return;
-  await api.module.updateDescription(moduleId, el.value);
-  if (S.activeModuleNode) S.activeModuleNode.description = el.value;
-  await loadInspectorData(moduleId);
-  renderNexusHome();
+  createMarkdownEditor(el, {
+    title: t('moduleDetailSpec'),
+    content: m.description || '',
+    srcKey: `module_${m.id}`,
+    save: async (content) => {
+      await api.module.updateDescription(m.id, content);
+      const node = findModuleNode(m.id);
+      if (node) node.description = content;
+    },
+  });
 }
 
 function openAttrModal(moduleId, attrId = null) {
@@ -157,22 +170,44 @@ async function deleteModuleAttrRow(moduleId, attrId) {
   toast(t('deleted'), 'ok');
 }
 
-async function openModuleTagModal(moduleId) {
+// Live-saves on every tag add/remove (matches every other .kind-popup) —
+// no Save/Cancel footer. hashtagSelector/addModalTag/removeModalTag
+// (core.js) are shared by 11 other legacy modals expecting deferred
+// Save-button persistence, so this wraps them with a delegated click
+// listener instead of modifying those shared functions.
+async function openModuleTagPopup(moduleId, anchor) {
+  closeAllPopups();
+  if (!anchor) return;
   const current = (S.inspectorData?.tags || []).map(t => t.id);
-  openModal(t('tagLink'), `
-    ${await hashtagSelector('modtag', current)}
-    <div class="mfoot">
-      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
-      <button class="btn btn-p" onclick="submitModuleTags(${moduleId})">${t('save')}</button>
-    </div>`);
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup tag-link-popup';
+  pop.innerHTML = await hashtagSelector('modtag', current);
+  document.body.appendChild(pop);
+  pop.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (e.target.closest('.htag-item') || e.target.closest('.htag-chip button')) {
+      api.module.setTags(moduleId, getModalTagIds('modtag'));
+      refreshInspectorTagChips(moduleId);
+    }
+  });
   renderModalTagSuggestions('modtag');
+  positionPopupNear(pop, anchor.getBoundingClientRect());
 }
 
-async function submitModuleTags(moduleId) {
-  const ids = getModalTagIds('modtag');
-  await api.module.setTags(moduleId, ids);
-  closeModal();
-  await loadInspectorData(moduleId);
-  renderNexusHome();
-  toast(t('saved'), 'ok');
+// Patches just the tag-chip fragments in the dock and the main-pane header
+// instead of a full renderNexusHome() — that would rebuild #main-inner
+// (including this popup's own anchor button) out from under an open popup.
+async function refreshInspectorTagChips(moduleId) {
+  const tags = await api.module.getTags(moduleId);
+  if (S.inspectorData?.moduleId === moduleId) S.inspectorData.tags = tags;
+  const chipsHtml = tags.map(tg => `<span class="htag" style="border-color:${x(tg.color_code || '#6366f1')};color:${x(tg.color_code || '#6366f1')}">#${x(tg.tag_name)}</span>`).join('');
+  const dockChips = q('#insp-tag-chips');
+  if (dockChips) dockChips.innerHTML = `${chipsHtml}<button class="btn btn-g btn-i" onclick="openModuleTagPopup(${moduleId}, this)" title="${t('tagLink')}">${I.plus}</button>`;
+  const headTags = q('.module-head .mtags');
+  if (headTags) {
+    const d = S.inspectorData;
+    const linkCount = d ? (d.links.outgoing.length + d.links.backlinks.length) : 0;
+    const linkChip = `<span class="htag lk" data-no-i18n title="${t('moduleLink')}">🔗 ${linkCount} links</span>`;
+    headTags.innerHTML = `${chipsHtml}${linkChip}<button class="btn btn-g btn-i" onclick="openModuleTagPopup(${moduleId}, this)" title="${t('tagLink')}">${I.plus}</button>`;
+  }
 }

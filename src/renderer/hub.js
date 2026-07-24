@@ -1081,11 +1081,14 @@ function buildKindPicker(kind) {
 // quickCreateModule below); "start from template" never belonged here, it's
 // Artisan's own artisanV3Spec/startArtisanWizard flow (src/renderer/artisan.js).
 async function moduleFormModal(existing) {
+  const isClassifier = existing.kind === 'classifier';
   openModal(t('moduleEdit'), `
+    <div class="mm-section-label">${t('moduleIdentitySection')}</div>
     <div class="fg"><label>${t('name')} *</label><input id="mm-name" value="${x(existing.name || '')}"></div>
     ${buildKindPicker(existing.kind)}
-    <div id="mm-cattype-wrap" style="display:${existing.kind === 'classifier' ? '' : 'none'}">${buildCatTypePicker(existing.cat_type)}</div>
     <div class="fg"><label>${t('iconCollection')}</label>${await iconPicker(existing.icon || null, existing.color || null, existing.name || '', kindLabel(existing.kind))}</div>
+    ${isClassifier ? '<div class="ctx-sep"></div>' : ''}
+    <div id="mm-cattype-wrap" style="display:${isClassifier ? '' : 'none'}">${buildCatTypePicker(existing.cat_type)}</div>
     <div class="mfoot">
       <button class="btn btn-d" onclick="deleteModuleNode(${existing.id})">${t('delete')}</button>
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
@@ -1213,7 +1216,7 @@ function buildModuleDetailHtml(m) {
           ${nameHtml}
           <span class="kind-chip" data-no-i18n>${x(kindLabel(m.kind))}${m.kind === 'classifier' && m.cat_type ? ` · ${m.cat_type.charAt(0).toUpperCase()}${m.cat_type.slice(1)}` : ''}</span>
         </h2>
-        <div class="mtags">${tagChips}${linkChip}<button class="btn btn-g btn-i" onclick="openModuleTagModal(${m.id})" title="${t('tagLink')}">${I.plus}</button></div>
+        <div class="mtags">${tagChips}${linkChip}<button class="btn btn-g btn-i" onclick="openModuleTagPopup(${m.id}, this)" title="${t('tagLink')}">${I.plus}</button></div>
       </div>
       ${mainHtml}
     </div>

@@ -938,8 +938,18 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex_WhiteOut.
 .prop .pv.ghost{color:var(--t3);font-style:italic}
 .prop .acts{margin-left:auto}
 .insp-desc-wrap{padding:4px 14px 8px}
-.insp-desc-wrap textarea{width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
-	padding:7px 9px;color:var(--t1);font-size:calc(12px * var(--fsc,1));font-family:inherit;resize:vertical}
+/* Rich-editor upgrade (Plan part6 #4b) — .insp-desc-editor hosts
+   createMarkdownEditor() at a fixed height (the dock has attributes/links/
+   etc. below it, unlike mod/detail.js's full-height main-pane version).
+   .mded-linkspanel's own 230px fixed width (mdeditor.js) doesn't fit next
+   to the editor body inside this dock's 220-500px range, so it's stacked
+   below instead of beside when opened here. */
+.insp-desc-editor{height:220px}
+.module-inspector .mded-cols{flex-direction:column}
+.module-inspector .mded-linkspanel{width:100%;max-height:140px}
+.insp-desc-static .md-preview{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
+	padding:7px 9px;font-size:calc(12px * var(--fsc,1))}
+.insp-desc-hint{margin:5px 0 0;font-size:calc(10.5px * var(--fsc,1));color:var(--t3);font-style:italic}
 .insp-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px 14px 10px;align-items:center}
 .insp-attr:hover .acts{display:flex}
 .insp-attr .acts{display:none;gap:2px}
@@ -1021,6 +1031,9 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex_WhiteOut.
    viewport-clamps it; this should essentially never engage in normal use,
    it's just a safety net against an unusually large custom color palette). */
 .icon-edit-popup{padding:12px;width:280px;max-height:calc(100vh - 40px);overflow-y:auto}
+/* Tag-link popup (Plan part6 #3) — wraps hashtagSelector()'s own .fg/
+   .tag-add-box markup unchanged, just needs the floating-panel sizing. */
+.tag-link-popup{padding:12px;width:320px;max-height:calc(100vh - 40px);overflow-y:auto}
 /* 4 rows of .ipk-cell (36px) + 3 row-gaps (6px, .ipk-grid's own gap) = 162px.
    #ipk-upload-pane deliberately excluded — it shares .ipk-grid's id-selector
    override for a flex-column crop UI, not a swatch grid, and its 220x220px
@@ -1031,6 +1044,10 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex_WhiteOut.
    so it gets the same docked scrollable max-height as .icon-edit-popup above. */
 .context-menu-popup{width:280px;max-height:min(72vh,520px);overflow-y:auto;padding:6px}
 .ctx-sep{height:0;border-top:1px solid var(--border);margin:5px 0}
+/* Module edit modal sectioning (Plan part6 #4a) — same uppercase/spaced
+   typographic treatment as .insp-label, tuned for a modal body's padding
+   (no dock-specific horizontal offset) instead of copying it verbatim. */
+.mm-section-label{font-size:calc(10.5px * var(--fsc,1));font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3);margin:2px 0 10px}
 .ctx-check{margin-left:auto;flex-shrink:0;color:var(--accent);font-weight:700}
 /* "Create" row's hover submenu (openCreateSubmenu, hub.js) */
 .kli-submenu-parent{align-items:center}
@@ -2746,6 +2763,30 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 /* Analys "Viewer" / Relation "Connector" (Phase 14, mockups 14/32/33/15) */
 .vw-filterlabel{font-size:calc(11px * var(--fsc,1));color:var(--t3)}
 .vw-chip{font-size:calc(10.5px * var(--fsc,1));color:var(--accentH);border:1px solid var(--accent);border-radius:10px;padding:2px 9px}
+.vw-chip-or{font-size:calc(10px * var(--fsc,1));color:var(--t3);font-weight:700}
+
+/* Obsidian-style filter popup (Plan part6 #1-2) — reuses .kind-popup's base
+   floating-panel chrome, wider than the 280px icon/kind-list baseline since
+   nested group/rule rows need more horizontal room. Live-saves on every
+   control, no Save/Cancel footer, matching every other .kind-popup. */
+.filter-popup{padding:12px;width:380px;max-height:calc(100vh - 40px);overflow-y:auto}
+.fp-groups{display:flex;flex-direction:column;gap:2px}
+.fp-group{border:1px solid var(--border);border-radius:var(--rs);padding:8px;background:var(--raised)}
+.fp-rules{display:flex;flex-direction:column}
+.fp-or-divider{display:flex;align-items:center;gap:8px;font-size:calc(10.5px * var(--fsc,1));font-weight:700;color:var(--t3);margin:6px 0}
+.fp-or-divider::before,.fp-or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.fp-rule-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.fp-rule-row:last-child{margin-bottom:0}
+.fp-field,.fp-op{flex-shrink:0}
+.fp-input{flex:1;min-width:0}
+.fp-field,.fp-op,.fp-input{
+	background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);
+	color:var(--t1);font:inherit;font-size:calc(11.5px * var(--fsc,1));padding:4px 6px;
+}
+select.fp-input[multiple]{padding:2px}
+.fp-group-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.fp-add-group{margin-top:10px;width:100%;justify-content:center}
+.fp-empty{font-size:calc(11px * var(--fsc,1));padding:4px 0}
 .vw-table{width:100%;border-collapse:collapse;font-size:calc(12.5px * var(--fsc,1))}
 .vw-table th{text-align:left;font-size:calc(10.5px * var(--fsc,1));font-weight:700;letter-spacing:.05em;color:var(--t3);
 	padding:8px 10px;border-bottom:1px solid var(--border)}

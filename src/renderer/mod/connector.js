@@ -5,7 +5,7 @@
 // entity_relation rows (solid, labeled) plus wiki_link references between
 // the nodes (dashed). The underlying items stay read-only — only the
 // relations themselves are authored here. Shares parseFilterDef/
-// applySavedFilter/openSavedFilterModal with mod/viewer.js.
+// applyFilterGroups/openSavedFilterPopup with mod/viewer.js.
 
 const CONNECTOR_VIEWS = ['graph', 'edgelist'];
 const CONNECTOR_VIEW_LABEL = { graph: 'Graph', edgelist: 'Edges' };
@@ -20,7 +20,7 @@ async function loadConnectorData(m) {
     api.module.getUi(m.id),
   ]);
   const def = parseFilterDef(ui);
-  const nodes = applySavedFilter(items, def, m.id);
+  const nodes = applyFilterGroups(items, def, m.id);
   const byKey = new Map(nodes.map(n => [n.key, n]));
   const edges = relations
     .filter(r => byKey.has(r.from_key) && byKey.has(r.to_key))
@@ -58,7 +58,7 @@ function buildConnectorMainHtml(m) {
   const toolbar = `<div class="classifier-toolbar">
     <button class="btn btn-p" onclick="openConnectorRelationModal()">${I.plus} ${t('addRelation')}</button>
     <span class="vw-filterlabel">Filter:</span>${filterChipsHtml(d.def)}
-    <button class="btn btn-g btn-i" onclick="openSavedFilterModal('connector')" title="${t('editFilter')}">${I.edit}</button>
+    <button class="btn btn-g btn-i" onclick="openSavedFilterPopup('connector', this)" title="${t('editFilter')}">${I.edit}</button>
     ${viewBar}
   </div>`;
   if (!d.nodes.length) {

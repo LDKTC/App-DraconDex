@@ -13,38 +13,87 @@ const VIEWER_VIEW_LABEL = { table: 'Table', cards: 'Cards', board: 'Board' };
 const VIEWER_ITEM_KINDS = ['object', 'event', 'dialogue', 'chapter', 'chat', 'module'];
 const VIEWER_KIND_LABEL = { object: 'Object', event: 'Event', dialogue: 'Dialogue', chapter: 'Chapter', chat: 'Chat', module: 'Module' };
 
+// Plan part6 #1: Obsidian-style filter — groups of rules, AND within a
+// group, OR (union) between groups. Rule fields: kind (module type,
+// multi-select of MODULE_KINDS — no operator, a closed enum), childOf
+// (this module or its immediate children — no operator, structural
+// membership), hashtag/name (5 string operators: is/is not/starts with/
+// ends with/contains).
+const FILTER_FIELDS = ['kind', 'childOf', 'hashtag', 'name'];
+const FILTER_OPS = ['is', 'isNot', 'startsWith', 'endsWith', 'contains'];
+
 function parseFilterDef(ui) {
-  let def = {};
-  try { def = JSON.parse(ui.filterDef || '{}'); } catch (_) {}
-  return {
-    query: def.query || '',
-    kinds: Array.isArray(def.kinds) ? def.kinds : [],
-    moduleIds: Array.isArray(def.moduleIds) ? def.moduleIds : [],
-    tag: def.tag || '',
-  };
+  let raw = {};
+  try { raw = JSON.parse(ui.filterDef || '{}'); } catch (_) {}
+  if (Array.isArray(raw.groups)) return { groups: raw.groups };
+  // Migrate the old flat {query,kinds,moduleIds,tag} shape. moduleIds had
+  // OR semantics ("item's module is any of these") — since one group can
+  // only AND its rules, each old moduleId becomes its own group (with
+  // query/tag folded in as shared AND conditions) to preserve that OR.
+  // Old item-kind `kinds` has no destination field in the new module-kind
+  // model and is intentionally dropped.
+  const baseRules = [];
+  if (raw.query) baseRules.push({ field: 'name', op: 'contains', value: raw.query });
+  if (raw.tag) baseRules.push({ field: 'hashtag', op: 'is', value: raw.tag });
+  const groups = [];
+  if (Array.isArray(raw.moduleIds) && raw.moduleIds.length) {
+    for (const mid of raw.moduleIds) groups.push({ rules: [...baseRules, { field: 'childOf', moduleId: mid }] });
+  } else if (baseRules.length) {
+    groups.push({ rules: baseRules });
+  }
+  return { groups };
 }
 
-function applySavedFilter(items, def, selfModuleId) {
-  const ql = def.query.trim().toLowerCase();
-  const tag = def.tag.trim().replace(/^#/, '').toLowerCase();
+// this module or its immediate children (2-level Major/Minor tree, no
+// recursion needed) — a local equivalent of quickswitch.js's qsDescendants,
+// inlined because quickswitch.js is lazy-loaded and viewer.js/connector.js
+// run much earlier in the app lifecycle.
+function filterModuleScope(rootId) {
+  const out = new Set([rootId]);
+  const m = findModuleNode(rootId);
+  for (const c of (m?.children || [])) out.add(c.id);
+  return out;
+}
+
+function strOpMatch(hay, op, needle) {
+  const a = (hay || '').toLowerCase();
+  const b = (needle || '').trim().replace(/^#/, '').toLowerCase();
+  if (!b) return true; // an unfilled rule value never blocks a match
+  if (op === 'isNot') return a !== b;
+  if (op === 'startsWith') return a.startsWith(b);
+  if (op === 'endsWith') return a.endsWith(b);
+  if (op === 'contains') return a.includes(b);
+  return a === b; // 'is' (default)
+}
+
+function ruleMatches(it, r) {
+  if (r.field === 'kind') return !r.values?.length || r.values.includes(it.moduleKind);
+  if (r.field === 'childOf') return r.moduleId != null && filterModuleScope(r.moduleId).has(it.moduleId);
+  if (r.field === 'hashtag') return (it.tags || []).some(tg => strOpMatch(tg, r.op, r.value));
+  if (r.field === 'name') return strOpMatch(it.name, r.op, r.value);
+  return true;
+}
+
+function applyFilterGroups(items, def, selfModuleId) {
   return items.filter(it => {
     if (it.key === `module_${selfModuleId}`) return false; // not itself
-    if (def.kinds.length && !def.kinds.includes(it.kind)) return false;
-    if (def.moduleIds.length && !def.moduleIds.includes(it.moduleId)) return false;
-    if (tag && !(it.tags || []).some(tg => tg.toLowerCase() === tag)) return false;
-    if (ql && !it.name.toLowerCase().includes(ql)) return false;
-    return true;
+    if (!def.groups.length) return true;
+    return def.groups.some(g => g.rules.length && g.rules.every(r => ruleMatches(it, r)));
   });
 }
 
+function filterRuleLabel(r) {
+  if (r.field === 'kind') return (r.values || []).map(k => kindLabel(k)).join(' + ') || t('filterField_kind');
+  if (r.field === 'childOf') { const m = findModuleNode(r.moduleId); return `⊂ ${x(m ? m.name : '?')}`; }
+  if (r.field === 'hashtag') return `#${x(r.value || '')}`;
+  if (r.field === 'name') return `"${x(r.value || '')}"`;
+  return '?';
+}
+
 function filterChipsHtml(def) {
-  const chips = [];
-  if (def.kinds.length) chips.push(`${t('moduleKind')} = ${def.kinds.map(k => VIEWER_KIND_LABEL[k]).join(' + ')}`);
-  if (def.tag) chips.push(`tag = #${def.tag.replace(/^#/, '')}`);
-  if (def.moduleIds.length) chips.push(`module × ${def.moduleIds.length}`);
-  if (def.query) chips.push(`"${def.query}"`);
-  if (!chips.length) chips.push(t('filterAll'));
-  return chips.map(c => `<span class="vw-chip">${x(c)}</span>`).join('');
+  if (!def.groups.length) return `<span class="vw-chip">${t('filterAll')}</span>`;
+  return def.groups.map(g => `<span class="vw-chip">${g.rules.map(filterRuleLabel).join(' &amp; ') || '—'}</span>`)
+    .join(`<span class="vw-chip-or" data-no-i18n>${t('filterOr')}</span>`);
 }
 
 const viewerTimeText = (it) => it.time && it.time.years != null
@@ -60,7 +109,7 @@ async function loadViewerData(m) {
   S.viewerData = {
     moduleId: m.id, def, view,
     groupBy: ui.boardGroupBy || 'module',
-    items: applySavedFilter(items, def, m.id),
+    items: applyFilterGroups(items, def, m.id),
   };
 }
 
@@ -93,7 +142,7 @@ function buildViewerMainHtml(m) {
   </div>`;
   const toolbar = `<div class="classifier-toolbar">
     <span class="vw-filterlabel">Filter:</span>${filterChipsHtml(d.def)}
-    <button class="btn btn-g btn-i" onclick="openSavedFilterModal('viewer')" title="${t('editFilter')}">${I.edit}</button>
+    <button class="btn btn-g btn-i" onclick="openSavedFilterPopup('viewer', this)" title="${t('editFilter')}">${I.edit}</button>
     ${viewBar}
   </div>
   <div class="drafter-hint">${t('viewerHint')}</div>`;
@@ -163,42 +212,139 @@ function buildViewerBoardHtml(d) {
       </select></div>`;
 }
 
-// ── Saved-filter editor (shared with Connector) ─────────────────────────
-function openSavedFilterModal(which) {
-  const d = which === 'connector' ? S.connectorData : S.viewerData;
-  const def = d.def;
+// ── Saved-filter editor popup (shared with Connector) ───────────────────
+// Obsidian-style: groups of rules OR'd together, each group's rules AND'd.
+// Live-saves on every structural change (matches every other .kind-popup in
+// this codebase) — no Save/Cancel footer. Free-text rule values (hashtag/
+// name) debounce-save ~500ms after typing stops instead of on every
+// keystroke.
+let filterPopupDebounce = null;
+
+function flattenModuleTree() {
   const mods = [];
   for (const mm of S.moduleTree) {
     mods.push(mm);
     for (const c of (mm.children || [])) mods.push(c);
   }
-  openModal(t('editFilter'), `
-    <div class="fg"><label>${t('search')}</label><input id="vf-query" value="${x(def.query)}"></div>
-    <div class="fg"><label>${t('moduleKind')}</label>
-      <div class="vw-kindchecks" data-no-i18n>${VIEWER_ITEM_KINDS.map(k => `
-        <label class="vw-kc"><input type="checkbox" value="${k}" ${def.kinds.includes(k) ? 'checked' : ''}> ${VIEWER_KIND_LABEL[k]}</label>`).join('')}
-      </div></div>
-    <div class="fg"><label data-no-i18n>Module</label>
-      <select id="vf-mods" multiple size="5">${mods.map(mm =>
-        `<option value="${mm.id}" ${def.moduleIds.includes(mm.id) ? 'selected' : ''}>${x(mm.name)} (${kindLabel(mm.kind)})</option>`).join('')}
-      </select></div>
-    <div class="fg"><label data-no-i18n>Tag</label><input id="vf-tag" value="${x(def.tag)}" placeholder="#tag"></div>
-    <div class="mfoot">
-      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
-      <button class="btn btn-p" onclick="submitSavedFilter('${which}')">${t('save')}</button>
-    </div>`);
+  return mods;
 }
 
-async function submitSavedFilter(which) {
+function filterRuleValueHtml(r, gi, ri, mods) {
+  if (r.field === 'kind') {
+    return `<select class="fp-input" multiple size="4" data-act="val-kind" data-gi="${gi}" data-ri="${ri}" data-no-i18n>
+      ${MODULE_KINDS.map(k => `<option value="${k}" ${(r.values || []).includes(k) ? 'selected' : ''}>${kindLabel(k)}</option>`).join('')}
+    </select>`;
+  }
+  if (r.field === 'childOf') {
+    return `<select class="fp-input" data-act="val-childof" data-gi="${gi}" data-ri="${ri}">
+      <option value="">—</option>
+      ${mods.map(mm => `<option value="${mm.id}" ${r.moduleId === mm.id ? 'selected' : ''}>${x(mm.name)} (${kindLabel(mm.kind)})</option>`).join('')}
+    </select>`;
+  }
+  return `<select class="fp-op" data-act="val-op" data-gi="${gi}" data-ri="${ri}" data-no-i18n>
+      ${FILTER_OPS.map(op => `<option value="${op}" ${r.op === op ? 'selected' : ''}>${t('filterOp_' + op)}</option>`).join('')}
+    </select>
+    <input class="fp-input" data-act="val-text" data-gi="${gi}" data-ri="${ri}" value="${x(r.value || '')}"
+      ${r.field === 'hashtag' ? 'list="fp-hashtag-list" placeholder="#tag"' : `placeholder="${t('name')}"`}>`;
+}
+
+function filterRuleRowHtml(r, gi, ri, mods) {
+  return `<div class="fp-rule-row">
+    <select class="fp-field" data-act="field" data-gi="${gi}" data-ri="${ri}">
+      ${FILTER_FIELDS.map(f => `<option value="${f}" ${r.field === f ? 'selected' : ''}>${t('filterField_' + f)}</option>`).join('')}
+    </select>
+    ${filterRuleValueHtml(r, gi, ri, mods)}
+    <button class="btn btn-g btn-i" data-act="del-rule" data-gi="${gi}" data-ri="${ri}" title="${t('delete')}">${I.delete}</button>
+  </div>`;
+}
+
+function renderFilterPopupBody() {
+  const def = S.filterDraft.def;
+  const mods = flattenModuleTree();
+  const groupsHtml = def.groups.map((g, gi) => `
+    ${gi > 0 ? `<div class="fp-or-divider">${t('filterOr')}</div>` : ''}
+    <div class="fp-group">
+      <div class="fp-rules">${g.rules.map((r, ri) => filterRuleRowHtml(r, gi, ri, mods)).join('') || `<div class="ghost fp-empty">${t('filterAll')}</div>`}</div>
+      <div class="fp-group-actions">
+        <button class="btn btn-g btn-sm" data-act="add-rule" data-gi="${gi}">${I.plus} ${t('filterAddRule')}</button>
+        ${def.groups.length > 1 ? `<button class="btn btn-g btn-i" data-act="del-group" data-gi="${gi}" title="${t('delete')}">${I.delete}</button>` : ''}
+      </div>
+    </div>`).join('');
+  return `<div class="fp-groups">${groupsHtml}</div>
+    <button class="btn btn-g fp-add-group" data-act="add-group">${I.plus} ${t('filterAddGroup')}</button>
+    <datalist id="fp-hashtag-list">${(S.filterPopupTags || []).map(tg => `<option value="${x(tg)}">`).join('')}</datalist>`;
+}
+
+async function openSavedFilterPopup(which, anchor) {
+  closeAllPopups();
   const d = which === 'connector' ? S.connectorData : S.viewerData;
-  const def = {
-    query: q('#vf-query').value.trim(),
-    kinds: [...document.querySelectorAll('.vw-kc input:checked')].map(el => el.value),
-    moduleIds: [...q('#vf-mods').selectedOptions].map(o => Number(o.value)),
-    tag: q('#vf-tag').value.trim(),
-  };
-  await api.module.setUi(d.moduleId, 'filterDef', JSON.stringify(def));
-  closeModal();
-  await openModuleNode(d.moduleId);
-  toast(t('saved'), 'ok');
+  if (!d || !anchor) return;
+  S.filterDraft = { moduleId: d.moduleId, def: JSON.parse(JSON.stringify(d.def)) };
+  if (!S.filterDraft.def.groups.length) S.filterDraft.def.groups.push({ rules: [] });
+  // Snapshot the rect, not the element — `anchor` sits inside #main-inner,
+  // which persistFilterDraft's openModuleNode() rebuilds from scratch on
+  // every save, so the live element goes stale after the first persist.
+  const r = anchor.getBoundingClientRect();
+  S.filterPopupAnchorRect = { top: r.top, bottom: r.bottom, left: r.left };
+  S.filterPopupTags = (await api.hashtag.getAll()).map(h => h.tag_name);
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup filter-popup';
+  pop.innerHTML = renderFilterPopupBody();
+  document.body.appendChild(pop);
+  wireFilterPopup(pop);
+  positionPopupNear(pop, S.filterPopupAnchorRect);
+}
+
+function wireFilterPopup(pop) {
+  pop.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const btn = e.target.closest('[data-act]');
+    if (!btn || btn.tagName !== 'BUTTON') return;
+    const def = S.filterDraft.def;
+    const gi = Number(btn.dataset.gi), ri = Number(btn.dataset.ri);
+    if (btn.dataset.act === 'add-group') def.groups.push({ rules: [] });
+    else if (btn.dataset.act === 'del-group') { def.groups.splice(gi, 1); if (!def.groups.length) def.groups.push({ rules: [] }); }
+    else if (btn.dataset.act === 'add-rule') def.groups[gi].rules.push({ field: 'kind', values: [] });
+    else if (btn.dataset.act === 'del-rule') def.groups[gi].rules.splice(ri, 1);
+    else return;
+    persistFilterDraft(pop);
+  });
+  pop.addEventListener('change', (e) => {
+    const el = e.target.closest('[data-act]');
+    if (!el || el.tagName !== 'SELECT') return;
+    const gi = Number(el.dataset.gi), ri = Number(el.dataset.ri);
+    const rule = S.filterDraft.def.groups[gi]?.rules[ri];
+    if (!rule) return;
+    if (el.dataset.act === 'field') {
+      const field = el.value;
+      S.filterDraft.def.groups[gi].rules[ri] = field === 'kind' ? { field, values: [] }
+        : field === 'childOf' ? { field, moduleId: null }
+        : { field, op: 'contains', value: '' };
+    } else if (el.dataset.act === 'val-kind') rule.values = [...el.selectedOptions].map(o => o.value);
+    else if (el.dataset.act === 'val-childof') rule.moduleId = el.value ? Number(el.value) : null;
+    else if (el.dataset.act === 'val-op') rule.op = el.value;
+    else return;
+    persistFilterDraft(pop);
+  });
+  pop.addEventListener('input', (e) => {
+    const el = e.target.closest('[data-act="val-text"]');
+    if (!el) return;
+    const gi = Number(el.dataset.gi), ri = Number(el.dataset.ri);
+    const rule = S.filterDraft.def.groups[gi]?.rules[ri];
+    if (!rule) return;
+    rule.value = el.value;
+    clearTimeout(filterPopupDebounce);
+    filterPopupDebounce = setTimeout(() => persistFilterDraft(pop, false), 500);
+  });
+}
+
+async function persistFilterDraft(pop, rerenderPopup = true) {
+  const draft = S.filterDraft;
+  await api.module.setUi(draft.moduleId, 'filterDef', JSON.stringify(draft.def));
+  await openModuleNode(draft.moduleId);
+  if (!document.body.contains(pop)) return; // closed mid-save
+  if (rerenderPopup) {
+    pop.innerHTML = renderFilterPopupBody();
+    positionPopupNear(pop, S.filterPopupAnchorRect);
+  }
 }
