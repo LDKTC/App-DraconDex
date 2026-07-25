@@ -126,9 +126,9 @@ function buildTimelineGraphHtml(evs, tlid, fallbackColor){
       <circle data-event-dot="${ev.id}" data-start-ts="${startTs[i]||''}" cx="${xi}" cy="${LINE_Y}" r="6.5" fill="${ec}"/>
       <circle data-event-node="${ev.id}" data-start-ts="${startTs[i]||''}" data-card-up="${up?'1':'0'}" cx="${xi}" cy="${by}" r="11" fill="${ec}" style="cursor:ns-resize"/>
       <foreignObject data-event-card="${ev.id}" data-start-ts="${startTs[i]||''}" x="${xi-(CARD_W/2)}" y="${cardY}" width="${CARD_W}" height="64" style="cursor:pointer" onclick="openEventModal(${tlid},${ev.id})">
-        <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${ec};border-radius:8px;padding:6px 8px;font-size:12px;line-height:1.3;overflow:hidden">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${ec};border-radius:8px;padding:6px 8px;font-size:calc(12px * var(--fsc,1));line-height:1.3;overflow:hidden">
           <div style="font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(ev.event_name||'ไม่มีชื่อ')}</div>
-          <div style="color:var(--t3);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
+          <div style="color:var(--t3);font-size:calc(10.5px * var(--fsc,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
         </div>
       </foreignObject>`;
   }
@@ -148,7 +148,7 @@ async function renderTimelineDetail(tlid){
   let h = `<div class="ch">
     <div class="cdot" style="background:${col}"></div><h2>${x(tl.line_name||'ไม่มีชื่อ')}</h2>
     <button class="btn btn-s btn-i" onclick="openTimelineModal(${tl.id})">${I.edit}</button>
-    <button class="btn btn-p" onclick="openEventModal(${tlid})" style="padding:6px 12px;font-size:12.5px">${I.plus} เพิ่มเหตุการณ์</button>
+    <button class="btn btn-p" onclick="openEventModal(${tlid})" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))">${I.plus} เพิ่มเหตุการณ์</button>
   </div>`;
 
   if(!evs.length){
@@ -159,7 +159,7 @@ async function renderTimelineDetail(tlid){
 
     const evtObtl = await api.relation.getOBTL(S.project.id);
     h += `<div style="margin-top:24px">
-      <div class="ph"><h4>เหตุการณ์ทั้งหมด</h4><button class="btn btn-p" style="padding:6px 12px;font-size:12.5px" onclick="openEventModal(${tlid})">${I.plus} เพิ่มเหตุการณ์</button></div>
+      <div class="ph"><h4>เหตุการณ์ทั้งหมด</h4><button class="btn btn-p" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))" onclick="openEventModal(${tlid})">${I.plus} เพิ่มเหตุการณ์</button></div>
       <div class="objlist">`;
     for(const ev of evs){
       const ec=ev.color_code||col;
@@ -172,7 +172,7 @@ async function renderTimelineDetail(tlid){
         <div class="odot" style="background:${ec}"></div>
         <div style="flex:1;min-width:0">
           <div class="oname">${x(ev.event_name||'ไม่มีชื่อ')}</div>
-          <div style="font-size:12px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
+          <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
         </div>
         <div class="acts">
           <button class="btn btn-g btn-i" onclick="event.stopPropagation();openEventModal(${tlid},${ev.id})">${I.edit}</button>
@@ -192,7 +192,7 @@ async function renderTimelineDetail(tlid){
             <span class="mini-rel-rel">${x(r.relation_name||'สัมพันธ์')}</span>
             <span class="mini-rel-to">${x(r.from_cat)} / ${x(r.from_name)}</span>
             <button class="btn btn-g btn-i" onclick="event.stopPropagation();delEventRel(${r.id},${tlid})" style="color:var(--danger)">${I.close}</button>
-          </div>`).join('') : `<div class="empty" style="padding:8px 0;font-size:12px">ยังไม่มี Relation</div>`}</div>
+          </div>`).join('') : `<div class="empty" style="padding:8px 0;font-size:calc(12px * var(--fsc,1))">ยังไม่มี Relation</div>`}</div>
         </div>
       </div>`;
     }

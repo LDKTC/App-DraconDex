@@ -5,6 +5,7 @@
 // top-level bindings are visible to every renderer script.
 const L = {
   en: {
+    confirmDeleteTheme:'Delete this custom theme? Its colors cannot be recovered.', confirmDeleteItem:'Delete this item? This cannot be undone.', confirmRemoveLink:'Remove this link? The item itself is kept.', apply:'Apply', help:'Help', shortcuts:'Keyboard shortcuts', replayTour:'Replay tour', scQuickSwitch:'Quick switcher', scCloseTab:'Close tab', scNextTab:'Next tab', scPrevTab:'Previous tab', scNewNote:'New note (Scribe)', scToggleEditor:'Toggle edit / preview', loading:'Loading...', importDbConfirm:'Merge the data from this file into the current database?', importDbDone:'Import complete - data merged',
     nexusTourOption:'Show me a quick tour after creating this Nexus',
     settings:'Settings', theme:'Theme', language:'Language', uiSize:'UI Size', cancel:'Cancel',
     preferencesOpen:'Preferences...', prefs_theme:'Theme', prefs_language:'Language', prefs_uisize:'UI Size', solid:'Solid', gradient:'Gradient', advanced:'Advanced',
@@ -113,6 +114,7 @@ const L = {
     syncDevServer:'Dev version — using the local prototype sync server (no Supabase needed)'
   },
   ja: {
+    confirmDeleteTheme:'このカスタムテーマを削除しますか？色は復元できません。', confirmDeleteItem:'この項目を削除しますか？元に戻せません。', confirmRemoveLink:'このリンクを解除しますか？項目自体は残ります。', apply:'適用', help:'ヘルプ', shortcuts:'キーボードショートカット', replayTour:'ツアーを再生', scQuickSwitch:'クイックスイッチャー', scCloseTab:'タブを閉じる', scNextTab:'次のタブ', scPrevTab:'前のタブ', scNewNote:'新しいノート（Scribe）', scToggleEditor:'編集 / プレビュー切替', loading:'読み込み中…', importDbConfirm:'このファイルのデータを現在のデータベースに統合しますか？', importDbDone:'インポート完了 — データを統合しました',
     nexusTourOption:'この Nexus を作成したあと、簡単なツアーを表示する',
     settings:'設定', theme:'テーマ', language:'言語', uiSize:'UIサイズ', cancel:'キャンセル',
     preferencesOpen:'環境設定...', prefs_theme:'テーマ', prefs_language:'言語', prefs_uisize:'UIサイズ', solid:'単色', gradient:'グラデーション', advanced:'詳細設定',
@@ -221,6 +223,7 @@ const L = {
     syncDevServer:'開発版 — ローカルのプロトタイプ同期サーバーを使用中（Supabase不要）'
   },
   ko: {
+    confirmDeleteTheme:'이 사용자 테마를 삭제할까요? 색상은 복구할 수 없습니다.', confirmDeleteItem:'이 항목을 삭제할까요? 되돌릴 수 없습니다.', confirmRemoveLink:'이 링크를 해제할까요? 항목 자체는 유지됩니다.', apply:'적용', help:'도움말', shortcuts:'키보드 단축키', replayTour:'둘러보기 다시 보기', scQuickSwitch:'빠른 전환', scCloseTab:'탭 닫기', scNextTab:'다음 탭', scPrevTab:'이전 탭', scNewNote:'새 노트 (Scribe)', scToggleEditor:'편집 / 미리보기 전환', loading:'불러오는 중…', importDbConfirm:'이 파일의 데이터를 현재 데이터베이스에 병합할까요?', importDbDone:'가져오기 완료 — 데이터가 병합되었습니다',
     nexusTourOption:'이 Nexus를 만든 뒤 빠른 둘러보기를 표시합니다',
     settings:'설정', theme:'테마', language:'언어', uiSize:'UI 크기', cancel:'취소',
     preferencesOpen:'환경설정...', prefs_theme:'테마', prefs_language:'언어', prefs_uisize:'UI 크기', solid:'단색', gradient:'그라데이션', advanced:'고급',
@@ -329,6 +332,7 @@ const L = {
     syncDevServer:'개발 버전 — 로컬 프로토타입 동기화 서버 사용 중 (Supabase 불필요)'
   },
   th: {
+    confirmDeleteTheme:'ลบธีมที่กำหนดเองนี้? สีที่ตั้งไว้จะกู้คืนไม่ได้', confirmDeleteItem:'ลบรายการนี้? การกระทำนี้ย้อนกลับไม่ได้', confirmRemoveLink:'เอาลิงก์นี้ออก? ตัวรายการยังคงอยู่', apply:'ใช้งาน', help:'ช่วยเหลือ', shortcuts:'คีย์ลัด', replayTour:'ดูทัวร์อีกครั้ง', scQuickSwitch:'ค้นหาด่วน', scCloseTab:'ปิดแท็บ', scNextTab:'แท็บถัดไป', scPrevTab:'แท็บก่อนหน้า', scNewNote:'โน้ตใหม่ (Scribe)', scToggleEditor:'สลับแก้ไข / พรีวิว', loading:'กำลังโหลด…', importDbConfirm:'รวมข้อมูลจากไฟล์นี้เข้ากับฐานข้อมูลปัจจุบันหรือไม่?', importDbDone:'นำเข้าสำเร็จ — รวมข้อมูลแล้ว',
     nexusTourOption:'แสดงทัวร์แนะนำหลังสร้าง Nexus นี้',
     settings:'ตั้งค่า', theme:'ธีม', language:'ภาษา', uiSize:'ขนาด UI', cancel:'ยกเลิก',
     preferencesOpen:'การตั้งค่าเพิ่มเติม...', prefs_theme:'ธีม', prefs_language:'ภาษา', prefs_uisize:'ขนาด UI', solid:'สีทึบ', gradient:'ไล่สี', advanced:'ขั้นสูง',
@@ -437,6 +441,7 @@ const L = {
     syncDevServer:'เวอร์ชัน dev — ใช้เซิร์ฟเวอร์ซิงก์ต้นแบบในเครื่อง (ไม่ต้องมี Supabase)'
   },
   zh: {
+    confirmDeleteTheme:'删除此自定义主题？其颜色将无法恢复。', confirmDeleteItem:'删除此项？此操作无法撤销。', confirmRemoveLink:'移除此链接？项目本身会保留。', apply:'应用', help:'帮助', shortcuts:'键盘快捷键', replayTour:'重新播放导览', scQuickSwitch:'快速切换', scCloseTab:'关闭标签页', scNextTab:'下一个标签页', scPrevTab:'上一个标签页', scNewNote:'新建笔记（Scribe）', scToggleEditor:'切换编辑 / 预览', loading:'加载中…', importDbConfirm:'将此文件的数据合并到当前数据库？', importDbDone:'导入完成 — 数据已合并',
     nexusTourOption:'创建此 Nexus 后显示快速导览',
     settings:'设置', theme:'主题', language:'语言', uiSize:'界面大小', cancel:'取消',
     preferencesOpen:'偏好设置...', prefs_theme:'主题', prefs_language:'语言', prefs_uisize:'界面大小', solid:'纯色', gradient:'渐变', advanced:'高级',
@@ -545,6 +550,7 @@ const L = {
     syncDevServer:'开发版 — 正在使用本地原型同步服务器（无需 Supabase）'
   },
   vi: {
+    confirmDeleteTheme:'Xóa chủ đề tùy chỉnh này? Không thể khôi phục màu sắc.', confirmDeleteItem:'Xóa mục này? Không thể hoàn tác.', confirmRemoveLink:'Gỡ liên kết này? Mục vẫn được giữ lại.', apply:'Áp dụng', help:'Trợ giúp', shortcuts:'Phím tắt', replayTour:'Xem lại hướng dẫn', scQuickSwitch:'Chuyển nhanh', scCloseTab:'Đóng thẻ', scNextTab:'Thẻ kế tiếp', scPrevTab:'Thẻ trước', scNewNote:'Ghi chú mới (Scribe)', scToggleEditor:'Chuyển sửa / xem trước', loading:'Đang tải…', importDbConfirm:'Gộp dữ liệu từ tệp này vào cơ sở dữ liệu hiện tại?', importDbDone:'Nhập xong — đã gộp dữ liệu',
     nexusTourOption:'Hiển thị chuyến tham quan nhanh sau khi tạo Nexus này',
     settings:'Cài đặt', theme:'Giao diện', language:'Ngôn ngữ', uiSize:'Kích thước UI', cancel:'Hủy',
     preferencesOpen:'Tùy chọn...', prefs_theme:'Giao diện', prefs_language:'Ngôn ngữ', prefs_uisize:'Kích thước UI', solid:'Màu đơn', gradient:'Chuyển sắc', advanced:'Nâng cao',
@@ -653,6 +659,7 @@ const L = {
     syncDevServer:'Bản dev — đang dùng máy chủ đồng bộ thử nghiệm cục bộ (không cần Supabase)'
   },
   id: {
+    confirmDeleteTheme:'Hapus tema kustom ini? Warnanya tidak dapat dipulihkan.', confirmDeleteItem:'Hapus item ini? Tindakan ini tidak dapat dibatalkan.', confirmRemoveLink:'Hapus tautan ini? Itemnya sendiri tetap ada.', apply:'Terapkan', help:'Bantuan', shortcuts:'Pintasan keyboard', replayTour:'Putar ulang tur', scQuickSwitch:'Pengalih cepat', scCloseTab:'Tutup tab', scNextTab:'Tab berikutnya', scPrevTab:'Tab sebelumnya', scNewNote:'Catatan baru (Scribe)', scToggleEditor:'Alih edit / pratinjau', loading:'Memuat…', importDbConfirm:'Gabungkan data dari berkas ini ke basis data saat ini?', importDbDone:'Impor selesai — data digabungkan',
     nexusTourOption:'Tampilkan tur singkat setelah membuat Nexus ini',
     settings:'Pengaturan', theme:'Tema', language:'Bahasa', uiSize:'Ukuran UI', cancel:'Batal',
     preferencesOpen:'Preferensi...', prefs_theme:'Tema', prefs_language:'Bahasa', prefs_uisize:'Ukuran UI', solid:'Solid', gradient:'Gradien', advanced:'Lanjutan',
@@ -761,6 +768,7 @@ const L = {
     syncDevServer:'Versi dev — memakai server sinkronisasi prototipe lokal (tanpa Supabase)'
   },
   es: {
+    confirmDeleteTheme:'¿Eliminar este tema personalizado? Sus colores no se podrán recuperar.', confirmDeleteItem:'¿Eliminar este elemento? Esta acción no se puede deshacer.', confirmRemoveLink:'¿Quitar este enlace? El elemento se conserva.', apply:'Aplicar', help:'Ayuda', shortcuts:'Atajos de teclado', replayTour:'Repetir el tour', scQuickSwitch:'Cambio rápido', scCloseTab:'Cerrar pestaña', scNextTab:'Pestaña siguiente', scPrevTab:'Pestaña anterior', scNewNote:'Nueva nota (Scribe)', scToggleEditor:'Alternar editar / vista previa', loading:'Cargando…', importDbConfirm:'¿Combinar los datos de este archivo con la base de datos actual?', importDbDone:'Importación completa — datos combinados',
     nexusTourOption:'Mostrar un recorrido rápido después de crear este Nexus',
     settings:'Ajustes', theme:'Tema', language:'Idioma', uiSize:'Tamaño de la interfaz', cancel:'Cancelar',
     preferencesOpen:'Preferencias...', prefs_theme:'Tema', prefs_language:'Idioma', prefs_uisize:'Tamaño de la interfaz', solid:'Sólido', gradient:'Degradado', advanced:'Avanzado',
@@ -869,6 +877,7 @@ const L = {
     syncDevServer:'Versión dev — usando el servidor de sincronización prototipo local (sin Supabase)'
   },
   pt: {
+    confirmDeleteTheme:'Excluir este tema personalizado? Suas cores não poderão ser recuperadas.', confirmDeleteItem:'Excluir este item? Esta ação não pode ser desfeita.', confirmRemoveLink:'Remover este vínculo? O item em si é mantido.', apply:'Aplicar', help:'Ajuda', shortcuts:'Atalhos de teclado', replayTour:'Repetir o tour', scQuickSwitch:'Alternador rápido', scCloseTab:'Fechar aba', scNextTab:'Próxima aba', scPrevTab:'Aba anterior', scNewNote:'Nova nota (Scribe)', scToggleEditor:'Alternar editar / pré-visualizar', loading:'Carregando…', importDbConfirm:'Mesclar os dados deste arquivo com o banco de dados atual?', importDbDone:'Importação concluída — dados mesclados',
     nexusTourOption:'Mostrar um tour rápido após criar este Nexus',
     settings:'Configurações', theme:'Tema', language:'Idioma', uiSize:'Tamanho da interface', cancel:'Cancelar',
     preferencesOpen:'Preferências...', prefs_theme:'Tema', prefs_language:'Idioma', prefs_uisize:'Tamanho da interface', solid:'Sólido', gradient:'Gradiente', advanced:'Avançado',
@@ -977,6 +986,7 @@ const L = {
     syncDevServer:'Versão dev — usando o servidor de sincronização protótipo local (sem Supabase)'
   },
   fr: {
+    confirmDeleteTheme:'Supprimer ce thème personnalisé ? Ses couleurs seront irrécupérables.', confirmDeleteItem:'Supprimer cet élément ? Cette action est irréversible.', confirmRemoveLink:'Retirer ce lien ? L\'élément lui-même est conservé.', apply:'Appliquer', help:'Aide', shortcuts:'Raccourcis clavier', replayTour:'Revoir la visite', scQuickSwitch:'Sélecteur rapide', scCloseTab:'Fermer l\'onglet', scNextTab:'Onglet suivant', scPrevTab:'Onglet précédent', scNewNote:'Nouvelle note (Scribe)', scToggleEditor:'Basculer édition / aperçu', loading:'Chargement…', importDbConfirm:'Fusionner les données de ce fichier avec la base actuelle ?', importDbDone:'Import terminé — données fusionnées',
     nexusTourOption:'Afficher une courte visite après la création de ce Nexus',
     settings:'Paramètres', theme:'Thème', language:'Langue', uiSize:'Taille de l\'Interface', cancel:'Annuler',
     preferencesOpen:'Préférences...', prefs_theme:'Thème', prefs_language:'Langue', prefs_uisize:'Taille de l\'interface', solid:'Uni', gradient:'Dégradé', advanced:'Avancé',
@@ -1085,6 +1095,7 @@ const L = {
     syncDevServer:'Version dev — serveur de synchronisation prototype local (Supabase inutile)'
   },
   de: {
+    confirmDeleteTheme:'Dieses eigene Theme löschen? Seine Farben lassen sich nicht wiederherstellen.', confirmDeleteItem:'Diesen Eintrag löschen? Das lässt sich nicht rückgängig machen.', confirmRemoveLink:'Diese Verknüpfung entfernen? Der Eintrag selbst bleibt erhalten.', apply:'Übernehmen', help:'Hilfe', shortcuts:'Tastenkürzel', replayTour:'Tour erneut ansehen', scQuickSwitch:'Schnellwechsler', scCloseTab:'Tab schließen', scNextTab:'Nächster Tab', scPrevTab:'Vorheriger Tab', scNewNote:'Neue Notiz (Scribe)', scToggleEditor:'Bearbeiten / Vorschau umschalten', loading:'Wird geladen…', importDbConfirm:'Die Daten aus dieser Datei mit der aktuellen Datenbank zusammenführen?', importDbDone:'Import abgeschlossen — Daten zusammengeführt',
     nexusTourOption:'Nach dem Erstellen dieses Nexus eine kurze Tour anzeigen',
     settings:'Einstellungen', theme:'Design', language:'Sprache', uiSize:'UI-Größe', cancel:'Abbrechen',
     preferencesOpen:'Einstellungen...', prefs_theme:'Design', prefs_language:'Sprache', prefs_uisize:'UI-Größe', solid:'Einfarbig', gradient:'Verlauf', advanced:'Erweitert',
@@ -1193,6 +1204,7 @@ const L = {
     syncDevServer:'Dev-Version — lokaler Prototyp-Sync-Server wird verwendet (kein Supabase nötig)'
   },
   ru: {
+    confirmDeleteTheme:'Удалить эту пользовательскую тему? Её цвета восстановить не удастся.', confirmDeleteItem:'Удалить этот элемент? Отменить это действие нельзя.', confirmRemoveLink:'Убрать эту связь? Сам элемент останется.', apply:'Применить', help:'Справка', shortcuts:'Сочетания клавиш', replayTour:'Повторить обзор', scQuickSwitch:'Быстрый переход', scCloseTab:'Закрыть вкладку', scNextTab:'Следующая вкладка', scPrevTab:'Предыдущая вкладка', scNewNote:'Новая заметка (Scribe)', scToggleEditor:'Переключить правку / просмотр', loading:'Загрузка…', importDbConfirm:'Объединить данные из этого файла с текущей базой данных?', importDbDone:'Импорт завершён — данные объединены',
     nexusTourOption:'Показать короткий обзор после создания этого Nexus',
     settings:'Настройки', theme:'Тема', language:'Язык', uiSize:'Размер интерфейса', cancel:'Отмена',
     preferencesOpen:'Настройки...', prefs_theme:'Тема', prefs_language:'Язык', prefs_uisize:'Размер интерфейса', solid:'Сплошной', gradient:'Градиент', advanced:'Дополнительно',
@@ -1301,6 +1313,7 @@ const L = {
     syncDevServer:'Dev-версия — используется локальный прототипный сервер синхронизации (Supabase не нужен)'
   },
   it: {
+    confirmDeleteTheme:'Eliminare questo tema personalizzato? I suoi colori non saranno recuperabili.', confirmDeleteItem:'Eliminare questo elemento? L\'azione non può essere annullata.', confirmRemoveLink:'Rimuovere questo collegamento? L\'elemento viene mantenuto.', apply:'Applica', help:'Aiuto', shortcuts:'Scorciatoie da tastiera', replayTour:'Rivedi il tour', scQuickSwitch:'Selettore rapido', scCloseTab:'Chiudi scheda', scNextTab:'Scheda successiva', scPrevTab:'Scheda precedente', scNewNote:'Nuova nota (Scribe)', scToggleEditor:'Alterna modifica / anteprima', loading:'Caricamento…', importDbConfirm:'Unire i dati di questo file al database corrente?', importDbDone:'Importazione completata — dati uniti',
     nexusTourOption:'Mostra un breve tour dopo aver creato questo Nexus',
     settings:'Impostazioni', theme:'Tema', language:'Lingua', uiSize:'Dimensione UI', cancel:'Annulla',
     preferencesOpen:'Preferenze...', prefs_theme:'Tema', prefs_language:'Lingua', prefs_uisize:'Dimensione UI', solid:'Tinta unita', gradient:'Sfumatura', advanced:'Avanzate',
@@ -1409,6 +1422,7 @@ const L = {
     syncDevServer:'Versione dev — server di sincronizzazione prototipo locale in uso (Supabase non necessario)'
   },
   nl: {
+    confirmDeleteTheme:'Dit eigen thema verwijderen? De kleuren zijn niet meer terug te halen.', confirmDeleteItem:'Dit item verwijderen? Dit kan niet ongedaan worden gemaakt.', confirmRemoveLink:'Deze koppeling verwijderen? Het item zelf blijft bestaan.', apply:'Toepassen', help:'Help', shortcuts:'Sneltoetsen', replayTour:'Rondleiding opnieuw', scQuickSwitch:'Snel wisselen', scCloseTab:'Tabblad sluiten', scNextTab:'Volgend tabblad', scPrevTab:'Vorig tabblad', scNewNote:'Nieuwe notitie (Scribe)', scToggleEditor:'Bewerken / voorbeeld wisselen', loading:'Laden…', importDbConfirm:'De gegevens uit dit bestand samenvoegen met de huidige database?', importDbDone:'Import voltooid — gegevens samengevoegd',
     nexusTourOption:'Toon een korte rondleiding na het maken van deze Nexus',
     settings:'Instellingen', theme:'Thema', language:'Taal', uiSize:'UI-grootte', cancel:'Annuleren',
     preferencesOpen:'Voorkeuren...', prefs_theme:'Thema', prefs_language:'Taal', prefs_uisize:'UI-grootte', solid:'Effen', gradient:'Verloop', advanced:'Geavanceerd',
@@ -1517,6 +1531,7 @@ const L = {
     syncDevServer:'Dev-versie — lokale prototype-syncserver in gebruik (geen Supabase nodig)'
   },
   pl: {
+    confirmDeleteTheme:'Usunąć ten własny motyw? Jego kolorów nie da się odzyskać.', confirmDeleteItem:'Usunąć ten element? Tej operacji nie można cofnąć.', confirmRemoveLink:'Usunąć to powiązanie? Sam element zostanie zachowany.', apply:'Zastosuj', help:'Pomoc', shortcuts:'Skróty klawiszowe', replayTour:'Powtórz przewodnik', scQuickSwitch:'Szybkie przełączanie', scCloseTab:'Zamknij kartę', scNextTab:'Następna karta', scPrevTab:'Poprzednia karta', scNewNote:'Nowa notatka (Scribe)', scToggleEditor:'Przełącz edycję / podgląd', loading:'Wczytywanie…', importDbConfirm:'Scalić dane z tego pliku z bieżącą bazą danych?', importDbDone:'Import zakończony — dane scalone',
     nexusTourOption:'Pokaż krótki przewodnik po utworzeniu tego Nexusa',
     settings:'Ustawienia', theme:'Motyw', language:'Język', uiSize:'Rozmiar UI', cancel:'Anuluj',
     preferencesOpen:'Preferencje...', prefs_theme:'Motyw', prefs_language:'Język', prefs_uisize:'Rozmiar UI', solid:'Jednolity', gradient:'Gradient', advanced:'Zaawansowane',
@@ -1625,6 +1640,7 @@ const L = {
     syncDevServer:'Wersja dev — używany jest lokalny prototypowy serwer synchronizacji (bez Supabase)'
   },
   uk: {
+    confirmDeleteTheme:'Видалити цю власну тему? Її кольори не вдасться відновити.', confirmDeleteItem:'Видалити цей елемент? Цю дію не можна скасувати.', confirmRemoveLink:'Прибрати це посилання? Сам елемент залишиться.', apply:'Застосувати', help:'Довідка', shortcuts:'Комбінації клавіш', replayTour:'Повторити огляд', scQuickSwitch:'Швидкий перехід', scCloseTab:'Закрити вкладку', scNextTab:'Наступна вкладка', scPrevTab:'Попередня вкладка', scNewNote:'Нова нотатка (Scribe)', scToggleEditor:'Перемкнути редагування / перегляд', loading:'Завантаження…', importDbConfirm:'Об\'єднати дані з цього файлу з поточною базою даних?', importDbDone:'Імпорт завершено — дані об\'єднано',
     nexusTourOption:'Показати короткий огляд після створення цього Nexus',
     settings:'Налаштування', theme:'Тема', language:'Мова', uiSize:'Розмір інтерфейсу', cancel:'Скасувати',
     preferencesOpen:'Налаштування...', prefs_theme:'Тема', prefs_language:'Мова', prefs_uisize:'Розмір інтерфейсу', solid:'Суцільний', gradient:'Градієнт', advanced:'Додатково',
@@ -1733,6 +1749,7 @@ const L = {
     syncDevServer:'Dev-версія — використовується локальний прототипний сервер синхронізації (Supabase не потрібен)'
   },
   tr: {
+    confirmDeleteTheme:'Bu özel tema silinsin mi? Renkleri geri getirilemez.', confirmDeleteItem:'Bu öge silinsin mi? Bu işlem geri alınamaz.', confirmRemoveLink:'Bu bağlantı kaldırılsın mı? Ögenin kendisi korunur.', apply:'Uygula', help:'Yardım', shortcuts:'Klavye kısayolları', replayTour:'Turu yeniden oynat', scQuickSwitch:'Hızlı geçiş', scCloseTab:'Sekmeyi kapat', scNextTab:'Sonraki sekme', scPrevTab:'Önceki sekme', scNewNote:'Yeni not (Scribe)', scToggleEditor:'Düzenle / önizleme değiştir', loading:'Yükleniyor…', importDbConfirm:'Bu dosyadaki veriler geçerli veritabanıyla birleştirilsin mi?', importDbDone:'İçe aktarma tamam — veriler birleştirildi',
     nexusTourOption:'Bu Nexus oluşturulduktan sonra kısa bir tur göster',
     settings:'Ayarlar', theme:'Tema', language:'Dil', uiSize:'Arayüz Boyutu', cancel:'İptal',
     preferencesOpen:'Tercihler...', prefs_theme:'Tema', prefs_language:'Dil', prefs_uisize:'Arayüz Boyutu', solid:'Düz', gradient:'Gradyan', advanced:'Gelişmiş',
@@ -1841,6 +1858,7 @@ const L = {
     syncDevServer:'Dev sürümü — yerel prototip eşitleme sunucusu kullanılıyor (Supabase gerekmez)'
   },
   qd: {
+    confirmDeleteTheme:'Vhoreth thys skalith of thyne? Ythe hyws returnyth nevyr.', confirmDeleteItem:'Vhoreth thys thyng? Ythe deede unwyndyth noth.', confirmRemoveLink:'Unvynk thys lynk? Ythe thyng ytself abydyth.', apply:'Enakth', help:'Helphra', shortcuts:'Kayborda Swyftyra', replayTour:'Tour Agayn', scQuickSwitch:'Swyft Swyvvyr', scCloseTab:'Shutyth Tabb', scNextTab:'Tabb Forthra', scPrevTab:'Tabb Bakwyr', scNewNote:'Notthra Vyrran (Skrybith)', scToggleEditor:'Swyvv Zhakrii / Preevyw', loading:'Ingurathyng…', importDbConfirm:'Merghe ythe dataa of thys fyle wyth ythe presyth databaas?', importDbDone:'Ingurath doneth — dataa merghed',
     nexusTourOption:'Sheweth a swyft tour after thy Nexus be kryneth',
     settings:'Vharokk', theme:'Skalith', language:'Zhorvex', uiSize:'Skaal Draav', cancel:'Vokhal',
     preferencesOpen:'Vharokk Draav...', prefs_theme:'Skalith', prefs_language:'Zhorvex', prefs_uisize:'Skaal Draav', solid:'Vokh Solyd', gradient:'Vokh Flowyth', advanced:'Draconith',

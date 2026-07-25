@@ -109,8 +109,8 @@ async function openTemplateModal(catId){
   if(!safeCatId){ toast('Category ไม่ถูกต้อง','err'); return; }
   const tmpls=await api.template.getAll(safeCatId);
   openModal('🧩 จัดการ Fields',`
-    <p style="font-size:11.5px;color:var(--t3);margin-bottom:10px">ใช้เพิ่มช่องการเก็บข้อมูลให้กับ Object ในหมวดหมู่นี้ — Field ที่เพิ่มจะใช้ร่วมกันทุก Object ใน Category นี้</p>
-    <div class="tlist" id="tlist">${tmpls.map(t=>`<div class="titem" id="tmpl-${t.id}"><span class="tname">${x(t.description)}</span><span class="ttype">${t.attribute_type}</span><button class="btn btn-g btn-i" onclick="delTemplate(${t.id},${safeCatId})" style="color:var(--danger)">❌</button></div>`).join('')||'<p style="color:var(--t3);text-align:center;padding:18px;font-size:12px">ยังไม่มี Field</p>'}</div>
+    <p style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3);margin-bottom:10px">ใช้เพิ่มช่องการเก็บข้อมูลให้กับ Object ในหมวดหมู่นี้ — Field ที่เพิ่มจะใช้ร่วมกันทุก Object ใน Category นี้</p>
+    <div class="tlist" id="tlist">${tmpls.map(t=>`<div class="titem" id="tmpl-${t.id}"><span class="tname">${x(t.description)}</span><span class="ttype">${t.attribute_type}</span><button class="btn btn-g btn-i" onclick="delTemplate(${t.id},${safeCatId})" style="color:var(--danger)">❌</button></div>`).join('')||'<p style="color:var(--t3);text-align:center;padding:18px;font-size:calc(12px * var(--fsc,1))">ยังไม่มี Field</p>'}</div>
     <div class="div"></div>
     <div style="display:flex;gap:8px;align-items:flex-end">
       <div class="fg" style="flex:1;margin:0"><label>ชื่อ Field</label><input id="tnew" placeholder="เช่น อายุ, พลังพิเศษ"></div>
@@ -135,7 +135,7 @@ async function delTemplate(id,catId){
     await api.template.delete(id);
     // Re-fetch templates and re-render list to keep UI consistent
     const tmpls = await api.template.getAll(catId);
-    q('#tlist').innerHTML = tmpls.map(t=>`<div class="titem" id="tmpl-${t.id}"><span class="tname">${x(t.description)}</span><span class="ttype">${t.attribute_type}</span><button class="btn btn-g btn-i" onclick="delTemplate(${t.id},${catId})" style="color:var(--danger)">❌</button></div>`).join('') || '<p style="color:var(--t3);text-align:center;padding:18px;font-size:12px">ยังไม่มี Field</p>';
+    q('#tlist').innerHTML = tmpls.map(t=>`<div class="titem" id="tmpl-${t.id}"><span class="tname">${x(t.description)}</span><span class="ttype">${t.attribute_type}</span><button class="btn btn-g btn-i" onclick="delTemplate(${t.id},${catId})" style="color:var(--danger)">❌</button></div>`).join('') || '<p style="color:var(--t3);text-align:center;padding:18px;font-size:calc(12px * var(--fsc,1))">ยังไม่มี Field</p>';
     // restore focus to the new-field input so user can continue adding — try multiple strategies
     setTimeout(()=>{
       const t=q('#tnew'); const modalEl=q('#modal');
@@ -255,16 +255,16 @@ async function refreshEventLinksSection(evId, tlid){
       ${relBadge}
       <button class="btn btn-s btn-i" style="color:var(--danger)" onclick="removeEventTimelineLink(${l.id},${evId},${tlid})">${I.delete}</button>
     </div>`;
-  }).join('') : `<div style="font-size:12px;color:var(--t3);padding:4px 0">ยังไม่มีการเชื่อมต่อ</div>`;
+  }).join('') : `<div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);padding:4px 0">ยังไม่มีการเชื่อมต่อ</div>`;
   const pickerHtml = otherEvents.length
     ? `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
         <select id="ev-tl-link-target" style="flex:1;min-width:140px">${evtOptions(otherEvents)}</select>
         <select id="ev-tl-link-type" style="min-width:110px">${typeOpts}</select>
         <button class="btn btn-s" onclick="addEventTimelineLink(${evId},${tlid})">เชื่อมต่อ</button>
       </div>`
-    : `<div style="font-size:12px;color:var(--t3);margin-top:4px">ไม่มี Timeline อื่นในโปรเจกต์นี้</div>`;
+    : `<div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:4px">ไม่มี Timeline อื่นในโปรเจกต์นี้</div>`;
   wrap.innerHTML = `<div class="detail-relations" style="padding:12px 0 0">
-    <div class="tags-head"><span style="font-size:12.5px;font-weight:600;color:var(--t2)">เชื่อมต่อกับ Timeline อื่น</span></div>
+    <div class="tags-head"><span style="font-size:calc(12.5px * var(--fsc,1));font-weight:600;color:var(--t2)">เชื่อมต่อกับ Timeline อื่น</span></div>
     <div id="ev-tl-links-list">${linksHtml}</div>
     ${pickerHtml}
   </div>`;

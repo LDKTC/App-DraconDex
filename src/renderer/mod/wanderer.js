@@ -106,7 +106,7 @@ function buildWandererAreaListHtml(d) {
         ${areaLinks.length ? areaLinks.map(l => `<div class="objrow" style="padding:4px 0">
           <div class="dot" style="background:${l.entity?.color || '#f97316'}"></div>
           <div style="flex:1;min-width:0">${x(l.entity?.name || '—')}</div>
-        </div>`).join('') : `<div class="empty" style="padding:6px 0;font-size:12px" data-no-i18n>No links yet</div>`}
+        </div>`).join('') : `<div class="empty" style="padding:6px 0;font-size:calc(12px * var(--fsc,1))" data-no-i18n>No links yet</div>`}
         <button class="btn btn-g" style="margin-top:6px" onclick="openWandererAreaAddPicker(${area.id})">${I.plus} ${t('moduleLink')}</button>
       </div>` : ''}
     </div>`;

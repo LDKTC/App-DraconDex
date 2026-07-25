@@ -446,7 +446,7 @@ function buildChroniclerCalendarHtml(evs, config, data) {
 // whichever other row was open.
 async function buildChroniclerEventListHtml(evs, tlid, col, inspectorEventId) {
   if (!evs.length) return '';
-  let html = `<div class="ph"><h4>${t('name')}</h4><button class="btn btn-p" style="padding:6px 12px;font-size:12.5px" onclick="openChroniclerEventModal(${tlid})">${I.plus} ${t('addEvent')}</button></div><div class="objlist">`;
+  let html = `<div class="ph"><h4>${t('name')}</h4><button class="btn btn-p" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))" onclick="openChroniclerEventModal(${tlid})">${I.plus} ${t('addEvent')}</button></div><div class="objlist">`;
   for (const ev of evs) {
     const ec = ev.color_code || col;
     const sTxt = fmtDate(ev.s_day, ev.s_month, ev.s_years, ev.s_hour, ev.s_minute);
@@ -458,7 +458,7 @@ async function buildChroniclerEventListHtml(evs, tlid, col, inspectorEventId) {
         <div class="odot" style="background:${ec};cursor:pointer" onclick="event.stopPropagation();openChroniclerEventIconPopup(${ev.id},this,${tlid})"></div>
         <div style="flex:1;min-width:0">
           <div class="oname">${x(ev.event_name || '—')}</div>
-          <div style="font-size:12px;color:var(--t3);margin-top:2px">${x(dateTxt)}</div>
+          <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px">${x(dateTxt)}</div>
         </div>
         <svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="${open ? '6 9 12 15 18 9' : '9 18 15 12 9 6'}"/></svg>
         <div class="acts">

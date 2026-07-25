@@ -75,7 +75,7 @@ async function renderHeroProject() {
     <button class="btn btn-g btn-i" onclick="openCollectionModal()" title="${t('gameCollectionNew')}">${I.plus}</button>
   </div>`;
   if (!cols.length) {
-    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">${t('gameCollectionNew')}</p></div>`;
+    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">${t('gameCollectionNew')}</p></div>`;
   } else {
     for (const c of cols) {
       const col = c.color_code || '#6366f1';
@@ -113,8 +113,8 @@ async function renderCharsPage() {
   let h = `<div class="ch">
     <h2 style="display:flex;align-items:center;gap:8px">${I.person} ${t('gameChars')}</h2>
     <div style="display:flex;gap:6px">
-      <button class="btn btn-s" style="padding:5px 11px;font-size:12.5px" title="Add or edit the data fields characters in this game can have (e.g. HP, Attack)" onclick="openCharTemplatesModal()">${I.fields} ${t('gameStats')}</button>
-      <button class="btn btn-p" style="padding:5px 11px;font-size:12.5px" onclick="openCharModal()">${I.plus} ${t('gameCharNew')}</button>
+      <button class="btn btn-s" style="padding:5px 11px;font-size:calc(12.5px * var(--fsc,1))" title="Add or edit the data fields characters in this game can have (e.g. HP, Attack)" onclick="openCharTemplatesModal()">${I.fields} ${t('gameStats')}</button>
+      <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12.5px * var(--fsc,1))" onclick="openCharModal()">${I.plus} ${t('gameCharNew')}</button>
     </div>
   </div>`;
   h += `<div class="split"><div><div class="objlist">`;
@@ -127,7 +127,7 @@ async function renderCharsPage() {
       h += `<div class="objrow ${act ? 'active' : ''}" onclick="selectGameChar(${c.id})">
         <div class="odot" style="background:${col}"></div>
         <div style="flex:1;min-width:0"><div class="oname">${x(c.name)}</div>
-        ${c.object_name ? `<div style="font-size:11.5px;color:var(--t3)">${x(c.category_name || '')} · ${x(c.object_name)}</div>` : ''}</div>
+        ${c.object_name ? `<div style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3)">${x(c.category_name || '')} · ${x(c.object_name)}</div>` : ''}</div>
       </div>`;
     }
   }
@@ -164,13 +164,13 @@ async function renderCharDetail(charId) {
   }
   // element chips
   h += `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0">
-    <span style="font-size:11.5px;color:var(--t3);font-weight:600">${t('gameCollections')}:</span>
+    <span style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3);font-weight:600">${t('gameCollections')}:</span>
     ${elements.map(e => `<span class="cs-count" style="border-left:3px solid ${e.color_code || '#6366f1'}">${x(e.collection_name)} · ${x(e.name)}</span>`).join('')}
     <button class="btn btn-g btn-i" onclick="openCharElementsModal(${c.id})" title="${t('edit')}">${I.plus}</button>
   </div>`;
   // tag chips
   if (tags.length) {
-    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px">${tags.map(tg => `<span class="hn" style="color:${tg.color_code || '#6366f1'};font-weight:700;font-size:12px">#${x(tg.tag_name)}</span>`).join('')}</div>`;
+    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px">${tags.map(tg => `<span class="hn" style="color:${tg.color_code || '#6366f1'};font-weight:700;font-size:calc(12px * var(--fsc,1))">#${x(tg.tag_name)}</span>`).join('')}</div>`;
   }
   h += renderAttrEditor('char', c.id, templates, attrs);
   h += `</div>`;
@@ -180,7 +180,7 @@ async function renderCharDetail(charId) {
 // Shared attribute editor for characters and elements. kind: 'char' | 'elem'.
 function renderAttrEditor(kind, ownerId, templates, attrs) {
   if (!templates.length) {
-    return `<div class="empty" style="padding:20px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">${t('gameFields')}</p></div>`;
+    return `<div class="empty" style="padding:20px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">${t('gameFields')}</p></div>`;
   }
   const byTpl = new Map();
   for (const a of attrs) {
@@ -204,7 +204,7 @@ function renderAttrEditor(kind, ownerId, templates, attrs) {
     const levels = tpl.levelable ? [...new Set([0, ...vals.keys()])].sort((a, b) => a - b) : [0];
     if (!tpl.levelable) {
       h += `<div style="margin-bottom:10px">
-        <div style="font-size:11.5px;color:var(--t3);font-weight:600;margin-bottom:3px">${x(tpl.attribute_name)}</div>
+        <div style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3);font-weight:600;margin-bottom:3px">${x(tpl.attribute_name)}</div>
         ${rowHtml(tpl, 0, vals)}
       </div>`;
       continue;
@@ -217,11 +217,11 @@ function renderAttrEditor(kind, ownerId, templates, attrs) {
     h += `<div style="margin-bottom:10px">
       <div class="lv-acc-head" onclick="toggleHeroLevelGroup('${kind}',${ownerId},${tpl.id})">
         <svg class="ftgl ${open ? 'open' : ''}" style="width:8px;height:8px;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        <span style="flex:1;font-size:11.5px;color:var(--t3);font-weight:600">${x(tpl.attribute_name)} <span style="color:var(--accent)">· ${t('gameLevel')} (${levels.length})</span></span>
+        <span style="flex:1;font-size:calc(11.5px * var(--fsc,1));color:var(--t3);font-weight:600">${x(tpl.attribute_name)} <span style="color:var(--accent)">· ${t('gameLevel')} (${levels.length})</span></span>
       </div>
       ${open ? `<div style="padding-left:14px">
         ${levels.map(lv => rowHtml(tpl, lv, vals)).join('')}
-        <button class="btn btn-g" style="padding:2px 10px;font-size:11.5px" onclick="addHeroAttrLevel('${kind}',${ownerId},${tpl.id},${next})">${I.plus} ${t('gameLevel')} ${next}</button>
+        <button class="btn btn-g" style="padding:2px 10px;font-size:calc(11.5px * var(--fsc,1))" onclick="addHeroAttrLevel('${kind}',${ownerId},${tpl.id},${next})">${I.plus} ${t('gameLevel')} ${next}</button>
       </div>` : ''}
     </div>`;
   }
@@ -248,6 +248,7 @@ async function addHeroAttrLevel(kind, ownerId, tplId, level) {
 }
 
 async function deleteHeroAttrLevel(kind, ownerId, tplId, level) {
+  if (!await uiConfirm(t('confirmDeleteItem'), { okText: t('delete'), cancelText: t('cancel') })) return;
   if (kind === 'char') { await api.game.deleteCharAttr(ownerId, tplId, level); await renderCharDetail(ownerId); }
   else { await api.game.deleteElementAttr(ownerId, tplId, level); await renderElementDetail(ownerId); }
 }
@@ -263,7 +264,7 @@ async function renderCollectionPage() {
     <h2 style="border-left:4px solid ${col};padding-left:10px">${x(c.name)}</h2>
     <div style="display:flex;gap:6px">
       <button class="btn btn-s btn-i" onclick="openColTemplatesModal(${c.id})" title="${t('gameFields')}">${I.fields}</button>
-      <button class="btn btn-p" style="padding:5px 11px;font-size:12.5px" onclick="openElementModal(${c.id})">${I.plus} ${t('gameElementNew')}</button>
+      <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12.5px * var(--fsc,1))" onclick="openElementModal(${c.id})">${I.plus} ${t('gameElementNew')}</button>
     </div>
   </div>`;
   h += `<div class="split"><div><div class="objlist">`;
@@ -306,7 +307,7 @@ async function renderElementDetail(elemId) {
     <button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteHeroElement(${e.id})" title="${t('delete')}">${I.delete}</button>
   </div>`;
   if (tags.length) {
-    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px">${tags.map(tg => `<span class="hn" style="color:${tg.color_code || '#6366f1'};font-weight:700;font-size:12px">#${x(tg.tag_name)}</span>`).join('')}</div>`;
+    h += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px">${tags.map(tg => `<span class="hn" style="color:${tg.color_code || '#6366f1'};font-weight:700;font-size:calc(12px * var(--fsc,1))">#${x(tg.tag_name)}</span>`).join('')}</div>`;
   }
   h += renderAttrEditor('elem', e.id, templates, attrs);
   h += `</div>`;
@@ -331,7 +332,7 @@ async function renderHeroNovel() {
     const counts = new Map(gcats.map(c => [c.category_ref, c.object_count]));
     lh += `<div class="ph" style="margin-top:8px"><h4>Categories</h4></div>`;
     if (!cats.length) {
-      lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">-</p></div>`;
+      lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">-</p></div>`;
     } else {
       for (const cat of cats) {
         const act = S.gameCatId === cat.id;
@@ -358,8 +359,8 @@ async function renderHeroNovel() {
           <div class="odot" style="background:${col}"></div>
           <span class="oname" style="flex:1">${x(o.name)}</span>
           ${o.imported_id
-            ? `<button class="btn btn-d" style="padding:3px 10px;font-size:11.5px" onclick="toggleHeroImport(${S.gameCatId},${o.id},false)">${I.delete} ${t('delete')}</button>`
-            : `<button class="btn btn-p" style="padding:3px 10px;font-size:11.5px" onclick="toggleHeroImport(${S.gameCatId},${o.id},true)">${I.plus} ${t('gameImportObj')}</button>`}
+            ? `<button class="btn btn-d" style="padding:3px 10px;font-size:calc(11.5px * var(--fsc,1))" onclick="toggleHeroImport(${S.gameCatId},${o.id},false)">${I.delete} ${t('delete')}</button>`
+            : `<button class="btn btn-p" style="padding:3px 10px;font-size:calc(11.5px * var(--fsc,1))" onclick="toggleHeroImport(${S.gameCatId},${o.id},true)">${I.plus} ${t('gameImportObj')}</button>`}
         </div>`;
       }
     }
@@ -398,7 +399,7 @@ async function renderHeroStory() {
     <button class="btn btn-g btn-i" onclick="openGameStoryModal()" title="${t('gameStoryNew')}">${I.plus}</button>
   </div>`;
   if (!stories.length) {
-    lh += `<div class="empty" style="padding:16px 10px"><div class="ei">${I.story}</div><p style="font-size:12px;color:var(--t3);text-align:center">${t('gameStoryNew')}</p></div>`;
+    lh += `<div class="empty" style="padding:16px 10px"><div class="ei">${I.story}</div><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">${t('gameStoryNew')}</p></div>`;
   } else {
     for (const s of stories) {
       const col = s.color_code || '#6366f1';
@@ -425,7 +426,7 @@ async function renderHeroStory() {
     <h2 style="border-left:4px solid ${scol};padding-left:10px">${x(story.name)}${story.memo ? ` <span style="color:var(--t3);font-weight:400;font-size:.72em">· ${x(story.memo)}</span>` : ''}</h2>
     <div style="display:flex;gap:6px">
       <button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteGameStoryUI(${story.id})" title="${t('delete')}">${I.delete}</button>
-      <button class="btn btn-p" style="padding:5px 11px;font-size:12.5px" onclick="openGameDialogueModal(${story.id})">${I.plus} ${t('gameDialogueNew')}</button>
+      <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12.5px * var(--fsc,1))" onclick="openGameDialogueModal(${story.id})">${I.plus} ${t('gameDialogueNew')}</button>
     </div>
   </div>
   <div style="display:flex;gap:10px;height:calc(100% - 56px);min-height:360px">
@@ -662,12 +663,12 @@ async function renderConversationPanel(dialId, dialogues) {
     h += `<div style="border:1px solid var(--border);border-left:3px solid ${col};border-radius:var(--rs);padding:6px;margin-bottom:6px">
       <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
         <span class="cs-count" style="min-width:22px;text-align:center">${cv.talk_order + 1}</span>
-        <select style="flex:1;font-size:12px" onchange="saveGameConv(${cv.id},this.value,null)">${charOpts(cv.char_ref)}</select>
+        <select style="flex:1;font-size:calc(12px * var(--fsc,1))" onchange="saveGameConv(${cv.id},this.value,null)">${charOpts(cv.char_ref)}</select>
         <button class="btn btn-g btn-i" onclick="moveGameConv(${cv.id},-1)" title="↑">▲</button>
         <button class="btn btn-g btn-i" onclick="moveGameConv(${cv.id},1)" title="↓">▼</button>
         <button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteGameConv(${cv.id})" title="${t('delete')}">${I.delete}</button>
       </div>
-      <textarea class="table-inline-input" style="width:100%;min-height:44px;font-size:12.5px" onchange="saveGameConv(${cv.id},null,this.value)">${x(cv.talk_sentence || '')}</textarea>
+      <textarea class="table-inline-input" style="width:100%;min-height:44px;font-size:calc(12.5px * var(--fsc,1))" onchange="saveGameConv(${cv.id},null,this.value)">${x(cv.talk_sentence || '')}</textarea>
     </div>`;
   }
   h += `<button class="btn btn-p" style="margin-top:2px" onclick="addGameConv(${dialId})">${I.plus} ${t('gameConvNew')}</button></div>`;
@@ -695,6 +696,7 @@ async function moveGameConv(id, dir) {
 }
 
 async function deleteGameConv(id) {
+  if (!await uiConfirm(t('confirmDeleteItem'), { okText: t('delete'), cancelText: t('cancel') })) return;
   await api.game.deleteConversation(id);
   await renderHeroStory();
 }
@@ -713,7 +715,7 @@ async function renderHeroTags() {
       </div>`;
     }).join('');
   } else {
-    lh += `<div class="empty" style="padding:20px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">-</p></div>`;
+    lh += `<div class="empty" style="padding:20px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">-</p></div>`;
   }
   q('#left-panel-inner').innerHTML = lh;
 
@@ -729,12 +731,12 @@ async function renderHeroTags() {
   const col = tag?.color_code || '#6366f1';
   const total = chars.length + elems.length;
   let h = `<div class="ch"><span class="hn" style="color:${col};font-size:1.4em;font-weight:700">#${x(tag?.tag_name || '')}</span>
-    <span style="font-size:12px;color:var(--t3);margin-left:8px">${total}</span></div>`;
+    <span style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-left:8px">${total}</span></div>`;
   if (!total) {
     h += `<div class="empty"><div class="ei">${I.hashtag}</div></div>`;
   } else {
     if (chars.length) {
-      h += `<div style="padding:4px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${t('gameChars')} (${chars.length})</div><div class="objlist">`;
+      h += `<div style="padding:4px 16px 2px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${t('gameChars')} (${chars.length})</div><div class="objlist">`;
       for (const c of chars) {
         h += `<div class="objrow" onclick="setGameTab('project').then(()=>selectGameChar(${c.id}))">
           <div class="odot" style="background:${c.color_code || '#6366f1'}"></div><span class="oname">${x(c.name)}</span>
@@ -743,12 +745,12 @@ async function renderHeroTags() {
       h += `</div>`;
     }
     if (elems.length) {
-      h += `<div style="padding:4px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${t('gameCollections')} (${elems.length})</div><div class="objlist">`;
+      h += `<div style="padding:4px 16px 2px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${t('gameCollections')} (${elems.length})</div><div class="objlist">`;
       for (const e of elems) {
         h += `<div class="objrow">
           <div class="odot" style="background:${e.color_code || '#6366f1'}"></div>
           <div style="flex:1;min-width:0"><div class="oname">${x(e.name)}</div>
-          <div style="font-size:12px;color:var(--t3)">${x(e.collection_name)}</div></div>
+          <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3)">${x(e.collection_name)}</div></div>
         </div>`;
       }
       h += `</div>`;
@@ -856,13 +858,13 @@ async function openCharElementsModal(charId) {
   for (const c of cols) {
     const elems = await api.game.getColElements(c.id);
     if (!elems.length) continue;
-    body += `<div style="font-size:11.5px;color:var(--t3);font-weight:600;margin:6px 0 3px">${x(c.name)}</div>`;
+    body += `<div style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3);font-weight:600;margin:6px 0 3px">${x(c.name)}</div>`;
     body += `<div class="elem-pick-grid">` + elems.map(e => `<div class="elem-pick ${linkedIds.has(e.id) ? 'sel' : ''}" data-elem-id="${e.id}" onclick="this.classList.toggle('sel')">
       <span class="dot" style="background:${e.color_code || '#6366f1'}"></span><span style="flex:1">${x(e.name)}</span>
     </div>`).join('') + `</div>`;
   }
   openModal(t('gameCollections'), `
-    ${body || `<p style="color:var(--t3);font-size:12.5px">${t('gameCollectionNew')}</p>`}
+    ${body || `<p style="color:var(--t3);font-size:calc(12.5px * var(--fsc,1))">${t('gameCollectionNew')}</p>`}
     <div class="mfoot">
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
       <button class="btn btn-p" onclick="saveCharElements(${charId})">${t('save')}</button>
@@ -890,21 +892,21 @@ async function openHeroTemplatesModal(kind, ownerId) {
     ? 'Fields ใช้กับตัวละครทุกตัวในเกมนี้'
     : 'Fields ใช้กับ Element ทุกตัวในคอลเลกชันนี้';
   const rowHtml = (tp) => `<div class="titem" id="hero-tpl-${tp.id}">
-      <input class="tname" style="background:transparent;border:none;color:inherit;font-size:13px" value="${x(tp.attribute_name)}" onchange="saveHeroTemplate('${kind}',${tp.id},this.value,null,null)">
+      <input class="tname" style="background:transparent;border:none;color:inherit;font-size:calc(13px * var(--fsc,1))" value="${x(tp.attribute_name)}" onchange="saveHeroTemplate('${kind}',${tp.id},this.value,null,null)">
       <select class="ttype" style="border:none" onchange="saveHeroTemplate('${kind}',${tp.id},null,this.value,null)">${typeOpts(tp.attribute_type)}</select>
-      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--t3)">
+      <label style="display:flex;align-items:center;gap:4px;font-size:calc(11px * var(--fsc,1));color:var(--t3)">
         <input type="checkbox" ${tp.levelable ? 'checked' : ''} onchange="saveHeroTemplate('${kind}',${tp.id},null,null,this.checked)">${t('gameLevel')}
       </label>
       <button class="btn btn-g btn-i" onclick="deleteHeroTemplate('${kind}',${ownerId},${tp.id})" style="color:var(--danger)">${I.delete}</button>
     </div>`;
   openModal(t('gameFields'), `
-    <p style="font-size:11.5px;color:var(--t3);margin-bottom:10px">${hintText}</p>
-    <div class="tlist" id="hero-tpl-list">${tpls.map(rowHtml).join('') || `<p style="color:var(--t3);text-align:center;padding:18px;font-size:12px">-</p>`}</div>
+    <p style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3);margin-bottom:10px">${hintText}</p>
+    <div class="tlist" id="hero-tpl-list">${tpls.map(rowHtml).join('') || `<p style="color:var(--t3);text-align:center;padding:18px;font-size:calc(12px * var(--fsc,1))">-</p>`}</div>
     <div class="div"></div>
     <div style="display:flex;align-items:flex-end;gap:8px">
       <div class="fg" style="flex:1;margin:0"><label>${t('name')}</label><input id="htpl-name"></div>
       <div class="fg" style="margin:0"><label>ประเภท</label><select id="htpl-type">${typeOpts('text')}</select></div>
-      <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--t3);padding-bottom:9px"><input type="checkbox" id="htpl-lv">${t('gameLevel')}</label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:calc(11.5px * var(--fsc,1));color:var(--t3);padding-bottom:9px"><input type="checkbox" id="htpl-lv">${t('gameLevel')}</label>
       <button class="btn btn-p" onclick="addHeroTemplate('${kind}',${ownerId})">${I.plus}</button>
     </div>
     <div class="mfoot"><button class="btn btn-p" onclick="closeHeroTemplatesModal('${kind}')">${t('close')}</button></div>`);

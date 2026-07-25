@@ -4,8 +4,20 @@ function bindSearch() {
     clearTimeout(_searchTimeout);
     _searchTimeout=setTimeout(async()=>{
       const val=inp.value.trim();
-      if(!val) switchView(S.view);
-      else { const results=await api.search.all(val, S.nexus?.id ?? null); renderSearchResults(results,val); }
+      if(!val){ if(!S.nexus) switchView(S.view); return; }
+      // With a vault open, #left-panel-inner IS the Nexus Nest tree — the legacy
+      // renderSearchResults() below would innerHTML over it, wiping the tree out
+      // of the sidebar. It also only covers legacy projects/objects/hashtags and
+      // finds nothing in the v3 module tree. Hand off to the quick switcher,
+      // which already searches the whole vault (and had no visible entry point).
+      if(S.nexus){
+        inp.value='';
+        if(typeof openQuickSwitcher!=='function') await loadModule('src/renderer/quickswitch.js');
+        openQuickSwitcher(val);
+        return;
+      }
+      const results=await api.search.all(val, null);
+      renderSearchResults(results,val);
     },300);
   });
 }
@@ -20,7 +32,7 @@ function renderSearchResults(res,query){
   }
   if(res.objects?.length){
     h+=`<div class="search-sec"><div class="search-sec-hd">⭐ รายการ (Objects)</div>`;
-    for(const o of res.objects){ const col=o.color_code||'#6366f1'; h+=`<div class="li search-res-item" onclick="selectSearchObject(${o.project_id},${o.category_id},${o.id})" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px"><div style="display:flex;align-items:center;gap:8px;width:100%"><div class="dot" style="background:${col}"></div><span class="name" style="font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(o.name)}</span></div><span style="font-size:10px;color:var(--t3);margin-left:16px">${x(o.project_name)} / ${x(o.category_name)}</span></div>`; }
+    for(const o of res.objects){ const col=o.color_code||'#6366f1'; h+=`<div class="li search-res-item" onclick="selectSearchObject(${o.project_id},${o.category_id},${o.id})" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px"><div style="display:flex;align-items:center;gap:8px;width:100%"><div class="dot" style="background:${col}"></div><span class="name" style="font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(o.name)}</span></div><span style="font-size:calc(10px * var(--fsc,1));color:var(--t3);margin-left:16px">${x(o.project_name)} / ${x(o.category_name)}</span></div>`; }
     h+=`</div>`;
   }
   if(res.hashtags?.length){
@@ -29,7 +41,7 @@ function renderSearchResults(res,query){
     h+=`</div>`;
   }
   if(!res.projects?.length&&!res.objects?.length&&!res.hashtags?.length){
-    h+=`<div class="empty" style="padding:40px 10px"><div class="ei" style="font-size:28px">🔍</div><p>ไม่พบผลลัพธ์การค้นหา</p></div>`;
+    h+=`<div class="empty" style="padding:40px 10px"><div class="ei" style="font-size:calc(28px * var(--fsc,1))">🔍</div><p>ไม่พบผลลัพธ์การค้นหา</p></div>`;
   }
   el.innerHTML=h;
 }

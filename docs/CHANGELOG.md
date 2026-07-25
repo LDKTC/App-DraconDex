@@ -19,6 +19,63 @@
 
 ---
 
+## 2026-07-25 — UI/UX pass: แก้ข้อบกพร่องการโต้ตอบ + วางระบบ design token / ตัวอักษรไทย
+- commit: uncommitted
+- ไฟล์ที่แก้: `style.css`, `src/renderer/core.js`, `src/renderer/search.js`,
+  `src/renderer/quickswitch.js`, `src/renderer/hub.js`, `src/renderer/i18n.js`,
+  `main.js`, `preload.js`, `index.html`, + 15 ไฟล์ renderer ที่โดน `--fsc` sweep
+- อะไรเปลี่ยน:
+  - **Part 1 — ข้อบกพร่องการโต้ตอบ**
+    - `toast()`: map `'error'→'err'`, `'success'→'ok'` — 20 จุดที่ส่ง `'error'`
+      ไม่เคยตรงกฎ CSS ไหนเลย ข้อความ error จึงแสดงเป็นสีเทาแยกจาก success ไม่ออก;
+      `#toast` เพิ่ม `role=status`/`aria-live`
+    - `bindModalEscape()`: modal หลักปิดด้วย Escape ได้แล้ว (เป็น overlay เดียว
+      ในแอปที่ไม่มี) มี guard กัน `#confirm-overlay`/`#qs-overlay`/`#guide-overlay`
+      และกัน welcome modal ที่บังคับให้เลือก; `openModal()` โฟกัส field แรกให้เอง
+    - **บั๊กที่เจอตอนทดสอบจริง**: `uiConfirm` ไม่ได้ `stopPropagation()` ทำให้กด
+      Escape ครั้งเดียวปิดทั้ง confirm และ modal ข้างล่าง (เพราะ `finish()` ลบ
+      overlay ทันที guard เลยมองไม่เห็น) — แก้ที่ต้นเหตุให้เหมือน guide/quickswitch
+    - `uiPrompt()` แทน native `prompt()` ที่ `importCustomPalette` (บั๊ก renderer
+      ค้างแบบเดียวกับที่ `uiConfirm` เกิดมาแก้) — สร้างบน `#confirm-overlay`
+      เพราะ `#modal-overlay` z-index 100 ต่ำกว่า `.floating-panel` 150
+    - ใส่ `uiConfirm()` ให้การลบ 7 จุดที่เดิมลบทันที (ยกเว้นเครื่องมือ delete
+      บนแผนที่ ที่คลิกเดียวลบโดยตั้งใจ)
+    - ช่องค้นหา sidebar: เมื่อมี Nexus เปิดอยู่ให้ส่งต่อ `openQuickSwitcher(seed)`
+      แทน — เดิมเขียนทับ `#left-panel-inner` ซึ่ง**คือ Nexus Nest tree** พิมพ์
+      ค้นหาทีเดียวต้นไม้โมดูลหายทั้งแถบ และยังค้นไม่เจอโมดูล v3 เลย;
+      placeholder เพิ่ม `(Ctrl+P)` (Quick Switcher เดิมไม่มีทางเข้าที่มองเห็นได้)
+    - เมนูเฟืองเพิ่มหมวด "ช่วยเหลือ": ตารางคีย์ลัด + เล่นทัวร์ซ้ำ
+    - empty state ของ Nest/kind-browser มีปุ่มสร้าง Major module แล้ว
+    - `setBusy()` + `.busy-veil` ที่ `openModuleNode`, `chooseImportAsNexusNest`
+    - แยก IPC `db:importFileMerge` → `db:pickImportFile` + `db:importMergeFile`
+      เพื่อให้ถามยืนยัน**หลัง**เลือกไฟล์ได้จริง (เดิมช่องเดียว merge จบไปแล้ว)
+  - **Part 2 — ระบบภาพ (surgical, หน้าตาเดิม)**
+    - `:root` เพิ่ม `--fsc` (ถูกอ้าง 300+ ครั้งแต่ไม่เคยประกาศ), token สเกลใหม่
+      (`--sp-*`, `--fs-*`, `--lh-*`, `--shadow-*`, `--mono`) สำหรับโค้ดใหม่
+      **ไม่ retrofit** px เดิม ~2,200 จุด; ลบ `--bg3` ที่ไม่มีใครใช้
+    - แทน `box-shadow` ที่ซ้ำเป๊ะ 12 จุดด้วย token (เว้น 4 จุดที่ค่าใกล้แต่ไม่ตรง
+      — รวมเข้าไปจะเป็นการเปลี่ยนหน้าตา)
+    - `--on-accent`/`--on-button`/`--on-danger`: แทน `#fff` ที่ hardcode 28 จุด
+      (ค่า default `#fff` → คำนวณแล้วเหมือนเดิมทุกธีม) แล้ว override เป็น
+      `--ink-dark` ใน 15 ธีม (accent) / 12 ธีม (button) ตาม WCAG 3:1;
+      2 จุดเป็น**บั๊กจริง** (ตัวอักษรขาวบนพื้น `var(--hover)` มองไม่เห็นใน 8 ธีมสว่าง);
+      ลบแพตช์เฉพาะจุดของ `blueEclipse` ที่ซ้ำซ้อนแล้ว
+    - ตัวอักษรไทย: เพิ่ม `'Leelawadee UI', Tahoma` ต่อจาก `'Segoe UI'`,
+      เปลี่ยน `word-break:break-word` → `overflow-wrap:break-word` 4 จุด
+      (ตัวแรกเท่ากับ `anywhere` ซึ่งปิดตัวตัดคำไทยของ ICU → ตัดกลางพยางค์)
+    - ลบ compat CSS ที่ไม่มีใครใช้ 12 คลาส + บล็อกที่นิยามซ้ำคำต่อคำ
+    - sweep `font-size:Npx` แบบ inline 126 จุดใน 16 ไฟล์ →
+      `calc(Npx * var(--fsc,1))` เดิมไม่ขยายตามสเกลฟอนต์เลย
+- ทำไม: ผู้ใช้ขอ "improve my UI/UX" — เลือกทำ UX ก่อนแล้วค่อยงานภาพ, แบบ
+  surgical (แก้เฉพาะที่ผิดจริง ไม่จัดหน้าตาใหม่), รวมงานตัวอักษรไทยด้วย
+- ตรวจสอบ: `check.mjs` คง 0 error / 31 warning (เท่า baseline) ตลอดทุกขั้น;
+  รันแอปจริงผ่าน `run-dracondex` ยืนยันทีละข้อ — Escape ซ้อนชั้น, toast แดงจริง
+  (`rgb(239,68,68)`), tree ไม่หายตอนค้นหา, และวัด contrast ที่คำนวณจริงครบ 32 ธีม
+  (**ไม่มีธีมไหนต่ำกว่า 3:1 แล้ว**; แย่สุด 1.61→3.19 ปุ่ม, 1.67→3.53 nav)
+  พร้อมทดสอบสเกลฟอนต์ 80/100/130%
+- Doc ที่อัปเดต: docs/SYSTEMS.md §4.6, §10 (ธีม + 2 หัวข้อใหม่), §11;
+  docs/FILES.md (style.css, preload.js, core.js)
+
 ## 2026-07-24 — Plan.md part5 เสร็จสมบูรณ์: Designer link-filter/scroll-zoom/arrow-trim, Connector scroll-zoom, Drafter export + toolbar
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/mod/designer.js`, `src/renderer/mod/connector.js`, `src/renderer/mod/drafter.js`, `src/renderer/mdeditor.js`, `main.js`, `preload.js`, `src/renderer/i18n.js`, `Plan.md`

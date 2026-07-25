@@ -163,7 +163,7 @@ async function renderRelationView(){
   }
   const types = await api.relation.getTypes();
   let lh = `<div class="ph"><h4>ประเภทความสัมพันธ์</h4><button class="btn btn-g btn-i" onclick="openRelTypeModal()">${I.plus}</button></div>`;
-  if(!types.length) lh += `<p style="font-size:12px;color:var(--t3);padding:10px 12px">ยังไม่มีประเภท</p>`;
+  if(!types.length) lh += `<p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);padding:10px 12px">ยังไม่มีประเภท</p>`;
   for(const t of types){
     const color = t.color_code || '#6366f1';
     lh += `<div class="li" onclick="openRelTypeModal(${t.id})">
@@ -194,7 +194,7 @@ async function renderRelationView(){
       <select id="rel-cat-select" onchange="updateRelCategoryView(this.value)">
         ${catOpts || '<option value="">-- ยังไม่มี Category --</option>'}
       </select>
-      <button class="btn btn-p" style="padding:6px 12px;font-size:12.5px" onclick="openRelModal(0)">${I.plus} เพิ่มความสัมพันธ์</button>
+      <button class="btn btn-p" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))" onclick="openRelModal(0)">${I.plus} เพิ่มความสัมพันธ์</button>
     </div>
     <div id="wb-container" class="rel-whiteboard">
       <svg id="wb-svg" class="rel-svg"></svg>
@@ -221,7 +221,7 @@ async function renderRelationView(){
       <select id="obj-select" onchange="updateRelObjectView(this.value)">
         <option value="">-- เลือก Object --</option>${objOpts}
       </select>
-      <button class="btn btn-p" style="padding:6px 12px;font-size:12.5px" onclick="openRelModal(0)">${I.plus} เพิ่มความสัมพันธ์</button>
+      <button class="btn btn-p" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))" onclick="openRelModal(0)">${I.plus} เพิ่มความสัมพันธ์</button>
     </div>
     <div id="wb-container" class="rel-whiteboard">
       <svg id="wb-svg" class="rel-svg"></svg>
@@ -242,8 +242,8 @@ async function renderRelationView(){
     if(selObjId) renderWhiteboard = async () => { await renderObjectWhiteboard(selObjId); const sel = q('#obj-select'); if(sel) sel.value=selObjId; };
   } else {
     h += `<div class="rel-toolbar">
-      <div style="font-size:12.5px;color:var(--t2)">แสดง Object ทั้งหมดในโปรเจกต์: <b>${x(S.project.name||'')}</b></div>
-      <button class="btn btn-p" style="padding:6px 12px;font-size:12.5px" onclick="openRelModal(0)">${I.plus} เพิ่มความสัมพันธ์</button>
+      <div style="font-size:calc(12.5px * var(--fsc,1));color:var(--t2)">แสดง Object ทั้งหมดในโปรเจกต์: <b>${x(S.project.name||'')}</b></div>
+      <button class="btn btn-p" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))" onclick="openRelModal(0)">${I.plus} เพิ่มความสัมพันธ์</button>
     </div>
     <div id="wb-container" class="rel-whiteboard">
       <svg id="wb-svg" class="rel-svg"></svg>

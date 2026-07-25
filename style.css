@@ -14,10 +14,66 @@ html{height:100%;overflow:hidden}
 	--accentH: #818cf8;
 	--danger:  #ef4444;
 	--success: #22c55e;
+	/* --button (optional; declared by 13 of the 32 themes) — primary-button fill
+	   for themes that want the CTA to differ from --accent. Always consumed as
+	   var(--button, var(--accent)), so the 19 themes that omit it fall back
+	   correctly; don't add it to them just for symmetry. */
 	--r:8px; --rs:4px; --rl:12px;
 	--nav:56px; --sidebar:264px;
+	/* Written by core.js:507 but not consumed by any CSS rule — scaling is done
+	   with a transform on .ui-scale-wrap instead. Kept to document the contract. */
 	--ui-scale:1;
 	--ease:.15s ease;
+	/* Font-scale multiplier (80–130%), overwritten inline on documentElement by
+	   core.js. It was referenced 300+ times as var(--fsc,1) but never declared;
+	   the inline override still wins, so declaring it here changes nothing and
+	   just makes the token real to anyone reading :root. */
+	--fsc:1;
+
+	/* Ink for text/icons sitting ON a filled --accent / --button / --danger
+	   surface. Defaults to the #fff that was previously hardcoded at 26 sites,
+	   so this block on its own is a no-op; themes whose fill is too light for
+	   white override the one they need (see the per-theme blocks below).
+	   Three independent literals on purpose — writing --on-button:var(--on-accent)
+	   would freeze the alias at :root and per-theme overrides would never reach
+	   it, the same trap documented on --bg2 further down. */
+	--on-accent: #fff;
+	--on-button: #fff;
+	--on-danger: #fff;
+	--ink-dark:  #1a1a26;
+
+	/* ── Scales below are vocabulary for NEW code. The ~2200 px literals already
+	   in this file are deliberately NOT retrofitted; values here are the measured
+	   modes of what the file already uses, so new rules match the existing look
+	   instead of introducing a second spacing/type rhythm. ── */
+
+	/* Spacing — the 8 values covering ~95% of existing padding/gap/margin */
+	--sp-0:2px; --sp-1:4px; --sp-2:6px; --sp-3:8px;
+	--sp-4:10px; --sp-5:12px; --sp-6:14px; --sp-7:16px;
+
+	/* Type — pre-multiplied by --fsc so new code cannot bypass the font-scale
+	   setting the way the inline font-size:Npx in the renderers used to. */
+	--fs-micro:  calc(10px   * var(--fsc,1));
+	--fs-tiny:   calc(10.5px * var(--fsc,1));
+	--fs-xs:     calc(11px   * var(--fsc,1));
+	--fs-sm:     calc(12px   * var(--fsc,1));
+	--fs-label:  calc(12.5px * var(--fsc,1));
+	--fs-body:   calc(13px   * var(--fsc,1));
+	--fs-body-l: calc(13.5px * var(--fsc,1));
+	--fs-lg:     calc(14px   * var(--fsc,1));
+	--fs-xl:     calc(15px   * var(--fsc,1));
+
+	--lh-flat:1; --lh-snug:1.4; --lh-normal:1.45; --lh-relaxed:1.5; --lh-loose:1.8;
+
+	/* Elevation — the 4 shadow values that already appear 3x each */
+	--shadow-pop:   0 8px 24px rgba(0,0,0,.3);
+	--shadow-float: 0 8px 24px rgba(0,0,0,.4);
+	--shadow-menu:  0 18px 44px rgba(0,0,0,.42);
+	--shadow-modal: 0 24px 64px rgba(0,0,0,.55);
+
+	/* For new code only. The three existing mono stacks stay as they are —
+	   'Courier New' on the hex fields is a deliberate fixed-width-digit choice. */
+	--mono: ui-monospace,'Cascadia Mono','Segoe UI Mono','Courier New',monospace;
 }
 
 body[data-theme="daylight"]{
@@ -47,6 +103,7 @@ body[data-theme="moonlight"]{
 	--accentH:#9bb5ff;
 	--danger:#f87171;
 	--success:#34d399;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 body[data-theme="midnight"]{
 	--bg:#0f0f13;
@@ -94,6 +151,7 @@ body[data-theme="clearSky"]{
 	--button:#0080ff;
 	--danger:#dc2626;
 	--success:#16a34a;
+	--on-accent:var(--ink-dark);
 }
 /* Priority order (dominant -> minor): dark blue > deep purple > stars(white) > black */
 body[data-theme="clearStar"]{
@@ -126,6 +184,7 @@ body[data-theme="afterRain"]{
 	--accentH:#ef8fe0;
 	--danger:#fb7185;
 	--success:#4fd699;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Full-spectrum theme: light, readable surfaces float over a pastel-rainbow
    backdrop; the nav rail and left panel go translucent so the rainbow shows
@@ -174,6 +233,7 @@ body[data-theme="atDawn"]{
 	--button:#ffb627;
 	--danger:#dc2626;
 	--success:#16a34a;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): nebula glow > dusk rose > deep violet > black.
    A cosmic dusk theme — dark violet canvas lit by a glowing nebula accent. */
@@ -208,6 +268,7 @@ body[data-theme="atDay"]{
 	--button:#d4a017;
 	--danger:#dc2626;
 	--success:#16a34a;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): midnight blue > navy blue > deep black.
    A dark eclipse theme — near-black canvas with cool blue accents. */
@@ -225,9 +286,8 @@ body[data-theme="blueEclipse"]{
 	--button:#c9ccd4;
 	--danger:#ef4444;
 	--success:#22c55e;
+	--on-button:var(--ink-dark);
 }
-body[data-theme="blueEclipse"] .btn-p,
-body[data-theme="blueEclipse"] .modal-actions button{color:#1a1a26}
 /* Priority order (main -> minor): aurora teal > magenta ribbon > deep night > black.
    A polar-night theme — near-black teal canvas lit by teal/magenta aurora. */
 body[data-theme="clearAurora"]{
@@ -243,6 +303,7 @@ body[data-theme="clearAurora"]{
 	--accentH:#e879f9;
 	--danger:#f87171;
 	--success:#4ade80;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): violet > indigo > deep dusk > black.
    A soft twilight theme — dark indigo canvas with a violet glow. */
@@ -276,6 +337,7 @@ body[data-theme="atSunset"]{
 	--button:#f97316;
 	--danger:#ef4444;
 	--success:#22c55e;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): emerald > jade > deep forest > black.
    A forest theme — dark green canvas with a bright emerald accent. */
@@ -292,6 +354,7 @@ body[data-theme="clearComet"]{
 	--accentH:#34d399;
 	--danger:#f87171;
 	--success:#22c55e;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): cyan > ice blue > frost white > cloud.
    A crisp winter theme — light icy surfaces with a cool cyan accent. */
@@ -324,6 +387,7 @@ body[data-theme="afterSunset"]{
 	--accentH:#fbbf24;
 	--danger:#ef4444;
 	--success:#22c55e;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): blossom pink > rose > cream > white.
    A cherry-blossom theme — light pink surfaces with a soft blossom accent. */
@@ -341,6 +405,7 @@ body[data-theme="atSunrise"]{
 	--button:#fb7185;
 	--danger:#dc2626;
 	--success:#16a34a;
+	--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): deep blue > cyan > abyss teal > black.
    An abyssal-ocean theme — dark teal canvas with bright sea-blue accents. */
@@ -357,6 +422,7 @@ body[data-theme="atNight"]{
 	--accentH:#22d3ee;
 	--danger:#f87171;
 	--success:#2dd4bf;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): terracotta > amber sand > dune > cream.
    A warm-sand theme — light desert surfaces with a terracotta accent. */
@@ -471,6 +537,7 @@ body[data-theme="afterStorm"]{
 	--button:#0284c7;
 	--danger:#f87171;
 	--success:#34d399;
+	--on-accent:var(--ink-dark);
 }
 /* Priority order (main -> minor): steel blue > pale sky > snow white > cloud.
    A fresh-snow theme — light icy surfaces with a cool steel-blue accent. */
@@ -504,6 +571,7 @@ body[data-theme="atMorning"]{
 	--button:#ea580c;
 	--danger:#dc2626;
 	--success:#16a34a;
+	--on-accent:var(--ink-dark);
 }
 /* Priority order (main -> minor): golden sun > sky blue > cloud > white.
    A clear-day theme — bright sky-blue surfaces with a golden sun accent. */
@@ -521,6 +589,7 @@ body[data-theme="clearSun"]{
 	--button:#d97706;
 	--danger:#dc2626;
 	--success:#059669;
+	--on-accent:var(--ink-dark);
 }
 /* Priority order (main -> minor): amber > violet dusk > deep evening > black.
    A warm-evening theme — dusky violet canvas with an amber/purple horizon. */
@@ -537,6 +606,7 @@ body[data-theme="atEvening"]{
 	--accentH:#a855f7;
 	--danger:#fb7185;
 	--success:#22c55e;
+	--on-accent:var(--ink-dark);--on-button:var(--ink-dark);
 }
 /* Priority order (main -> minor): gold meteor > night sky > deep navy > black.
    A meteor-shower theme — dark night sky streaked with a bright gold accent. */
@@ -554,15 +624,39 @@ body[data-theme="clearMeteor"]{
 	--button:#d97706;
 	--danger:#f87171;
 	--success:#34d399;
+	--on-accent:var(--ink-dark);
 }
 
 body{
-	font-family:'Segoe UI Emoji','Segoe UI Symbol','Segoe UI',system-ui,-apple-system,sans-serif;
+	/* Thai is the default UI language but no Thai-capable face was ever named
+	   here, so Thai rendered through whatever the OS happened to pick. The two
+	   additions sit AFTER 'Segoe UI', which covers Latin/Greek/Cyrillic
+	   completely — so they are only ever reached for codepoints Segoe UI lacks
+	   (Thai/Lao) and no Latin glyph changes. Emoji/Symbol stay first because
+	   emoji are used as icons throughout. Leelawadee UI ships with Windows 8.1+
+	   (the Win10/11 default Thai UI face), Tahoma with every Windows; build
+	   targets are win/nsis only, so no webfont or vendored file is needed. */
+	font-family:'Segoe UI Emoji','Segoe UI Symbol','Segoe UI','Leelawadee UI',Tahoma,system-ui,-apple-system,sans-serif;
 	background:var(--bg); color:var(--t1);
 	height:100vh; overflow:hidden;
 	user-select:none; -webkit-user-select:none;
 	font-size:calc(14px * var(--fsc,1));
 }
+
+/* Thai line-breaking (companion to the font stack above): the 4 long-text
+   surfaces (.dv, .wchat-bubble, .chs-bubble .chs-text, .chs-tr-text) used
+   `word-break:break-word`, which the spec defines as `overflow-wrap:anywhere`
+   — that tells the engine it may break at ANY character, which suppresses
+   Blink's ICU dictionary Thai word-segmenter and splits Thai mid-syllable
+   (Thai has no inter-word spaces, so there is nothing else holding words
+   together). `overflow-wrap:break-word` only force-breaks a word that would
+   overflow the line on its own, so long unbreakable URLs are still contained
+   — the original intent — while Thai segmentation is restored.
+   Not using `line-break:` — its values only affect CJK punctuation, not Thai.
+   Line-height is deliberately NOT bumped globally for Thai: `th` is the
+   default locale, so that would reflow every row/chip/button in the app's
+   default appearance. Only the few `line-height:1` sites that can hold
+   translated Thai are candidates, and only if they visibly clip. */
 
 /* Plan part4 #1: bare <select> elements with no wrapper class (many v3
    module toolbars/modals) fell through to the OS-native white dropdown —
@@ -664,7 +758,7 @@ select option{background:var(--surface);color:var(--t1)}
 #settings-menu{
 	position:absolute;top:38px;right:0;width:292px;background:var(--surface);
 	border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);
-	box-shadow:0 18px 44px rgba(0,0,0,.42);padding:12px;z-index:300;
+	box-shadow:var(--shadow-menu);padding:12px;z-index:300;
 	color:var(--t1);
 }
 #settings-menu.hidden{display:none}
@@ -688,7 +782,7 @@ select option{background:var(--surface);color:var(--t1)}
 	color:var(--t2);font-size:calc(12px * var(--fsc,1));font-weight:600;cursor:pointer;font-family:inherit;
 }
 .settings-option:hover{background:var(--hover);color:var(--t1)}
-.settings-option.active{border-color:var(--accent);background:var(--accent);color:#fff}
+.settings-option.active{border-color:var(--accent);background:var(--accent);color:var(--on-accent)}
 .settings-select{
 	width:100%;height:34px;border:1px solid var(--border);border-radius:var(--rs);
 	background:var(--bg);color:var(--t1);font-size:calc(12.5px * var(--fsc,1));font-weight:600;
@@ -731,7 +825,7 @@ select option{background:var(--surface);color:var(--t1)}
 	color:var(--t2);font-size:calc(13px * var(--fsc,1));cursor:pointer;font-family:inherit;
 }
 .window-btn:hover{background:var(--hover);color:var(--t1)}
-.window-btn.close:hover{background:var(--danger);color:#fff}
+.window-btn.close:hover{background:var(--danger);color:var(--on-danger)}
 
 #app{display:flex;flex:1;min-height:0;position:relative}
 
@@ -796,7 +890,7 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex_WhiteOut.
 	-webkit-app-region:no-drag;
 }
 .nav-btn:hover{background:var(--hover);color:var(--t1)}
-.nav-btn.active{background:var(--accent);color:#fff}
+.nav-btn.active{background:var(--accent);color:var(--on-accent)}
 .nav-util{font-size:calc(15px * var(--fsc,1))}
 .nav-btn.director-only{display:none}
 
@@ -962,7 +1056,7 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex_WhiteOut.
 .ipk-tab{padding:5px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--raised);
 	color:var(--t2);font-size:calc(12px * var(--fsc,1));font-family:inherit;cursor:pointer}
 .ipk-tab:hover{background:var(--hover);color:var(--t1)}
-.ipk-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.ipk-tab.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .ipk-tab-disabled{opacity:.4;cursor:default}
 .ipk-tab-disabled:hover{background:var(--raised);color:var(--t2)}
 .ipk-symbol{font-size:calc(17px * var(--fsc,1))}
@@ -1013,7 +1107,7 @@ body[data-theme="clearMeteor"] .brand-img{content:url('Image/DraconDex_WhiteOut.
    positionPopupNear) — same floating-above-everything z-index as .wlink-float */
 .kind-popup{
 	position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);
-	border-radius:var(--r);box-shadow:0 18px 44px rgba(0,0,0,.42);
+	border-radius:var(--r);box-shadow:var(--shadow-menu);
 }
 .kind-list-popup{width:280px;max-height:360px;overflow-y:auto;padding:6px}
 .kind-list-item{display:flex;align-items:flex-start;gap:9px;padding:7px 8px;border-radius:var(--rs);cursor:pointer}
@@ -1080,7 +1174,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .tg{width:26px;height:14px;border-radius:7px;background:var(--raised);border:1px solid var(--border);position:relative;flex-shrink:0}
 .tg.on{background:var(--accent);border-color:var(--accent)}
 .tg::after{content:'';position:absolute;top:1px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--t2)}
-.tg.on::after{left:auto;right:2px;background:#fff}
+.tg.on::after{left:auto;right:2px;background:var(--on-accent)}
 /* Nest-tree options popup rows (Plan part1 #2) — .togglerow's own
    margin-top:7px is tuned for stacking inside a modal body, not a
    .kind-popup, so give these their own tighter row padding/hover. */
@@ -1094,7 +1188,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .viewbar .vlbl{font-size:calc(10px * var(--fsc,1));color:var(--t3);padding:0 8px}
 .viewbar .vitem{font-size:calc(10.5px * var(--fsc,1));color:var(--t2);padding:5px 10px;border-left:1px solid var(--border);cursor:pointer}
 .viewbar .vitem:hover{background:var(--hover);color:var(--t1)}
-.viewbar .vitem.act{background:var(--accent);color:#fff;font-weight:600}
+.viewbar .vitem.act{background:var(--accent);color:var(--on-accent);font-weight:600}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle}
 .cls-table-wrap{overflow-x:auto}
 .cls-table{width:100%;border-collapse:collapse;font-size:calc(12.5px * var(--fsc,1))}
@@ -1500,12 +1594,12 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 	cursor:pointer;font-size:calc(13.5px * var(--fsc,1));font-weight:500;
 	transition:all var(--ease);font-family:inherit;
 }
-.btn-p{background:var(--button, var(--accent));color:#fff}
+.btn-p{background:var(--button, var(--accent));color:var(--on-button)}
 .btn-p:hover{background:var(--accentH)}
 .btn-s{background:var(--raised);color:var(--t1);border:1px solid var(--border)}
 .btn-s:hover{background:var(--hover)}
 .btn-d{background:transparent;color:var(--danger);border:1px solid var(--danger)}
-.btn-d:hover{background:var(--danger);color:#fff}
+.btn-d:hover{background:var(--danger);color:var(--on-danger)}
 .btn-g{background:transparent;color:var(--t2)}
 .btn-g:hover{background:var(--hover);color:var(--t1)}
 .btn-i{padding:4px;width:28px;height:28px;justify-content:center;border-radius:var(--rs);font-size:calc(14px * var(--fsc,1))}
@@ -1543,7 +1637,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 	transition:transform var(--ease),background var(--ease),border-color var(--ease),box-shadow var(--ease);
 }
 .symswatch:hover{transform:translateY(-1px);background:var(--hover);border-color:var(--t3)}
-.symswatch.sel{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 0 1px rgba(99,102,241,.25)}
+.symswatch.sel{background:var(--accent);color:var(--on-accent);border-color:var(--accent);box-shadow:0 0 0 1px rgba(99,102,241,.25)}
 
 /* Char-elements picker (modal-in-modal) — clickable "insert boxes" that
    toggle selected state, replacing a native checkbox list so multi-select
@@ -1568,7 +1662,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 	transform:translateY(-1px);background:var(--hover);border-color:var(--t3)
 }
 #modal-body .form-row .cgrid .symswatch.sel{
-	background:var(--accent);color:#fff;border-color:var(--accent)
+	background:var(--accent);color:var(--on-accent);border-color:var(--accent)
 }
 
 /* MODAL */
@@ -1582,7 +1676,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 	background:var(--surface);border:1px solid var(--border);
 	border-radius:var(--rl);width:480px;max-width:95vw;
 	max-height:88vh;display:flex;flex-direction:column;
-	box-shadow:0 24px 64px rgba(0,0,0,.55);
+	box-shadow:var(--shadow-modal);
 }
 #modal-head{
 	display:flex;align-items:center;padding:15px 18px;
@@ -1625,7 +1719,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 	color:var(--t2);cursor:pointer;font-family:inherit;font-size:calc(12.5px * var(--fsc,1));font-weight:600;
 }
 .prefs-nav-item:hover{background:var(--hover);color:var(--t1)}
-.prefs-nav-item.active{background:var(--accent);color:#fff}
+.prefs-nav-item.active{background:var(--accent);color:var(--on-accent)}
 .prefs-content{flex:1;min-width:0;overflow-y:auto}
 .prefs-theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:4px}
 .prefs-theme-cell{
@@ -1665,9 +1759,31 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .prefs-advanced{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 
 #confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px)}
-#confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);width:360px;max-width:92vw;padding:20px;box-shadow:0 24px 64px rgba(0,0,0,.55)}
+#confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);width:360px;max-width:92vw;padding:20px;box-shadow:var(--shadow-modal)}
 .confirm-msg{font-size:calc(13px * var(--fsc,1));color:var(--t1);line-height:1.5;white-space:pre-wrap}
 .confirm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+/* setBusy() — the app's only loading affordance (see core.js). Theme tokens
+   only; sits above panel content but below every dialog layer. */
+.busy-veil{
+	position:absolute;inset:0;z-index:90;
+	display:flex;align-items:center;justify-content:center;gap:10px;
+	background:color-mix(in srgb, var(--bg) 72%, transparent);
+	backdrop-filter:blur(1px);font-size:calc(12.5px * var(--fsc,1));color:var(--t2);
+}
+.busy-spin{
+	width:16px;height:16px;flex-shrink:0;border-radius:50%;
+	border:2px solid var(--border);border-top-color:var(--accent);
+	animation:busy-spin .7s linear infinite;
+}
+.busy-text{color:var(--t2)}
+@keyframes busy-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.busy-spin{animation-duration:2.4s}}
+
+/* uiPrompt() — the text-entry sibling of uiConfirm. Reuses the whole confirm
+   chrome; only needs a wider box and top spacing for its .fg field. */
+#confirm-box.wide{width:460px}
+#confirm-box .fg{margin:12px 0 0}
+#confirm-box .fg textarea{min-height:110px;font-family:var(--mono,ui-monospace,monospace);font-size:calc(12px * var(--fsc,1))}
 
 /* First-run coach-marks guide (src/renderer/guide.js) — theme-token colors only */
 #guide-overlay{position:fixed;inset:0;z-index:1200;pointer-events:none}
@@ -1677,7 +1793,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 	transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease}
 .guide-pop{position:fixed;width:280px;max-width:92vw;pointer-events:auto;
 	background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);
-	padding:14px 16px;box-shadow:0 24px 64px rgba(0,0,0,.55);
+	padding:14px 16px;box-shadow:var(--shadow-modal);
 	transition:left .18s ease,top .18s ease}
 .guide-pop-title{font-size:calc(14px * var(--fsc,1));font-weight:700;color:var(--t1);margin-bottom:6px}
 .guide-pop-text{font-size:calc(12.5px * var(--fsc,1));color:var(--t2);line-height:1.5}
@@ -1719,7 +1835,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
 .pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:15px;cursor:pointer;transition:all var(--ease);position:relative;overflow:hidden}
 .pcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--cc,var(--accent))}
-.pcard:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.pcard:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-pop)}
 .pcard h3{font-size:calc(14px * var(--fsc,1));font-weight:600;margin-bottom:3px}
 .pcard .pc-code{font-size:calc(10px * var(--fsc,1));color:var(--t3);font-family:monospace;margin-bottom:7px}
 .pcard .pc-memo{font-size:calc(12px * var(--fsc,1));color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1734,13 +1850,13 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 .desc-row{display:flex;gap:10px;align-items:flex-start;padding:9px 14px;border-bottom:1px solid var(--border)}
 .desc-row:last-child{border-bottom:none}
 .dk{font-size:calc(11px * var(--fsc,1));font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);min-width:110px;padding-top:2px;flex-shrink:0}
-.dv{flex:1;font-size:calc(13px * var(--fsc,1));color:var(--t1);white-space:pre-wrap;word-break:break-word}
+.dv{flex:1;font-size:calc(13px * var(--fsc,1));color:var(--t1);white-space:pre-wrap;overflow-wrap:break-word}
 
 /* CATEGORY TABS */
 .ctabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
 .ctab{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--t2);cursor:pointer;font-size:calc(12.5px * var(--fsc,1));font-weight:500;transition:all var(--ease);display:flex;align-items:center;gap:5px;font-family:inherit}
 .ctab:hover{background:var(--raised);color:var(--t1)}
-.ctab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ctab.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .ctab .cdot2{width:5px;height:5px;border-radius:50%;background:currentColor}
 .ctab .tedit{background:none;border:none;cursor:pointer;opacity:0;font-size:calc(11px * var(--fsc,1));color:inherit;padding:0 1px;transition:opacity 0.15s}
 .ctab:hover .tedit{opacity:0.7}
@@ -1804,7 +1920,7 @@ textarea.table-inline-input{resize:vertical}
 .col-visibility-toggle{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .col-visibility-toggle button{padding:6px 12px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);color:var(--t2);cursor:pointer;font-size:calc(12px * var(--fsc,1));transition:all var(--ease)}
 .col-visibility-toggle button:hover{background:var(--hover);color:var(--t1)}
-.col-visibility-toggle button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.col-visibility-toggle button.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .sortable-header{cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:4px}
 .sortable-header:hover{color:var(--t1)}
 .sort-indicator{font-size:calc(10px * var(--fsc,1));opacity:0;transition:opacity 0.15s}
@@ -1952,7 +2068,7 @@ textarea.table-inline-input{resize:vertical}
 .empty p{font-size:calc(12.5px * var(--fsc,1));max-width:260px}
 
 /* TOAST */
-#toast{position:fixed;bottom:22px;right:22px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:calc(13px * var(--fsc,1));color:var(--t1);box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:200;transform:translateY(70px);opacity:0;transition:all .2s ease;pointer-events:none}
+#toast{position:fixed;bottom:22px;right:22px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:9px 15px;font-size:calc(13px * var(--fsc,1));color:var(--t1);box-shadow:var(--shadow-float);z-index:200;transform:translateY(70px);opacity:0;transition:all .2s ease;pointer-events:none}
 #toast.show{transform:translateY(0);opacity:1}
 #toast.ok{border-color:var(--success);color:var(--success)}
 #toast.err{border-color:var(--danger);color:var(--danger)}
@@ -1961,29 +2077,9 @@ textarea.table-inline-input{resize:vertical}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--t3)}
-.empty h3{font-size:calc(15px * var(--fsc,1));font-weight:600;color:var(--t2)}
-.empty p{font-size:calc(12.5px * var(--fsc,1));max-width:260px}
-
-/* TAG */
-.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:calc(10px * var(--fsc,1));font-weight:600;background:var(--raised);color:var(--t3);font-family:monospace}
-
-/* TOAST */
-#toast{
-	position:fixed;bottom:22px;right:22px;
-	background:var(--raised);border:1px solid var(--border);
-	border-radius:var(--r);padding:9px 15px;font-size:calc(13px * var(--fsc,1));color:var(--t1);
-	box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:200;
-	transform:translateY(70px);opacity:0;transition:all .2s ease;pointer-events:none;
-}
-#toast.show{transform:translateY(0);opacity:1}
-#toast.ok{border-color:var(--success);color:var(--success)}
-#toast.err{border-color:var(--danger);color:var(--danger)}
-
-/* SCROLLBAR */
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+/* (A verbatim second copy of .empty h3/.empty p, .tag, the #toast block and the
+   four scrollbar rules used to sit here — identical to the definitions a few
+   lines above, so it only added confusion about which one was authoritative.) */
 
 /* COLOR SETTINGS */
 .color-settings-grid{display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start}
@@ -2111,7 +2207,7 @@ textarea.table-inline-input{resize:vertical}
   background: var(--hover);
 }
 .dark-table tbody tr.active td {
-  color: #fff;
+  color: var(--t1);
 }
 .dark-table th:last-child,
 .dark-table td:last-child {
@@ -2213,7 +2309,7 @@ textarea.table-inline-input{resize:vertical}
   transform: scale(1.08);
 }
 .nav-btn.active .icon {
-  color: #fff;
+  color: var(--on-accent);
 }
 .btn .icon {
   width: 14px;
@@ -2248,7 +2344,7 @@ textarea.table-inline-input{resize:vertical}
   color: var(--danger);
 }
 .btn-g:hover .icon-danger {
-  color: #fff;
+  color: var(--danger);
 }
 .htag-item .icon {
   width: 12px;
@@ -2273,7 +2369,7 @@ textarea.table-inline-input{resize:vertical}
 /* Writer module */
 .series-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:12px 0}
 .series-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all var(--ease)}
-.series-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.series-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-pop)}
 .series-card-icon .icon{width:32px;height:32px;color:var(--t2)}
 .series-card-name{font-weight:600;font-size:calc(14px * var(--fsc,1));text-align:center;color:var(--t1)}
 .series-card-memo{font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center}
@@ -2301,7 +2397,7 @@ textarea.table-inline-input{resize:vertical}
 .wchat-board{display:flex;flex-direction:column;min-height:320px;height:100%}
 .wchat-scroll{flex:1;overflow-y:auto;padding:8px 4px;display:flex;flex-direction:column;gap:8px}
 .wchat-row{display:flex;align-items:flex-end;gap:6px;max-width:75%;align-self:flex-end;flex-direction:row-reverse}
-.wchat-bubble{background:var(--accent);color:#fff;padding:8px 12px;border-radius:var(--rl);border-bottom-right-radius:var(--rs);font-size:calc(13.5px * var(--fsc,1));line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.wchat-bubble{background:var(--accent);color:var(--on-accent);padding:8px 12px;border-radius:var(--rl);border-bottom-right-radius:var(--rs);font-size:calc(13.5px * var(--fsc,1));line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word}
 .wchat-time{font-size:calc(10px * var(--fsc,1));color:var(--t3);white-space:nowrap}
 .wchat-del{opacity:0;transition:opacity var(--ease)}
 .wchat-row:hover .wchat-del{opacity:1}
@@ -2311,7 +2407,7 @@ textarea.table-inline-input{resize:vertical}
 
 /* Sage module */
 .sage-card{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;transition:all var(--ease)}
-.sage-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.sage-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-pop)}
 .sage-card-icon .icon{width:28px;height:28px;color:var(--t2)}
 .sage-card-body{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
 .sage-card-name{font-size:calc(13px * var(--fsc,1));font-weight:600;color:var(--t1)}
@@ -2332,63 +2428,36 @@ textarea.table-inline-input{resize:vertical}
 /* ════════════════════════════════════════════════════════════════
    MODULE THEME HARMONIZATION
    Navigator / Hero / Writer / Sage emit their own markup vocabulary
-   that previously had no styling (or used the undefined --bg2/--bg3
-   variables). These rules dress that markup in the Director module's
+   that previously had no styling (or used the undefined --bg2
+   variable). These rules dress that markup in the Director module's
    design language so every module reads as one coherent theme.
    ════════════════════════════════════════════════════════════════ */
 
-/* Legacy surface aliases referenced by Hero/Navigator inline styles.
+/* Legacy surface alias referenced by Hero/Navigator inline styles.
    Must be declared on `body`, not `:root`: a custom property's var()
    references resolve against the values live on the element where it's
    declared, not lazily re-evaluated per descendant. --raised/--hover are
    overridden on body[data-theme=X] (a descendant of :root) — aliasing from
-   :root would freeze --bg2/--bg3 to :root's own base --raised/--hover
-   forever, which was exactly why folder-sec and other --bg2 consumers never
-   changed color across themes. */
-body{ --bg2:var(--raised); --bg3:var(--hover); }
+   :root would freeze --bg2 to :root's own base --raised forever, which was
+   exactly why folder-sec and other --bg2 consumers never changed color
+   across themes.
+   (--bg3 used to be declared alongside it here but nothing ever referenced
+   it — dropped rather than left as a token that looks available but isn't.) */
+body{ --bg2:var(--raised); }
 
-/* ── Sidebar list item (Sage/Writer left panel) → mirrors .li ── */
-.panel-item{
-	display:flex;align-items:center;gap:8px;
-	padding:7px 10px;border-radius:var(--r);margin-bottom:2px;
-	cursor:pointer;color:var(--t2);font-size:calc(13.5px * var(--fsc,1));
-	transition:all var(--ease);position:relative;
-}
-.panel-item:hover{background:var(--hover);color:var(--t1)}
-.panel-item.active{background:var(--hover);color:var(--t1)}
-.panel-item.active::before{
-	content:'';position:absolute;left:0;top:6px;bottom:6px;
-	width:3px;background:var(--accent);border-radius:0 2px 2px 0;
-}
-
-/* ── Panel header "new" action (Writer) → small accent button ── */
-.ph-add{
-	background:transparent;border:none;color:var(--accent);
-	font-size:calc(11px * var(--fsc,1));font-weight:700;cursor:pointer;font-family:inherit;
-	padding:3px 8px;border-radius:var(--rs);
-	text-transform:uppercase;letter-spacing:.04em;transition:all var(--ease);
-}
-.ph-add:hover{background:var(--hover)}
+/* NOTE: this compat layer mirrors the core vocabulary above (.li / .ph / .btn /
+   .fg / .ctab). Twelve of its classes had zero consumers anywhere in src/ or
+   index.html and were removed: .panel-item, .ph-add, .detail-header,
+   .detail-actions, .section-head, .desc-card/-title/-content/-actions,
+   .tag-picker, .btn-xs, .modal-actions. Prefer the core classes for new markup;
+   what remains here is only what renderers actually use today. */
 
 /* ── Detail / content headers → mirror .ch divider treatment ── */
 .detail-head{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:16px}
 .detail-head h2{font-weight:700}
-.detail-header{
-	display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-	border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px;
-}
-.detail-actions{display:flex;gap:4px;flex-shrink:0;margin-left:auto}
 
 /* ── Grouped sections (Writer) ── */
 .section{margin-bottom:18px}
-.section-head{
-	display:flex;align-items:center;justify-content:space-between;gap:8px;
-	margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);
-}
-.section-head h5{
-	font-size:calc(11px * var(--fsc,1));font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-	color:var(--t2);margin:0;
-}
 /* Inline-styled section titles in Hero/Navigator tabs */
 #game-tab-body h4,#world-tab-body h4{font-size:calc(12.5px * var(--fsc,1));font-weight:700;color:var(--t1)}
 
@@ -2400,16 +2469,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 	font-size:calc(12.5px * var(--fsc,1));font-weight:500;font-family:inherit;transition:all var(--ease);
 }
 .tab-btn:hover{background:var(--raised);color:var(--t1)}
-.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-
-/* ── Description cards (Writer) → mirror .pcard surface ── */
-.desc-card{
-	background:var(--surface);border:1px solid var(--border);
-	border-radius:var(--r);padding:12px 14px;margin-bottom:10px;
-}
-.desc-title{font-size:calc(13px * var(--fsc,1));font-weight:700;color:var(--t1);margin-bottom:4px}
-.desc-content{font-size:calc(13px * var(--fsc,1));color:var(--t2);white-space:pre-wrap;line-height:1.5}
-.desc-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
+.tab-btn.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 
 /* ── Link chips (Writer/Navigator/Hero) → mirror .mini-rel-item ── */
 .link-chip{
@@ -2421,8 +2481,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .link-chip small{color:var(--t3);font-size:calc(11px * var(--fsc,1))}
 .link-chip .icon{width:14px;height:14px;color:var(--t2)}
 
-/* ── Tag picker (Writer) → mirror .htag-item / pill chips ── */
-.tag-picker{display:flex;flex-wrap:wrap;gap:8px}
+/* ── Tag chip (Writer) → mirror .htag-item / pill chips ── */
 .tag-chip{
 	display:inline-flex;align-items:center;gap:5px;
 	padding:5px 12px;border-radius:20px;border:1px solid var(--border);
@@ -2430,9 +2489,12 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 	font-size:calc(12.5px * var(--fsc,1));font-weight:600;font-family:inherit;transition:all var(--ease);
 }
 .tag-chip:hover{background:var(--raised);color:var(--t1)}
-.tag-chip.active,.tag-chip.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tag-chip.active,.tag-chip.selected{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 
-/* ── Small / extra-small buttons (Writer) → match .btn tokens ── */
+/* ── Small buttons (Writer) → match .btn tokens ──
+   .btn-xs was removed with the rest of the zero-consumer compat classes; it
+   shared the two .danger selector lists below with .btn-sm, so those were
+   trimmed rather than deleted. */
 .btn-sm{
 	display:inline-flex;align-items:center;gap:5px;
 	padding:5px 12px;border:1px solid var(--border);border-radius:var(--r);
@@ -2440,19 +2502,12 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 	font-size:calc(12px * var(--fsc,1));font-weight:600;font-family:inherit;transition:all var(--ease);
 }
 .btn-sm:hover{background:var(--hover)}
-.btn-xs{
-	display:inline-flex;align-items:center;gap:4px;
-	padding:3px 9px;border:1px solid var(--border);border-radius:var(--rs);
-	background:transparent;color:var(--t2);cursor:pointer;
-	font-size:calc(11px * var(--fsc,1));font-weight:600;font-family:inherit;transition:all var(--ease);
-}
-.btn-xs:hover{background:var(--hover);color:var(--t1)}
-.btn-sm.danger,.btn-xs.danger{color:var(--danger);border-color:transparent}
-.btn-sm.danger:hover,.btn-xs.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-sm.danger{color:var(--danger);border-color:transparent}
+.btn-sm.danger:hover{background:var(--danger);color:var(--on-danger);border-color:var(--danger)}
 
 /* ── Danger button alias used by Hero/Navigator modals → .btn-d ── */
 .btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
-.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-danger:hover{background:var(--danger);color:var(--on-danger)}
 
 /* ── Modal form rows (Hero/Navigator) & bare modal labels (Writer)
       → mirror .fg form-group treatment ── */
@@ -2474,19 +2529,6 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 }
 .form-row textarea,#modal-body>label textarea{resize:vertical;min-height:72px}
 .form-row select option,#modal-body>label select option{background:var(--raised)}
-
-/* ── Modal action footer (Writer) → mirror .mfoot ── */
-.modal-actions{
-	display:flex;gap:8px;justify-content:flex-end;
-	margin-top:18px;padding-top:14px;border-top:1px solid var(--border);
-}
-.modal-actions button{
-	display:inline-flex;align-items:center;gap:6px;
-	padding:7px 15px;border:none;border-radius:var(--r);
-	background:var(--button, var(--accent));color:#fff;cursor:pointer;
-	font-size:calc(13.5px * var(--fsc,1));font-weight:500;font-family:inherit;transition:all var(--ease);
-}
-.modal-actions button:hover{background:var(--accentH)}
 
 /* ── Pick lists in modals (Writer) → selectable rows ── */
 .pick-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
@@ -2574,7 +2616,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 	border-radius:3px;padding:0 4px;flex-shrink:0;letter-spacing:.03em;
 }
 /* accent "create Major module" rail tool (mockup 01) */
-#nav-sidebar .nav-btn.create{background:var(--accent);color:#fff;border-radius:var(--r)}
+#nav-sidebar .nav-btn.create{background:var(--accent);color:var(--on-accent);border-radius:var(--r)}
 #nav-sidebar .nav-btn.create:hover{background:var(--accentH)}
 /* module header chips row (tags + link count) */
 .module-head .kind-chip{
@@ -2655,7 +2697,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .nar-notice{position:absolute;top:14px;left:50%;z-index:5;
 	background:var(--raised);border:1px solid var(--border);border-radius:var(--r);
 	padding:9px 15px;font-size:calc(13px * var(--fsc,1));color:var(--t1);
-	box-shadow:0 8px 24px rgba(0,0,0,.4);
+	box-shadow:var(--shadow-float);
 	transform:translateX(-50%) translateY(-40px);opacity:0;transition:all .2s ease;pointer-events:none;
 }
 .nar-notice.show{transform:translateX(-50%) translateY(0);opacity:1}
@@ -2731,12 +2773,12 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .chs-day{text-align:center;font-size:calc(10.5px * var(--fsc,1));color:var(--t3);margin:10px 0 12px}
 .chs-row{display:flex;justify-content:flex-end;margin-bottom:10px}
 .chs-row.left{justify-content:flex-start}
-.chs-bubble{position:relative;max-width:70%;background:var(--accent);color:#fff;
+.chs-bubble{position:relative;max-width:70%;background:var(--accent);color:var(--on-accent);
 	border-radius:14px 14px 4px 14px;padding:8px 12px 6px;font-size:calc(12.5px * var(--fsc,1));line-height:1.55;
 	box-shadow:0 2px 10px rgba(0,0,0,.25);cursor:grab;user-select:none}
 .chs-bubble:active{cursor:grabbing}
-.chs-bubble .chs-text{word-break:break-word}
-.chs-bubble .chs-text .wikilink{color:#fff;text-decoration:underline;cursor:pointer}
+.chs-bubble .chs-text{overflow-wrap:break-word}
+.chs-bubble .chs-text .wikilink{color:var(--on-accent);text-decoration:underline;cursor:pointer}
 .chs-bubble .chs-time{display:block;text-align:right;font-size:calc(9.5px * var(--fsc,1));opacity:.75;margin-top:3px}
 .chs-bubble .chs-acts{position:absolute;left:-90px;top:50%;transform:translateY(-50%);
 	display:none;gap:2px}
@@ -2753,7 +2795,7 @@ body{ --bg2:var(--raised); --bg3:var(--hover); }
 .chs-transcript{padding:14px 18px}
 .chs-tr-row{display:flex;gap:12px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:calc(12.5px * var(--fsc,1))}
 .chs-tr-time{color:var(--t3);flex-shrink:0;font-size:calc(11px * var(--fsc,1));padding-top:1px;min-width:110px}
-.chs-tr-text{color:var(--t2);word-break:break-word}
+.chs-tr-text{color:var(--t2);overflow-wrap:break-word}
 
 /* Doc "Drafter" (Phase 13, mockup 13) + shared md format bar */
 .drafter-hint{font-size:calc(11px * var(--fsc,1));color:var(--t3);margin:2px 0 10px}
@@ -2838,7 +2880,7 @@ select.fp-input[multiple]{padding:2px}
 .sk-tools{position:absolute;left:14px;top:14px;z-index:4;display:flex;align-items:center;gap:6px;
 	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;
 	box-shadow:0 4px 16px rgba(0,0,0,.35)}
-.sk-tools .btn.act{background:var(--accent);color:#fff}
+.sk-tools .btn.act{background:var(--accent);color:var(--on-accent)}
 .sk-tools .zsep{width:1px;height:16px;background:var(--border)}
 .sk-swatch{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent}
 .sk-swatch.act{border-color:var(--t1)}
@@ -2990,7 +3032,7 @@ select.fp-input[multiple]{padding:2px}
 #layout-menu{
 	position:absolute;top:38px;right:0;width:130px;background:var(--surface);
 	border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);
-	box-shadow:0 18px 44px rgba(0,0,0,.42);padding:4px;z-index:300;
+	box-shadow:var(--shadow-menu);padding:4px;z-index:300;
 }
 #layout-menu.hidden{display:none}
 .layout-menu-item{
@@ -2999,7 +3041,7 @@ select.fp-input[multiple]{padding:2px}
 	font-size:calc(12.5px * var(--fsc,1));cursor:pointer;font-family:inherit;text-align:left;
 }
 .layout-menu-item:hover{background:var(--hover);color:var(--t1)}
-.layout-menu-item.act{background:var(--accent);color:#fff}
+.layout-menu-item.act{background:var(--accent);color:var(--on-accent)}
 
 /* Search Link overlay (Phase 20, mockup 24) */
 #qs-box .qs-inputrow{display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid var(--border)}
@@ -3010,7 +3052,7 @@ select.fp-input[multiple]{padding:2px}
 .qs-flabel{font-size:calc(10.5px * var(--fsc,1));color:var(--t3)}
 .qs-chip{font-size:calc(10.5px * var(--fsc,1));color:var(--t2);border:1px solid var(--border);border-radius:10px;padding:2px 10px;cursor:pointer}
 .qs-chip:hover{border-color:var(--accent)}
-.qs-chip.act{background:var(--accent);border-color:var(--accent);color:#fff}
+.qs-chip.act{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .qs-filters select{background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);color:var(--t1);
 	font-size:calc(11px * var(--fsc,1));padding:3px 6px}
 .qs-item .qs-lc{font-size:calc(10px * var(--fsc,1));color:var(--accentH);border:1px solid var(--accent);border-radius:9px;padding:1px 7px;flex-shrink:0}

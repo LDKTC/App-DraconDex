@@ -252,7 +252,7 @@ function groupModulesByKind() {
 function buildKindBrowserHtml() {
   const groups = groupModulesByKind();
   const kinds = MODULE_KINDS.filter(k => groups[k]?.length);
-  if (!kinds.length) return `<div class="empty" style="padding:24px 10px"><p>${t('nestEmpty')}</p></div>`;
+  if (!kinds.length) return nestEmptyHtml();
   return kinds.map(k => {
     const mods = groups[k].slice().sort((a, b) => a.name.localeCompare(b.name));
     const open = S.kindBrowserOpen.has(k);
@@ -345,15 +345,22 @@ async function chooseImportAsNexusNest(cardEl) {
   const totals = { modules: 0, objects: 0, events: 0, chapters: 0, dialogues: 0, relations: 0 };
   let firstOpenedId = null;
   let batchCtx = {};
-  for (const tg of MIGRATE_TARGETS) {
-    const rows = await api.migrate.list(tg.id, nexusId);
-    for (const row of rows) {
-      const res = await api.migrate.run(nexusId, tg.id, row.id, batchCtx);
-      batchCtx = res.batchCtx || batchCtx;
-      const c = res.counts || {};
-      for (const k of Object.keys(totals)) totals[k] += c[k] || 0;
-      if (!firstOpenedId && res.id) firstOpenedId = res.id;
+  // Unbounded N×M migration — pointer-events:none alone left the modal looking
+  // frozen for the whole run.
+  setBusy('#modal-body', true);
+  try {
+    for (const tg of MIGRATE_TARGETS) {
+      const rows = await api.migrate.list(tg.id, nexusId);
+      for (const row of rows) {
+        const res = await api.migrate.run(nexusId, tg.id, row.id, batchCtx);
+        batchCtx = res.batchCtx || batchCtx;
+        const c = res.counts || {};
+        for (const k of Object.keys(totals)) totals[k] += c[k] || 0;
+        if (!firstOpenedId && res.id) firstOpenedId = res.id;
+      }
     }
+  } finally {
+    setBusy('#modal-body', false);
   }
   closeModal();
   toast(`${t('artMigrateDone')} — ${totals.modules} modules · ${totals.objects} objects · ${totals.events} events · ${totals.chapters} chapters · ${totals.dialogues} dialogues · ${totals.relations} relations`, 'ok');
@@ -378,8 +385,17 @@ function buildAccSection(key, label, bodyHtml, actHtml = '') {
     <div class="acc-body" style="${open ? '' : 'display:none'}">${bodyHtml}</div>`;
 }
 
+// A brand-new vault used to show a text-only "no modules yet" with nothing to
+// click — the only way forward was the "+" tucked into the rail/accordion header.
+function nestEmptyHtml() {
+  return `<div class="empty" style="padding:24px 10px">
+    <p>${t('nestEmpty')}</p>
+    <button class="btn btn-p" style="margin-top:12px" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus} ${t('createMajorModule')}</button>
+  </div>`;
+}
+
 function buildNestTreeHtml() {
-  if (!S.moduleTree.length) return `<div class="empty" style="padding:24px 10px"><p>${t('nestEmpty')}</p></div>`;
+  if (!S.moduleTree.length) return nestEmptyHtml();
   return S.moduleTree.map(m => buildNestRow(m, 0, null)).join('');
 }
 
@@ -1165,7 +1181,12 @@ async function openModuleNode(id) {
   if (m.kind === 'connector' && typeof loadConnectorData === 'function') loaders.push(loadConnectorData(m));
   if (m.kind === 'sketcher' && typeof loadSketcherData === 'function') loaders.push(loadSketcherData(m));
   if (m.kind === 'designer' && typeof loadDesignerData === 'function') loaders.push(loadDesignerData(m));
-  await Promise.all(loaders);
+  // renderNexusHome() above has already painted the shell, so the pane sits
+  // there empty until these IPC loads resolve — on a large module that reads as
+  // a click that did nothing.
+  setBusy('#main-inner', true);
+  try { await Promise.all(loaders); }
+  finally { setBusy('#main-inner', false); }
   if (S.activeModuleNode?.id === id) renderNexusHome();
 }
 

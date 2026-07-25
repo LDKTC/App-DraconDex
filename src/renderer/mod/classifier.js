@@ -373,7 +373,7 @@ async function openClassifierTemplateModal(moduleId) {
         <span class="pk">${x(tpl.description)}</span>
         <span class="pv ghost">${[t(CLASSIFIER_DISPTYPE_KEY[tpl.attribute_type] || 'dispTypeText'), isElement && tpl.levelable ? t('levelable') : '', isElement && tpl.has_condition ? t('condition') : ''].filter(Boolean).join(' · ')}</span>
         <span class="acts"><button class="btn btn-g btn-i" onclick="deleteClassifierTemplateRow(${tpl.id})">${I.delete}</button></span>
-      </div>`).join('') || `<p style="color:var(--t3);font-size:12px;padding:4px 0">${t('nestEmpty')}</p>`}
+      </div>`).join('') || `<p style="color:var(--t3);font-size:calc(12px * var(--fsc,1));padding:4px 0">${t('nestEmpty')}</p>`}
     </div>
     <div class="fg" style="margin-top:10px"><label>${t('addAttribute')}</label><input id="ct-name" placeholder="${t('name')}"></div>
     <div class="fg"><label>${t('displayType')}</label>

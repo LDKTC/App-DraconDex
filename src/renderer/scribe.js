@@ -71,7 +71,7 @@ async function renderScribeSidebar() {
             <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${open ? 90 : 0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             <span style="color:${f.color_code || 'var(--accent)'};line-height:1;display:flex;align-items:center">${I.folder}</span>
             <span class="name">${x(f.name)}</span>
-            <span style="color:var(--t3);font-size:11px">${kids.length}</span>
+            <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${kids.length}</span>
           </div>
           ${open ? `<div class="scribe-folder-body">${subtree(f.id)}${kids.map(noteRow).join('')}</div>` : ''}
         </div>`;
@@ -113,7 +113,7 @@ async function renderScribeMain() {
   const n = S.scribeNote;
   if (!n) {
     el.innerHTML = `<div class="empty" style="margin-top:80px">
-      <div class="ei" style="font-size:28px">📝</div>
+      <div class="ei" style="font-size:calc(28px * var(--fsc,1))">📝</div>
       <h3>${t('scribe')}</h3><p>${t('notePick')}</p>
     </div>`;
     return;

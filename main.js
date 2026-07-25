@@ -105,7 +105,10 @@ h('db:exportFile', async () => {
   return { canceled: false, filePath: result.filePath };
 });
 
-h('db:importFileMerge', async () => {
+// Split into pick + merge so the renderer can show its "merge into the current
+// database?" confirm *between* the two — while these were one call, the merge
+// had already run by the time there was anything to confirm.
+h('db:pickImportFile', async () => {
   // Accepts both the current .ddx format and legacy .db files (pre-v3.11,
   // or a v1/v2 export) — an old-shaped .db import is exactly the trigger
   // case for the Nexus Nest / Import DB choice modal (src/renderer/hub.js).
@@ -115,7 +118,12 @@ h('db:importFileMerge', async () => {
     filters: [{ name: 'DraconDex / SQLite DB', extensions: ['ddx', 'db'] }],
   });
   if (result.canceled || !result.filePaths?.[0]) return { canceled: true };
-  const summary = db.importDatabaseMerge(result.filePaths[0]);
+  return { canceled: false, filePath: result.filePaths[0] };
+});
+
+h('db:importMergeFile', async (filePath) => {
+  if (!filePath) return { canceled: true };
+  const summary = db.importDatabaseMerge(filePath);
   return { canceled: false, summary };
 });
 

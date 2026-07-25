@@ -94,7 +94,7 @@ async function renderWriteProject() {
     <button class="btn btn-g btn-i" onclick="openWriteSeriesModal(${p.id})" title="${t('writeSeriesNew')}">${I.plus}</button>
   </div>`;
   if (!series.length) {
-    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">${t('writeSeriesNew')}</p></div>`;
+    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">${t('writeSeriesNew')}</p></div>`;
   } else {
     for (const s of series) {
       const col = s.color_code || '#6366f1';
@@ -131,7 +131,7 @@ async function renderWriteBookGrid() {
   const col = s.color_code || '#6366f1';
   let h = `<div class="ch">
     <h2 style="border-left:4px solid ${col};padding-left:10px">${x(s.name)} <span style="color:var(--t3);font-weight:400;font-size:.75em">· ${t('writeBooks')}</span></h2>
-    <button class="btn btn-p" style="padding:5px 11px;font-size:12.5px" onclick="openWriteBookModal(${s.id})">${I.plus} ${t('writeBookNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12.5px * var(--fsc,1))" onclick="openWriteBookModal(${s.id})">${I.plus} ${t('writeBookNew')}</button>
   </div>`;
   if (!books.length) {
     h += `<div class="empty" style="margin-top:60px"><div class="ei">${I.book}</div><p>${t('writeBookNew')}</p></div>`;
@@ -178,12 +178,12 @@ async function renderWriteBookPage() {
       <button class="btn btn-g btn-i" onclick="closeWriteBook()" title="${t('writeBooks')}">${I.return}</button>
       <span style="border-left:4px solid ${bcol};padding-left:10px">${x(b.name)}</span>
     </h2>
-    <button class="btn btn-p" style="padding:5px 11px;font-size:12.5px" onclick="openWriteChapterModal(${b.id})">${I.plus} ${t('writeChapterNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12.5px * var(--fsc,1))" onclick="openWriteChapterModal(${b.id})">${I.plus} ${t('writeChapterNew')}</button>
   </div>
   <div class="wchap-split">
     <div class="wchap-list">`;
   if (!chapters.length) {
-    h += `<div class="empty" style="padding:24px 8px"><p style="font-size:12px;color:var(--t3);text-align:center">${t('writeChapterNew')}</p></div>`;
+    h += `<div class="empty" style="padding:24px 8px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">${t('writeChapterNew')}</p></div>`;
   } else {
     for (let i = 0; i < chapters.length; i++) {
       const c = chapters[i];
@@ -235,8 +235,8 @@ async function renderWriteChapterEditor(chapterId) {
   if (!wrap) return;
   wrap.innerHTML = `
     <div class="wchap-editor-head">
-      <span style="font-weight:600;font-size:13.5px">${x(chapter.name)}</span>
-      <span id="wchap-save-state" style="color:var(--t3);font-size:11.5px;margin-left:auto"></span>
+      <span style="font-weight:600;font-size:calc(13.5px * var(--fsc,1))">${x(chapter.name)}</span>
+      <span id="wchap-save-state" style="color:var(--t3);font-size:calc(11.5px * var(--fsc,1));margin-left:auto"></span>
       <button id="wchap-preview-btn" class="btn btn-s btn-sm" onclick="toggleWchapPreview()">${t('preview')}</button>
     </div>
     <div class="wchap-wrap">
@@ -404,7 +404,7 @@ async function loadWlinkObjects() {
   if (!catId) { wrap.innerHTML = ''; return; }
   const objs = await api.object.getAll(catId);
   wrap.innerHTML = objs.map(o => `<div class="pick-item" onclick="createWlinkForObject(${o.id})">${x(o.name)}</div>`).join('')
-    || `<div class="empty" style="padding:10px"><p style="font-size:12px;color:var(--t3)">--</p></div>`;
+    || `<div class="empty" style="padding:10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3)">--</p></div>`;
 }
 
 async function createWlinkForObject(objectId) {
@@ -433,7 +433,7 @@ async function renderWriteNovelLink() {
       </select>
     </div>`;
   if (!series.length) {
-    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">${t('writeSeriesNew')}</p></div>`;
+    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">${t('writeSeriesNew')}</p></div>`;
     q('#left-panel-inner').innerHTML = lh;
     q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px"><div class="ei">${I.relation}</div><h3>${t('writeNovelLink')}</h3><p>${t('writeSeriesNew')}</p></div>`;
     return;
@@ -455,7 +455,7 @@ async function renderWriteNovelLink() {
       <button class="btn btn-g btn-i" onclick="openWriteWikiModal()" title="${t('writeWikiNew')}">${I.plus}</button>
     </div>`;
   if (!wikis.length) {
-    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">${t('writeWikiNew')}</p></div>`;
+    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">${t('writeWikiNew')}</p></div>`;
   } else {
     for (const w of wikis) {
       const act = S.writeWikiChapter === w.chapter_id;
@@ -511,7 +511,7 @@ async function renderWriteWordList(chapterId, wikis) {
         <div class="odot" style="background:${col}"></div>
         <div style="flex:1;min-width:0">
           <div class="oname">${x(w.text_link)}</div>
-          <div style="font-size:11.5px;color:var(--t3)">${x(w.category_name || '')}${w.object_name ? ` · ${x(w.object_name)}` : ''}</div>
+          <div style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3)">${x(w.category_name || '')}${w.object_name ? ` · ${x(w.object_name)}` : ''}</div>
         </div>
         <button class="btn btn-g btn-i" style="color:var(--danger)" onclick="deleteWriteWordLink(${w.id})" title="${t('delete')}">${I.delete}</button>
       </div>`;
@@ -522,6 +522,7 @@ async function renderWriteWordList(chapterId, wikis) {
 }
 
 async function deleteWriteWordLink(id) {
+  if (!await uiConfirm(t('confirmRemoveLink'), { okText: t('remove'), cancelText: t('cancel') })) return;
   await api.write.deleteWordLink(id);
   await renderWriteNovelLink();
 }
@@ -544,11 +545,11 @@ async function openWriteWikiModal() {
     const chapters = await api.write.getChapters(b.id);
     const avail = chapters.filter(c => !used.has(c.id));
     if (!avail.length) continue;
-    items += `<div style="font-size:11.5px;color:var(--t3);font-weight:600;margin:6px 0 3px">${x(b.name)}</div>`;
+    items += `<div style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3);font-weight:600;margin:6px 0 3px">${x(b.name)}</div>`;
     items += avail.map(c => `<div class="pick-item" onclick="createWriteWikiFor(${c.id})">${c.chapter_order}. ${x(c.name)}</div>`).join('');
   }
   openModal(t('writeWikiNew'), `
-    <div class="pick-list">${items || `<div class="empty" style="padding:10px"><p style="font-size:12px;color:var(--t3)">--</p></div>`}</div>
+    <div class="pick-list">${items || `<div class="empty" style="padding:10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3)">--</p></div>`}</div>
     <div class="mfoot">
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
     </div>`);
@@ -571,7 +572,7 @@ async function renderWriteChatnote() {
     <button class="btn btn-g btn-i" onclick="openWriteNoteModal()" title="${t('writeNoteNew')}">${I.plus}</button>
   </div>`;
   if (!notes.length) {
-    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">${t('writeNoteNew')}</p></div>`;
+    lh += `<div class="empty" style="padding:16px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">${t('writeNoteNew')}</p></div>`;
   } else {
     for (const n of notes) {
       const col = n.color_code || '#6366f1';

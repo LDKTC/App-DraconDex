@@ -151,7 +151,9 @@ async function qsOpenItem(item) {
 }
 
 // ── Overlay ─────────────────────────────────────────────────────────────
-async function openQuickSwitcher() {
+// `seed` pre-fills the query — used by the sidebar search box, which hands its
+// text over rather than rendering its own (legacy-only) result list.
+async function openQuickSwitcher(seed = '') {
   if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
   document.getElementById('qs-overlay')?.remove();
   const ae = document.activeElement;
@@ -291,6 +293,10 @@ async function openQuickSwitcher() {
   });
   ov.addEventListener('mousedown', (e) => { if (e.target === ov) close(); });
 
+  if (seed) input.value = seed;
   update();
   input.focus();
+  // Caret to the end so the seeded text reads as "already typed" and the next
+  // keystroke continues it instead of replacing a selection.
+  if (seed) input.setSelectionRange(seed.length, seed.length);
 }

@@ -15,7 +15,7 @@ async function renderProjectHashtagView(){
       </div>`;
     }).join('');
   } else {
-    lh += `<div class="empty" style="padding:20px 10px"><p style="font-size:12px;color:var(--t3);text-align:center">ยังไม่มี Tag ในโปรเจกต์นี้</p></div>`;
+    lh += `<div class="empty" style="padding:20px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">ยังไม่มี Tag ในโปรเจกต์นี้</p></div>`;
   }
   q('#left-panel-inner').innerHTML = lh;
 
@@ -31,13 +31,13 @@ async function renderProjectHashtagView(){
   const col = tag?.color_code || '#6366f1';
   const total = objects.length + events.length;
   let h = `<div class="ch"><span class="hn" style="color:${col};font-size:1.4em;font-weight:700">#${x(tag?.tag_name||'')}</span>
-    <span style="font-size:12px;color:var(--t3);margin-left:8px">${total} รายการ</span>
+    <span style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-left:8px">${total} รายการ</span>
   </div>`;
   if(!total){
     h += `<div class="empty"><div class="ei">${I.hashtag}</div><h3>ยังไม่มี Object หรือ Event ใช้ Tag นี้</h3></div>`;
   } else {
     if(objects.length){
-      h += `<div style="padding:4px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Objects (${objects.length})</div>`;
+      h += `<div style="padding:4px 16px 2px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Objects (${objects.length})</div>`;
       h += `<div class="objlist">`;
       for(const o of objects){
         const oc = o.color_code || '#6366f1';
@@ -45,14 +45,14 @@ async function renderProjectHashtagView(){
           <div class="odot" style="background:${oc}"></div>
           <div style="flex:1;min-width:0">
             <div class="oname">${x(o.name)}</div>
-            <div style="font-size:12px;color:var(--t3);margin-top:2px">${x(o.category_name)}</div>
+            <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px">${x(o.category_name)}</div>
           </div>
         </div>`;
       }
       h += `</div>`;
     }
     if(events.length){
-      h += `<div style="padding:4px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Events (${events.length})</div>`;
+      h += `<div style="padding:4px 16px 2px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Events (${events.length})</div>`;
       h += `<div class="objlist">`;
       for(const e of events){
         const ec = e.color_code || '#6366f1';
@@ -60,7 +60,7 @@ async function renderProjectHashtagView(){
           <div class="odot" style="background:${ec}"></div>
           <div style="flex:1;min-width:0">
             <div class="oname">${x(e.event_name||'Untitled Event')}</div>
-            <div style="font-size:12px;color:var(--t3);margin-top:2px">${x(e.line_name||'')}</div>
+            <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px">${x(e.line_name||'')}</div>
           </div>
         </div>`;
       }
@@ -76,7 +76,7 @@ async function selectProjectHashtag(tagId){
 }
 
 async function renderHashtagView(){
-  q('#left-panel-inner').innerHTML=`<div class="ph"><h4>ป้ายกำกับ</h4></div><div class="empty" style="padding:30px 10px"><div class="ei" style="font-size:28px;opacity:.3">🏷️</div></div>`;
+  q('#left-panel-inner').innerHTML=`<div class="ph"><h4>ป้ายกำกับ</h4></div><div class="empty" style="padding:30px 10px"><div class="ei" style="font-size:calc(28px * var(--fsc,1));opacity:.3">🏷️</div></div>`;
   const tags=await api.hashtag.getAll();
   let h=`<div class="ch"><h2>🏷️ ป้ายกำกับ</h2><button class="btn btn-p" onclick="openHashtagModal()">+ เพิ่ม Tag</button></div>`;
   if(!tags.length){ h+=`<div class="empty"><div class="ei">🏷️</div><h3>ยังไม่มี Tag</h3></div>`; }
@@ -135,6 +135,6 @@ function updateWheelPreview(){ const [r,g,b]=hslToRgb(_wheelHue,_wheelSat,_wheel
 function onHexInput(val){ if(/^#[0-9a-fA-F]{6}$/.test(val)){const r=parseInt(val.substr(1,2),16),g=parseInt(val.substr(3,2),16),b=parseInt(val.substr(5,2),16),[h,s,l]=rgbToHsl(r,g,b);_wheelHue=h;_wheelSat=s;_wheelLight=l; const canvas=q('#color-wheel');if(canvas)drawWheel(canvas); const sw=q('#cpreview-swatch');if(sw){sw.style.background=val;sw.style.boxShadow=`0 0 16px ${val}40`;} const np=q('#cnative-picker');if(np)np.value=val;} }
 function onNativePick(val){ const hi=q('#cpreview-hex');if(hi)hi.value=val; onHexInput(val); }
 async function addColorFromWheel(){ const code=q('#cpreview-hex').value.trim(); if(!/^#[0-9a-fA-F]{6}$/.test(code)){toast('รูปแบบสีไม่ถูกต้อง','err');return;} await api.color.add(code); S.colors=await api.color.getAll(); renderColorSettings(); toast('เพิ่มสีเรียบร้อยแล้ว','ok'); }
-async function deleteColorSwatch(id){ const result=await api.color.delete(id); if(!result){toast('ไม่สามารถลบได้ -- สีนี้ถูกใช้งานอยู่','err');return;} S.colors=await api.color.getAll(); renderColorSettings(); toast('ลบสีแล้ว','ok'); }
+async function deleteColorSwatch(id){ if(!await uiConfirm(t('confirmDeleteItem'),{okText:t('delete'),cancelText:t('cancel')})) return; const result=await api.color.delete(id); if(!result){toast('ไม่สามารถลบได้ -- สีนี้ถูกใช้งานอยู่','err');return;} S.colors=await api.color.getAll(); renderColorSettings(); toast('ลบสีแล้ว','ok'); }
 
 // ═══ MODALS: FOLDER ════════════════════════════════════

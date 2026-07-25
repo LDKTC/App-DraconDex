@@ -63,6 +63,12 @@ App-NovelManager/
 - v2.8 เพิ่ม namespace `api.nexus.*`, `api.note.*`, `api.wiki.*`
   (resolve/backlinks/outgoing/quickIndex/entityPath/explorerTree/getGraph/
   renameTarget/rebuild)
+- **2026-07-25**: `api.db.importFileMerge()` ถูกแทนที่ด้วย 2 ช่องแยกกัน
+  `api.db.pickImportFile()` (เปิด dialog อย่างเดียว คืน `{canceled, filePath}`)
+  และ `api.db.importMergeFile(path)` (merge จริง) — เพื่อให้ renderer แทรก
+  หน้าต่างยืนยัน **ระหว่างกลาง** ได้ ตอนรวมเป็นช่องเดียว merge จบไปแล้วตั้งแต่
+  ก่อนจะมีอะไรให้ยืนยัน (namespace `db` ไม่อยู่ในรายการ read-only guard
+  จึงไม่ต้องแก้ `IMPORT_DB_READONLY_NS`)
 
 ### database.js (~32 บรรทัด)
 - require `src/db/*` ทั้ง 15 ไฟล์ (v2.8 เพิ่ม `nexus.js`, `scribe.js`,
@@ -84,6 +90,24 @@ App-NovelManager/
 - สไตล์ทั้งแอป + นิยามธีมทั้งหมดเป็นชุดตัวแปร CSS (`--bg --t1 --accent ...`)
   ต่อธีม, คลาสคอมโพเนนต์กลาง (`.btn .btn-p/.btn-s/.btn-g/.btn-d`, `.li`,
   `.fg`, `.ph`, `.empty`, `.module-item`, `.artisan-card`, `.wchap-*` ฯลฯ)
+- **`:root` (อัปเดต 2026-07-25)** — นอกจาก token สี/รัศมีเดิม ตอนนี้มี:
+  - `--fsc:1` ตัวคูณสเกลฟอนต์ (core.js เขียนทับแบบ inline บน documentElement)
+    เดิมถูกอ้าง 300+ ครั้งแบบ `var(--fsc,1)` แต่ไม่เคยประกาศไว้ที่ไหนเลย
+  - `--on-accent`/`--on-button`/`--on-danger`/`--ink-dark` — สีตัวอักษรบนพื้นถม
+    (ดู SYSTEMS.md §10) ต้องเป็นค่า literal 3 ตัวแยกกัน **ห้าม** alias ถึงกัน
+  - สเกลใหม่สำหรับโค้ดใหม่เท่านั้น (ไม่ retrofit ของเดิม): `--sp-0..7`,
+    `--fs-micro..xl` (ห่อ `calc(… * var(--fsc,1))` มาให้แล้ว), `--lh-*`,
+    `--shadow-pop/float/menu/modal`, `--mono`
+- `--bg2` ประกาศบน `body` (ไม่ใช่ `:root`) มีคอมเมนต์อธิบายกับดัก aliasing ไว้
+  — `--bg3` ถูกลบแล้ว (ไม่มีใครอ้างถึงเลย)
+- compat layer ท้ายไฟล์: ลบคลาสที่ไม่มีใครใช้ 12 ตัว (`.panel-item`, `.ph-add`,
+  `.detail-header`, `.detail-actions`, `.section-head`, `.desc-card/-title/
+  -content/-actions`, `.tag-picker`, `.btn-xs`, `.modal-actions`) และบล็อกที่
+  นิยามซ้ำคำต่อคำ (`.empty h3/p`, `.tag`, `#toast`, scrollbar)
+  — ⚠️ `.btn-xs` เคยใช้ selector list ร่วมกับ `.btn-sm` (มีคนใช้ 20 จุด)
+    จึงต้อง **แก้ selector** ไม่ใช่ลบทั้งบรรทัด
+- คลาสใหม่: `.busy-veil`/`.busy-spin`/`.busy-text` (ตัวบอกสถานะโหลดตัวเดียวของแอป),
+  `#confirm-box.wide` + `#confirm-box .fg` (ใช้โดย `uiPrompt()`)
 
 ### start.js (31 บรรทัด)
 - `npm start` → ตรวจ Electron binary ผ่าน `ensure-electron.js` แล้ว spawn
@@ -271,6 +295,16 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 - **Routing**: `selectModule()` / `switchView()` + `loadModule()` (lazy-load
   สคริปต์โมดูล), การโชว์/ซ่อนปุ่ม rail (`updateModuleSubNav`,
   `MODULE_SUBNAV` = subtab ของ hero/writer/sage/**scribe**)
+- **คอมโพเนนต์ร่วม (อัปเดต 2026-07-25)**:
+  - `toast(msg,type)` + ตาราง `TOAST_CLS` — map `'error'→'err'`, `'success'→'ok'`
+  - `openModal()` โฟกัส field แรกใน `#modal-body` ให้เอง (fallback เป็น `#modal`)
+  - `bindModalEscape()` — Escape ปิด modal หลัก (bubble phase, มี guard กัน
+    overlay ที่ซ้อนอยู่ด้านบนและกัน welcome modal)
+  - `uiPrompt(msg,opts)` — คู่แฝดรับข้อความของ `uiConfirm` แทน native `prompt()`
+    คืน `Promise<string|null>`; Esc = ยกเลิก, Ctrl+Enter = ตกลง
+  - `setBusy(el,on)` — ครอบ spinner `.busy-veil` + ตั้ง `aria-busy`
+  - `openShortcutsModal()` / `replayGuideTour()` + ตาราง `SHORTCUT_HELP`
+    (หมวด "ช่วยเหลือ" ในเมนูเฟือง)
 - **แท็บ title bar**: `upsertProjectTab/upsertEntityTab/switchProjectTab/
   switchEntityTab/close*` (Director เปิดเป็น project tab; Hero/Writer/**Scribe**
   เปิดเป็น entity tab)

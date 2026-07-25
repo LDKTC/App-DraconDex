@@ -145,7 +145,7 @@ async function renderProject(){
     <div class="cdot" style="background:${col}"></div><h2>${x(p.name)}</h2>
     ${p.codename?`<span class="tag">${x(p.codename)}</span>`:''}
     <button class="btn btn-s btn-i" onclick="openProjectModal(${p.id})">${I.edit}</button>
-    <button class="btn btn-p" onclick="openCategoryModal()" style="padding:6px 12px;font-size:12.5px">${I.plus} Category</button>
+    <button class="btn btn-p" onclick="openCategoryModal()" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))">${I.plus} Category</button>
   </div>`;
 
 
@@ -176,11 +176,11 @@ async function renderCatBody(catId){
 
   let h = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
     <div class="view-toggles" style="display:flex;background:var(--surface);padding:3px;border-radius:var(--r);border:1px solid var(--border)">
-      <button class="btn btn-g ${S.catView==='list'?'active':''}" style="padding:4px 10px;font-size:12px;border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setCatView('list')">${I.list} List</button>
-      <button class="btn btn-g ${S.catView==='table'?'active':''}" style="padding:4px 10px;font-size:12px;border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setCatView('table')">${I.table} Table</button>
+      <button class="btn btn-g ${S.catView==='list'?'active':''}" style="padding:4px 10px;font-size:calc(12px * var(--fsc,1));border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setCatView('list')">${I.list} List</button>
+      <button class="btn btn-g ${S.catView==='table'?'active':''}" style="padding:4px 10px;font-size:calc(12px * var(--fsc,1));border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setCatView('table')">${I.table} Table</button>
     </div>
-    <span style="font-size:11px;color:var(--t3);flex:1">${objs.length} <span>รายการ</span></span>
-    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openObjectModal(${catId})">${I.plus} เพิ่ม</button>
+    <span style="font-size:calc(11px * var(--fsc,1));color:var(--t3);flex:1">${objs.length} <span>รายการ</span></span>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12px * var(--fsc,1))" onclick="openObjectModal(${catId})">${I.plus} เพิ่ม</button>
     <button class="btn btn-s" style="display:flex;align-items:center;gap:4px" onclick="openTemplateModal(${catId})" title="ใช้เพิ่มช่องการเก็บข้อมูลให้กับ Object ในหมวดหมู่นี้">${I.fields} Fields <span style="color:var(--t3);font-weight:400">· info</span></button>
   </div>`;
 
@@ -314,7 +314,7 @@ async function openColumnVisibilityModal(catId) {
   
   const allChecked = tmpls.every(t => visibleCols[t.id] !== false);
   html += `
-    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; padding:6px 0;">
+    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:calc(14px * var(--fsc,1)); padding:6px 0;">
       <input type="checkbox" id="col-vis-all" ${allChecked ? 'checked' : ''} onchange="toggleAllColumnsFromModal(${catId}, this.checked)">
       <strong>แสดงทั้งหมด</strong>
     </label>
@@ -324,7 +324,7 @@ async function openColumnVisibilityModal(catId) {
   for(const t of tmpls) {
     const isChecked = visibleCols[t.id] !== false;
     html += `
-      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; padding:4px 0;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:calc(14px * var(--fsc,1)); padding:4px 0;">
         <input type="checkbox" class="col-vis-check" data-tid="${t.id}" ${isChecked ? 'checked' : ''} onchange="toggleColumnVisibilityFromModal(${catId}, ${t.id}, this.checked)">
         <span>${x(t.description)}</span>
       </label>
@@ -445,7 +445,7 @@ async function buildDetail(oid){
     <div class="detail-content">
     <div class="attrs" id="af-${oid}">`;
   if(!attrs.length){
-    h += `<div class="empty" style="padding:24px 0"><p style="font-size:12px">ยังไม่มี Field</p>
+    h += `<div class="empty" style="padding:24px 0"><p style="font-size:calc(12px * var(--fsc,1))">ยังไม่มี Field</p>
       <button class="btn btn-s" style="display:flex;align-items:center;gap:4px" onclick="openTemplateModal(${S.category.id})">${I.fields} จัดการ Fields</button></div>`;
   } else {
     for(const a of attrs){
@@ -525,7 +525,7 @@ async function getObjectRelationRows(oid){
 }
 
 function renderObjectRelationRows(rows){
-  if(!rows.length) return `<div class="empty" style="padding:12px 0;font-size:12px">ยังไม่มี Relation</div>`;
+  if(!rows.length) return `<div class="empty" style="padding:12px 0;font-size:calc(12px * var(--fsc,1))">ยังไม่มี Relation</div>`;
   return rows.map(r=>`<div class="mini-rel-item">
     <span class="mini-rel-dot" style="background:${x(r.color)}"></span>
     <span class="mini-rel-kind">${x(r.kind)}</span>
@@ -548,7 +548,7 @@ async function renderTagSuggestions(oid){
     .slice(0,10);
   container.innerHTML = recent.length
     ? recent.map(t=>`<div class="htag-item" style="border-color:${t.color_code||'#6366f1'};cursor:pointer" onclick="addObjectTag(${oid},${t.id})"><span class="hn" style="color:${t.color_code||'#6366f1'}">#${x(t.tag_name)}</span></div>`).join('')
-    : `<div class="empty" style="padding:10px 6px;font-size:12px;color:var(--t3)">ไม่มี Tag ให้เลือก</div>`;
+    : `<div class="empty" style="padding:10px 6px;font-size:calc(12px * var(--fsc,1));color:var(--t3)">ไม่มี Tag ให้เลือก</div>`;
 }
 
 async function addObjectTag(oid, tagId){

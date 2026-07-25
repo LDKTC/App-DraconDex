@@ -243,6 +243,14 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 
 ### 4.6 ค้นหา (src/renderer/search.js + src/db/director.js:searchAll)
 - ช่องค้นหาบน sidebar ค้นทั้งแอป: โปรเจกต์ / object / แท็ก แล้วกระโดดไปยังผลลัพธ์
+- **(2026-07-25) พฤติกรรมแยกตามว่ามี Nexus เปิดอยู่หรือไม่:**
+  - **มี Nexus** → ช่องค้นหา **ส่งต่อให้ Quick Switcher** (`openQuickSwitcher(seed)`)
+    แล้วเคลียร์ช่องตัวเอง เดิม `renderSearchResults()` เขียนทับ `#left-panel-inner`
+    ซึ่งใน v3 **คือ Nexus Nest tree** — พิมพ์ค้นหาทีเดียวต้นไม้โมดูลหายทั้งแถบ
+    และ `api.search.all` ก็ค้นแต่ตาราง legacy ไม่เห็นโมดูล v3 เลย
+  - **ไม่มี Nexus** (มุมมอง legacy) → ยังใช้ผลลัพธ์ inline แบบเดิมไม่เปลี่ยน
+- placeholder แสดง `(Ctrl+P)` ต่อท้าย (ตั้งใน `translateStaticChrome()` เพื่อให้
+  เปลี่ยนภาษาแล้วยังอยู่) — เดิม Quick Switcher ไม่มีทางเข้าที่มองเห็นได้เลย
 
 ## 5. Navigator (โลก / World)
 
@@ -334,9 +342,38 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
   — DB ไม่เสียหาย เป็นเรื่องการแสดงผลเท่านั้น
 
 ### ธีมและขนาด UI
-- ธีม 30+ แบบ (ครอบครัว Daylight/Moonlight/Midnight/Eclipse + sky/star/time)
+- ธีม 32 แบบ (ครอบครัว Daylight/Moonlight/Midnight/Eclipse + sky/star/time)
   เป็นชุดตัวแปร CSS ใน `style.css` เลือกจากเมนูเฟือง (มี swatch พาเลตให้ดู)
+  ทุกธีมกำหนด 12 token เหมือนกัน; `--button` เป็น token **ทางเลือก** มีแค่ 13/32
+  ธีมที่ประกาศ (ใช้ผ่าน `var(--button, var(--accent))` เสมอ)
 - สไลเดอร์ขนาด UI + ย่อ/ขยาย left panel — ทั้งหมดเก็บ `localStorage`
+
+### ตัวอักษรบนพื้นสี accent — `--on-accent` / `--on-button` / `--on-danger` (2026-07-25)
+- เดิม `#fff` ถูก hardcode 28 จุดเป็น "สีตัวอักษรบนพื้นที่ถม `--accent`" ทั้งที่ 32
+  ธีมกำหนด `--accent` ได้อิสระ — ธีมที่ accent สว่าง (เหลือง/ฟ้า/ส้ม) จึงอ่านปุ่มกับ
+  แท็บไม่ออก มีแค่ `blueEclipse` ธีมเดียวที่เคยถูกแพตช์แก้ contrast แบบเฉพาะจุด
+- ตอนนี้แยกเป็น 3 token (`--on-accent`, `--on-button`, `--on-danger`) ค่าเริ่มต้น
+  `#fff` ใน `:root` แล้วธีมที่ contrast ต่ำกว่า WCAG 3:1 override เป็น `--ink-dark`
+  (`#1a1a26`): **15 ธีมสำหรับ `--on-accent`**, **12 ธีมสำหรับ `--on-button`**
+- **ต้องใช้ 2 token แยกกัน ไม่ใช่ token เดียว** — `blueEclipse` มี `--accent:#191970`
+  (contrast กับขาว 14.85 = ขาวถูกแล้ว) แต่ `--button:#c9ccd4` (1.61 = ขาวอ่านไม่ออก)
+  จึงต้องกำหนดคนละค่า; แพตช์เฉพาะจุดเดิมถูกลบแล้วเพราะซ้ำซ้อน
+- ⚠️ ห้ามเขียน `--on-button:var(--on-accent)` ใน `:root` — จะโดนกับดัก aliasing
+  เดียวกับที่คอมเมนต์ `--bg2` อธิบายไว้ (override ราย-ธีมจะไปไม่ถึง alias)
+- ยังเหลือ `#fff` แบบตรง 9 จุดโดยตั้งใจ — พวกที่วาดทับ **สีที่ผู้ใช้เลือกเอง**
+  หรือ hue อะไรก็ได้ (`.graph-label`, `.rel-node`, `.map-point`, วงล้อสี, `.chr-cal-ev`)
+
+### ตัวอักษรไทย (2026-07-25)
+- ภาษาเริ่มต้นของแอปคือไทย แต่ font stack เดิมไม่มีฟอนต์ไทยเลย — เพิ่ม
+  `'Leelawadee UI', Tahoma` **ต่อจาก** `'Segoe UI'` (Segoe UI ครอบคลุม
+  Latin/Greek/Cyrillic ครบ ตัวใหม่จึงถูกใช้เฉพาะ codepoint ไทย/ลาว
+  → กลิฟ Latin ไม่เปลี่ยนเลย) และคง emoji font ไว้ 2 ลำดับแรกเหมือนเดิม
+- เปลี่ยน `word-break:break-word` → `overflow-wrap:break-word` 4 จุด
+  (`.dv`, `.wchat-bubble`, `.chs-bubble .chs-text`, `.chs-tr-text`) — สเปกนิยาม
+  `word-break:break-word` เท่ากับ `overflow-wrap:anywhere` ซึ่ง **ปิด** ตัวตัดคำ
+  ไทยของ ICU ใน Blink ทำให้ตัดกลางพยางค์ (ไทยไม่มีเว้นวรรคระหว่างคำ)
+- **ไม่** ปรับ `line-height` ทั่วแอป — ตรวจแล้วว่า 13 จุดที่ใช้ `line-height:1`
+  ล้วนแสดง emoji/สัญลักษณ์/ตัวเลขเท่านั้น ไม่มีจุดไหนใส่ข้อความไทยที่วรรณยุกต์ถูกตัด
 
 ### หน้าต่าง frameless
 - ไม่มีขอบ OS — title bar เป็น DOM: แท็บโปรเจกต์/entity + ปุ่ม `#win-min`,
@@ -416,3 +453,30 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 3. **i18n ตกหล่น** — locale ไทยมีข้อความอังกฤษปนใน Navigator (banner คำอธิบาย
    ตัวละครโลก, "No novels linked", "No timelines yet on this map.") และ Sage
    ("N รายการ total")
+
+### แก้แล้วในรอบ UI/UX pass 2026-07-25
+- ~~`toast(msg,'error')` 20 จุดไม่มีกฎ CSS~~ → `toast()` map `'error'→'err'`,
+  `'success'→'ok'` ให้แล้วในตัวฟังก์ชัน (เดิมข้อความ error เป็นสีเทากลาง ๆ
+  แยกจาก success ไม่ออก)
+- ~~modal หลักไม่มี Escape~~ → `bindModalEscape()` ปิดได้แล้ว โดยกันไว้ไม่ให้
+  ปิดทับ `#confirm-overlay`/`#qs-overlay`/`#guide-overlay` และไม่ปิด welcome modal
+  (ที่ซ่อนปุ่ม ✕ ไว้เพราะบังคับให้เลือก)
+- ~~`uiConfirm` ไม่ `stopPropagation()`~~ → เดิมกด Escape ครั้งเดียวปิด **ทั้ง**
+  confirm และ modal ที่อยู่ข้างล่าง เพราะ `finish()` ลบ overlay ทันที
+  ทำให้ guard ของ `bindModalEscape` มองไม่เห็นแล้ว (guide.js/quickswitch.js
+  หยุด event ของตัวเองอยู่แล้ว — `uiConfirm` เป็นตัวเดียวที่ตกหล่น)
+- ~~`prompt()` ที่ `importCustomPalette`~~ → `uiPrompt()` (คู่แฝดของ `uiConfirm`
+  แบบรับข้อความ) — native dialog คือบั๊ก renderer ค้างที่ `uiConfirm` เกิดมาแก้
+- ~~ลบแบบไม่ถาม 7 จุด~~ → ใส่ `uiConfirm()` แล้ว (custom theme, สีใน swatch,
+  word link, char link, event object, game conversation, hero attr level)
+  — **ยกเว้น** เครื่องมือ delete บนแผนที่ ที่ลบด้วยคลิกเดียวโดยตั้งใจ
+- ~~`importDatabaseFile` ถามยืนยันก่อนเลือกไฟล์~~ → แยก IPC เป็น
+  `db:pickImportFile` + `db:importMergeFile` เพราะเดิมช่องเดียวเปิด dialog
+  **แล้ว merge เลยในคอลเดียว** จะยืนยันทีหลังไม่ทันแล้ว
+- ~~ไม่มี loading feedback เลยทั้งแอป~~ → `setBusy(el,on)` + `.busy-veil`
+  ใช้ที่ `openModuleNode` และ `chooseImportAsNexusNest`
+- ~~ไม่มีที่ไหนบอก keyboard shortcut / เล่นทัวร์ซ้ำไม่ได้~~ → เมนูเฟืองมีหมวด
+  "ช่วยเหลือ" (`openShortcutsModal()`, `replayGuideTour()`)
+- ~~120+ `font-size:Npx` แบบ inline ไม่ขยายตามสเกลฟอนต์~~ → sweep เป็น
+  `calc(Npx * var(--fsc,1))` 126 จุดใน 16 ไฟล์ (attribute `font-size="…"` ของ SVG
+  เป็นแบบไม่มีหน่วย regex จึงไม่แตะ)

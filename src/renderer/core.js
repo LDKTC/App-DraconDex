@@ -307,9 +307,34 @@ const fmtTimelinePoint = (ts) => {
 };
 
 let _tt;
+// `type` accepts the CSS variants ('ok' | 'err') plus the long-form aliases
+// 'success' | 'error'. ~20 call sites across the renderer pass 'error', which
+// matched no rule in style.css — those toasts rendered neutral gray and were
+// indistinguishable from a success message. Aliasing here fixes all of them at
+// once and keeps future call sites from having to remember which spelling wins.
+const TOAST_CLS = { error: 'err', success: 'ok' };
 function toast(msg,type='') {
-  const el=q('#toast'); el.textContent=tr(msg); el.className=`show ${type}`;
+  const el=q('#toast'); el.textContent=tr(msg); el.className=`show ${TOAST_CLS[type] || type}`;
   clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+// Minimal busy indicator for awaits long enough to look like a dead click.
+// Overlays the given element (or the whole window when `el` is omitted) with a
+// spinner; call setBusy(el, false) in a finally block to clear it. Kept
+// deliberately small — the app has no skeleton/loading vocabulary and this is
+// not the pass to invent one.
+function setBusy(el, on = true) {
+  const host = (typeof el === 'string' ? q(el) : el) || document.body;
+  const existing = host.querySelector(':scope > .busy-veil');
+  if (!on) { existing?.remove(); host.removeAttribute('aria-busy'); return; }
+  if (existing) return;
+  // The veil is absolutely positioned, so the host needs a positioning context.
+  if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+  const veil = document.createElement('div');
+  veil.className = 'busy-veil';
+  veil.innerHTML = `<span class="busy-spin"></span><span class="busy-text">${x(t('loading'))}</span>`;
+  host.appendChild(veil);
+  host.setAttribute('aria-busy', 'true');
 }
 
 function openModal(title,body) {
@@ -319,11 +344,40 @@ function openModal(title,body) {
   const closeBtn = q('#modal-close'); if(closeBtn) closeBtn.style.display='';
   const overlay = q('#modal-overlay');
   overlay.classList.remove('hidden');
-  // make modal focusable and move focus to it so inputs inside become interactive
+  // make modal focusable and move focus to it so inputs inside become interactive.
+  // Prefer the first real field so the user can start typing immediately — the
+  // ~15 call sites that re-focus a specific field on their own still win, they
+  // just no longer have to for the common "focus the first input" case.
   const modalEl = q('#modal');
-  if(modalEl){ modalEl.tabIndex = -1; setTimeout(()=>{ try{ modalEl.focus(); }catch(e){} }, 30); }
+  if(modalEl){
+    modalEl.tabIndex = -1;
+    setTimeout(()=>{
+      try{
+        const first = q('#modal-body input:not([type="hidden"]):not([disabled]), #modal-body textarea:not([disabled]), #modal-body select:not([disabled])');
+        (first || modalEl).focus();
+      }catch(e){}
+    }, 30);
+  }
 }
 function closeModal() { q('#modal-overlay').classList.add('hidden'); }
+
+// The main modal was the only overlay in the app with no Escape handler
+// (uiConfirm, the quick switcher and the guide all have one). Bound in the
+// bubble phase on purpose: those three listen in the capture phase and stop
+// their own event, so whichever of them is stacked on top handles Escape first
+// and this never fires beneath them. The extra guards cover the case where they
+// don't stop propagation, plus the first-run welcome modal — which hides its ✕
+// (see openWelcomeModal) because picking one of its options is required.
+function bindModalEscape() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (q('#modal-overlay')?.classList.contains('hidden')) return;
+    if (q('#confirm-overlay') || q('#qs-overlay') || q('#guide-overlay')) return;
+    if (q('#modal-close')?.style.display === 'none') return; // required-choice modal
+    e.preventDefault();
+    closeModal();
+  });
+}
 
 // ═══ FLOATING (MODELESS) PANEL ══════════════════════════════════════════
 // Like openModal/closeModal but with no full-viewport backdrop/click-catcher
@@ -381,15 +435,76 @@ function uiConfirm(message, opts = {}) {
       ov.remove();
       resolve(val);
     };
+    // stopPropagation matters as much as preventDefault here: finish() removes
+    // the overlay synchronously, so without it the same Escape keeps travelling
+    // and bindModalEscape() — whose "is a confirm on top?" guard now sees an
+    // already-detached overlay — closes the modal underneath too. guide.js and
+    // quickswitch.js already stop their own keys; this was the odd one out.
     const onKey = (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
-      else if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+      else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); finish(true); }
     };
     okBtn.addEventListener('click', () => finish(true));
     cancelBtn.addEventListener('click', () => finish(false));
     ov.addEventListener('mousedown', (e) => { if (e.target === ov) finish(false); });
     document.addEventListener('keydown', onKey, true);
     setTimeout(() => { try { okBtn.focus(); } catch (e) {} }, 20);
+  });
+}
+
+// Text-entry sibling of uiConfirm, replacing native prompt() for the same
+// reason (see the uiConfirm comment above). Resolves to the entered string, or
+// null when cancelled. Deliberately built on the #confirm-overlay chrome rather
+// than openModal: #modal-overlay is z-index 100 but .floating-panel is 150, so a
+// prompt raised from the custom-theme editor would render *behind* it, while
+// #confirm-overlay sits at 1000 and clears every other layer.
+function uiPrompt(message, opts = {}) {
+  const { okText = 'OK', cancelText = 'Cancel', placeholder = '', value = '' } = opts;
+  return new Promise(resolve => {
+    document.getElementById('confirm-overlay')?.remove();
+    const ov = document.createElement('div');
+    ov.id = 'confirm-overlay';
+    const box = document.createElement('div');
+    box.id = 'confirm-box';
+    box.className = 'wide';
+    const msg = document.createElement('div');
+    msg.className = 'confirm-msg';
+    msg.textContent = tr(message);
+    const field = document.createElement('div');
+    field.className = 'fg';
+    const ta = document.createElement('textarea');
+    ta.placeholder = placeholder;
+    ta.value = value;
+    ta.spellcheck = false;
+    field.append(ta);
+    const actions = document.createElement('div');
+    actions.className = 'confirm-actions';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-s';
+    cancelBtn.textContent = tr(cancelText);
+    const okBtn = document.createElement('button');
+    okBtn.className = 'btn btn-p';
+    okBtn.textContent = tr(okText);
+    actions.append(cancelBtn, okBtn);
+    box.append(msg, field, actions);
+    ov.append(box);
+    document.body.append(ov);
+    const finish = (val) => {
+      document.removeEventListener('keydown', onKey, true);
+      ov.remove();
+      resolve(val);
+    };
+    // Enter alone inserts a newline (the field is multi-line for pasted JSON);
+    // Ctrl/Cmd+Enter submits, matching the editor conventions elsewhere.
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(null); }
+      else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); e.stopPropagation(); finish(ta.value); }
+    };
+    okBtn.addEventListener('click', () => finish(ta.value));
+    cancelBtn.addEventListener('click', () => finish(null));
+    ov.addEventListener('mousedown', (e) => { if (e.target === ov) finish(null); });
+    document.addEventListener('keydown', onKey, true);
+    setTimeout(() => { try { ta.focus(); } catch (e) {} }, 20);
   });
 }
 
@@ -681,7 +796,38 @@ function renderSettingsMenu(){
       <input class="settings-number" type="number" min="1" max="500" value="${S.versionLimitCache ?? 50}"
         onchange="setVersionLimit(this.value)">
     </div>
+    <div class="settings-group">
+      <div class="settings-label">${t('help')}</div>
+      <button class="btn btn-s" style="width:100%;margin-bottom:6px" onclick="toggleSettingsMenu(false);openShortcutsModal()">${I.info} ${t('shortcuts')}</button>
+      <button class="btn btn-s" style="width:100%" onclick="toggleSettingsMenu(false);replayGuideTour()">${I.book} ${t('replayTour')}</button>
+    </div>
   `;
+}
+
+// The Ctrl+P/W/Tab/N/E bindings in bindGlobalShortcuts() were previously
+// undiscoverable — they appeared nowhere in the UI. Keys stay data-no-i18n
+// (they're literal key names, not translatable text).
+const SHORTCUT_HELP = [
+  ['Ctrl+P', 'scQuickSwitch'],
+  ['Ctrl+W', 'scCloseTab'],
+  ['Ctrl+Tab', 'scNextTab'],
+  ['Ctrl+Shift+Tab', 'scPrevTab'],
+  ['Ctrl+N', 'scNewNote'],
+  ['Ctrl+E', 'scToggleEditor'],
+];
+function openShortcutsModal(){
+  const rows = SHORTCUT_HELP.map(([combo, key]) =>
+    `<div class="li"><span class="name">${t(key)}</span><span class="tag" data-no-i18n>${combo}</span></div>`).join('');
+  openModal(t('shortcuts'), `<div class="modal-data">${rows}</div>`);
+}
+
+// The first-run coach marks previously fired from exactly one place (the
+// welcome modal's tour checkbox) with no way to see them again. guide.js
+// already skips steps whose target element is absent, so replaying from an
+// arbitrary app state is safe.
+async function replayGuideTour(){
+  if (typeof startNexusGuide !== 'function') await loadModule('src/renderer/guide.js');
+  if (typeof startNexusGuide === 'function') startNexusGuide();
 }
 
 async function setVersionLimit(v){
@@ -972,7 +1118,11 @@ function saveCustomTheme(id){
   setUiSetting('theme', `custom:${ct.id}`);
 }
 
-function deleteCustomTheme(id){
+async function deleteCustomTheme(id){
+  // Reachable from a hover-only "×" in both the settings dropdown and the
+  // Preferences grid — a stray click used to destroy a hand-tuned 10-token
+  // palette with no undo path.
+  if (!await uiConfirm(t('confirmDeleteTheme'), { okText: t('delete'), cancelText: t('cancel') })) return;
   S.settings.customThemes = (S.settings.customThemes || []).filter(c => c.id !== id);
   if (S.settings.theme === `custom:${id}`) S.settings.theme = 'midnight';
   saveUiSettings();
@@ -1017,8 +1167,10 @@ function exportCustomPalette(){
 }
 
 async function importCustomPalette(){
-  const raw = prompt(t('customThemeImport'));
-  if (!raw) return;
+  const raw = await uiPrompt(t('customThemeImport'), {
+    okText: t('apply'), cancelText: t('cancel'), placeholder: '{"--accent": …, "--bg": …}'
+  });
+  if (!raw?.trim()) return;
   try {
     const imported = JSON.parse(raw);
     // Merge onto the current values so a partial JSON (missing tokens)
@@ -1054,7 +1206,9 @@ function translateStaticChrome(){
   q('#win-min')?.setAttribute('title', t('minimize'));
   q('#win-max')?.setAttribute('title', t('maximize'));
   q('#win-close')?.setAttribute('title', t('close'));
-  q('#search-input')?.setAttribute('placeholder', t('search'));
+  // The hint is worth carrying here: with a vault open this box hands off to the
+  // quick switcher, which otherwise has no discoverable entry point at all.
+  q('#search-input')?.setAttribute('placeholder', `${t('search')} (Ctrl+P)`);
   const worldTabTitleKeys = { 'original':'navigator', 'chars-cats':'worldCharsCats', 'maps-timeline':'worldMapTimelines', 'tags':'worldTags' };
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn => {
     if(btn.dataset.worldtab){
@@ -1489,7 +1643,7 @@ function buildNpTree(pickId, excludeIds) {
         <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${open?90:0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         <span style="color:${col};line-height:1;display:flex;align-items:center">${I.folder}</span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(f.name)}</span>
-        <span style="color:var(--t3);font-size:11px">${fps.length}</span>
+        <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${fps.length}</span>
       </div>
       ${open ? fps.map(p => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('') : ''}
     </div>`;
@@ -1499,7 +1653,7 @@ function buildNpTree(pickId, excludeIds) {
     if ((S.folders||[]).length) html += `<div style="border-top:1px solid var(--border);margin:4px 0"></div>`;
     html += unfiled.map(p => `<div class="np-item np-unfiled" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('');
   }
-  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No novels available</div>`;
+  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:calc(13px * var(--fsc,1))">No novels available</div>`;
   return html;
 }
 
@@ -1517,7 +1671,7 @@ function buildLinkedNovelPicker(pickId, linkedProjects, currentName, onSelectCb)
         <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${open?90:0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         <span style="color:${col};line-height:1;display:flex;align-items:center">${I.folder}</span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(f.name)}</span>
-        <span style="color:var(--t3);font-size:11px">${fps.length}</span>
+        <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${fps.length}</span>
       </div>
       ${open ? fps.map(p => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('') : ''}
     </div>`;
@@ -1527,7 +1681,7 @@ function buildLinkedNovelPicker(pickId, linkedProjects, currentName, onSelectCb)
     if ((S.folders||[]).length && html) html += `<div style="border-top:1px solid var(--border);margin:4px 0"></div>`;
     html += unfiled.map(p => `<div class="np-item np-unfiled" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('');
   }
-  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No linked novels</div>`;
+  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:calc(13px * var(--fsc,1))">No linked novels</div>`;
   const cbAttr = onSelectCb ? ` data-on-select="${x(onSelectCb)}"` : '';
   return `<div class="novel-picker" id="np-wrap-${pickId}" data-selected-id=""${cbAttr}>
     <button class="np-btn" onclick="event.stopPropagation();toggleNovelPicker('${pickId}')" type="button">
@@ -1713,7 +1867,7 @@ async function renderModalTagSuggestions(prefix){
     .slice(0,5);
   container.innerHTML = recent.length
     ? recent.map(t=>`<div class="htag-item" style="border-color:${t.color_code||'#6366f1'};cursor:pointer" onclick="addModalTag('${prefix}',${t.id})"><span class="hn" style="color:${t.color_code||'#6366f1'}">#${x(t.tag_name)}</span></div>`).join('')
-    : `<div class="empty" style="padding:10px 6px;font-size:12px;color:var(--t3)">ไม่มี Tag ให้เลือก</div>`;
+    : `<div class="empty" style="padding:10px 6px;font-size:calc(12px * var(--fsc,1));color:var(--t3)">ไม่มี Tag ให้เลือก</div>`;
 }
 
 function renderModalSelectedTags(prefix){
@@ -1809,6 +1963,7 @@ function bindNav() {
   q('#btn-export-db')?.addEventListener('click', exportDatabaseFile);
   q('#modal-close').addEventListener('click', closeModal);
   q('#modal-overlay').addEventListener('click', e=>{ if(e.target===q('#modal-overlay')) closeModal(); });
+  bindModalEscape();
   q('#left-panel-inner')?.addEventListener('contextmenu', onHubBackgroundContextMenu);
   q('#nav-sidebar')?.addEventListener('contextmenu', openNavSidebarContextMenu);
 }
@@ -1824,9 +1979,15 @@ async function exportDatabaseFile(){
 }
 
 async function importDatabaseFile(){
-  if(!await uiConfirm('Import DB แล้วรวมข้อมูลที่ยังไม่ซ้ำกับฐานข้อมูลปัจจุบัน ใช่หรือไม่?')) return;
   try{
-    const res = await api.db.importFileMerge();
+    // Pick first, then confirm, then merge. These used to be one IPC call, so
+    // the confirm had to run before the file dialog — the user was approving a
+    // merge before choosing what to merge. db:pickImportFile only opens the
+    // dialog; nothing is written until db:importMergeFile.
+    const picked = await api.db.pickImportFile();
+    if(picked?.canceled) return;
+    if(!await uiConfirm(t('importDbConfirm'), { okText: t('apply'), cancelText: t('cancel'), danger:false })) return;
+    const res = await api.db.importMergeFile(picked.filePath);
     if(res?.canceled) return;
     await reloadSidebar();
     // Refresh the Nexus list so vaults brought in by the merge are visible. In the
@@ -1837,7 +1998,7 @@ async function importDatabaseFile(){
     S.recentColors = await api.color.getRecent();
     if(S.project?.id) S.project = await api.project.get(S.project.id) || null;
     switchView(S.view || 'projects');
-    toast('Import DB สำเร็จและรวมข้อมูลแล้ว','ok');
+    toast(t('importDbDone'),'ok');
     // Plan part2 §2: a merged file may carry un-migrated legacy-shaped data
     // (a v1/v2 file, or notes for a nexus that predates v3) — offer the
     // Nexus Nest / Import DB choice instead of silently leaving it in its

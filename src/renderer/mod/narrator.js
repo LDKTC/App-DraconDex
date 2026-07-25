@@ -68,7 +68,7 @@ function buildNarratorDialogueListHtml(d) {
         <div class="odot" style="background:${x(dl.color_code || '#6366f1')}"></div>
         <div style="flex:1;min-width:0">
           <div class="oname">${x(dl.name)}</div>
-          <div style="font-size:12px;color:var(--t3);margin-top:2px" data-no-i18n>${dl.speaker_count || 0} ${t('speaker')} · ${dl.talk_count || 0} ${t('conversation')}</div>
+          <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px" data-no-i18n>${dl.speaker_count || 0} ${t('speaker')} · ${dl.talk_count || 0} ${t('conversation')}</div>
         </div>
         <svg class="icon tree-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="${open ? '6 9 12 15 18 9' : '9 18 15 12 9 6'}"/></svg>
       </div>
@@ -472,7 +472,7 @@ async function openNarratorEdgeModal(id) {
   if (!e) return;
   const nameOf = (nid) => x(d.dialogues.find(dd => dd.id === nid)?.name || '—');
   openModal(t('edgeLabel'), `
-    <p style="font-size:12.5px;color:var(--t2);margin-bottom:10px" data-no-i18n>${nameOf(e.from_ref)} → ${nameOf(e.to_ref)}</p>
+    <p style="font-size:calc(12.5px * var(--fsc,1));color:var(--t2);margin-bottom:10px" data-no-i18n>${nameOf(e.from_ref)} → ${nameOf(e.to_ref)}</p>
     <div class="fg"><label>${t('edgeLabel')}</label><input id="ne-label" value="${x(e.label || '')}"></div>
     <div class="mfoot">
       <button class="btn btn-d" onclick="deleteNarratorEdge(${e.id})">${t('delete')}</button>

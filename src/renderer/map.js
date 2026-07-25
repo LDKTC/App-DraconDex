@@ -131,7 +131,7 @@ async function renderMapView(){
     const col=m.color_code||'#06b6d4', act=S.map?.id===m.id;
     lh += `<div class="li ${act?'active':''}" onclick="selectMap(${m.id})"><div class="dot" style="background:${col}"></div><span class="name">${x(m.map_name||'ไม่มีชื่อ')}</span><div class="acts"><button class="btn btn-g btn-i" onclick="event.stopPropagation();openMapModal(${m.id})">${I.edit}</button><button class="btn btn-g btn-i" onclick="event.stopPropagation();delMap(${m.id})" style="color:var(--danger)">${I.delete}</button></div></div>`;
   }
-  if(!maps.length) lh += `<p style="font-size:12px;color:var(--t3);padding:10px 12px">ยังไม่มี Map</p>`;
+  if(!maps.length) lh += `<p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);padding:10px 12px">ยังไม่มี Map</p>`;
   q('#left-panel-inner').innerHTML = lh;
 
   if(!S.map){
@@ -148,7 +148,7 @@ async function renderMapView(){
     <button class="btn btn-i ${S.mapTool==='create'?'btn-p':'btn-s'}" onclick="setMapTool('create')" title="Create point" aria-label="Create point">${I.plus}</button>
     <button class="btn btn-i ${S.mapTool==='delete'?'btn-p':'btn-s'}" onclick="setMapTool('delete')" title="Delete point" aria-label="Delete point">${I.delete}</button>
     <button class="btn btn-i ${S.mapTool==='move'?'btn-p':'btn-s'}" onclick="setMapTool('move')" title="Move point" aria-label="Move point">${I.move}</button>
-    <span style="font-size:12px;color:var(--t3)">ต้องเลือก Area ก่อนใช้ Tool</span>
+    <span style="font-size:calc(12px * var(--fsc,1));color:var(--t3)">ต้องเลือก Area ก่อนใช้ Tool</span>
   </div>
   <div id="map-board" class="map-whiteboard">
     <div id="map-konva-container" style="width:100%; height:100%;"></div>

@@ -36,7 +36,8 @@ contextBridge.exposeInMainWorld('api', {
   setImportDbMode: (v) => { importDbMode = !!v; },
   db: {
     exportFile: ()          => inv('db:exportFile'),
-    importFileMerge: ()     => inv('db:importFileMerge'),
+    pickImportFile: ()      => inv('db:pickImportFile'),
+    importMergeFile: (p)    => inv('db:importMergeFile', p),
   },
   nexus: {
     getAll:  ()            => inv('nexus:getAll'),

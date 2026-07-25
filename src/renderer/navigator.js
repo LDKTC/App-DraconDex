@@ -228,7 +228,7 @@ async function renderWorldMain() {
     ${w.codename ? `<span class="tag">${x(w.codename)}</span>` : ''}
     <span style="color:var(--t3);font-size:.85em;margin-left:4px">· ${x(worldTabLabel(S.worldTab))}</span>
     <button class="btn btn-s btn-i" onclick="openWorldModal(${w.id})">${I.edit}</button>
-    ${S.worldTab === 'original' ? `<button class="btn btn-p" onclick="openWorldOrigCatModal()" style="padding:6px 12px;font-size:12.5px">${I.plus} Category</button>` : ''}
+    ${S.worldTab === 'original' ? `<button class="btn btn-p" onclick="openWorldOrigCatModal()" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))">${I.plus} Category</button>` : ''}
   </div>`;
 
   if (S.worldTab === 'original') {
@@ -286,18 +286,18 @@ async function renderWorldMain() {
       const onWorld = worldTags.some(tg => tg.id === S.worldHashtagId);
       const total = chars.length + (onWorld ? 1 : 0);
       h += `<div class="ch"><span class="hn" style="color:${tc};font-size:1.4em;font-weight:700">#${x(tag?.tag_name || '')}</span>
-        <span style="font-size:12px;color:var(--t3);margin-left:8px">${total} items</span>
+        <span style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-left:8px">${total} items</span>
       </div>`;
       if (!total) {
         h += `<div class="empty"><div class="ei">${I.hashtag}</div><h3>Nothing uses this tag yet</h3></div>`;
       } else {
-        const secHead = (label) => `<div style="padding:4px 16px 2px;font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${label}</div>`;
+        const secHead = (label) => `<div style="padding:4px 16px 2px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">${label}</div>`;
         if (onWorld) {
           h += secHead(`${t('world')} (1)`);
           h += `<div class="objlist"><div class="objrow" onclick="openWorldModal(${w.id})">
             <div class="odot" style="background:${col}"></div>
             <div style="flex:1;min-width:0"><div class="oname">${x(w.name)}</div>
-            ${w.codename ? `<div style="font-size:12px;color:var(--t3);margin-top:2px">${x(w.codename)}</div>` : ''}</div>
+            ${w.codename ? `<div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px">${x(w.codename)}</div>` : ''}</div>
           </div></div>`;
         }
         if (chars.length) {
@@ -448,11 +448,11 @@ async function renderWorldOrigCatBody(catId) {
 
   let h = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
     <div class="view-toggles" style="display:flex;background:var(--surface);padding:3px;border-radius:var(--r);border:1px solid var(--border)">
-      <button class="btn btn-g ${view === 'list' ? 'active' : ''}" style="padding:4px 10px;font-size:12px;border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setWorldOrigCatView('list')">${I.list} List</button>
-      <button class="btn btn-g ${view === 'table' ? 'active' : ''}" style="padding:4px 10px;font-size:12px;border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setWorldOrigCatView('table')">${I.table} Table</button>
+      <button class="btn btn-g ${view === 'list' ? 'active' : ''}" style="padding:4px 10px;font-size:calc(12px * var(--fsc,1));border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setWorldOrigCatView('list')">${I.list} List</button>
+      <button class="btn btn-g ${view === 'table' ? 'active' : ''}" style="padding:4px 10px;font-size:calc(12px * var(--fsc,1));border-radius:var(--rs);display:flex;align-items:center;gap:4px" onclick="setWorldOrigCatView('table')">${I.table} Table</button>
     </div>
-    <span style="font-size:11px;color:var(--t3);flex:1">${objs.length} items</span>
-    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldOrigObjectModal(${catId})">${I.plus} Add</button>
+    <span style="font-size:calc(11px * var(--fsc,1));color:var(--t3);flex:1">${objs.length} items</span>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12px * var(--fsc,1))" onclick="openWorldOrigObjectModal(${catId})">${I.plus} Add</button>
     <button class="btn btn-s btn-i" onclick="openWorldOrigTemplateModal(${catId})" title="Manage Fields">${I.fields}</button>
   </div>`;
 
@@ -574,7 +574,7 @@ async function buildWorldOrigDetail(oid) {
     <div class="detail-content">
     <div class="attrs" id="woaf-${oid}">`;
   if (!attrs.length) {
-    h += `<div class="empty" style="padding:24px 0"><p style="font-size:12px">No fields</p>
+    h += `<div class="empty" style="padding:24px 0"><p style="font-size:calc(12px * var(--fsc,1))">No fields</p>
       <button class="btn btn-s" style="display:flex;align-items:center;gap:4px" onclick="openWorldOrigTemplateModal(${S.worldOrigCat.id})">${I.fields} Manage Fields</button></div>`;
   } else {
     for (const a of attrs) {
@@ -670,8 +670,8 @@ async function openWorldOrigTemplateModal(catId) {
   if (!safeCatId) { toast('Invalid category', 'err'); return; }
   const tmpls = await api.world.origTmpl.getAll(safeCatId);
   openModal('Manage Fields', `
-    <p style="font-size:11.5px;color:var(--t3);margin-bottom:10px">Fields apply to every object in this category</p>
-    <div class="tlist" id="wotlist">${tmpls.map(tp => _woTmplRow(tp, safeCatId)).join('') || '<p style="color:var(--t3);text-align:center;padding:18px;font-size:12px">No fields</p>'}</div>
+    <p style="font-size:calc(11.5px * var(--fsc,1));color:var(--t3);margin-bottom:10px">Fields apply to every object in this category</p>
+    <div class="tlist" id="wotlist">${tmpls.map(tp => _woTmplRow(tp, safeCatId)).join('') || '<p style="color:var(--t3);text-align:center;padding:18px;font-size:calc(12px * var(--fsc,1))">No fields</p>'}</div>
     <div class="div"></div>
     <div style="display:flex;gap:8px;align-items:flex-end">
       <div class="fg" style="flex:1;margin:0"><label>Field name</label><input id="wotnew" placeholder="e.g. Age, Power"></div>
@@ -695,7 +695,7 @@ async function delWorldOrigTemplate(id, catId) {
     if (!await uiConfirm('Delete field? All its values will be lost')) return;
     await api.world.origTmpl.delete(id);
     const tmpls = await api.world.origTmpl.getAll(catId);
-    q('#wotlist').innerHTML = tmpls.map(tp => _woTmplRow(tp, catId)).join('') || '<p style="color:var(--t3);text-align:center;padding:18px;font-size:12px">No fields</p>';
+    q('#wotlist').innerHTML = tmpls.map(tp => _woTmplRow(tp, catId)).join('') || '<p style="color:var(--t3);text-align:center;padding:18px;font-size:calc(12px * var(--fsc,1))">No fields</p>';
     toast('Deleted');
   } catch (e) { toast(e.message, 'err'); console.error(e); }
 }
@@ -746,14 +746,14 @@ async function openWorldOrigColVisModal(catId) {
   if (hasDiff) localStorage.setItem(visColKey, JSON.stringify(visibleCols));
   const allChecked = tmpls.every(tp => visibleCols[tp.id] !== false);
   let html = `<div style="display:flex; flex-direction:column; gap:10px;">
-    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; padding:6px 0;">
+    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:calc(14px * var(--fsc,1)); padding:6px 0;">
       <input type="checkbox" id="wo-col-vis-all" ${allChecked ? 'checked' : ''} onchange="toggleAllWorldOrigColumns(${catId}, this.checked)">
       <strong>Show all</strong>
     </label>
     <div style="height:1px; background:var(--border); margin:4px 0;"></div>`;
   for (const tp of tmpls) {
     const isChecked = visibleCols[tp.id] !== false;
-    html += `<label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; padding:4px 0;">
+    html += `<label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:calc(14px * var(--fsc,1)); padding:4px 0;">
         <input type="checkbox" class="wo-col-vis-check" data-tid="${tp.id}" ${isChecked ? 'checked' : ''} onchange="toggleWorldOrigColumn(${catId}, ${tp.id}, this.checked)">
         <span>${x(tp.description)}</span></label>`;
   }
@@ -800,7 +800,7 @@ async function delWorldDesc(id) { if (!await uiConfirm('Delete this detail?')) r
 async function renderWorldChars(worldId) {
   const chars = await api.world.getCharacters(worldId);
   const head = `<div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:8px">
-    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12px * var(--fsc,1))" onclick="openWorldCharModal(${worldId})">${I.plus} ${t('worldCharNew')}</button>
   </div>`;
 
   if (!chars.length) {
@@ -824,7 +824,7 @@ async function renderWorldChars(worldId) {
     html += `<div class="li" style="flex-direction:column;align-items:flex-start;padding:8px 10px;gap:4px">
       <div style="display:flex;width:100%;align-items:center;gap:8px">
         <div class="dot" style="background:${c.color_code || '#6366f1'}"></div>
-        <button class="btn btn-g btn-i char-sym-btn" style="padding:1px 5px;font-size:11px" title="Choose symbol" data-symbol="${x(c.symbol || '')}" onclick="event.stopPropagation();openCharSymbolModal(${worldId},${c.id},this.dataset.symbol)">${c.symbol ? x(c.symbol) : I.plus}</button>
+        <button class="btn btn-g btn-i char-sym-btn" style="padding:1px 5px;font-size:calc(11px * var(--fsc,1))" title="Choose symbol" data-symbol="${x(c.symbol || '')}" onclick="event.stopPropagation();openCharSymbolModal(${worldId},${c.id},this.dataset.symbol)">${c.symbol ? x(c.symbol) : I.plus}</button>
         <span class="name" style="flex:1;font-weight:500">${x(c.name)}</span>
         <button class="btn btn-g btn-i" title="Link this character to a novel object" onclick="openCharLinksModal(${worldId},${c.id})">${I.layer}</button>
         <button class="btn btn-g btn-i" title="Tags" onclick="openWorldCharTagsModal(${worldId},${c.id})">${I.hashtag}</button>
@@ -1000,7 +1000,7 @@ function buildObjectPickerHtml(pickId, objects) {
           <svg class="np-caret" style="width:8px;height:8px;flex-shrink:0;transform:rotate(90deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           <div class="dot" style="background:${color};width:8px;height:8px;flex-shrink:0"></div>
           <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(cat)}</span>
-          <span style="color:var(--t3);font-size:11px">${objs.length}</span>
+          <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${objs.length}</span>
         </div>
         <div class="np-group-items">
           ${objs.map(o => `<div class="np-item" style="padding-left:42px" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${o.id},'${x(o.name)}')">${x(o.name)}</div>`).join('')}
@@ -1011,12 +1011,12 @@ function buildObjectPickerHtml(pickId, objects) {
       <div class="np-folder-head" onclick="event.stopPropagation();toggleObjPickerGroup(this)">
         <svg class="np-caret" style="width:8px;height:8px;flex-shrink:0;transform:rotate(90deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${x(novel)}</span>
-        <span style="color:var(--t3);font-size:11px">${novelCount}</span>
+        <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${novelCount}</span>
       </div>
       <div class="np-group-items">${catInner}</div>
     </div>`;
   }
-  if (!inner) inner = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No objects available</div>`;
+  if (!inner) inner = `<div style="padding:10px 12px;color:var(--t3);font-size:calc(13px * var(--fsc,1))">No objects available</div>`;
   return `<div class="novel-picker" id="np-wrap-${pickId}" data-selected-id="" style="width:100%">
     <button class="np-btn" onclick="event.stopPropagation();toggleNovelPicker('${pickId}')" type="button" style="width:100%;min-width:0">
       <span id="np-label-${pickId}" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— select object —</span>
@@ -1044,6 +1044,7 @@ async function addCharLink(worldId, charId) {
 }
 
 async function removeCharLink(worldId, linkId) {
+  if (!await uiConfirm(t('confirmRemoveLink'), { okText: t('remove'), cancelText: t('cancel') })) return;
   await api.world.removeCharLink(linkId);
   await setWorldCharCatTab('characters');
 }
@@ -1052,7 +1053,7 @@ async function removeCharLink(worldId, linkId) {
 async function renderWorldCats(worldId) {
   const cats = await api.world.getCategories(worldId);
   const head = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-p" style="padding:5px 11px;font-size:12px" onclick="openAddCategoryModal(${worldId})">${I.plus} Add Category</button>
+    <button class="btn btn-p" style="padding:5px 11px;font-size:calc(12px * var(--fsc,1))" onclick="openAddCategoryModal(${worldId})">${I.plus} Add Category</button>
   </div>`;
   if (!cats.length) {
     return head + `<div class="empty"><div class="ei">${I.layer}</div>
@@ -1070,7 +1071,7 @@ async function renderWorldCats(worldId) {
         ? `<div class="fchildren">` + objs.map(o =>
             `<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:.87em;color:var(--t2)">
               <div class="dot" style="background:${o.color_code || '#6366f1'};width:8px;height:8px"></div>
-              <button class="btn btn-g btn-i" style="padding:1px 5px;font-size:11px" title="Choose symbol" data-symbol="${x(o.symbol || '')}" onclick="event.stopPropagation();openObjectSymbolModal(${worldId},${o.id},${o.symbol_ref || 'null'},this.dataset.symbol)">${o.symbol ? x(o.symbol) : I.plus}</button>
+              <button class="btn btn-g btn-i" style="padding:1px 5px;font-size:calc(11px * var(--fsc,1))" title="Choose symbol" data-symbol="${x(o.symbol || '')}" onclick="event.stopPropagation();openObjectSymbolModal(${worldId},${o.id},${o.symbol_ref || 'null'},this.dataset.symbol)">${o.symbol ? x(o.symbol) : I.plus}</button>
               <span style="flex:1">${x(o.name)}</span>
             </div>`).join('') + `</div>`
         : `<div class="fchildren"><div style="font-size:.82em;color:var(--t3)">No objects.</div></div>`;
@@ -1222,7 +1223,7 @@ function buildWorldMapPickerHtml(worldId, maps, selMap) {
         <svg style="width:8px;height:8px;flex-shrink:0;transform:rotate(${open ? 90 : 0}deg);transition:transform .15s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         <span style="color:${fcol};line-height:1;display:flex;align-items:center">${I.folder}</span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(f.name)}</span>
-        <span style="color:var(--t3);font-size:11px">${fps.length}</span>
+        <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${fps.length}</span>
       </div>
       ${open ? fps.map(mapRow).join('') : ''}
     </div>`;
@@ -1232,7 +1233,7 @@ function buildWorldMapPickerHtml(worldId, maps, selMap) {
     if ((S.folders || []).length && html) html += `<div style="border-top:1px solid var(--border);margin:4px 0"></div>`;
     html += unfiled.map(mapRow).join('');
   }
-  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:13px">No maps available</div>`;
+  if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:calc(13px * var(--fsc,1))">No maps available</div>`;
   return `<div class="novel-picker" id="np-wrap-${pickId}" style="width:100%">
     <button class="np-btn" onclick="event.stopPropagation();toggleNovelPicker('${pickId}')" type="button" style="width:100%;min-width:0">
       <span id="np-label-${pickId}" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(label)}</span>
@@ -1351,7 +1352,7 @@ async function openEventObjectsModal(worldId, eventId) {
   const placedHtml = placed.length
     ? placed.map(p => `<div class="li" style="display:flex;align-items:center;gap:8px">
         <div class="dot" style="background:${p.color_code || '#6366f1'}"></div>
-        ${p.symbol ? `<span style="font-size:13px;line-height:1;flex-shrink:0">${x(p.symbol)}</span>` : ''}
+        ${p.symbol ? `<span style="font-size:calc(13px * var(--fsc,1));line-height:1;flex-shrink:0">${x(p.symbol)}</span>` : ''}
         <span class="name" style="flex:1;font-size:.88em">${x(p.label)} ${p.x != null ? `<span style="color:var(--t3)">(${Math.round(p.x)}, ${Math.round(p.y)})</span>` : ''}</span>
         <button class="btn btn-g btn-i" title="Remove" onclick="removeEventObject(${worldId},${eventId},${p.id})">${I.delete}</button>
       </div>`).join('')
@@ -1368,6 +1369,9 @@ async function closeEventObjectsModal(worldId) {
 }
 
 async function removeEventObject(worldId, eventId, id) {
+  // NB: the map "delete" tool calls api.world.removeEventObject directly (it
+  // deletes on a single canvas click by design) and deliberately bypasses this.
+  if (!await uiConfirm(t('confirmRemoveLink'), { okText: t('remove'), cancelText: t('cancel') })) return;
   await api.world.removeEventObject(id);
   await openEventObjectsModal(worldId, eventId);
   if (S.worldActiveEventId === eventId && S.worldActiveTimelineId) await renderWorldMapTimelineBoard(worldId, S.worldActiveTimelineId);
@@ -1402,8 +1406,8 @@ function buildEntityPickerHtml(pickId, objs, chars) {
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(item.name)}</span>
     </div>`;
   let inner = '';
-  if (objs.length) inner += `<div style="padding:4px 12px;font-size:11px;color:var(--t3);font-weight:600">Objects</div>${objs.map(o => row('obj', o)).join('')}`;
-  if (chars.length) inner += `<div style="padding:4px 12px;font-size:11px;color:var(--t3);font-weight:600">Characters</div>${chars.map(c => row('char', c)).join('')}`;
+  if (objs.length) inner += `<div style="padding:4px 12px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600">Objects</div>${objs.map(o => row('obj', o)).join('')}`;
+  if (chars.length) inner += `<div style="padding:4px 12px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600">Characters</div>${chars.map(c => row('char', c)).join('')}`;
   return `<div class="novel-picker" id="np-wrap-${pickId}" data-selected-id="" data-selected-kind="" style="width:100%">
     <button class="np-btn" onclick="event.stopPropagation();toggleNovelPicker('${pickId}')" type="button" style="width:100%;min-width:0">
       <span id="np-label-${pickId}" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— select —</span>
@@ -1488,7 +1492,7 @@ function renderWorldMapToolbarHtml() {
     <button class="btn btn-i ${S.worldMapTool === 'add' ? 'btn-p' : 'btn-s'}" onclick="setWorldMapTool('add')" title="Add object" aria-label="Add object">${I.plus}</button>
     <button class="btn btn-i ${S.worldMapTool === 'delete' ? 'btn-p' : 'btn-s'}" onclick="setWorldMapTool('delete')" title="Delete object" aria-label="Delete object">${I.delete}</button>
     <button class="btn btn-i ${S.worldMapTool === 'move' ? 'btn-p' : 'btn-s'}" onclick="setWorldMapTool('move')" title="Move object" aria-label="Move object">${I.move}</button>
-    <span style="font-size:12px;color:var(--t3)">${hint}</span>
+    <span style="font-size:calc(12px * var(--fsc,1));color:var(--t3)">${hint}</span>
   </div>`;
 }
 
@@ -1510,8 +1514,8 @@ async function renderWorldMapTimelineBoard(worldId, timelineId) {
 
   let h = `<div class="ch" id="wmtl-head">
     <h2 style="flex:1">${x(tl.name)}</h2>
-    <button class="btn btn-p" onclick="openWorldEventModal(${worldId},${timelineId})" style="padding:6px 12px;font-size:12.5px">${I.plus} Event</button>
-    ${S.worldActiveEventId ? `<button class="btn btn-s" style="padding:6px 12px;font-size:12.5px" onclick="openEventObjectsModal(${worldId},${S.worldActiveEventId})">${I.layer} Objects</button>` : ''}
+    <button class="btn btn-p" onclick="openWorldEventModal(${worldId},${timelineId})" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))">${I.plus} Event</button>
+    ${S.worldActiveEventId ? `<button class="btn btn-s" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))" onclick="openEventObjectsModal(${worldId},${S.worldActiveEventId})">${I.layer} Objects</button>` : ''}
   </div>
   <div class="wmtl-hint" id="wmtl-hint">
     <span>🖱️ Right-click + drag to pan</span>
@@ -1730,7 +1734,7 @@ function renderWorldTimelineGraphSvg(worldId, tlid, events) {
     svg += `
       <circle data-event-dot="${ev.id}" data-ts="${tss[i]}" cx="${xi}" cy="${LINE_Y}" r="${active ? 7 : 5}" fill="${active ? 'var(--accent)' : '#6366f1'}"/>
       <foreignObject data-event-card="${ev.id}" data-ts="${tss[i]}" x="${xi - (CARD_W / 2)}" y="${LINE_Y + 16}" width="${CARD_W}" height="46" style="cursor:pointer" onclick="selectWorldTimelineEvent(${worldId},${tlid},${ev.id})">
-        <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid ${active ? 'var(--accent)' : 'var(--border)'};border-radius:8px;padding:4px 6px;font-size:10px;text-align:center;overflow:hidden">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid ${active ? 'var(--accent)' : 'var(--border)'};border-radius:8px;padding:4px 6px;font-size:calc(10px * var(--fsc,1));text-align:center;overflow:hidden">
           <div style="font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(label)}</div>
         </div>
       </foreignObject>`;
