@@ -134,11 +134,23 @@ const syncWorldCategoryObjects = (worldCategoryId) => {
   if (!wc) return;
   const objects = db.prepare(`SELECT id FROM object WHERE category_id=?`).all(wc.category_ref);
   const validIds = new Set(objects.map(o => o.id));
-  const insObj = db.prepare(`INSERT OR IGNORE INTO world_object (category_ref,object_ref) VALUES (?,?)`);
-  for (const o of objects) insObj.run(worldCategoryId, o.id);
   const existing = db.prepare(`SELECT id, object_ref FROM world_object WHERE category_ref=?`).all(worldCategoryId);
-  const del = db.prepare(`DELETE FROM world_object WHERE id=?`);
-  for (const row of existing) if (!validIds.has(row.object_ref)) del.run(row.id);
+  const mirrored = new Set(existing.map(r => r.object_ref));
+  // Diff FIRST, then decide. This runs on every read (getWorldObjects below),
+  // and in the overwhelmingly common case nothing has changed — so the whole
+  // write path, and its transaction, is skipped entirely rather than issuing
+  // N no-op INSERT OR IGNOREs. That matters because under journal_mode=DELETE
+  // every unwrapped write is its own implicit transaction / file-lock cycle
+  // (~2.5ms), which a read has no business paying.
+  const toAdd = objects.filter(o => !mirrored.has(o.id));
+  const toDrop = existing.filter(r => !validIds.has(r.object_ref));
+  if (!toAdd.length && !toDrop.length) return;
+  db.transaction(() => {
+    const insObj = db.prepare(`INSERT OR IGNORE INTO world_object (category_ref,object_ref) VALUES (?,?)`);
+    for (const o of toAdd) insObj.run(worldCategoryId, o.id);
+    const del = db.prepare(`DELETE FROM world_object WHERE id=?`);
+    for (const row of toDrop) del.run(row.id);
+  })();
 };
 
 const getWorldObjects = (worldCategoryId) => {
@@ -175,11 +187,19 @@ const syncWorldMaps = (worldId) => {
     WHERE m.project_id IN (SELECT project_ref FROM world_novel WHERE world_ref=?)
   `).all(worldId);
   const validIds = new Set(maps.map(m => m.id));
-  const insMap = db.prepare(`INSERT OR IGNORE INTO world_map (world_ref,map_ref) VALUES (?,?)`);
-  for (const m of maps) insMap.run(worldId, m.id);
   const existing = db.prepare(`SELECT id, map_ref FROM world_map WHERE world_ref=?`).all(worldId);
-  const del = db.prepare(`DELETE FROM world_map WHERE id=?`);
-  for (const row of existing) if (!validIds.has(row.map_ref)) del.run(row.id);
+  const mirrored = new Set(existing.map(r => r.map_ref));
+  // Diff first, skip the write path entirely when nothing changed — see the
+  // note on syncWorldCategoryObjects; this also runs on every read.
+  const toAdd = maps.filter(m => !mirrored.has(m.id));
+  const toDrop = existing.filter(r => !validIds.has(r.map_ref));
+  if (!toAdd.length && !toDrop.length) return;
+  db.transaction(() => {
+    const insMap = db.prepare(`INSERT OR IGNORE INTO world_map (world_ref,map_ref) VALUES (?,?)`);
+    for (const m of toAdd) insMap.run(worldId, m.id);
+    const del = db.prepare(`DELETE FROM world_map WHERE id=?`);
+    for (const row of toDrop) del.run(row.id);
+  })();
 };
 
 const getWorldMaps = (worldId) => {
@@ -203,11 +223,19 @@ const syncWorldMapAreas = (worldMapId) => {
   if (!wm) return;
   const areas = db.prepare(`SELECT id FROM map_area WHERE map_id=?`).all(wm.map_ref);
   const validIds = new Set(areas.map(a => a.id));
-  const insArea = db.prepare(`INSERT OR IGNORE INTO world_map_area (world_map_ref,area_ref) VALUES (?,?)`);
-  for (const a of areas) insArea.run(worldMapId, a.id);
   const existing = db.prepare(`SELECT id, area_ref FROM world_map_area WHERE world_map_ref=?`).all(worldMapId);
-  const del = db.prepare(`DELETE FROM world_map_area WHERE id=?`);
-  for (const row of existing) if (!validIds.has(row.area_ref)) del.run(row.id);
+  const mirrored = new Set(existing.map(r => r.area_ref));
+  // Diff first, skip the write path entirely when nothing changed — see the
+  // note on syncWorldCategoryObjects; this also runs on every read.
+  const toAdd = areas.filter(a => !mirrored.has(a.id));
+  const toDrop = existing.filter(r => !validIds.has(r.area_ref));
+  if (!toAdd.length && !toDrop.length) return;
+  db.transaction(() => {
+    const insArea = db.prepare(`INSERT OR IGNORE INTO world_map_area (world_map_ref,area_ref) VALUES (?,?)`);
+    for (const a of toAdd) insArea.run(worldMapId, a.id);
+    const del = db.prepare(`DELETE FROM world_map_area WHERE id=?`);
+    for (const row of toDrop) del.run(row.id);
+  })();
 };
 
 const getWorldMapAreas = (worldMapId) => {

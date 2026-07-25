@@ -17,13 +17,19 @@ function addImportFiles(nexusId, files) {
     VALUES (?,?,?,?,?,?)
   `);
   const seen = d.prepare(`SELECT id FROM import_file WHERE nexus_ref=? AND file_path=?`);
-  let added = 0;
-  for (const f of files || []) {
-    if (seen.get(nexusId, f.path)) continue;
-    ins.run(nexusId, f.name, f.path, f.type || null, f.size || 0, f.folder || null);
-    added++;
-  }
-  return added;
+  // One transaction for the whole batch — importing a folder is hundreds of
+  // rows, and unwrapped each dedupe probe + insert paid its own file-lock cycle.
+  // (The dedupe probe is now index-backed too: idx_import_file_nexus covers
+  // exactly this nexus_ref + file_path lookup.)
+  return d.transaction(() => {
+    let added = 0;
+    for (const f of files || []) {
+      if (seen.get(nexusId, f.path)) continue;
+      ins.run(nexusId, f.name, f.path, f.type || null, f.size || 0, f.folder || null);
+      added++;
+    }
+    return added;
+  })();
 }
 
 const setImportLinker = (id, linkerKey) => getDB().prepare(`

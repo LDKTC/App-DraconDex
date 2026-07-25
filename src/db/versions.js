@@ -30,14 +30,20 @@ function recordVersion(moduleRef, action, detail, restore) {
 function _recordVersion(moduleRef, action, detail, restore) {
   try {
     const d = getDB();
-    const seq = (d.prepare(`SELECT COALESCE(MAX(seq),0) AS m FROM module_version WHERE module_ref=?`).get(moduleRef).m) + 1;
-    d.prepare(`INSERT INTO module_version (module_ref, seq, action, detail, payload) VALUES (?,?,?,?,?)`)
-      .run(moduleRef, seq, action, detail || null, restore ? JSON.stringify(restore) : null);
-    const limit = versionLimit();
-    d.prepare(`
-      DELETE FROM module_version WHERE module_ref=? AND id NOT IN (
-        SELECT id FROM module_version WHERE module_ref=? ORDER BY seq DESC LIMIT ?)
-    `).run(moduleRef, moduleRef, limit);
+    // One transaction for the whole record-then-prune: this runs on EVERY edit
+    // (every 800ms autosave included), and unwrapped it was a separate implicit
+    // transaction / file-lock cycle per statement. Also makes the pair atomic —
+    // a failure between them can no longer leave the row in without its prune.
+    d.transaction(() => {
+      const seq = (d.prepare(`SELECT COALESCE(MAX(seq),0) AS m FROM module_version WHERE module_ref=?`).get(moduleRef).m) + 1;
+      d.prepare(`INSERT INTO module_version (module_ref, seq, action, detail, payload) VALUES (?,?,?,?,?)`)
+        .run(moduleRef, seq, action, detail || null, restore ? JSON.stringify(restore) : null);
+      const limit = versionLimit();
+      d.prepare(`
+        DELETE FROM module_version WHERE module_ref=? AND id NOT IN (
+          SELECT id FROM module_version WHERE module_ref=? ORDER BY seq DESC LIMIT ?)
+      `).run(moduleRef, moduleRef, limit);
+    })();
   } catch (_) { /* versioning must never break the edit itself */ }
 }
 

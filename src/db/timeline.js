@@ -54,9 +54,11 @@ const getEventTags = (eventId) =>
   getDB().prepare(`SELECT h.*, uc.color_code FROM hashtag h LEFT JOIN use_color uc ON h.tag_color=uc.id JOIN event_hashtag eh ON h.id=eh.hashtag_id WHERE eh.event_id=? ORDER BY h.tag_name`).all(eventId);
 const setEventTags = (eventId, tags) => {
   const d = getDB();
-  d.prepare(`DELETE FROM event_hashtag WHERE event_id=?`).run(eventId);
-  const ins = d.prepare(`INSERT INTO event_hashtag (event_id,hashtag_id) VALUES (?,?)`);
-  for (const t of (tags || [])) ins.run(eventId, t);
+  d.transaction(() => {
+    d.prepare(`DELETE FROM event_hashtag WHERE event_id=?`).run(eventId);
+    const ins = d.prepare(`INSERT INTO event_hashtag (event_id,hashtag_id) VALUES (?,?)`);
+    for (const t of (tags || [])) ins.run(eventId, t);
+  })();
   return true;
 };
 const addEventTag = (eventId, tagId) =>

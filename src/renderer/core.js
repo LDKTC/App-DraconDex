@@ -218,9 +218,20 @@ function modulesOfKind(kind) {
 
 async function init() {
   applyUiSettings();
-  S.colors       = await api.color.getAll();
-  S.recentColors = await api.color.getRecent();
-  S.nexuses      = await api.nexus.getAll();
+  // Boot IPC in two waves instead of seven serial round-trips. Wave 1 is every
+  // call with no data dependency; only project.getAll/module.getTree need
+  // S.nexus, which is resolved in between. Each await here is a full IPC
+  // round-trip plus a structured clone, and this is the critical path to first
+  // paint — nothing between the original awaits read any of the S.* they set.
+  const [colors, recentColors, nexuses, folders, windowId] = await Promise.all([
+    api.color.getAll(),
+    api.color.getRecent(),
+    api.nexus.getAll(),
+    api.folder.getAll(),
+    api.window.getId(),
+  ]);
+  S.colors = colors; S.recentColors = recentColors; S.nexuses = nexuses;
+  S.folders = folders; S._windowId = windowId;
   // A window opened via the workspace switcher (toggleNexusSwitcher →
   // openNexusWindow) boots straight into a specific Nexus via ?nexus=<id> —
   // takes priority over the saved active Nexus, and deliberately isn't
@@ -230,15 +241,17 @@ async function init() {
   const bootstrapNexusId = Number(new URLSearchParams(location.search).get('nexus')) || null;
   const savedNexusId = bootstrapNexusId || Number(localStorage.getItem(NEXUS_ACTIVE_KEY));
   S.nexus        = S.nexuses.find(n => n.id === savedNexusId) || null;
-  S.folders      = await api.folder.getAll();
-  S.projects     = await api.project.getAll(null, S.nexus?.id ?? null);
-  S.moduleTree   = S.nexus ? await api.module.getTree(S.nexus.id) : [];
+  const [projects, moduleTree] = await Promise.all([
+    api.project.getAll(null, S.nexus?.id ?? null),
+    S.nexus ? api.module.getTree(S.nexus.id) : Promise.resolve([]),
+  ]);
+  S.projects = projects; S.moduleTree = moduleTree;
   // Set before the first render below — builderPaneHeadHtml (builder.js)
   // reads S.isPopup to decide whether to show the "move to main window" tab
-  // button (Plan part1 #2). S._windowId is this window's own id, needed to
-  // let the main process pick a DIFFERENT window when relaying that move.
+  // button (Plan part1 #2). S._windowId is this window's own id (fetched in
+  // wave 1 above), needed to let the main process pick a DIFFERENT window
+  // when relaying that move.
   S.isPopup  = new URLSearchParams(location.search).get('popup') === '1';
-  S._windowId = await api.window.getId();
   bindWindowChrome();
   bindHubToggle();
   bindBuilderGridDrop();

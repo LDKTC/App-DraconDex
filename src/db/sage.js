@@ -6,8 +6,15 @@
 // ═══ Sage Hut (v3 Phase 17) — vault-wide analytics over the module nest ═
 // Per-module item counts and approximate content byte sizes across every
 // v3 content table, plus the wiki-link roll-up for the hub section.
+// One read transaction around the 9 aggregate scans + the per-module loop —
+// outside one, each statement pays its own file-lock cycle (~2.5ms vs ~6µs).
 function sageHutStats(nexusId) {
   const { getDB } = require('./core');
+  return getDB().readTx(() => _sageHutStats(nexusId))();
+}
+function _sageHutStats(nexusId) {
+  const { getDB } = require('./core');
+  const { scopedAll } = require('./sqlscope');
   const d = getDB();
   const nx = nexusId ?? null;
   const modules = d.prepare(`
@@ -18,7 +25,7 @@ function sageHutStats(nexusId) {
   const per = new Map(modules.map(m => [m.id, { ...m, items: 0, bytes: 0 }]));
   const add = (sql, idCol, cntCol, byteCol) => {
     try {
-      for (const r of d.prepare(sql).all(nx, nx)) {
+      for (const r of scopedAll(d, sql, nx)) {
         const row = per.get(r[idCol]);
         if (!row) continue;
         row.items += r[cntCol] || 0;

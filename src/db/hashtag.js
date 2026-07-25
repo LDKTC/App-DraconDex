@@ -14,9 +14,11 @@ const getProjectTags = (projectId) =>
   getDB().prepare(`SELECT h.*, uc.color_code FROM hashtag h LEFT JOIN use_color uc ON h.tag_color=uc.id JOIN project_hashtag ph ON h.id=ph.hashtag_id WHERE ph.project_id=? ORDER BY h.tag_name`).all(projectId);
 const setProjectTags = (projectId, tags) => {
   const d = getDB();
-  d.prepare(`DELETE FROM project_hashtag WHERE project_id=?`).run(projectId);
-  const ins = d.prepare(`INSERT INTO project_hashtag (project_id,hashtag_id) VALUES (?,?)`);
-  for (const t of (tags || [])) ins.run(projectId, t);
+  d.transaction(() => {
+    d.prepare(`DELETE FROM project_hashtag WHERE project_id=?`).run(projectId);
+    const ins = d.prepare(`INSERT INTO project_hashtag (project_id,hashtag_id) VALUES (?,?)`);
+    for (const t of (tags || [])) ins.run(projectId, t);
+  })();
   return true;
 };
 const addProjectTag = (projectId, tagId) =>
@@ -28,9 +30,11 @@ const getObjectTags = (objectId) =>
   getDB().prepare(`SELECT h.*, uc.color_code FROM hashtag h LEFT JOIN use_color uc ON h.tag_color=uc.id JOIN object_hashtag oh ON h.id=oh.hashtag_id WHERE oh.object_id=? ORDER BY h.tag_name`).all(objectId);
 const setObjectTags = (objectId, tags) => {
   const d = getDB();
-  d.prepare(`DELETE FROM object_hashtag WHERE object_id=?`).run(objectId);
-  const ins = d.prepare(`INSERT INTO object_hashtag (object_id,hashtag_id) VALUES (?,?)`);
-  for (const t of (tags || [])) ins.run(objectId, t);
+  d.transaction(() => {
+    d.prepare(`DELETE FROM object_hashtag WHERE object_id=?`).run(objectId);
+    const ins = d.prepare(`INSERT INTO object_hashtag (object_id,hashtag_id) VALUES (?,?)`);
+    for (const t of (tags || [])) ins.run(objectId, t);
+  })();
   return true;
 };
 const addObjectTag = (objectId, tagId) =>

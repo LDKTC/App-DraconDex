@@ -8,14 +8,20 @@
 //    module and that module's hashtags, so filters evaluate live on open.
 //  - entity_relation CRUD: the Connector's own labeled key->key edges.
 const { getDB } = require('./core');
+const { scopedAll } = require('./sqlscope');
 
+// One read transaction around the 6 vault-wide scans + the hashtag roll-up —
+// outside one, each statement pays its own file-lock cycle (~2.5ms vs ~6µs).
 function viewerIndex(nexusId) {
+  return getDB().readTx(() => _viewerIndex(nexusId))();
+}
+function _viewerIndex(nexusId) {
   const d = getDB();
   const nx = nexusId ?? null;
   const out = [];
   const push = (sql, kind, fn) => {
     try {
-      for (const r of d.prepare(sql).all(nx, nx)) out.push({ kind, ...fn(r) });
+      for (const r of scopedAll(d, sql, nx)) out.push({ kind, ...fn(r) });
     } catch (_) {}
   };
   push(`SELECT o.id, o.name, uc.color_code, m.id mid, m.name mname, m.kind mkind

@@ -202,13 +202,20 @@ const getModuleTags = (moduleId) => getDB().prepare(`
 
 function setModuleTags(moduleId, tags) {
   const d = getDB();
-  const prev = d.prepare(`SELECT hashtag_id FROM module_hashtag WHERE module_ref=?`).all(moduleId).map(r => r.hashtag_id);
-  versions.recordVersion(moduleId, 'tags', null,
-    { op: 'moduleTags', args: { moduleId, tagIds: prev } });
-  d.prepare(`DELETE FROM module_hashtag WHERE module_ref=?`).run(moduleId);
-  const ins = d.prepare(`INSERT INTO module_hashtag (module_ref, hashtag_id) VALUES (?,?)`);
-  for (const t of (tags || [])) ins.run(moduleId, t);
-  return true;
+  // One transaction for the whole operation, not one per sub-step: the prev-tag
+  // read, recordVersion's own write, and the delete/insert would otherwise be
+  // three separate implicit-transaction / file-lock cycles. db.transaction is
+  // reentrant, so recordVersion's inner transaction joins this one instead of
+  // opening its own.
+  return d.transaction(() => {
+    const prev = d.prepare(`SELECT hashtag_id FROM module_hashtag WHERE module_ref=?`).all(moduleId).map(r => r.hashtag_id);
+    versions.recordVersion(moduleId, 'tags', null,
+      { op: 'moduleTags', args: { moduleId, tagIds: prev } });
+    d.prepare(`DELETE FROM module_hashtag WHERE module_ref=?`).run(moduleId);
+    const ins = d.prepare(`INSERT INTO module_hashtag (module_ref, hashtag_id) VALUES (?,?)`);
+    for (const t of (tags || [])) ins.run(moduleId, t);
+    return true;
+  })();
 }
 
 // Outgoing/backlinks reuse the generic wiki_link index (src/db/wiki.js) keyed

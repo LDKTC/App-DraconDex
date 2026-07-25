@@ -141,9 +141,11 @@ const getGameCharElements = (charId) =>
 
 const setGameCharElements = (charId, elementIds) => {
   const d = getDB();
-  d.prepare(`DELETE FROM game_char_element WHERE char_ref=?`).run(charId);
-  const ins = d.prepare(`INSERT OR IGNORE INTO game_char_element (char_ref,element_ref) VALUES (?,?)`);
-  for (const e of (elementIds||[])) ins.run(charId, e);
+  d.transaction(() => {
+    d.prepare(`DELETE FROM game_char_element WHERE char_ref=?`).run(charId);
+    const ins = d.prepare(`INSERT OR IGNORE INTO game_char_element (char_ref,element_ref) VALUES (?,?)`);
+    for (const e of (elementIds||[])) ins.run(charId, e);
+  })();
   return true;
 };
 
@@ -307,9 +309,11 @@ const getGameTags = (gameId) =>
 
 const setGameTags = (gameId, tags) => {
   const d = getDB();
-  d.prepare(`DELETE FROM game_project_hashtag WHERE game_id=?`).run(gameId);
-  const ins = d.prepare(`INSERT INTO game_project_hashtag (game_id,hashtag_id) VALUES (?,?)`);
-  for (const t of (tags||[])) ins.run(gameId, t);
+  d.transaction(() => {
+    d.prepare(`DELETE FROM game_project_hashtag WHERE game_id=?`).run(gameId);
+    const ins = d.prepare(`INSERT INTO game_project_hashtag (game_id,hashtag_id) VALUES (?,?)`);
+    for (const t of (tags||[])) ins.run(gameId, t);
+  })();
   return true;
 };
 
@@ -318,9 +322,11 @@ const getGameCharTags = (charId) =>
 
 const setGameCharTags = (charId, tags) => {
   const d = getDB();
-  d.prepare(`DELETE FROM game_char_hashtag WHERE char_id=?`).run(charId);
-  const ins = d.prepare(`INSERT INTO game_char_hashtag (char_id,hashtag_id) VALUES (?,?)`);
-  for (const t of (tags||[])) ins.run(charId, t);
+  d.transaction(() => {
+    d.prepare(`DELETE FROM game_char_hashtag WHERE char_id=?`).run(charId);
+    const ins = d.prepare(`INSERT INTO game_char_hashtag (char_id,hashtag_id) VALUES (?,?)`);
+    for (const t of (tags||[])) ins.run(charId, t);
+  })();
   return true;
 };
 
@@ -329,9 +335,11 @@ const getGameElementTags = (elementId) =>
 
 const setGameElementTags = (elementId, tags) => {
   const d = getDB();
-  d.prepare(`DELETE FROM game_element_hashtag WHERE element_id=?`).run(elementId);
-  const ins = d.prepare(`INSERT INTO game_element_hashtag (element_id,hashtag_id) VALUES (?,?)`);
-  for (const t of (tags||[])) ins.run(elementId, t);
+  d.transaction(() => {
+    d.prepare(`DELETE FROM game_element_hashtag WHERE element_id=?`).run(elementId);
+    const ins = d.prepare(`INSERT INTO game_element_hashtag (element_id,hashtag_id) VALUES (?,?)`);
+    for (const t of (tags||[])) ins.run(elementId, t);
+  })();
   return true;
 };
 

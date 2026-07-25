@@ -5,30 +5,159 @@ const path = require('path');
 const os = require('os');
 const { app } = require('electron');
 
+// Boot/query profiling, off unless DDX_PERF is set in the environment. The whole
+// data layer runs synchronously in the main process before the first paint, so
+// "how long did initDB take" is only answerable from in here.
+//   DDX_PERF=1 node .claude/skills/run-dracondex/driver.mjs --fresh "evalmain 1"
+// Recorded as well as logged: main-process stdout isn't forwarded by the
+// run-dracondex driver, so `evalmain require('./src/db/core').perfLog()` is how
+// a boot profile is actually read back.
+const PERF = !!process.env.DDX_PERF;
+const _perfLog = [];
+const _now = () => (PERF ? performance.now() : 0);
+const _t = PERF
+  ? (label, t0) => {
+      const ms = +(performance.now() - t0).toFixed(1);
+      _perfLog.push({ label, ms });
+      console.log(`[perf] ${label.padEnd(28)} ${ms}ms`);
+    }
+  : () => {};
+const perfLog = () => _perfLog;
+
+const STMT_CACHE_MAX = 256;
+
 function adaptDb(rawDb) {
   const origPrepare = rawDb.prepare.bind(rawDb);
-  // node-sqlite3-wasm keeps a prepared statement (and its schema read-lock)
-  // alive until finalize(). Prepare-and-finalize per call so no statement is
-  // ever left open — otherwise leaked statements block later DDL (DROP/ALTER)
-  // with SQLITE_LOCKED "database table is locked", and the Navigator schema
-  // migration silently fails. Re-preparing per call also keeps statement
-  // objects safely reusable (e.g. `const ins = db.prepare(...)` in import loops).
+  const origExec = rawDb.exec.bind(rawDb);
+  const origClose = typeof rawDb.close === 'function' ? rawDb.close.bind(rawDb) : null;
+
+  // WHY THIS IS SAFE TO CACHE (it previously wasn't).
+  // The original adapter prepared-and-finalized on every call because a
+  // statement left open holds a schema read-lock, which made later DDL
+  // (DROP/ALTER) fail with SQLITE_LOCKED "database table is locked" and
+  // silently broke the Navigator migration. The precise cause is that
+  // node-sqlite3-wasm's get() pulls one row from its internal generator and
+  // then abandons it, so the statement stays mid-scan with a live cursor.
+  // Statement._reset() (clear_bindings + sqlite3_reset) closes that cursor and
+  // ends the implicit read transaction just as decisively as finalize() does —
+  // so resetting in a finally is exactly as DDL-safe, without paying a full
+  // sqlite3_prepare_v2 compile on every single query.
+  // Load-bearing rule: never expose iterate(). It returns a suspended
+  // generator; caching one would let two callers share a cursor and silently
+  // truncate results. all() materialises before returning and get() resets in
+  // finally, so no cached statement ever holds state between calls — which is
+  // also why re-entrant use of the same SQL (recursion, or a query inside a
+  // loop over another query's rows) cannot interleave.
+  const cache = new Map();    // sql -> Statement          (Map order = LRU)
+  const handles = new Map();  // sql -> {all,get,run}      (stable identity)
+  let cacheOn = false;        // off until initDB() has finished — see getDB()
+  let resetOk = null;         // feature check, resolved on first prepare
+
+  const flush = () => {
+    for (const s of cache.values()) {
+      try { if (!s.isFinalized) s.finalize(); } catch (_) {}
+    }
+    cache.clear();
+  };
+
+  // Never cache DDL/PRAGMA: a statement compiled against a table a later DROP
+  // removed would fail at step time, and PRAGMA compiles specially. Both are
+  // rare, so bypassing costs nothing. This is belt-and-braces for any FUTURE
+  // runtime DDL added outside initDB — the cacheOn gate already covers today's.
+  const NO_CACHE_RE = /^\s*(?:--[^\n]*\n|\/\*[\s\S]*?\*\/|\s)*(CREATE|ALTER|DROP|REINDEX|VACUUM|ATTACH|DETACH|PRAGMA)\b/i;
+
+  const acquire = (sql) => {
+    const hit = cache.get(sql);
+    if (hit) { cache.delete(sql); cache.set(sql, hit); return hit; }  // LRU touch
+    const stmt = origPrepare(sql);
+    if (resetOk === null) resetOk = typeof stmt._reset === 'function';
+    if (!resetOk) return stmt;                                        // caller finalizes
+    cache.set(sql, stmt);
+    if (cache.size > STMT_CACHE_MAX) {
+      const oldest = cache.keys().next().value;
+      const victim = cache.get(oldest);
+      cache.delete(oldest);
+      try { victim.finalize(); } catch (_) {}
+    }
+    return stmt;
+  };
+
   rawDb.prepare = (sql) => {
+    const existing = handles.get(sql);
+    if (existing) return existing;
     const exec = (method, args, transform) => {
-      const stmt = origPrepare(sql);
+      const uncacheable = !cacheOn || resetOk === false || NO_CACHE_RE.test(sql);
+      if (uncacheable) {
+        if (NO_CACHE_RE.test(sql)) flush();   // DDL issued via prepare().run()
+        const stmt = origPrepare(sql);
+        try {
+          const r = stmt[method](args);
+          return transform ? transform(r) : r;
+        } finally { stmt.finalize(); }
+      }
+      const stmt = acquire(sql);
+      if (!cache.has(sql)) {                  // resetOk === false fallback
+        try {
+          const r = stmt[method](args);
+          return transform ? transform(r) : r;
+        } finally { stmt.finalize(); }
+      }
       try {
         const r = stmt[method](args);
         return transform ? transform(r) : r;
       } finally {
-        stmt.finalize();
+        // Reset frees the cursor. If it ever fails, drop this one from the
+        // cache rather than leaving a half-live statement in it.
+        try { stmt._reset(); }
+        catch (_) { cache.delete(sql); try { stmt.finalize(); } catch (__) {} }
       }
     };
-    return {
+    const handle = {
       all: (...args) => exec('all', args),
       get: (...args) => exec('get', args, (r) => (r === null ? undefined : r)),
       run: (...args) => exec('run', args),
     };
+    // Stable identity per SQL string is what keeps the ~140 hoisted
+    // `const ins = db.prepare(...)` call sites working unchanged — and turns
+    // them into genuine compile-once/execute-many statements for the first time.
+    if (handles.size < STMT_CACHE_MAX * 4) handles.set(sql, handle);
+    return handle;
   };
+
+  // Every DDL/PRAGMA that goes through exec() originates in this file (verified:
+  // no other src/db module calls .exec). Flushing on everything except the
+  // transaction verbs needs no SQL classification.
+  rawDb.exec = (sql) => {
+    const head = String(sql).trimStart().slice(0, 9).toUpperCase();
+    if (!(head.startsWith('BEGIN') || head.startsWith('COMMIT') || head.startsWith('ROLLBACK'))) flush();
+    return origExec(sql);
+  };
+
+  // close() does NOT finalize pending statements in this library, so without
+  // this the cached ones leak — importDatabaseMerge closes its source DB.
+  if (origClose) rawDb.close = (...a) => { flush(); handles.clear(); return origClose(...a); };
+
+  // initDB() issues ~30 ALTER TABLE and a DROP via prepare().run() rather than
+  // exec(), so intercepting exec alone would NOT be enough. The gate simply
+  // keeps the cache off for all of initDB, with no SQL classification at all.
+  rawDb.setStatementCache = (on) => { if (!on) flush(); cacheOn = !!on; };
+  rawDb.statementCacheSize = () => cache.size;
+
+  // MEASURED, and by far the biggest single lever in this data layer: a
+  // statement executed outside an explicit transaction costs ~2.5ms, while the
+  // same statement inside one costs ~6µs — a ~400x difference. Under
+  // journal_mode=DELETE every bare statement opens and closes its own implicit
+  // read transaction, which on Windows means real file-locking syscalls; the
+  // actual SQL work and the statement compile are noise next to it (compile
+  // measured at ~1% of total).
+  //
+  // readTx wraps a multi-statement READ so all of its queries share one lock
+  // acquisition. It is just db.transaction with an intention-revealing name —
+  // reentrant, so nesting inside a write transaction is a no-op join.
+  //
+  // Only for SYNCHRONOUS functions: transaction() issues COMMIT as soon as fn
+  // returns, so handing it an async fn would commit before the awaited work ran.
+  rawDb.readTx = (fn) => rawDb.transaction(fn);
   // Reentrant: a transaction opened inside another (e.g. the Phase 24
   // migration calling save paths that reindex wikilinks transactionally)
   // joins the outer one instead of issuing a nested BEGIN.
@@ -90,11 +219,28 @@ function getDB() {
     }
     if (fs.existsSync(dbPath) && !fs.existsSync(dbPath + '-wal')) forceLegacyJournalMode(dbPath);
     try { fs.rmSync(dbPath + '.lock', { recursive: true, force: true }); } catch (_) {}
+    const tOpen = _now();
     db = adaptDb(new _RawDatabase(dbPath));
+    _t('open database', tOpen);
+    const tPragma = _now();
     db.exec("PRAGMA busy_timeout = 5000");
+    // journal_mode stays DELETE — see forceLegacyJournalMode above; WAL makes
+    // node-sqlite3-wasm hard-abort (not throw) when the -wal sidecar is missing.
     db.exec("PRAGMA journal_mode = DELETE");
     db.exec("PRAGMA foreign_keys = ON");
+    // 8 MB page cache (default 2 MB) and in-memory temp tables for GROUP BY /
+    // ORDER BY spills. Both are pure runtime tuning: no on-disk format change,
+    // no durability trade. Deliberately NOT setting synchronous=NORMAL — under
+    // rollback-journal mode that admits corruption on power loss, not just lost
+    // transactions, and wrapping writes in transactions gets the same win safely.
+    db.exec("PRAGMA cache_size = -8000");
+    db.exec("PRAGMA temp_store = MEMORY");
+    _t('pragmas', tPragma);
+    const tInit = _now();
     initDB();
+    _t('initDB (total)', tInit);
+    // Only now — initDB is the one code path that issues DDL via prepare().run().
+    db.setStatementCache(true);
   }
   return db;
 }
@@ -114,71 +260,11 @@ function hasAnyMissingColumns(conn, specs) {
   );
 }
 
-function initDB() {
-  const hadWikiLinkTable = hasTable(db, 'wiki_link');
-  // One-time migration: clean-replace the legacy Navigator (v2.2) schema with
-  // the new v2.5.2 "World" schema. Detected by the legacy `world_cat_object`
-  // table / the old `world_project.color_ref` column (now `color`). Old
-  // navigator data is intentionally dropped; the new tables are recreated by
-  // the CREATE IF NOT EXISTS block below.
-  try {
-    const legacyNav =
-      hasTable(db, 'world_cat_object') ||
-      (hasColumn(db, 'world_project', 'color_ref') && !hasColumn(db, 'world_project', 'codename')) ||
-      hasAnyMissingColumns(db, [
-        ['world_project', ['codename', 'name', 'memo', 'color']],
-        ['world_novel', ['world_ref', 'project_ref']],
-        ['world_character', ['world_ref', 'name', 'symbol', 'color']],
-        ['world_character_category', ['world_ref', 'category_ref']],
-        ['world_character_link', ['character_ref', 'object_ref']],
-        ['world_category', ['world_ref', 'category_ref']],
-        ['world_object', ['category_ref', 'object_ref', 'symbol']],
-        ['world_map', ['world_ref', 'map_ref']],
-        ['world_map_area', ['world_map_ref', 'area_ref', 'color']],
-        ['world_map_point', ['world_map_area_ref', 'point_ref']],
-        ['world_timeline', ['world_ref', 'name', 'world_map_ref']],
-        ['world_timeline_date', ['day', 'month', 'years', 'hour', 'minute']],
-        ['world_timeline_event', ['timeline_ref', 'date_ref']],
-        ['world_timeline_point', ['x', 'y']],
-        ['world_timeline_object', ['event_ref', 'world_object_ref', 'world_character_ref', 'point_ref']],
-      ]);
-    if (legacyNav) {
-      db.exec(`PRAGMA foreign_keys = OFF`);
-      db.exec(`
-        DROP TABLE IF EXISTS library_world_link;
-        DROP TABLE IF EXISTS world_timeline_object;
-        DROP TABLE IF EXISTS world_timeline_point;
-        DROP TABLE IF EXISTS world_timeline_event;
-        DROP TABLE IF EXISTS world_timeline_date;
-        DROP TABLE IF EXISTS world_timeline;
-        DROP TABLE IF EXISTS world_map_point;
-        DROP TABLE IF EXISTS world_map_area;
-        DROP TABLE IF EXISTS world_object;
-        DROP TABLE IF EXISTS world_character_link;
-        DROP TABLE IF EXISTS world_character_category;
-        DROP TABLE IF EXISTS world_novel;
-        DROP TABLE IF EXISTS world_maptl_obj;
-        DROP TABLE IF EXISTS world_maptl_event;
-        DROP TABLE IF EXISTS world_map_timeline;
-        DROP TABLE IF EXISTS world_map_link;
-        DROP TABLE IF EXISTS world_cat_object;
-        DROP TABLE IF EXISTS world_cat_link;
-        DROP TABLE IF EXISTS world_obj_hashtag;
-        DROP TABLE IF EXISTS world_char_hashtag;
-        DROP TABLE IF EXISTS world_char_link;
-        DROP TABLE IF EXISTS world_character;
-        DROP TABLE IF EXISTS world_category;
-        DROP TABLE IF EXISTS world_novel_link;
-        DROP TABLE IF EXISTS world_description;
-        DROP TABLE IF EXISTS world_project_hashtag;
-        DROP TABLE IF EXISTS world_map;
-        DROP TABLE IF EXISTS world_project;
-      `);
-      db.exec(`PRAGMA foreign_keys = ON`);
-    }
-  } catch (_) {}
 
-  db.exec(`
+// Schema source, hoisted to module scope so schemaStamp() can fingerprint it.
+// Editing any of these three changes the stamp, which is what makes the
+// "skip initDB when already current" fast path safe to add (see initDB).
+const DDL_SQL = `
     CREATE TABLE IF NOT EXISTS use_color (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       color_code TEXT UNIQUE NOT NULL,
@@ -1130,8 +1216,295 @@ function initDB() {
       update_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(object_ref, template_ref)
     );
-  `);
+`;
 
+const INDEX_SQL = `
+    -- Director
+    CREATE INDEX IF NOT EXISTS idx_project_nexus             ON project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_project_nexus       ON world_project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_project_nexus        ON game_project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_write_project_nexus       ON write_project(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_project_folder            ON project(folder_id);
+    CREATE INDEX IF NOT EXISTS idx_project_description_proj  ON project_description(project_id);
+    CREATE INDEX IF NOT EXISTS idx_object_category_project   ON object_category(project_id);
+    CREATE INDEX IF NOT EXISTS idx_object_template_category  ON object_template(category_id);
+    CREATE INDEX IF NOT EXISTS idx_object_project            ON object(project_id);
+    CREATE INDEX IF NOT EXISTS idx_object_category           ON object(category_id);
+    CREATE INDEX IF NOT EXISTS idx_object_attribute_template ON object_attribute(template_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_project          ON timeline(project_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_module            ON timeline(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_timeline_event_timeline   ON timeline_event(timeline_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_event_start      ON timeline_event(start_at);
+    CREATE INDEX IF NOT EXISTS idx_timeline_event_end        ON timeline_event(end_at);
+    CREATE INDEX IF NOT EXISTS idx_map_project               ON map(project_id);
+    CREATE INDEX IF NOT EXISTS idx_map_module                ON map(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_map_area_map              ON map_area(map_id);
+    CREATE INDEX IF NOT EXISTS idx_map_point_area            ON map_point(area_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_project          ON relation(project_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_type_ref         ON relation(relation_type);
+    CREATE INDEX IF NOT EXISTS idx_relation_obob_relation    ON relation_obob(relation_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_obob_from        ON relation_obob(object_from);
+    CREATE INDEX IF NOT EXISTS idx_relation_obob_to          ON relation_obob(object_to);
+    CREATE INDEX IF NOT EXISTS idx_relation_obtl_relation    ON relation_obtl(relation_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_obtl_from        ON relation_obtl(object_from);
+    CREATE INDEX IF NOT EXISTS idx_relation_obtl_to          ON relation_obtl(timeline_to);
+    CREATE INDEX IF NOT EXISTS idx_relation_tltl_relation    ON relation_tltl(relation_id);
+    CREATE INDEX IF NOT EXISTS idx_relation_tltl_from        ON relation_tltl(timeline_from);
+    CREATE INDEX IF NOT EXISTS idx_relation_tltl_to          ON relation_tltl(timeline_to);
+    CREATE INDEX IF NOT EXISTS idx_project_hashtag_tag       ON project_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_object_hashtag_tag        ON object_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_event_hashtag_tag         ON event_hashtag(hashtag_id);
+
+    -- Navigator (World)
+    CREATE INDEX IF NOT EXISTS idx_world_novel_project       ON world_novel(project_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_character_world     ON world_character(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_char_cat_category   ON world_character_category(category_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_char_link_object    ON world_character_link(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_category_category   ON world_category(category_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_object_object       ON world_object(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_object_symbol       ON world_object(symbol_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_map_map             ON world_map(map_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_map_area_area       ON world_map_area(area_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_map_point_point     ON world_map_point(point_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_timeline_world      ON world_timeline(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_timeline_map        ON world_timeline(world_map_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tl_event_date       ON world_timeline_event(date_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tl_object_object    ON world_timeline_object(world_object_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tl_object_char      ON world_timeline_object(world_character_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tl_object_point     ON world_timeline_object(point_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_cat_world      ON world_orig_category(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_tmpl_category  ON world_orig_template(category_id);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_obj_world      ON world_orig_object(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_obj_category   ON world_orig_object(category_id);
+    CREATE INDEX IF NOT EXISTS idx_world_orig_attr_template  ON world_orig_attribute(template_id);
+    CREATE INDEX IF NOT EXISTS idx_world_description_world   ON world_description(world_ref);
+    CREATE INDEX IF NOT EXISTS idx_world_tag_tag             ON world_tag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_world_char_tag_tag        ON world_charactor_tag(hashtag_id);
+
+    -- Hero (Game)
+    CREATE INDEX IF NOT EXISTS idx_game_category_category    ON game_category(category_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_cat_object_object    ON game_cat_object(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_character_game       ON game_character(game_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_character_objlink    ON game_character(object_link);
+    CREATE INDEX IF NOT EXISTS idx_game_char_template_game   ON game_char_template(game_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_char_attr_template   ON game_char_attribute(template_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_collection_game      ON game_collection(game_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_col_template_col     ON game_col_template(collection_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_col_element_col      ON game_col_element(collection_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_col_attr_template    ON game_col_attribute(template_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_char_element_element ON game_char_element(element_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_story_game           ON game_story(game_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_dialogue_story       ON game_dialogue(story_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_conversation_char    ON game_conversation(char_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_storyline_story      ON game_storyline(story_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_storyline_to         ON game_storyline(to_ref);
+    CREATE INDEX IF NOT EXISTS idx_game_project_hashtag_tag  ON game_project_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_game_char_hashtag_tag     ON game_char_hashtag(hashtag_id);
+    CREATE INDEX IF NOT EXISTS idx_game_element_hashtag_tag  ON game_element_hashtag(hashtag_id);
+
+    -- Writer (v2.7)
+    CREATE INDEX IF NOT EXISTS idx_write_series_project      ON write_series(project_id);
+    CREATE INDEX IF NOT EXISTS idx_write_book_series         ON write_book(series_id);
+    CREATE INDEX IF NOT EXISTS idx_write_novel_link_novel    ON write_novel_link(novel_id);
+    CREATE INDEX IF NOT EXISTS idx_write_wiki_link_object    ON write_wiki_link(object_id);
+    CREATE INDEX IF NOT EXISTS idx_write_word_link_wiki      ON write_word_link(wiki_id);
+    CREATE INDEX IF NOT EXISTS idx_write_note_project        ON write_note(project_id);
+
+    -- Scribe (v2.8)
+    CREATE INDEX IF NOT EXISTS idx_note_nexus                ON note(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_ref           ON note(folder_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_nexus         ON note_folder(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_note_folder_parent        ON note_folder(parent_ref);
+    CREATE INDEX IF NOT EXISTS idx_wiki_link_src             ON wiki_link(src_key);
+    CREATE INDEX IF NOT EXISTS idx_wiki_link_target          ON wiki_link(target_key);
+
+    -- Module system (v3)
+    CREATE INDEX IF NOT EXISTS idx_module_nexus            ON module(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_parent           ON module(parent_id);
+    CREATE INDEX IF NOT EXISTS idx_module_attribute_module ON module_attribute(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_ui_module        ON module_ui(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_module_hashtag_tag      ON module_hashtag(hashtag_id);
+
+    -- Classifier (Phase 5)
+    CREATE INDEX IF NOT EXISTS idx_classifier_object_module    ON classifier_object(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_template_module  ON classifier_template(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_template_object  ON classifier_template(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_attribute_object ON classifier_attribute(object_ref);
+    CREATE INDEX IF NOT EXISTS idx_classifier_attribute_tmpl   ON classifier_attribute(template_ref);
+
+    -- FK columns that were queried in WHERE/JOIN but had no index. These matter
+    -- twice over: once for the lookups themselves, and once because
+    -- foreign_keys=ON with ON DELETE CASCADE makes SQLite full-scan every child
+    -- table on each parent-row delete when its FK column is unindexed.
+    CREATE INDEX IF NOT EXISTS idx_book_chapter_module    ON book_chapter(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_chat_session_module    ON chat_session(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_chat_message_session   ON chat_message(session_ref);
+    CREATE INDEX IF NOT EXISTS idx_story_dialogue_module  ON story_dialogue(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_story_talk_dialogue    ON story_talk(dialogue_ref);
+    CREATE INDEX IF NOT EXISTS idx_story_edge_module      ON story_edge(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_design_node_module     ON design_node(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_design_edge_module     ON design_edge(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_sketch_page_module     ON sketch_page(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_sketch_stroke_page     ON sketch_stroke(page_ref);
+    CREATE INDEX IF NOT EXISTS idx_sketch_pin_page        ON sketch_pin(page_ref);
+    CREATE INDEX IF NOT EXISTS idx_map_event_module       ON map_event(module_ref);
+    CREATE INDEX IF NOT EXISTS idx_map_event_event        ON map_event(event_ref);
+    CREATE INDEX IF NOT EXISTS idx_map_event_area         ON map_event(area_ref);
+    CREATE INDEX IF NOT EXISTS idx_entity_relation_nexus  ON entity_relation(nexus_ref);
+    CREATE INDEX IF NOT EXISTS idx_wiki_link_nexus        ON wiki_link(nexus_ref);
+    -- Composite on purpose: _recordVersion does MAX(seq) WHERE module_ref=? and
+    -- ORDER BY seq DESC LIMIT ? in its prune subquery, so this covers both and
+    -- turns 3 full scans per edit into 3 seeks.
+    CREATE INDEX IF NOT EXISTS idx_module_version_module  ON module_version(module_ref, seq);
+    -- Composite matches addImportFiles' dedupe probe exactly (nexus_ref + file_path).
+    CREATE INDEX IF NOT EXISTS idx_import_file_nexus      ON import_file(nexus_ref, file_path);
+`;
+
+const SEED_SYMBOLS = ['⚔️ Sword', '🛡️ Shield', '🏹 Bow', '🗡️ Dagger', '🔥 Fire', '💧 Water', '🌿 Nature', '⚡ Lightning',
+      '🌙 Moon', '☀️ Sun', '⭐ Star', '👑 Crown', '💀 Skull', '🔮 Orb', '📜 Scroll', '💎 Gem',
+      '🐉 Dragon', '🦁 Lion', '🐺 Wolf', '🦅 Eagle', '🏰 Castle', '⚓ Anchor', '🕯️ Candle', '⚖️ Scale',
+      '🪄 Magic', '🧿 Talisman', '🪶 Feather', '🕳️ Portal', '🧭 Compass', '🪨 Stone', '🌊 Wave', '🌪️ Storm',
+      '🌸 Bloom', '🌾 Grain', '🍀 Clover', '🪐 Planet', '🧩 Puzzle', '🪙 Coin', '🔑 Key', '🧱 Brick',
+      '🛶 Boat', '🧺 Basket', '🧬 DNA', '🫧 Bubble', '🪞 Mirror', '📡 Signal', '🧯 Extinguisher', '🗝️ Key'];
+
+// ── Schema stamp ────────────────────────────────────────────────────────────
+// initDB() is idempotent but not free: re-running the DDL, the column guards and
+// the 118 CREATE INDEX statements cost ~1.6s of the main process before the
+// first paint, on every single launch. The stamp lets a launch whose schema is
+// already current skip the whole thing.
+//
+// The stamp is DERIVED, not hand-maintained. A hand-bumped constant fails the
+// first time someone edits the schema and forgets to bump it, and that failure
+// mode is a missing column in production. Hashing the schema source instead
+// means any edit to the DDL, the indexes, the seed, or ANY schema-mutating
+// function body changes the stamp automatically — including initDB's own inline
+// legacy-Navigator probe, which is why String(initDB) is in the list.
+//
+// Bump SCHEMA_EPOCH by hand only to deliberately force a re-run on every client.
+const SCHEMA_EPOCH = 1;
+let _schemaStamp = null;
+function schemaStamp() {
+  if (_schemaStamp !== null) return _schemaStamp;
+  const parts = [
+    String(SCHEMA_EPOCH), DDL_SQL, INDEX_SQL, SEED_SYMBOLS.join(''),
+    String(initDB), String(migrateInlineColumns), String(migrateNexusV28),
+    String(migrateMapV3), String(migrateTimelineV3), String(migrateWriterV27),
+    String(migrateHeroV26), String(ensureIndexes),
+  ];
+  // user_version is a signed 32-bit field; take 4 bytes and force it positive
+  // so 0 stays reserved for "never stamped".
+  const h = require('crypto').createHash('sha1').update(parts.join(' ')).digest();
+  _schemaStamp = (h.readUInt32BE(0) & 0x7fffffff) || 1;
+  return _schemaStamp;
+}
+
+function initDB() {
+  // Fast path: schema already matches this build. Everything below is idempotent,
+  // so the only cost of a false miss is doing the work we'd have done anyway.
+  const want = schemaStamp();
+  const have = Number(db.prepare(`PRAGMA user_version`).get()?.user_version || 0);
+  if (have === want) { _t('initDB (skipped, stamp match)', _now()); return; }
+
+  const tLegacyProbe = _now();
+  const hadWikiLinkTable = hasTable(db, 'wiki_link');
+  // One-time migration: clean-replace the legacy Navigator (v2.2) schema with
+  // the new v2.5.2 "World" schema. Detected by the legacy `world_cat_object`
+  // table / the old `world_project.color_ref` column (now `color`). Old
+  // navigator data is intentionally dropped; the new tables are recreated by
+  // the CREATE IF NOT EXISTS block below.
+  try {
+    const legacyNav =
+      hasTable(db, 'world_cat_object') ||
+      (hasColumn(db, 'world_project', 'color_ref') && !hasColumn(db, 'world_project', 'codename')) ||
+      hasAnyMissingColumns(db, [
+        ['world_project', ['codename', 'name', 'memo', 'color']],
+        ['world_novel', ['world_ref', 'project_ref']],
+        ['world_character', ['world_ref', 'name', 'symbol', 'color']],
+        ['world_character_category', ['world_ref', 'category_ref']],
+        ['world_character_link', ['character_ref', 'object_ref']],
+        ['world_category', ['world_ref', 'category_ref']],
+        ['world_object', ['category_ref', 'object_ref', 'symbol']],
+        ['world_map', ['world_ref', 'map_ref']],
+        ['world_map_area', ['world_map_ref', 'area_ref', 'color']],
+        ['world_map_point', ['world_map_area_ref', 'point_ref']],
+        ['world_timeline', ['world_ref', 'name', 'world_map_ref']],
+        ['world_timeline_date', ['day', 'month', 'years', 'hour', 'minute']],
+        ['world_timeline_event', ['timeline_ref', 'date_ref']],
+        ['world_timeline_point', ['x', 'y']],
+        ['world_timeline_object', ['event_ref', 'world_object_ref', 'world_character_ref', 'point_ref']],
+      ]);
+    if (legacyNav) {
+      db.exec(`PRAGMA foreign_keys = OFF`);
+      db.exec(`
+        DROP TABLE IF EXISTS library_world_link;
+        DROP TABLE IF EXISTS world_timeline_object;
+        DROP TABLE IF EXISTS world_timeline_point;
+        DROP TABLE IF EXISTS world_timeline_event;
+        DROP TABLE IF EXISTS world_timeline_date;
+        DROP TABLE IF EXISTS world_timeline;
+        DROP TABLE IF EXISTS world_map_point;
+        DROP TABLE IF EXISTS world_map_area;
+        DROP TABLE IF EXISTS world_object;
+        DROP TABLE IF EXISTS world_character_link;
+        DROP TABLE IF EXISTS world_character_category;
+        DROP TABLE IF EXISTS world_novel;
+        DROP TABLE IF EXISTS world_maptl_obj;
+        DROP TABLE IF EXISTS world_maptl_event;
+        DROP TABLE IF EXISTS world_map_timeline;
+        DROP TABLE IF EXISTS world_map_link;
+        DROP TABLE IF EXISTS world_cat_object;
+        DROP TABLE IF EXISTS world_cat_link;
+        DROP TABLE IF EXISTS world_obj_hashtag;
+        DROP TABLE IF EXISTS world_char_hashtag;
+        DROP TABLE IF EXISTS world_char_link;
+        DROP TABLE IF EXISTS world_character;
+        DROP TABLE IF EXISTS world_category;
+        DROP TABLE IF EXISTS world_novel_link;
+        DROP TABLE IF EXISTS world_description;
+        DROP TABLE IF EXISTS world_project_hashtag;
+        DROP TABLE IF EXISTS world_map;
+        DROP TABLE IF EXISTS world_project;
+      `);
+      db.exec(`PRAGMA foreign_keys = ON`);
+    }
+  } catch (_) {}
+  _t('legacy-nav probe', tLegacyProbe);
+
+  const tDDL = _now();
+  db.exec(DDL_SQL);
+  _t('DDL exec', tDDL);
+
+  const tMigrations = _now();
+  migrateInlineColumns(db);
+  _t('migrations + seed', tMigrations);
+
+  const tIndexes = _now();
+  ensureIndexes(db);
+  _t('ensureIndexes', tIndexes);
+  // One-time backfill: index [[wikilinks]] already sitting in old content.
+  // Lazy require avoids the core↔wiki module cycle (initDB runs after load).
+  if (!hadWikiLinkTable) {
+    const tBackfill = _now();
+    try { require('./wiki').rebuildWikiIndex(); } catch (e) { console.error('wiki backfill error:', e); }
+    _t('wiki backfill', tBackfill);
+  }
+
+  // Stamped LAST, and deliberately not inside a transaction: if anything above
+  // throws or the process is killed mid-upgrade, the stamp is never written and
+  // the whole (idempotent) path simply re-runs on the next launch. Wrapping
+  // initDB in a transaction would also silently break migrateMapV3 /
+  // migrateTimelineV3 / the legacy-nav drop, because PRAGMA foreign_keys is a
+  // no-op inside a transaction.
+  db.exec(`PRAGMA user_version = ${schemaStamp() | 0}`);
+}
+
+
+// Additive column migrations + one-time data seeds that predate the schema
+// stamp, kept as a named function purely so schemaStamp() can hash its source
+// — an inline block inside initDB() would be invisible to the fingerprint, so
+// adding a guard here would not invalidate the stamp and the new column would
+// silently never be created. Every step is idempotent and order-dependent.
+function migrateInlineColumns(db) {
   if (!hasColumn(db, 'module', 'cat_type')) {
     try { db.prepare(`ALTER TABLE module ADD COLUMN cat_type TEXT CHECK(cat_type IN ('object','element','character'))`).run(); } catch (_) {}
   }
@@ -1211,17 +1584,16 @@ function initDB() {
     try { db.prepare(`ALTER TABLE world_object ADD COLUMN symbol_ref INTEGER REFERENCES symbol_collection(id) ON DELETE SET NULL`).run(); } catch (_) {}
   }
   if (hasTable(db, 'symbol_collection')) {
-    const seed = ['⚔️ Sword', '🛡️ Shield', '🏹 Bow', '🗡️ Dagger', '🔥 Fire', '💧 Water', '🌿 Nature', '⚡ Lightning',
-      '🌙 Moon', '☀️ Sun', '⭐ Star', '👑 Crown', '💀 Skull', '🔮 Orb', '📜 Scroll', '💎 Gem',
-      '🐉 Dragon', '🦁 Lion', '🐺 Wolf', '🦅 Eagle', '🏰 Castle', '⚓ Anchor', '🕯️ Candle', '⚖️ Scale',
-      '🪄 Magic', '🧿 Talisman', '🪶 Feather', '🕳️ Portal', '🧭 Compass', '🪨 Stone', '🌊 Wave', '🌪️ Storm',
-      '🌸 Bloom', '🌾 Grain', '🍀 Clover', '🪐 Planet', '🧩 Puzzle', '🪙 Coin', '🔑 Key', '🧱 Brick',
-      '🛶 Boat', '🧺 Basket', '🧬 DNA', '🫧 Bubble', '🪞 Mirror', '📡 Signal', '🧯 Extinguisher', '🗝️ Key'];
-    const ins = db.prepare(`INSERT OR IGNORE INTO symbol_collection (glyph,label) VALUES (?,?)`);
-    for (const s of seed) {
-      const [glyph, ...rest] = s.split(' ');
-      ins.run(glyph, rest.join(' '));
-    }
+    // 48 unwrapped INSERT OR IGNOREs were 48 separate write transactions under
+    // journal_mode=DELETE — a create/fsync/unlink cycle each, every launch, for
+    // rows that already exist after the first run.
+    db.transaction(() => {
+      const ins = db.prepare(`INSERT OR IGNORE INTO symbol_collection (glyph,label) VALUES (?,?)`);
+      for (const s of SEED_SYMBOLS) {
+        const [glyph, ...rest] = s.split(' ');
+        ins.run(glyph, rest.join(' '));
+      }
+    })();
   }
   const hasStory = db.prepare(`PRAGMA table_info(timeline_event)`).all().some(c => c.name === 'story');
   if (!hasStory) db.prepare(`ALTER TABLE timeline_event ADD COLUMN story TEXT`).run();
@@ -1230,12 +1602,6 @@ function initDB() {
   migrateHeroV26(db);
   migrateWriterV27(db);
   migrateNexusV28(db);
-  ensureIndexes(db);
-  // One-time backfill: index [[wikilinks]] already sitting in old content.
-  // Lazy require avoids the core↔wiki module cycle (initDB runs after load).
-  if (!hadWikiLinkTable) {
-    try { require('./wiki').rebuildWikiIndex(); } catch (e) { console.error('wiki backfill error:', e); }
-  }
 }
 
 // v2.8 introduces the Nexus vault: every module's project root gains a
@@ -1354,120 +1720,7 @@ function migrateWriterV27(db) {
 // columns not already covered as the leading column of a UNIQUE constraint.
 // Runs after migrations so reshaped tables (Hero v2.6 etc.) are final.
 function ensureIndexes(db) {
-  db.exec(`
-    -- Director
-    CREATE INDEX IF NOT EXISTS idx_project_nexus             ON project(nexus_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_project_nexus       ON world_project(nexus_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_project_nexus        ON game_project(nexus_ref);
-    CREATE INDEX IF NOT EXISTS idx_write_project_nexus       ON write_project(nexus_ref);
-    CREATE INDEX IF NOT EXISTS idx_project_folder            ON project(folder_id);
-    CREATE INDEX IF NOT EXISTS idx_project_description_proj  ON project_description(project_id);
-    CREATE INDEX IF NOT EXISTS idx_object_category_project   ON object_category(project_id);
-    CREATE INDEX IF NOT EXISTS idx_object_template_category  ON object_template(category_id);
-    CREATE INDEX IF NOT EXISTS idx_object_project            ON object(project_id);
-    CREATE INDEX IF NOT EXISTS idx_object_category           ON object(category_id);
-    CREATE INDEX IF NOT EXISTS idx_object_attribute_template ON object_attribute(template_id);
-    CREATE INDEX IF NOT EXISTS idx_timeline_project          ON timeline(project_id);
-    CREATE INDEX IF NOT EXISTS idx_timeline_module            ON timeline(module_ref);
-    CREATE INDEX IF NOT EXISTS idx_timeline_event_timeline   ON timeline_event(timeline_id);
-    CREATE INDEX IF NOT EXISTS idx_timeline_event_start      ON timeline_event(start_at);
-    CREATE INDEX IF NOT EXISTS idx_timeline_event_end        ON timeline_event(end_at);
-    CREATE INDEX IF NOT EXISTS idx_map_project               ON map(project_id);
-    CREATE INDEX IF NOT EXISTS idx_map_module                ON map(module_ref);
-    CREATE INDEX IF NOT EXISTS idx_map_area_map              ON map_area(map_id);
-    CREATE INDEX IF NOT EXISTS idx_map_point_area            ON map_point(area_id);
-    CREATE INDEX IF NOT EXISTS idx_relation_project          ON relation(project_id);
-    CREATE INDEX IF NOT EXISTS idx_relation_type_ref         ON relation(relation_type);
-    CREATE INDEX IF NOT EXISTS idx_relation_obob_relation    ON relation_obob(relation_id);
-    CREATE INDEX IF NOT EXISTS idx_relation_obob_from        ON relation_obob(object_from);
-    CREATE INDEX IF NOT EXISTS idx_relation_obob_to          ON relation_obob(object_to);
-    CREATE INDEX IF NOT EXISTS idx_relation_obtl_relation    ON relation_obtl(relation_id);
-    CREATE INDEX IF NOT EXISTS idx_relation_obtl_from        ON relation_obtl(object_from);
-    CREATE INDEX IF NOT EXISTS idx_relation_obtl_to          ON relation_obtl(timeline_to);
-    CREATE INDEX IF NOT EXISTS idx_relation_tltl_relation    ON relation_tltl(relation_id);
-    CREATE INDEX IF NOT EXISTS idx_relation_tltl_from        ON relation_tltl(timeline_from);
-    CREATE INDEX IF NOT EXISTS idx_relation_tltl_to          ON relation_tltl(timeline_to);
-    CREATE INDEX IF NOT EXISTS idx_project_hashtag_tag       ON project_hashtag(hashtag_id);
-    CREATE INDEX IF NOT EXISTS idx_object_hashtag_tag        ON object_hashtag(hashtag_id);
-    CREATE INDEX IF NOT EXISTS idx_event_hashtag_tag         ON event_hashtag(hashtag_id);
-
-    -- Navigator (World)
-    CREATE INDEX IF NOT EXISTS idx_world_novel_project       ON world_novel(project_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_character_world     ON world_character(world_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_char_cat_category   ON world_character_category(category_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_char_link_object    ON world_character_link(object_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_category_category   ON world_category(category_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_object_object       ON world_object(object_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_object_symbol       ON world_object(symbol_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_map_map             ON world_map(map_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_map_area_area       ON world_map_area(area_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_map_point_point     ON world_map_point(point_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_timeline_world      ON world_timeline(world_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_timeline_map        ON world_timeline(world_map_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_tl_event_date       ON world_timeline_event(date_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_tl_object_object    ON world_timeline_object(world_object_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_tl_object_char      ON world_timeline_object(world_character_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_tl_object_point     ON world_timeline_object(point_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_orig_cat_world      ON world_orig_category(world_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_orig_tmpl_category  ON world_orig_template(category_id);
-    CREATE INDEX IF NOT EXISTS idx_world_orig_obj_world      ON world_orig_object(world_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_orig_obj_category   ON world_orig_object(category_id);
-    CREATE INDEX IF NOT EXISTS idx_world_orig_attr_template  ON world_orig_attribute(template_id);
-    CREATE INDEX IF NOT EXISTS idx_world_description_world   ON world_description(world_ref);
-    CREATE INDEX IF NOT EXISTS idx_world_tag_tag             ON world_tag(hashtag_id);
-    CREATE INDEX IF NOT EXISTS idx_world_char_tag_tag        ON world_charactor_tag(hashtag_id);
-
-    -- Hero (Game)
-    CREATE INDEX IF NOT EXISTS idx_game_category_category    ON game_category(category_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_cat_object_object    ON game_cat_object(object_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_character_game       ON game_character(game_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_character_objlink    ON game_character(object_link);
-    CREATE INDEX IF NOT EXISTS idx_game_char_template_game   ON game_char_template(game_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_char_attr_template   ON game_char_attribute(template_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_collection_game      ON game_collection(game_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_col_template_col     ON game_col_template(collection_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_col_element_col      ON game_col_element(collection_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_col_attr_template    ON game_col_attribute(template_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_char_element_element ON game_char_element(element_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_story_game           ON game_story(game_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_dialogue_story       ON game_dialogue(story_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_conversation_char    ON game_conversation(char_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_storyline_story      ON game_storyline(story_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_storyline_to         ON game_storyline(to_ref);
-    CREATE INDEX IF NOT EXISTS idx_game_project_hashtag_tag  ON game_project_hashtag(hashtag_id);
-    CREATE INDEX IF NOT EXISTS idx_game_char_hashtag_tag     ON game_char_hashtag(hashtag_id);
-    CREATE INDEX IF NOT EXISTS idx_game_element_hashtag_tag  ON game_element_hashtag(hashtag_id);
-
-    -- Writer (v2.7)
-    CREATE INDEX IF NOT EXISTS idx_write_series_project      ON write_series(project_id);
-    CREATE INDEX IF NOT EXISTS idx_write_book_series         ON write_book(series_id);
-    CREATE INDEX IF NOT EXISTS idx_write_novel_link_novel    ON write_novel_link(novel_id);
-    CREATE INDEX IF NOT EXISTS idx_write_wiki_link_object    ON write_wiki_link(object_id);
-    CREATE INDEX IF NOT EXISTS idx_write_word_link_wiki      ON write_word_link(wiki_id);
-    CREATE INDEX IF NOT EXISTS idx_write_note_project        ON write_note(project_id);
-
-    -- Scribe (v2.8)
-    CREATE INDEX IF NOT EXISTS idx_note_nexus                ON note(nexus_ref);
-    CREATE INDEX IF NOT EXISTS idx_note_folder_ref           ON note(folder_ref);
-    CREATE INDEX IF NOT EXISTS idx_note_folder_nexus         ON note_folder(nexus_ref);
-    CREATE INDEX IF NOT EXISTS idx_note_folder_parent        ON note_folder(parent_ref);
-    CREATE INDEX IF NOT EXISTS idx_wiki_link_src             ON wiki_link(src_key);
-    CREATE INDEX IF NOT EXISTS idx_wiki_link_target          ON wiki_link(target_key);
-
-    -- Module system (v3)
-    CREATE INDEX IF NOT EXISTS idx_module_nexus            ON module(nexus_ref);
-    CREATE INDEX IF NOT EXISTS idx_module_parent           ON module(parent_id);
-    CREATE INDEX IF NOT EXISTS idx_module_attribute_module ON module_attribute(module_ref);
-    CREATE INDEX IF NOT EXISTS idx_module_ui_module        ON module_ui(module_ref);
-    CREATE INDEX IF NOT EXISTS idx_module_hashtag_tag      ON module_hashtag(hashtag_id);
-
-    -- Classifier (Phase 5)
-    CREATE INDEX IF NOT EXISTS idx_classifier_object_module    ON classifier_object(module_ref);
-    CREATE INDEX IF NOT EXISTS idx_classifier_template_module  ON classifier_template(module_ref);
-    CREATE INDEX IF NOT EXISTS idx_classifier_template_object  ON classifier_template(object_ref);
-    CREATE INDEX IF NOT EXISTS idx_classifier_attribute_object ON classifier_attribute(object_ref);
-    CREATE INDEX IF NOT EXISTS idx_classifier_attribute_tmpl   ON classifier_attribute(template_ref);
-  `);
+  db.exec(INDEX_SQL);
 }
 
 // v2.6 replaced the entire Hero module schema. Reshape the surviving tables
@@ -1566,8 +1819,6 @@ function importDatabaseMerge(sourcePath) {
   };
 
   const tx = target.transaction(() => {
-    target.exec("PRAGMA foreign_keys = OFF");
-
     if (hasTable(source, 'use_color')) {
       const rows = source.prepare(`SELECT color_code FROM use_color WHERE color_code IS NOT NULL`).all();
       const ins = target.prepare(`INSERT OR IGNORE INTO use_color (color_code) VALUES (?)`);
@@ -2259,11 +2510,17 @@ function importDatabaseMerge(sourcePath) {
       target.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref IS NULL`).run(nx.id);
     }
 
-    target.exec("PRAGMA foreign_keys = ON");
   });
+  // PRAGMA foreign_keys is a documented NO-OP inside a transaction. Both of
+  // these used to sit inside tx(), so FK enforcement was never actually
+  // disabled for the merge despite the code saying so. Issuing them around the
+  // transaction is what the original intent required. Restored in `finally` so
+  // a failed merge can't leave the connection with FKs off.
+  target.exec("PRAGMA foreign_keys = OFF");
   try {
     tx();
   } finally {
+    try { target.exec("PRAGMA foreign_keys = ON"); } catch (_) {}
     try { source.close(); } catch (_) {}
     cleanupTmp();
   }
@@ -2272,4 +2529,4 @@ function importDatabaseMerge(sourcePath) {
   return summary;
 }
 
-module.exports = { getDB, adaptDb, exportDatabaseTo, importDatabaseMerge };
+module.exports = { getDB, adaptDb, exportDatabaseTo, importDatabaseMerge, perfLog };
