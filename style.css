@@ -1779,6 +1779,33 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 @keyframes busy-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.busy-spin{animation-duration:2.4s}}
 
+/* Boot splash — the full-window loader shown from first paint until init()
+   finishes (markup + controller live inline at the top of index.html so they
+   exist before any app JS parses). z-index clears every dialog layer, the
+   highest of which is #guide-overlay at 1200; it is removed from the DOM once
+   faded, so nothing here ever competes with the app for a click. */
+#splash{
+	position:fixed;inset:0;z-index:2000;
+	display:flex;flex-direction:column;align-items:center;justify-content:center;
+	gap:var(--sp-7);background:var(--bg);
+	transition:opacity .26s ease;
+}
+#splash.splash-hide{opacity:0;pointer-events:none}
+/* .brand-img carries the per-theme content:url() logo swap (see below), so the
+   splash only needs to override its 30px size. */
+#splash .splash-logo{height:88px;width:88px}
+#splash-track{
+	width:220px;height:4px;border-radius:var(--rs);
+	background:var(--raised);overflow:hidden;
+}
+#splash-fill{
+	height:100%;width:0;border-radius:var(--rs);
+	background:var(--button, var(--accent));
+	transition:width .3s ease;
+}
+#splash-pct{font-size:var(--fs-xs);color:var(--t3);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){#splash,#splash-fill{transition:none}}
+
 /* uiPrompt() — the text-entry sibling of uiConfirm. Reuses the whole confirm
    chrome; only needs a wider box and top spacing for its .fg field. */
 #confirm-box.wide{width:460px}

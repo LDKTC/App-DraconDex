@@ -218,6 +218,10 @@ function modulesOfKind(kind) {
 
 async function init() {
   applyUiSettings();
+  // Boot-splash checkpoints (window.__splash, defined inline in index.html).
+  // 0–55% is script parsing; from here on the ticks track the real boot chain,
+  // so the bar never advances on a timer. finish() is at the very bottom.
+  window.__splash?.set(60);
   // Boot IPC in two waves instead of seven serial round-trips. Wave 1 is every
   // call with no data dependency; only project.getAll/module.getTree need
   // S.nexus, which is resolved in between. Each await here is a full IPC
@@ -232,6 +236,9 @@ async function init() {
   ]);
   S.colors = colors; S.recentColors = recentColors; S.nexuses = nexuses;
   S.folders = folders; S._windowId = windowId;
+  // Longest single stall of the boot: that first await is what triggers
+  // getDB() → open the SQLite file + run initDB() migrations in main.
+  window.__splash?.set(80);
   // A window opened via the workspace switcher (toggleNexusSwitcher →
   // openNexusWindow) boots straight into a specific Nexus via ?nexus=<id> —
   // takes priority over the saved active Nexus, and deliberately isn't
@@ -246,6 +253,7 @@ async function init() {
     S.nexus ? api.module.getTree(S.nexus.id) : Promise.resolve([]),
   ]);
   S.projects = projects; S.moduleTree = moduleTree;
+  window.__splash?.set(88);
   // Set before the first render below — builderPaneHeadHtml (builder.js)
   // reads S.isPopup to decide whether to show the "move to main window" tab
   // button (Plan part1 #2). S._windowId is this window's own id (fetched in
@@ -266,6 +274,7 @@ async function init() {
   translateStaticChrome();
   renderProjectTabs();
   renderNexusHome();
+  window.__splash?.set(95);
   // Receives a tab moved from a popup window via the "move to main window"
   // button (Plan part1 #2) — opens it in the currently focused pane. Main
   // process only ever relays this to a non-popup window, but guard against
@@ -298,6 +307,7 @@ async function init() {
     document.querySelectorAll('.kind-popup').forEach(d => d.remove());
   });
   bindSearch();
+  window.__splash?.finish();
 }
 
 // ═══ HELPERS ═══════════════════════════════════════════

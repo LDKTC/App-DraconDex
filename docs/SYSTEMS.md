@@ -380,6 +380,33 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
   `#win-max`, `#win-close` เรียก IPC `window:*`; เมนู View จริงยังอยู่ (ซ่อน)
   เพื่อให้ Ctrl+Shift+I เปิด DevTools ได้
 
+### หน้า Loading ตอนเปิดแอพ (boot splash, 2026-07-25)
+- เดิมเปิดแอพแล้วเห็น "จอดำนิ่ง" — `main.js` ไม่ได้ใช้ `show:false`/`ready-to-show`
+  หน้าต่างจึงโผล่ทันทีพร้อม `backgroundColor:'#050506'` แล้วค้างอยู่จนกว่า
+  `<script src>` 30 ตัว (~700KB, `i18n.js` ตัวเดียว 578KB) จะ parse ครบ และ
+  `init()` จะทำงานจบ ผู้ใช้แยกไม่ออกว่าแอพค้างหรือกำลังโหลด
+- แก้ด้วย **overlay ในหน้าเดียว ไม่ใช่หน้าต่างที่ 2** — ไม่แตะ `main.js`/`preload.js`
+  และไม่เพิ่ม IPC channel เลย (ดู `#splash` ใน docs/FILES.md → index.html)
+- **progress เดินตาม checkpoint จริง ไม่ใช่ timer**: 15% หลัง `i18n.js`, 35%
+  หลัง `core.js`, 50% หลัง `mod/*.js`, 55% ก่อน `search.js` (สี่จุดนี้เป็น
+  inline script คั่นใน index.html) แล้ว 60% หลัง `applyUiSettings()`, **80%
+  หลัง IPC wave 1** (ช่วงยาวสุด — await แรกนี้คือตัว trigger `getDB()` ให้เปิด
+  ไฟล์ SQLite + รัน `initDB()` migration ครั้งแรก), 88% หลัง wave 2, 95% หลัง
+  `renderNexusHome()`, แล้ว `finish()` ท้าย `init()`
+- **แก้จอวาบดำของธีมสว่างไปพร้อมกัน**: `body[data-theme]` ปกติตั้งโดย
+  `applyUiSettings()` ซึ่งเป็นบรรทัดแรกของ `init()` — คือ *หลัง* โหลด JS ครบแล้ว
+  ผู้ใช้ธีมสว่างจึงเห็นพื้นดำตลอดช่วง boot; inline script ใน index.html อ่าน
+  `localStorage` แล้วตั้งธีมให้ก่อนเฟรมแรก (รองรับ `custom:<id>` ด้วย)
+  `applyUiSettings()` ยังเป็นตัวตัดสินสุดท้ายเหมือนเดิม ถ้า bootstrap เดาผิด
+  ก็ถูกแก้ทับภายในไม่กี่ร้อย ms
+- **ทางออกสองชั้น** (เพราะ `#splash` เป็น `position:fixed;inset:0` ถ้าค้างจะกิน
+  คลิกทั้งหน้าจอ): `.catch()` รอบ `init()` ใน search.js เรียก `finish()` เมื่อ
+  boot throw + watchdog `setTimeout(finish, 20000)` ในตัว controller เอง
+- หน้าต่าง pop-out (`?popup=1`/`?tab=`) โหลด JS ก้อนเดียวกัน จึงโชว์ splash ด้วย
+- ผลข้างเคียงที่ยอมรับ: ผู้ใช้ที่ตั้ง UI size ≠ 100% จะเห็น splash ขยับขนาด
+  เล็กน้อยตอน `applyUiSettings()` ตั้ง `body.style.zoom` (bootstrap ตั้งแค่ธีม
+  ไม่ตั้ง zoom/`--fsc`/lang เพื่อไม่ให้ตรรกะซ้ำซ้อนกับตัวจริงจนแยกกันเดิน)
+
 ### คอมโพเนนต์ modal ที่ใช้ร่วม (core.js)
 - `openModal/closeModal`, `toast(msg,type)`, `uiConfirm(message)` (แทน confirm
   ของ browser), `colorPicker()`, `symbolPicker()`, `hashtagSelector(prefix)`

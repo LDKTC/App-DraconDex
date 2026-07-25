@@ -19,6 +19,40 @@
 
 ---
 
+## 2026-07-25 — หน้า Loading (boot splash) + progress bar ตอนเปิดแอพ
+- commit: uncommitted
+- ไฟล์ที่แก้: `index.html`, `style.css`, `src/renderer/core.js`,
+  `src/renderer/search.js`
+- อะไรเปลี่ยน:
+  - **`index.html`** — เพิ่ม `#splash` (logo + `#splash-track`/`#splash-fill` +
+    `#splash-pct`) เป็นบล็อกแรกใน `<body>` พร้อม inline `<script>` ที่ (ก) ตั้ง
+    `body[data-theme]` จาก `localStorage` ทันทีก่อนเฟรมแรก (ข) นิยาม
+    `window.__splash` = `set(pct)`/`finish()` + watchdog 20 วิ; แทรก
+    `__splash.set(N)` คั่นระหว่าง `<script src>` ที่ 15/35/50/55%
+  - **`style.css`** — บล็อก `#splash*` ใหม่ (วางถัดจาก `.busy-veil`) ใช้ token
+    ล้วน: `--bg`, `--raised`, `var(--button, var(--accent))`, `--t3`, `--rs`,
+    `--sp-7`, `--fs-xs`; `z-index:2000` เหนือทุก overlay (สูงสุดเดิมคือ
+    `#guide-overlay` ที่ 1200); มี `prefers-reduced-motion` ปิด transition
+  - **`core.js`** — `__splash?.set()` 4 จุดใน `init()` (60/80/88/95) แล้ว
+    `finish()` ท้ายสุดหลัง `bindSearch()`
+  - **`search.js`** — `init()` → `init().catch(...)` เรียก `finish()` เมื่อ throw
+  - logo ใช้คลาส `.brand-img` เดิมซ้ำ จึงได้ภาพสลับตามธีมทั้ง 32 ธีมฟรี
+    ไม่ต้องเพิ่มไฟล์ภาพใหม่ และไม่มีข้อความแปลภาษาบน splash เลย (มีแค่ logo/
+    แถบ/ตัวเลข %) จึงไม่ต้องเพิ่ม key ใน 18 locale
+- ทำไม: เปิดแอพแล้วเห็นจอดำนิ่งหลายวินาที แยกไม่ออกว่าค้างหรือกำลังโหลด —
+  ต้นเหตุคือหน้าต่างโผล่ทันที (ไม่มี `show:false`/`ready-to-show`) แต่กว่า
+  `<script src>` 30 ตัว (~700KB) จะ parse ครบและ `init()` จะเปิด SQLite +
+  รัน migration เสร็จ ก็กินเวลาจริง; ผู้ใช้ธีมสว่างยังโดนจอวาบดำเพิ่มเพราะ
+  `applyUiSettings()` (ตัวตั้งธีม) รันหลังโหลด JS ครบแล้วเท่านั้น
+- ตรวจสอบแล้ว (ขับแอพจริงด้วย `run-dracondex`): splash เรนเดอร์กลางจอถูกต้อง
+  และถูก `remove()` ออกจาก DOM หลังโหลดเสร็จ (`getElementById('splash')` → `null`);
+  ธีม `daylight` — พิสูจน์แยกว่า inline bootstrap เป็นตัวตั้งธีมจริง โดยปิด
+  บรรทัด `data-theme` ใน `applyUiSettings()` ชั่วคราวแล้วยังได้พื้น `#f4f6fb`
+  + logo สลับเป็น `WhiteIn.png`; ทดสอบให้ `init()` throw กลางคัน → splash ยัง
+  ถูกปลดและหน้าจอคลิกได้; `check.mjs` = 0 error และไม่มี warning ใหม่
+- Doc ที่อัปเดต: docs/SYSTEMS.md §10 (หัวข้อใหม่ "หน้า Loading ตอนเปิดแอพ"),
+  docs/FILES.md (index.html, search.js)
+
 ## 2026-07-25 — UI/UX pass: แก้ข้อบกพร่องการโต้ตอบ + วางระบบ design token / ตัวอักษรไทย
 - commit: uncommitted
 - ไฟล์ที่แก้: `style.css`, `src/renderer/core.js`, `src/renderer/search.js`,

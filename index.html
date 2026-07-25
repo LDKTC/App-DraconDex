@@ -6,6 +6,66 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="splash">
+  <img src="Image/DraconDex_WhiteOut.png" class="brand-img splash-logo" alt="DraconDex">
+  <div id="splash-track"><div id="splash-fill"></div></div>
+  <div id="splash-pct" data-no-i18n>0%</div>
+</div>
+<script>
+/* Boot splash. Runs before the ~700KB of app JS below parses — a synchronous
+   script blocks paint, so everything here lands before the first frame. */
+(function(){
+  /* (a) Theme, early. body[data-theme] is normally set by applyUiSettings()
+     (core.js), but that is the first line of init(), which only runs after all
+     30 script tags have parsed — so a light-theme user got a black flash for
+     the whole boot. This is a deliberately reduced copy: theme only, no --fsc /
+     zoom / lang. applyUiSettings() stays authoritative and re-applies the lot a
+     few hundred ms later, so anything guessed wrong here self-corrects. Keep the
+     storage key and the 'midnight' default in sync with core.js. */
+  try{
+    var saved = JSON.parse(localStorage.getItem('novel-manager-ui-settings') || '{}');
+    var theme = typeof saved.theme === 'string' ? saved.theme : 'midnight';
+    if (theme.indexOf('custom:') === 0){
+      var ct = (saved.customThemes || []).filter(function(c){ return 'custom:' + c.id === theme; })[0];
+      document.body.dataset.theme = ct ? 'custom' : 'midnight';
+      if (ct) for (var k in (ct.vars || {})) document.body.style.setProperty(k, ct.vars[k]);
+    } else {
+      document.body.dataset.theme = theme;
+    }
+  }catch(e){ document.body.dataset.theme = 'midnight'; }
+
+  /* (b) Progress controller. Ticks come from real checkpoints — the script tags
+     below, then init() in core.js — never a timer pretending to be progress. */
+  var born = Date.now(), pct = 0, over = false;
+  function el(id){ return document.getElementById(id); }
+  window.__splash = {
+    set: function(n){
+      if (over) return;
+      pct = Math.max(pct, Math.min(100, n));
+      var f = el('splash-fill'), p = el('splash-pct');
+      if (f) f.style.width = pct + '%';
+      if (p) p.textContent = pct + '%';
+    },
+    finish: function(){
+      if (over) return;
+      over = true;
+      var s = el('splash'), f = el('splash-fill'), p = el('splash-pct');
+      if (f) f.style.width = '100%';
+      if (p) p.textContent = '100%';
+      if (!s) return;
+      /* Min on-screen time so a warm boot flashes the splash instead of
+         strobing it, then fade (matches the .26s transition in style.css). */
+      setTimeout(function(){
+        s.classList.add('splash-hide');
+        setTimeout(function(){ s.remove(); }, 320);
+      }, Math.max(0, 500 - (Date.now() - born)));
+    },
+  };
+  /* #splash is position:fixed/inset:0 — if boot dies before finish() it would
+     swallow every click on the app underneath. Always leave an exit. */
+  setTimeout(function(){ window.__splash.finish(); }, 20000);
+})();
+</script>
 <div id="window-frame">
 <header id="title-tab-bar">
   <div id="title-left-zone">
@@ -223,9 +283,11 @@
 <div id="toast" role="status" aria-live="polite"></div>
   <!-- i18n data + Core + Director loaded immediately; Timeline/Relation/Map/Hashtag lazy-loaded on first use -->
   <script src="src/renderer/i18n.js"></script>
+  <script>__splash.set(15)</script>
   <script src="src/renderer/markdown.js"></script>
   <script src="src/renderer/mdeditor.js"></script>
   <script src="src/renderer/core.js"></script>
+  <script>__splash.set(35)</script>
   <script src="src/renderer/builder.js"></script>
   <script src="src/renderer/hub.js"></script>
   <script src="src/renderer/inspector.js"></script>
@@ -248,9 +310,11 @@
   <script src="src/renderer/mod/sagehut.js"></script>
   <script src="src/renderer/mod/fileviewer.js"></script>
   <script src="src/renderer/mod/wanderer.js"></script>
+  <script>__splash.set(50)</script>
   <script src="src/renderer/director.js"></script>
   <script src="src/renderer/modals.js"></script>
   <script src="src/renderer/sync.js"></script>
+  <script>__splash.set(55)</script>
   <script src="src/renderer/search.js"></script>
 </body>
 </html>

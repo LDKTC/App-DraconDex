@@ -74,11 +74,23 @@ App-NovelManager/
 - require `src/db/*` ทั้ง 15 ไฟล์ (v2.8 เพิ่ม `nexus.js`, `scribe.js`,
   `wiki.js`) แล้ว spread รวมเป็น object เดียว export ให้ main.js ใช้
 
-### index.html (~270 บรรทัด)
+### index.html (~330 บรรทัด)
 - โครงคงที่: `#nav-sidebar` (ปุ่ม rail ทุกโมดูล รวม Explorer/Scribe ที่เพิ่มใน
   v2.8 — ส่วนใหญ่ `display:none` รอ JS เปิดตาม state), `#left-panel`
   (+ ปุ่มย่อ), `#main-area`, `#status-bar` (v2.8 — IDE-style footer),
   `#modal-overlay/#modal`, `#toast`, `#search-bar` (`#search-input`)
+- **`#splash` + inline boot script (เพิ่ม 2026-07-25)** — บล็อกแรกสุดใน `<body>`
+  ก่อน `#window-frame` เพราะต้องมีอยู่ก่อนสคริปต์แอปทั้งก้อนจะ parse:
+  - markup: `.splash-logo` (ใช้คลาส `.brand-img` ร่วม จึงได้ logo สลับตามธีม
+    จาก `content:url()` ใน style.css ฟรี), `#splash-track`/`#splash-fill`,
+    `#splash-pct`
+  - inline `<script>` ทำ 2 อย่าง: (ก) อ่าน `localStorage['novel-manager-ui-settings']`
+    แล้วตั้ง `body[data-theme]` ทันที (สำเนาย่อของ `applyUiSettings()` เฉพาะธีม —
+    กันจอวาบดำ เพราะตัวจริงรันหลังโหลด JS ครบ ~700KB); (ข) นิยาม
+    `window.__splash` = `set(pct)` / `finish()` (min-display 500ms → fade →
+    `remove()`) + watchdog 20 วิ กัน overlay ค้างทับแอป
+  - `<script>__splash.set(N)</script>` แทรกคั่นระหว่าง `<script src>` ที่
+    15/35/50/55% — จุด tick ที่เหลือ (60–100%) อยู่ใน `init()` ของ core.js
 - ท้ายไฟล์โหลด 7 สคริปต์: `i18n.js → markdown.js → mdeditor.js → core.js →
   director.js → modals.js → search.js` (ลำดับสำคัญ: i18n ก่อน, markdown/
   mdeditor ก่อน core เพราะ core เรียก `createMarkdownEditor` โดยตรงในบาง
@@ -351,9 +363,12 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   hashtag (`#ht-n`)
 - `dateInputsHTML(prefix,...)` สร้างช่องวันที่ DD/MM/YYYY HH:mm ที่ใช้ร่วม
 
-### search.js (55 บรรทัด)
+### search.js (58 บรรทัด)
 - ผูก `#search-input` → `api.search.all(q)` → render ผลแยกกลุ่ม (โปรเจกต์ /
   object / แท็ก) คลิกแล้วกระโดดไป (`selectSearchProject/Object/Hashtag`)
+- ท้ายไฟล์คือจุด START ของทั้งแอป: `init().catch(...)` — `.catch` เพิ่ม
+  2026-07-25 เพราะ `init()` จบด้วย `__splash.finish()` ถ้า throw ระหว่างทาง
+  splash เต็มจอจะทับแอปจนกว่า watchdog 20 วิจะทำงาน
 
 ### timeline.js (343 บรรทัด)
 - sidebar รายการ timeline (`selectTimeline`), กราฟ SVG การ์ดเหตุการณ์

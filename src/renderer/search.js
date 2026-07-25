@@ -64,4 +64,7 @@ async function selectSearchHashtag(tid){
 // register their own globals when first loaded.
 
 // ═══ START ═════════════════════════════════════════════
-init();
+// The .catch is what guarantees the boot splash comes down: init() ends with
+// __splash.finish(), so a throw anywhere above would otherwise leave the
+// full-window overlay covering the app until its 20s watchdog fires.
+init().catch(err => { console.error('init failed', err); window.__splash?.finish(); });
