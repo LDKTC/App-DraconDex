@@ -6,14 +6,13 @@
 // index — see src/db/wiki.js's `module_<id>` key kind), and a Version
 // History entry point (the real history is Phase 21).
 
+// One composite read instead of the four parallel round-trips this used to
+// make (Plan part2 #2.1) — src/db/module.js's getModuleInspector returns the
+// same {attrs,tags,links,ui} keys, which hub.js / mod/classifier.js /
+// mod/manager.js all read (and patch) off S.inspectorData directly.
 async function loadInspectorData(moduleId) {
-  const [attrs, tags, links, ui] = await Promise.all([
-    api.module.getAttrs(moduleId),
-    api.module.getTags(moduleId),
-    api.module.getLinks(moduleId),
-    api.module.getUi(moduleId),
-  ]);
-  S.inspectorData = { moduleId, attrs, tags, links, ui };
+  const d = await api.module.getInspector(moduleId);
+  S.inspectorData = { moduleId, ...d };
 }
 
 function buildInspectorHtml(m) {

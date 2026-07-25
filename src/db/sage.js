@@ -6,8 +6,10 @@
 // ═══ Sage Hut (v3 Phase 17) — vault-wide analytics over the module nest ═
 // Per-module item counts and approximate content byte sizes across every
 // v3 content table, plus the wiki-link roll-up for the hub section.
-// One read transaction around the 9 aggregate scans + the per-module loop —
-// outside one, each statement pays its own file-lock cycle (~2.5ms vs ~6µs).
+// One read transaction around the 9 aggregate scans — outside one, each
+// statement pays its own file-lock cycle (~2.5ms vs ~6µs). The per-module
+// description loop that used to sit here is gone (Plan part2 #2.3); its
+// LENGTH() is selected with the module list itself.
 function sageHutStats(nexusId) {
   const { getDB } = require('./core');
   return getDB().readTx(() => _sageHutStats(nexusId))();
@@ -17,12 +19,17 @@ function _sageHutStats(nexusId) {
   const { scopedAll } = require('./sqlscope');
   const d = getDB();
   const nx = nexusId ?? null;
+  // desc_bytes is read off this same row rather than a per-module SELECT in
+  // a loop below it, which is what this used to do (Plan part2 #2.3) — same
+  // table, same scope, so it costs nothing here. It is destructured out
+  // again when seeding `per` so it never reaches the shipped perModule
+  // payload (the renderer reads only id/name/kind/color_code/items/bytes).
   const modules = d.prepare(`
-    SELECT m.id, m.name, m.kind, uc.color_code FROM module m
+    SELECT m.id, m.name, m.kind, uc.color_code, COALESCE(LENGTH(m.description),0) AS desc_bytes FROM module m
     LEFT JOIN use_color uc ON uc.id=m.color
     WHERE (? IS NULL OR m.nexus_ref=?) ORDER BY m.display_order, m.id
   `).all(nx, nx);
-  const per = new Map(modules.map(m => [m.id, { ...m, items: 0, bytes: 0 }]));
+  const per = new Map(modules.map(({ desc_bytes, ...m }) => [m.id, { ...m, items: 0, bytes: desc_bytes || 0 }]));
   const add = (sql, idCol, cntCol, byteCol) => {
     try {
       for (const r of scopedAll(d, sql, nx)) {
@@ -68,11 +75,6 @@ function _sageHutStats(nexusId) {
   add(`SELECT mp.module_ref AS mid, COUNT(*) AS c, SUM(COALESCE(LENGTH(mp.point_name),0) + 16) AS b
       FROM map_point mp JOIN module m ON mp.module_ref=m.id
       WHERE (? IS NULL OR m.nexus_ref=?) GROUP BY mp.module_ref`, 'mid', 'c', 'b');
-  // module descriptions count toward their own size
-  for (const m of per.values()) {
-    const r = d.prepare(`SELECT COALESCE(LENGTH(description),0) AS b FROM module WHERE id=?`).get(m.id);
-    m.bytes += r?.b || 0;
-  }
   const links = d.prepare(`SELECT COUNT(*) AS c FROM wiki_link WHERE (? IS NULL OR nexus_ref=?)`).get(nx, nx).c;
   const perModule = [...per.values()];
   return {
@@ -84,7 +86,13 @@ function _sageHutStats(nexusId) {
   };
 }
 
+// Same read-transaction treatment as sageHutStats — the LIMIT 500 scan plus
+// resolveEntityKeys's own queries would otherwise each pay a lock cycle.
 function sageHutLinkerList(nexusId) {
+  const { getDB } = require('./core');
+  return getDB().readTx(() => _sageHutLinkerList(nexusId))();
+}
+function _sageHutLinkerList(nexusId) {
   const { getDB } = require('./core');
   const wiki = require('./wiki');
   const d = getDB();

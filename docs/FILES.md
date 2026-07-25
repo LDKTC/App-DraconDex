@@ -49,6 +49,26 @@ App-NovelManager/
   `write:` (Writer), `note:` (v2.8 Scribe), `wiki:` (v2.8 wikilink/backlinks/
   graph/explorer/quick-switcher), `artisan:`, `sage:`, `window:`
   (ปุ่มย่อ/ขยาย/ปิดของ title bar)
+- **protocol `ddx-file://` (Plan part2 #2.2)**: `registerSchemesAsPrivileged`
+  ตอน module load (ต้องก่อน app ready) + `registerDisplayImageProtocol()` ที่
+  เรียกใน `whenReady` ก่อน `createWindow()` — เสิร์ฟไฟล์รูป display image ให้
+  `<img src>` ตรงๆ แทนการ base64 ผ่าน IPC. จงใจ**ไม่ใช้** `standard: true`:
+  `index.html` โหลดด้วย `loadFile` (origin เป็น `file://`) และ Chromium ปฏิเสธ
+  ไม่โหลด custom scheme แบบ standard เป็น subresource ของหน้า `file://`
+  (ทดสอบแล้ว — request ไม่ถึง handler เลย `<img>` ยิง onerror ทันที) — scheme
+  แบบ non-standard เป็น opaque origin เหมือน `data:`/`blob:` จึงโหลดได้.
+  URL พก **row id เท่านั้น ไม่ใช่ path** (`ddx-file://<importFileId>`) เพราะ
+  `import_file.file_path` คือ path เดิมของผู้ใช้ที่อยู่ตรงไหนก็ได้บนดิสก์
+  (ไฟล์ import ไม่ถูกคัดลอกเข้า data dir) — ถ้ารับ path ตรงๆ จะกลายเป็นช่อง
+  อ่านไฟล์ใดก็ได้; handler เสิร์ฟเฉพาะเมื่อ row นั้นมีจริงและ `file_type` อยู่
+  ใน `IMAGE_EXTS` เท่านั้น + ส่ง ETag (mtime+size) กับ `Cache-Control: no-cache`
+  เพื่อให้เบราว์เซอร์ revalidate (ไฟล์ที่ถูกแทนที่บนดิสก์เห็นผลทันที).
+  ทั้ง 2 จุดมี guard `if (protocol)` เพราะ web-driver harness โหลด main.js
+  โดย stub Electron shell ไว้ (ไม่มี `protocol`) — ที่นั่นใช้ทาง fallback
+  `<img onerror>` → `importdock:readFiles` แทน
+- `importdock:readFile` เปลี่ยนเป็น async (`fs.promises`) และ**ไม่ส่ง base64 ของ
+  รูปแล้ว** (คืน `{kind:'image'}` เฉยๆ — viewer ชี้ไป `ddx-file://` เอง);
+  `importdock:readFiles(ids)` เป็นตัวใหม่สำหรับ batch fallback
 - ไม่มี business logic ในไฟล์นี้ — ทุก handler ส่งต่อ `db.<fn>()` ทันที
 - ฟังก์ชัน list หลายตัว (`project:getAll`, `world:getAll`, `game:getAll`,
   `write:getProjects`, `search:all`) รับพารามิเตอร์ `nexusId` เพิ่ม (v2.8)
@@ -168,8 +188,8 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `module.js` | 194 | แกน module tree: `getTree/getModule/createModule/updateModule/deleteModule`, `duplicateModule`/`cloneModuleSubtree` (clone ทั้ง subtree), `moveModule` (reorder/reparent), Module Inspector helpers (`*ModuleAttr*`, `*ModuleUi*`, `*ModuleTags*`, `getModuleLinks`) |
-| `classifier.js` | 135 | ระบบ category/object/template ของ kind `classifier` (แยกตารางจาก Director เดิม) |
+| `module.js` | 288 | แกน module tree: `getTree/getModule/createModule/updateModule/deleteModule`, `duplicateModule`/`cloneModuleSubtree` (clone ทั้ง subtree), `moveModule` (reorder/reparent), Module Inspector helpers (`*ModuleAttr*`, `*ModuleUi*`, `*ModuleTags*`, `getModuleLinks`); **Plan part2 #2.1/#2.5** — `getModuleInspector(id)` รวม 4 read ของ Inspector เป็นก้อนเดียว (`{attrs,tags,links,ui}`), `getChildAttrCounts(parentId)` นับ attribute ของ Minor ทุกตัวด้วย GROUP BY เดียว, `getNestItems(nexusRef)` คืนรายการ content item ของทุกโมดูลในวอลต์ในคำเรียกเดียว (แถวบางเฉพาะคอลัมน์ที่ `nameOf` ใช้ — ไม่ดึง `chapter_content`/`story`/`last_message`); `getContentItemCounts` ถูกลบ (นับจาก `.length` แทน) |
+| `classifier.js` | 195 | ระบบ category/object/template ของ kind `classifier` (แยกตารางจาก Director เดิม); `getObjectsFull(moduleRef)` (**Plan part2 #2.1**) รวม object+template+attribute+private template ของทั้งโมดูลใน `readTx` เดียว พร้อมประกอบ `attrMap`/`conditionMap`/`privateTemplates` ให้เสร็จฝั่ง db แทนที่ renderer จะยิง `getAttrs`+`getObjectTemplates` ต่อ object |
 | `author.js` | 55 | หนังสือ/บทของ kind `author` (`createBookChapter`/`updateBookChapterContent`) |
 | `narrator.js` | 75 | กราฟบทสนทนาของ kind `narrator` (`story_dialogue/story_talk/story_edge`) |
 | `chatscribe.js` | 82 | โน้ตแชทของ kind `scribe` (ChatScribe) |
@@ -187,9 +207,9 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `hub.js` | ~1240 (เดิมเอกสารว่า 781 — ตัวเลขนี้ตกค้างมาหลายรอบ ยังไม่ได้ sync เต็ม) | Nexus nest hub: module rail (+ `goToNexusNestHub` home button, ปุ่มแรกในแถบ ก่อน "+create"), accordion (Nest/Sage Hut/Import Dock — แต่ละ section มี `.acc-body` เลื่อนแยกกันเองผ่าน `#hub-body` flex layout, ดู style.css), nest tree drag-drop (โมดูลไหนก็ reparent ข้าม parent ได้ ไม่ล็อกเฉพาะ top-level แล้ว — `onNestDrop`), `buildNestRow`/`buildNestItemRow` เรนเดอร์ `.tree-chev-spacer` แทนที่ chevron ว่างเปล่าเมื่อแถวไม่มี child (Plan part1 #5 — กัน `.kicon` เลื่อนซ้ายไม่ตรงคอลัมน์กับแถวข้างเคียง), context menu (ปุ่ม "Create" เปิด hover submenu แทนการแสดง kind-list แบนราบเดิม — `openCreateSubmenu`/`positionSubmenuNear`)/rename/duplicate/move-to/pin/**"เปิดในหน้าต่างใหม่"**+**"เปิดใน Pane ใหม่ ▸"** (เฉพาะ module ที่มี Builder page เอง คือไม่ใช่ `collector` — `openModuleInNewWindow`/`openModuleInNewPane`/`openPaneDirectionSubmenu`/`buildPaneDirectionListHtml`, Plan part1 #3), icon popup, `buildModuleDetailHtml`, `wrapPageView` (ห่อ Sage Hut/Import Dock file-preview/Kind Browser ด้วย resize handle — Plan part1 #2) |
+| `hub.js` | ~1240 (เดิมเอกสารว่า 781 — ตัวเลขนี้ตกค้างมาหลายรอบ ยังไม่ได้ sync เต็ม) | Nexus nest hub: module rail (+ `goToNexusNestHub` home button, ปุ่มแรกในแถบ ก่อน "+create"), accordion (Nest/Sage Hut/Import Dock — แต่ละ section มี `.acc-body` เลื่อนแยกกันเองผ่าน `#hub-body` flex layout, ดู style.css), nest tree drag-drop (โมดูลไหนก็ reparent ข้าม parent ได้ ไม่ล็อกเฉพาะ top-level แล้ว — `onNestDrop`), `buildNestRow`/`buildNestItemRow` เรนเดอร์ `.tree-chev-spacer` แทนที่ chevron ว่างเปล่าเมื่อแถวไม่มี child (Plan part1 #5 — กัน `.kicon` เลื่อนซ้ายไม่ตรงคอลัมน์กับแถวข้างเคียง), context menu (ปุ่ม "Create" เปิด hover submenu แทนการแสดง kind-list แบนราบเดิม — `openCreateSubmenu`/`positionSubmenuNear`)/rename/duplicate/move-to/pin/**"เปิดในหน้าต่างใหม่"**+**"เปิดใน Pane ใหม่ ▸"** (เฉพาะ module ที่มี Builder page เอง คือไม่ใช่ `collector` — `openModuleInNewWindow`/`openModuleInNewPane`/`openPaneDirectionSubmenu`/`buildPaneDirectionListHtml`, Plan part1 #3), icon popup, `buildModuleDetailHtml`, `wrapPageView` (ห่อ Sage Hut/Import Dock file-preview/Kind Browser ด้วย resize handle — Plan part1 #2). **Plan part2 #2.5**: `reloadModuleTree` ดึง `module:getNestItems` คู่กับ `getTree` แล้วเติมทั้ง `S.nestItems` ผ่าน `seedNestItems`/`seedNestItemsFor` (ทุกโมดูล content kind ได้ entry เสมอ — โมดูลว่างได้ `[]` — จึงไม่มีการ fetch lazy ทีละโมดูลตอนเรนเดอร์แรกอีก); `scheduleNestRender()` รวบ re-render ที่มาจาก path async (`ensureNestItemsLoaded`/`invalidateNestItems`/`closeStaleItemTabs`) เป็นครั้งเดียวต่อ microtask — `renderNexusHome()` เองยังเป็น sync ตามเดิม; `invalidateNestItems` ดึงลิสต์ครั้งเดียวแล้วส่งต่อให้ `closeStaleItemTabs` (เดิมดึงซ้ำ 2-3 รอบ) และเคลียร์ `S.sageHutCache` |
 | `builder.js` | 618 | Editor-group shell — recursive split-pane layout tree (`builderSplitPane`/`builderClosePane`, ซ้อนได้ไม่จำกัดชั้น, Part 4), tab drag-reorder/cross-pane move/pop-out เป็นหน้าต่างแยก, toggle Module Inspector dock, auto-split เมื่อลาก tab ไปวางขอบ pane; `pruneStaleLayoutElements` กวาด DOM ที่หลงเหลือจาก legacy view (เช่น Scribe, Nexus picker — เขียนทับ `#main-inner.innerHTML` ตรงๆ) ออกก่อน re-render grid ทุกครั้ง กัน pane ค้างที่ปิดไม่ได้ |
-| `inspector.js` | 148 | Module Inspector dock: description/แท็ก/แอตทริบิวต์/ลิงก์/ปุ่ม Version History |
+| `inspector.js` | 212 | Module Inspector dock: description/แท็ก/แอตทริบิวต์/ลิงก์/ปุ่ม Version History; `loadInspectorData` เรียก `module:getInspector` ครั้งเดียวแทน 4 call ขนาน (Plan part2 #2.1) — คีย์ `{attrs,tags,links,ui}` เหมือนเดิมเพราะ hub.js/mod/classifier.js/mod/manager.js อ่าน (และแก้) `S.inspectorData` ตรงๆ |
 | `iconpicker.js` | 266 | Icon/Color picker ฝัง (ไอคอนแอป/symbol เดิม/อัปโหลด+crop วงกลม) |
 | `versions.js` | 78 | แผง Version History (แทน Inspector dock ชั่วคราวตอนเปิด) |
 | `guide.js` | 105 | Coach-mark แนะนำหลังสร้าง Nexus แรก (`GUIDE_STEPS`, ข้าม step ที่หา DOM เป้าหมายไม่เจอ) |
@@ -209,8 +229,8 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | `mod/connector.js` | — | UI ของ kind `connector` — scroll-wheel ซูมได้ตรงๆ ไม่ต้องกด Ctrl แล้ว, hint text แยกเป็น `connectorPanHint` ของตัวเอง (Plan part5) |
 | `mod/sketcher.js` | — | UI ของ kind `sketcher` |
 | `mod/designer.js` | — | UI ของ kind `designer` — scroll-wheel ซูมตรงๆ, node-edge arrow ใช้ขนาด DOM จริง (`data-node` attr) แทน radius เดา, link picker มี type-filter (`designerLinkFilter`, module_ui) (Plan part5) |
-| `mod/sagehut.js` | 139 | Hub section: สถิติวอลต์ (ใช้ `db/sage.js` บางฟังก์ชัน); header มีไอคอน `I.sage` แล้ว (Plan part1 #4, เดิมไม่มีไอคอนทำให้ header สูงไม่เท่า Nexus Nest); `buildSageHutHtml` ห่อด้วย `wrapPageView` (Plan part1 #2) |
-| `mod/fileviewer.js` | 284 | Hub section: Import Dock — list/link ไฟล์ + viewer read-only ใน Builder; `buildFileViewerHtml` ห่อด้วย `wrapPageView` (Plan part1 #2) |
+| `mod/sagehut.js` | 160 | Hub section: สถิติวอลต์ (ใช้ `db/sage.js` บางฟังก์ชัน); header มีไอคอน `I.sage` แล้ว (Plan part1 #4, เดิมไม่มีไอคอนทำให้ header สูงไม่เท่า Nexus Nest); `buildSageHutHtml` ห่อด้วย `wrapPageView` (Plan part1 #2); **Plan part2 #2.3** — `openSageTab` ดึงเฉพาะ payload ที่แท็บนั้นใช้ และ memo ไว้ที่ `S.sageHutCache` ต่อ nexus ผ่าน `sageHutCached()` (เดิมยิงครบ 3 ก้อนทุกครั้งที่คลิกแท็บ รวม `wiki:getGraph` ที่แพงสุด) |
+| `mod/fileviewer.js` | 335 | Hub section: Import Dock — list/link ไฟล์ + viewer read-only ใน Builder; `buildFileViewerHtml` ห่อด้วย `wrapPageView` (Plan part1 #2); **Plan part2 #2.2** — `hydrateDisplayImages` ชี้ `<img src>` ไปที่ `ddx-file://<importFileId>` ตรงๆ (ไม่มี IPC เลย) แทนการ await `importdock:readFile` ทีละรูป, `queueDisplayImageFallback`/`flushDisplayImageFallback` เป็นทาง fallback ผ่าน `onerror` (รวมทุกรูปที่ล้มเป็น `importdock:readFiles` ครั้งเดียว) สำหรับ renderer ที่ไม่มี protocol เช่น web-driver harness, `invalidateDisplayImages()` เคลียร์ทั้ง `S.displayImageCache` และ `S.displayImageData` (เดิมตัวหลังไม่เคยถูกล้างเลย → ไฟล์ที่ถูกแทนที่บนดิสก์ค้างเก่าทั้ง session) |
 
 `vendor/` เพิ่ม konva/d3 เดิมยังใช้ร่วม (ไม่มีไฟล์ vendor ใหม่ในรอบนี้)
 
@@ -254,8 +274,8 @@ vault-head), `src/renderer/i18n.js` (+41 คีย์ `sync*` ครบ 18 local
 | `hero.js` | ~390 | ทุกอย่างของ Game: เกม (v2.8: `getGames/createGame` รับ `nexusId`), novel link (unique ต่อนิยาย), import category/object, ตัวละคร+template มี level+attr+element, collection+element+template+attr, story/dialogue/conversation/storyline, แท็กเกม |
 | `writer.js` | ~200 | write project (v2.8: `getWriteProjects/createWriteProject` รับ `nexusId`) / series / book / chapter (+เนื้อหา+ลำดับ, v2.8: `updateWriteChapterContent` hook เข้า wiki reindex) / novel link / wiki / word link / note / chat |
 | `scribe.js` | 78 | (v2.8) note_folder + note CRUD ผูก `nexus_ref`, `UNIQUE(nexus_ref,title)`; `createNote` auto-suffix ชื่อชนกัน + resolve dangling wikilink; `updateNoteContent/updateNote` hook เข้า wiki reindex |
-| `wiki.js` | ~400 | (v2.8) แกน wikilink ทั้งหมด: `resolveWikiName` (ลำดับ precedence ตายตัว + namespace escape), `reindexWikiLinks`, `rebuildWikiIndex` (backfill/หลัง import), `getBacklinks/getOutgoingLinks/resolveEntityKeys`, `quickIndex` (ป้อน quick switcher + `[[` autocomplete), `getEntityPath` (นำทางลึกถึง entity), `explorerTree` (โครงต้นไม้ทั้ง vault), `getGraph` (node/edge ทั้ง vault รวม wiki_link), `renameWikiTarget`/`resolveDanglingLinks` (rename safety) |
-| `sage.js` | 200 | query สถิติ read-only 4 ชุด: dataSize, objectAmounts, linkerList, linkerGraph (nodes+edges ข้ามโมดูล) |
+| `wiki.js` | 516 | (v2.8) แกน wikilink ทั้งหมด: `resolveWikiName` (ลำดับ precedence ตายตัว + namespace escape), `reindexWikiLinks`, `rebuildWikiIndex` (backfill/หลัง import), `getBacklinks/getOutgoingLinks/resolveEntityKeys`, `quickIndex` (ป้อน quick switcher + `[[` autocomplete), `getEntityPath` (นำทางลึกถึง entity), `explorerTree` (โครงต้นไม้ทั้ง vault), `getGraph` (node/edge ทั้ง vault รวม wiki_link), `renameWikiTarget`/`resolveDanglingLinks` (rename safety). **Plan part2 #2.4**: `rebuildWikiIndex`/`resolveDanglingLinks` ห่อ transaction เดียว (`reindexWikiLinks` ที่ซ้อนอยู่กลายเป็น no-op เพราะ `db.transaction` reentrant) — สำคัญสุดกับ backfill ใน `initDB` ที่รันก่อน `setStatementCache(true)`; `withResolveMemo()` memo `resolveWikiName` **เฉพาะช่วง bulk เท่านั้น ไม่ใช่ตลอด process** (การสร้าง entity ใหม่ทำให้ชื่อที่เคย resolve เป็น null กลายเป็นไม่ null — คือเหตุผลที่ `resolveDanglingLinks` มีอยู่); `resolveEntityKeys` เปลี่ยนจาก 1 query/คีย์ เป็น `IN` ต่อ prefix (`KEY_IN_SQL`, arity คงที่ 64 + pad ด้วย id ซ้ำ เพื่อไม่ให้ statement cache ของ core.js ที่คีย์ด้วยสตริง SQL แตกเป็นหลายรูป) โดยยัง**รักษาลำดับ input** ไว้ (UI แสดง backlink ตามลำดับนี้ตรงๆ) และยังตัดคีย์ที่ resolve ไม่ได้ทิ้งเหมือนเดิม |
+| `sage.js` | 114 | query สถิติ read-only ของ Sage Hut: `sageHutStats` (9 aggregate scan ใน `readTx` เดียว — Plan part2 #2.3 ย้าย `LENGTH(description)` ต่อโมดูลจาก loop ที่ `prepare()` ซ้ำทุกรอบ ไปเป็นคอลัมน์ `desc_bytes` ในคิวรีรายชื่อโมดูลที่ดึงอยู่แล้ว), `sageHutLinkerList` (ห่อ `readTx` แล้วเช่นกัน) |
 | `artisan.js` | 82 | `artisanCreateNovel/World/Game/Write` — รับ `base` (ชื่อ ฯลฯ) + `spec` (โครงจากเทมเพลต) สร้างทุกแถวใน transaction เดียว |
 
 ---

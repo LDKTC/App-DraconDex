@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, protocol } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
@@ -26,6 +26,25 @@ if (!fs.existsSync(tempDataPath)) fs.mkdirSync(tempDataPath, { recursive: true }
 const electronUserDataPath = path.join(tempDataPath, 'electron-user-data');
 app.setPath('userData', electronUserDataPath);
 app.commandLine.appendSwitch('no-sandbox');
+
+// ddx-file:// — display images are served straight to <img src> instead of
+// being base64'd through IPC (Plan part2 #2.2). Must be declared before the
+// app is ready.
+// Deliberately NOT `standard: true`: index.html is loaded with loadFile, so
+// the document origin is file://, and Chromium refuses to load a *standard*
+// custom scheme as a subresource of a file:// page (verified — the request
+// never reaches the handler, <img> just fires onerror). A non-standard
+// scheme is opaque-origin like data:/blob: and loads fine. Consequence:
+// ddx-file://<id> has no host component, so the handler parses the id off
+// the raw URL rather than URL.hostname.
+// Guarded because the run-dracondex web-driver harness loads this file with
+// Electron's shell stubbed out (no `protocol`); there the renderer's
+// <img onerror> fallback to importdock:readFiles takes over instead.
+if (protocol) {
+  protocol.registerSchemesAsPrivileged([
+    { scheme: 'ddx-file', privileges: { secure: true, supportFetchAPI: true, stream: true, bypassCSP: true } },
+  ]);
+}
 
 // Ensure only one instance runs per data dir. The SQLite layer recovers from a
 // stale lock dir by deleting it on open, which is only safe if no other
@@ -78,8 +97,42 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { role: 'viewMenu' },
   ]));
+  registerDisplayImageProtocol();
   createWindow();
 });
+
+// Imported files are NOT copied into the data dir — import_file.file_path is
+// the user's original absolute path, anywhere on disk (see importdock:add /
+// pickFolder below), so there is no directory prefix to sandbox against.
+// The URL therefore carries a row id, never a path: ddx-file://<importFileId>
+// is looked up in import_file and served only if it is a registered image.
+// A path in the URL would be an arbitrary-file-read hole; don't add one.
+function registerDisplayImageProtocol() {
+  if (!protocol) return;
+  protocol.handle('ddx-file', async (req) => {
+    const id = Number(String(req.url).replace(/^ddx-file:(\/\/)?/, '').split(/[?#/]/)[0]);
+    if (!Number.isInteger(id) || id <= 0) return new Response(null, { status: 400 });
+    const f = db.getImportFile(id);
+    const ext = (f?.file_type || '').toLowerCase();
+    if (!f || !IMAGE_EXTS.has(ext)) return new Response(null, { status: 404 });
+    try {
+      // ETag off mtime+size, served with no-cache: the browser reuses the
+      // decoded image across re-renders but still revalidates, so replacing
+      // the file on disk shows up immediately. The old base64 path cached
+      // bytes in a renderer Map that was never invalidated.
+      const st = await fs.promises.stat(f.file_path);
+      const etag = `"${st.mtimeMs}-${st.size}"`;
+      if (req.headers.get('if-none-match') === etag) {
+        return new Response(null, { status: 304, headers: { ETag: etag, 'Cache-Control': 'no-cache' } });
+      }
+      return new Response(await fs.promises.readFile(f.file_path), {
+        headers: { 'Content-Type': imageMime(ext), ETag: etag, 'Cache-Control': 'no-cache' },
+      });
+    } catch (_) {
+      return new Response(null, { status: 404 });
+    }
+  });
+}
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
@@ -148,7 +201,7 @@ h('note:delete',       (id)            => db.deleteNote(id));
 
 // Module system (v3 Nexus nest)
 h('module:getTree',     (nx)          => db.getTree(nx));
-h('module:getItemCounts', (nx)        => db.getContentItemCounts(nx));
+h('module:getNestItems', (nx)         => db.getNestItems(nx));
 h('module:get',         (id)          => db.getModule(id));
 h('module:create',      (data)        => db.createModule(data));
 h('module:update',      (id,data)     => db.updateModule(id,data));
@@ -165,10 +218,13 @@ h('module:setUi',       (id,k,v)      => db.setModuleUi(id,k,v));
 h('module:getTags',     (id)          => db.getModuleTags(id));
 h('module:setTags',     (id,tags)     => db.setModuleTags(id,tags));
 h('module:getLinks',    (id)          => db.getModuleLinks(id));
+h('module:getInspector',(id)          => db.getModuleInspector(id));
+h('module:getAttrCounts', (pid)       => db.getChildAttrCounts(pid));
 
 // Category "Classifier" (v3 Phase 5)
 h('classifier:setCatType',        (id,ct)              => db.setCatType(id,ct));
 h('classifier:getObjects',        (mref)                => db.getObjects(mref));
+h('classifier:getObjectsFull',    (mref)                => db.getObjectsFull(mref));
 h('classifier:getObject',         (id)                  => db.getObject(id));
 h('classifier:createObject',      (mref,n,c,ic)         => db.createObject(mref,n,c,ic));
 h('classifier:updateObject',      (id,n,c,ic)           => db.updateObject(id,n,c,ic));
@@ -248,6 +304,8 @@ h('sketcher:movePin',      (id,px,py)   => db.moveSketchPin(id,px,py));
 h('sketcher:deletePin',    (id)         => db.deleteSketchPin(id));
 // Import Dock (v3 Phase 18) — folder import, file<->linker, viewers
 const IMPORT_EXTS = new Set(['png','jpg','jpeg','gif','webp','svg','md','txt','docx']);
+const IMAGE_EXTS = new Set(['png','jpg','jpeg','gif','webp','svg']);
+const imageMime = (ext) => (ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`);
 h('importdock:list',          (nx)     => db.getImportFiles(nx));
 h('importdock:add',           (nx,fs2) => db.addImportFiles(nx,fs2));
 h('importdock:setLinker',     (id,k)   => db.setImportLinker(id,k));
@@ -277,20 +335,39 @@ h('importdock:pickFolder', async () => {
   return { folder: path.basename(root), files };
 });
 // Content is only served for files already registered in import_file.
-h('importdock:readFile', (id) => {
+h('importdock:readFile', async (id) => {
   const f = db.getImportFile(id);
   if (!f) return null;
   const ext = (f.file_type || '').toLowerCase();
   try {
-    if (['png','jpg','jpeg','gif','webp','svg'].includes(ext)) {
-      const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-      return { kind: 'image', dataUrl: `data:${mime};base64,${fs.readFileSync(f.file_path).toString('base64')}` };
-    }
-    if (ext === 'md' || ext === 'txt') return { kind: ext, text: fs.readFileSync(f.file_path, 'utf8') };
+    // Images carry no payload any more (Plan part2 #2.2) — the viewer points
+    // <img> at ddx-file://<id> instead. Only the existence/readability check
+    // still matters here, so a missing file still renders the error state.
+    if (IMAGE_EXTS.has(ext)) { await fs.promises.access(f.file_path); return { kind: 'image' }; }
+    if (ext === 'md' || ext === 'txt') return { kind: ext, text: await fs.promises.readFile(f.file_path, 'utf8') };
     return { kind: 'binary' };
   } catch (e) {
     return { kind: 'error', message: String(e.message || e) };
   }
+});
+// Batched image read (Plan part2 #2.2) — the fallback path for renderers
+// where ddx-file:// isn't available (the Playwright web-driver harness loads
+// index.html over plain file:// with no Electron protocol registered). One
+// round-trip and one parallel read wave for the whole set instead of the
+// per-image sequential await hydrateDisplayImages used to do. Returns
+// {id: dataUrl}; ids that aren't registered images are simply absent.
+h('importdock:readFiles', async (ids) => {
+  const out = {};
+  await Promise.all((ids || []).map(async (id) => {
+    const f = db.getImportFile(id);
+    if (!f) return;
+    const ext = (f.file_type || '').toLowerCase();
+    if (!IMAGE_EXTS.has(ext)) return;
+    try {
+      out[id] = `data:${imageMime(ext)};base64,${(await fs.promises.readFile(f.file_path)).toString('base64')}`;
+    } catch (_) { /* unreadable/moved file — leave it out, renderer shows the empty state */ }
+  }));
+  return out;
 });
 
 // Version control (v3 Phase 21)

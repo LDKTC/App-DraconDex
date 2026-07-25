@@ -121,38 +121,69 @@ function moveModule(nexusRef, moduleId, newParentId, orderedSiblingIds) {
 
 const countModules = (nexusRef) => getDB().prepare(`SELECT COUNT(*) AS c FROM module WHERE nexus_ref=?`).get(nexusRef).c;
 
-// ═══ Content-item counts (Plan part4 #3) ═══════════════════════════════
-// One COUNT(*) per content-bearing kind, merged into a single {moduleId:
-// count} map — cheap (no row payloads), used only to decide whether a
-// module's Nest-tree row shows an expand chevron before its content items
-// have ever been lazily fetched. The full item lists themselves are never
-// loaded here; see each kind's own getXxx(moduleRef) list-getter for that.
-function getContentItemCounts(nexusRef) {
+// ═══ Nest content-item rows (Plan part2 #2.5) ═════════════════════════
+// The Nest tree used to lazily fetch each expanded content module's items
+// through that kind's own list-getter — 1 IPC per module, and chronicler
+// was 1+M since it walked its timelines — with a full re-render firing
+// per resolved fetch. This returns every content module's items for a
+// whole nexus in one call, over the five content tables, so the tree loads
+// together with the module tree and renders once. It also replaces the old
+// module:getItemCounts chevron gate — the count is just the array length.
+//
+// Deliberately LIGHT rows: only the columns ITEM_KIND[kind].nameOf reads
+// (src/renderer/mod/item.js), never SELECT * — book_chapter.chapter_content,
+// timeline_event.story and chat_session.last_message would otherwise cross
+// IPC for an entire vault. Opening an actual item still goes through the
+// per-kind list-getter, which returns the full row.
+// Ordering matches each kind's own list-getter exactly, since these rows
+// are what the tree renders.
+function getNestItems(nexusRef) {
   const d = getDB();
-  const counts = {};
-  const add = (rows) => { for (const r of rows) counts[r.module_ref] = (counts[r.module_ref] || 0) + r.c; };
-  add(d.prepare(`
-    SELECT o.module_ref, COUNT(*) AS c FROM classifier_object o
-    JOIN module m ON o.module_ref=m.id WHERE m.nexus_ref=? GROUP BY o.module_ref
-  `).all(nexusRef));
-  add(d.prepare(`
-    SELECT tl.module_ref, COUNT(*) AS c FROM timeline_event te
-    JOIN timeline tl ON te.timeline_id=tl.id
-    JOIN module m ON tl.module_ref=m.id WHERE m.nexus_ref=? GROUP BY tl.module_ref
-  `).all(nexusRef));
-  add(d.prepare(`
-    SELECT ch.module_ref, COUNT(*) AS c FROM book_chapter ch
-    JOIN module m ON ch.module_ref=m.id WHERE m.nexus_ref=? GROUP BY ch.module_ref
-  `).all(nexusRef));
-  add(d.prepare(`
-    SELECT s.module_ref, COUNT(*) AS c FROM chat_session s
-    JOIN module m ON s.module_ref=m.id WHERE m.nexus_ref=? GROUP BY s.module_ref
-  `).all(nexusRef));
-  add(d.prepare(`
-    SELECT n.module_ref, COUNT(*) AS c FROM design_node n
-    JOIN module m ON n.module_ref=m.id WHERE m.nexus_ref=? GROUP BY n.module_ref
-  `).all(nexusRef));
-  return counts;
+  return d.readTx(() => {
+    const items = {};
+    const add = (rows) => {
+      for (const r of rows) {
+        const { module_ref, ...item } = r;
+        (items[module_ref] || (items[module_ref] = [])).push(item);
+      }
+    };
+    add(d.prepare(`
+      SELECT o.module_ref, o.id, o.name FROM classifier_object o
+      JOIN module m ON o.module_ref=m.id WHERE m.nexus_ref=?
+      ORDER BY o.module_ref, o.display_order, o.id
+    `).all(nexusRef));
+    // Flattened the way ITEM_KIND.chronicler.list does it: timelines by
+    // line_name, then each timeline's events by start date. __parentId is
+    // the timeline id, which the event inspector needs.
+    add(d.prepare(`
+      SELECT tl.module_ref, te.id, te.event_name, tl.id AS __parentId FROM timeline_event te
+      JOIN timeline tl ON te.timeline_id=tl.id
+      JOIN module m ON tl.module_ref=m.id
+      LEFT JOIN timeline_date s ON te.start_at=s.id
+      WHERE m.nexus_ref=?
+      ORDER BY tl.module_ref, tl.line_name, s.years, s.month, s.day, s.hour, s.minute
+    `).all(nexusRef));
+    add(d.prepare(`
+      SELECT ch.module_ref, ch.id, ch.name FROM book_chapter ch
+      JOIN module m ON ch.module_ref=m.id WHERE m.nexus_ref=?
+      ORDER BY ch.module_ref, ch.chapter_order, ch.id
+    `).all(nexusRef));
+    add(d.prepare(`
+      SELECT s.module_ref, s.id, s.name FROM chat_session s
+      JOIN module m ON s.module_ref=m.id WHERE m.nexus_ref=?
+      ORDER BY s.module_ref, s.session_order, s.id
+    `).all(nexusRef));
+    // design_node has no name column — nameOf() derives a label from
+    // node_text (truncated at 24) or a shape glyph, and stays the authority
+    // on that formatting. Capped at 64 chars here purely to bound payload;
+    // the renderer's own 24-char slice is unaffected.
+    add(d.prepare(`
+      SELECT n.module_ref, n.id, SUBSTR(n.node_text,1,64) AS node_text, n.shape FROM design_node n
+      JOIN module m ON n.module_ref=m.id WHERE m.nexus_ref=?
+      ORDER BY n.module_ref, n.id
+    `).all(nexusRef));
+    return items;
+  })();
 }
 
 // ═══ Module Inspector (Phase 4) ═══════════════════════════════════════
@@ -225,11 +256,33 @@ const getModuleLinks = (moduleId) => ({
   backlinks: wiki.getBacklinks(`module_${moduleId}`),
 });
 
+// Everything inspector.js's loadInspectorData needs, in one round-trip
+// instead of four (Plan part2 #2.1). Key names are load-bearing — hub.js,
+// mod/classifier.js and mod/manager.js all read S.inspectorData.{attrs,
+// tags,links,ui} directly, and two of them patch .ui in place.
+const getModuleInspector = (moduleId) => getDB().readTx(() => ({
+  attrs: getModuleAttrs(moduleId),
+  tags: getModuleTags(moduleId),
+  links: getModuleLinks(moduleId),
+  ui: getModuleUi(moduleId),
+}))();
+
+// Attribute count per child module, for the Manager card grid — it used to
+// fetch every child's full attribute list just to read .length (Plan part2
+// #2.1). Returns a flat {childModuleId: count} map.
+function getChildAttrCounts(parentId) {
+  const rows = getDB().prepare(`
+    SELECT a.module_ref, COUNT(*) AS c FROM module_attribute a
+    JOIN module m ON a.module_ref=m.id WHERE m.parent_id=? GROUP BY a.module_ref
+  `).all(parentId);
+  return rows.reduce((acc, r) => (acc[r.module_ref] = r.c, acc), {});
+}
+
 module.exports = {
   getTree, getModule, createModule, updateModule, updateModuleDescription, deleteModule,
-  duplicateModule, moveModule, countModules, nexusOfModule, getContentItemCounts,
+  duplicateModule, moveModule, countModules, nexusOfModule, getNestItems,
   getModuleAttrs, upsertModuleAttr, deleteModuleAttr,
   getModuleUi, setModuleUi,
   getModuleTags, setModuleTags,
-  getModuleLinks,
+  getModuleLinks, getModuleInspector, getChildAttrCounts,
 };

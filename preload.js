@@ -60,7 +60,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   module: {
     getTree: (nx)          => inv('module:getTree', nx),
-    getItemCounts: (nx)    => inv('module:getItemCounts', nx),
+    getNestItems: (nx)     => inv('module:getNestItems', nx),
     get:     (id)          => inv('module:get', id),
     create:  (data)        => inv('module:create', data),
     update:  (id,data)     => inv('module:update', id,data),
@@ -77,10 +77,13 @@ contextBridge.exposeInMainWorld('api', {
     getTags: (id)          => inv('module:getTags', id),
     setTags: (id,tags)     => inv('module:setTags', id,tags),
     getLinks: (id)         => inv('module:getLinks', id),
+    getInspector: (id)     => inv('module:getInspector', id),
+    getAttrCounts: (pid)   => inv('module:getAttrCounts', pid),
   },
   classifier: {
     setCatType:        (id,ct)             => inv('classifier:setCatType', id,ct),
     getObjects:        (mref)              => inv('classifier:getObjects', mref),
+    getObjectsFull:    (mref)              => inv('classifier:getObjectsFull', mref),
     getObject:         (id)                => inv('classifier:getObject', id),
     createObject:      (mref,n,c,ic)          => inv('classifier:createObject', mref,n,c,ic),
     updateObject:      (id,n,c,ic)            => inv('classifier:updateObject', id,n,c,ic),
@@ -195,6 +198,7 @@ contextBridge.exposeInMainWorld('api', {
     displayImages: (nx)     => inv('importdock:displayImages', nx),
     pickFolder:    ()       => inv('importdock:pickFolder'),
     readFile:      (id)     => inv('importdock:readFile', id),
+    readFiles:     (ids)    => inv('importdock:readFiles', ids),
   },
   sagehut: {
     stats:      (nx) => inv('sagehut:stats', nx),

@@ -10,12 +10,15 @@
 const MANAGER_VIEWS = ['cards', 'list', 'table', 'recent'];
 const MANAGER_VIEW_LABEL = { cards: 'Cards', list: 'List', table: 'Table', recent: 'Recent' };
 
+// Plan part2 #2.1: the per-child counts used to be one getAttrs round-trip
+// per child, fetching every attribute row just to read .length. One GROUP BY
+// (module:getAttrCounts) does the whole set.
 async function loadManagerData(m) {
   const [ui, counts] = await Promise.all([
     api.module.getUi(m.id),
-    Promise.all((m.children || []).map(c => api.module.getAttrs(c.id).then(a => [c.id, a.length]))),
+    api.module.getAttrCounts(m.id),
   ]);
-  S.managerData = { moduleId: m.id, attrCounts: new Map(counts) };
+  S.managerData = { moduleId: m.id, attrCounts: new Map(Object.entries(counts).map(([id, c]) => [Number(id), c])) };
   S.managerView = MANAGER_VIEWS.includes(ui.activeView) ? ui.activeView : 'cards';
 }
 

@@ -13,12 +13,33 @@ const SAGEHUT_VIEW_LABEL = { dataSize: 'Size', objectAmount: 'Objects', linkerLi
 const fmtBytes = (b) => b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB`
   : b >= 1024 ? `${(b / 1024).toFixed(1)} KB` : `${b || 0} B`;
 
+// Plan part2 #2.3: every tab click used to refetch all three payloads —
+// including wiki:getGraph, by far the most expensive, even when opening
+// "Size". Now each payload is fetched only for the tabs that render it and
+// memoised per nexus, so clicking through all four costs 3 round-trips
+// instead of 12. Entry points that re-run this (the hub rows, the in-page
+// viewbar, and builder-tab restore) all get the cache too.
+//
+// `stats` is unconditional: the four tiles need it on every tab, and so do
+// the hub's own row badges (hub.js reads S.sageHut.stats).
+function sageHutCached(key, fetch) {
+  const c = S.sageHutCache;
+  if (c && c.nexusId === S.nexus.id && c[key] !== undefined) return c[key];
+  if (!c || c.nexusId !== S.nexus.id) S.sageHutCache = { nexusId: S.nexus.id };
+  // Cache the promise, not the resolved value — two tabs opened back to back
+  // must not both fire the same fetch.
+  S.sageHutCache[key] = fetch();
+  return S.sageHutCache[key];
+}
+
 async function openSageTab(tab) {
   if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); return; }
+  const needsLinks = tab === 'linkerList';
+  const needsGraph = tab === 'linkerGraph';
   const [stats, linkRows, graph] = await Promise.all([
-    api.sagehut.stats(S.nexus.id),
-    api.sagehut.linkerList(S.nexus.id),
-    api.wiki.getGraph(S.nexus.id),
+    sageHutCached('stats', () => api.sagehut.stats(S.nexus.id)),
+    needsLinks ? sageHutCached('linkRows', () => api.sagehut.linkerList(S.nexus.id)) : (S.sageHut?.linkRows || []),
+    needsGraph ? sageHutCached('graph', () => api.wiki.getGraph(S.nexus.id)) : (S.sageHut?.graph || { nodes: [], edges: [] }),
   ]);
   S.sageHut = { tab, stats, linkRows, graph };
   S.filePreview = null;

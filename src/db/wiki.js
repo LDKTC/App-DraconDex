@@ -36,11 +36,36 @@ const RESOLVERS = [
   ['cobj',  (d, n, nx) => scopedGet(d, `SELECT o.id FROM classifier_object o JOIN module m ON o.module_ref=m.id WHERE (? IS NULL OR m.nexus_ref=?) AND o.name=? COLLATE NOCASE`, nx, n)?.id, 'cobj_'],
 ];
 
+// Optional memo for bulk passes (Plan part2 #2.4). A miss costs all 16
+// resolvers, and a rebuild resolves the same [[Name]] once per source that
+// mentions it — reindexWikiLinks only dedupes within one source. Scope is
+// deliberately ONE bulk operation, never process-lifetime: creating an
+// entity retroactively changes a name that previously resolved to null
+// (that is exactly what resolveDanglingLinks exists for), renameWikiTarget
+// mutates names mid-flight, and deletes anywhere in src/db/* invalidate it
+// with no hook back here. A long-lived memo would ship stale target_keys.
+let _resolveMemo = null;
+function withResolveMemo(fn) {
+  const outer = _resolveMemo;
+  _resolveMemo = new Map();
+  try { return fn(); } finally { _resolveMemo = outer; }
+}
+
 function resolveWikiName(rawName, nexusId) {
   const d = getDB();
   const nx = nexusId ?? null;
   let name = String(rawName || '').trim();
   if (!name) return null;
+  // Lowercased because every resolver matches COLLATE NOCASE; the forced
+  // `ns:` prefix stays part of the key, since note:X and X can differ.
+  const memoKey = _resolveMemo && `${nx}::${name.toLowerCase()}`;
+  if (memoKey !== null && memoKey !== undefined && _resolveMemo.has(memoKey)) return _resolveMemo.get(memoKey);
+  const result = _resolveWikiName(d, nx, name);
+  if (memoKey !== null && memoKey !== undefined) _resolveMemo.set(memoKey, result);
+  return result;
+}
+
+function _resolveWikiName(d, nx, name) {
   const forced = name.match(/^(\w+):(.+)$/);
   if (forced) {
     const r = RESOLVERS.find(([ns]) => ns === forced[1].toLowerCase());
@@ -92,7 +117,20 @@ const nexusOfChapter = (id) => getDB().prepare(`
 
 // Rebuild the whole index from every markdown-bearing source. Used by the
 // one-time backfill in initDB and available after DB import-merge.
+//
+// Plan part2 #2.4: this used to issue 8 bare top-level statements plus one
+// reindexWikiLinks per matched row — and reindexWikiLinks opens its own
+// transaction, so R source rows meant R separate BEGIN/COMMIT lock cycles.
+// One outer transaction collapses them all (db.transaction is reentrant via
+// core.js's txDepth guard, so the inner ones become no-ops and no call site
+// had to change). This matters most on the initDB backfill, which runs
+// before setStatementCache(true) — there is no other lever on that path.
 function rebuildWikiIndex() {
+  const d = getDB();
+  return withResolveMemo(() => d.transaction(_rebuildWikiIndex)());
+}
+
+function _rebuildWikiIndex() {
   const d = getDB();
   d.prepare(`DELETE FROM wiki_link`).run();
   for (const r of d.prepare(`SELECT id, content, nexus_ref FROM note WHERE content LIKE '%[[%'`).all()) {
@@ -148,17 +186,61 @@ const KEY_LOOKUPS = {
   cobj:  { sql: `SELECT id, name FROM classifier_object WHERE id=?`,          type: 'object',    module: 'classifier' },
 };
 
+// Plan part2 #2.4: one .get() per key became one IN-query per key PREFIX.
+// The chunk size is fixed and the last chunk is padded by repeating an id
+// (IN is a set — duplicates cannot add rows) so the SQL string set stays at
+// exactly one shape per prefix. A variable-arity IN would mint a new string
+// per (prefix, arity) pair, and core.js's statement cache is keyed on the
+// literal SQL: that would churn its 256-entry LRU and could push the
+// never-evicting `handles` map past its cap, degrading prepare() globally.
+// Compile cost is ~1% anyway — the win here is collapsing N lock cycles.
+const KEY_CHUNK = 64;
+
+// Precomputed once so a future KEY_LOOKUPS entry that doesn't end in the
+// expected `WHERE id=?` fails loudly here instead of silently degrading
+// inside resolveEntityKeys's per-prefix try/catch.
+const KEY_IN_SQL = Object.fromEntries(Object.entries(KEY_LOOKUPS).map(([prefix, lk]) => {
+  if (!/WHERE id=\?$/.test(lk.sql)) throw new Error(`KEY_LOOKUPS.${prefix}.sql must end in "WHERE id=?"`);
+  return [prefix, `${lk.sql.replace(/WHERE id=\?$/, '')}WHERE id IN (${Array(KEY_CHUNK).fill('?').join(',')})`];
+}));
+
 function resolveEntityKeys(keys) {
   const d = getDB();
-  const out = [];
-  for (const key of keys || []) {
+  const list = keys || [];
+  // Group by prefix, keeping the first occurrence of each key only.
+  const byPrefix = new Map();
+  const wanted = new Map(); // key -> {prefix, id}
+  for (const key of list) {
+    if (wanted.has(key)) continue;
     const m = String(key).match(/^([a-z]+)_(\d+)$/);
-    const lk = m && KEY_LOOKUPS[m[1]];
-    if (!lk) continue;
+    if (!m || !KEY_LOOKUPS[m[1]]) continue;
+    const id = Number(m[2]);
+    wanted.set(key, { prefix: m[1], id });
+    if (!byPrefix.has(m[1])) byPrefix.set(m[1], []);
+    byPrefix.get(m[1]).push(id);
+  }
+  const rowsByKey = new Map();
+  for (const [prefix, ids] of byPrefix) {
+    const lk = KEY_LOOKUPS[prefix];
+    const sql = KEY_IN_SQL[prefix];
+    // try/catch per prefix, not per key: a missing table degrades one entity
+    // type rather than all 16 (the reason the old per-key catch existed).
     try {
-      const row = d.prepare(lk.sql).get(Number(m[2]));
-      if (row) out.push({ key, name: row.name, type: lk.type, module: lk.module });
+      for (let i = 0; i < ids.length; i += KEY_CHUNK) {
+        const chunk = ids.slice(i, i + KEY_CHUNK);
+        while (chunk.length < KEY_CHUNK) chunk.push(chunk[chunk.length - 1]);
+        for (const row of d.prepare(sql).all(...chunk)) {
+          rowsByKey.set(`${prefix}_${row.id}`, { name: row.name, type: lk.type, module: lk.module });
+        }
+      }
     } catch (_) {}
+  }
+  // Input order is load-bearing — getBacklinks hands this array straight to
+  // the UI's backlink list — and unresolved keys stay silently omitted.
+  const out = [];
+  for (const key of list) {
+    const row = rowsByKey.get(key);
+    if (row) out.push({ key, ...row });
   }
   return out;
 }
@@ -346,19 +428,26 @@ function getEntityPath(key) {
 
 // A newly created entity should claim [[links]] typed before it existed —
 // they were indexed with target_key NULL. Called from entity create paths.
+// Plan part2 #2.4: every matched row here resolves the SAME name (they only
+// differ by an optional ns: prefix), and a dangling name is the worst case
+// for resolveWikiName — all 16 resolvers miss. One memo + one transaction
+// around the UPDATE loop; the memo is torn down on exit, since this function
+// is precisely what makes a previously-null resolution start succeeding.
 function resolveDanglingLinks(name, nexusId) {
   const d = getDB();
-  const rows = d.prepare(`SELECT id, target_text FROM wiki_link WHERE target_key IS NULL AND (? IS NULL OR nexus_ref=?)`)
-    .all(nexusId ?? null, nexusId ?? null);
-  const bare = (s) => String(s).replace(/^\w+:/, '').trim().toLowerCase();
-  const wanted = String(name).trim().toLowerCase();
-  let n = 0;
-  for (const r of rows) {
-    if (bare(r.target_text) !== wanted) continue;
-    const key = resolveWikiName(r.target_text, nexusId);
-    if (key) { d.prepare(`UPDATE wiki_link SET target_key=?, update_at=datetime('now') WHERE id=?`).run(key, r.id); n++; }
-  }
-  return n;
+  return withResolveMemo(() => d.transaction(() => {
+    const rows = d.prepare(`SELECT id, target_text FROM wiki_link WHERE target_key IS NULL AND (? IS NULL OR nexus_ref=?)`)
+      .all(nexusId ?? null, nexusId ?? null);
+    const bare = (s) => String(s).replace(/^\w+:/, '').trim().toLowerCase();
+    const wanted = String(name).trim().toLowerCase();
+    let n = 0;
+    for (const r of rows) {
+      if (bare(r.target_text) !== wanted) continue;
+      const key = resolveWikiName(r.target_text, nexusId);
+      if (key) { d.prepare(`UPDATE wiki_link SET target_key=?, update_at=datetime('now') WHERE id=?`).run(key, r.id); n++; }
+    }
+    return n;
+  })());
 }
 
 // ── Rename safety ───────────────────────────────────────────────────────────

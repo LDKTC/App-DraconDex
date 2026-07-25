@@ -179,11 +179,16 @@ const S = {
   moduleTabs:[], renamingModuleId:null,
   // Content-item "minor module" pages (Plan part4) — a separate mirror from
   // activeModuleNode since an item is never itself a `module` row. nestItems
-  // is the Nest tree's lazy per-module item-list cache (moduleId -> null
-  // while loading, else array); moduleItemCounts gates the expand chevron
-  // before any list has ever been fetched; itemNodeCache feeds builderTabMeta
-  // for tabs whose pane never focused (so the tab label is warm regardless).
-  activeItemNode:null, nestItems:new Map(), moduleItemCounts:{}, itemNodeCache:new Map(),
+  // is the Nest tree's per-module item-list cache (moduleId -> null while
+  // loading, else array), filled wholesale by module:getNestItems on tree
+  // load (Plan part2 #2.5 — the old moduleItemCounts chevron gate went away
+  // with it, since the count is now just .length); itemNodeCache feeds
+  // builderTabMeta for tabs whose pane never focused (so the tab label is
+  // warm regardless).
+  activeItemNode:null, nestItems:new Map(), itemNodeCache:new Map(),
+  // Sage Hut payloads, memoised per nexus so switching tabs doesn't refetch
+  // (Plan part2 #2.3) — {nexusId, stats?, linkRows?, graph?}, each a promise.
+  sageHutCache:null,
   classifierData:null, classifierView:'table', classifierSelectedObject:null,
   managerData:null, managerView:'cards',
   locatorAreas:null,
@@ -248,11 +253,17 @@ async function init() {
   const bootstrapNexusId = Number(new URLSearchParams(location.search).get('nexus')) || null;
   const savedNexusId = bootstrapNexusId || Number(localStorage.getItem(NEXUS_ACTIVE_KEY));
   S.nexus        = S.nexuses.find(n => n.id === savedNexusId) || null;
-  const [projects, moduleTree] = await Promise.all([
+  // getNestItems rides along in the same wave (Plan part2 #2.5) — without it
+  // the first Nest render would fall back to one lazy list fetch (and one
+  // full re-render) per content module, which is the boot path that storm
+  // hurt most.
+  const [projects, moduleTree, nestItems] = await Promise.all([
     api.project.getAll(null, S.nexus?.id ?? null),
     S.nexus ? api.module.getTree(S.nexus.id) : Promise.resolve([]),
+    S.nexus ? api.module.getNestItems(S.nexus.id) : Promise.resolve({}),
   ]);
   S.projects = projects; S.moduleTree = moduleTree;
+  seedNestItems(nestItems);
   window.__splash?.set(88);
   // Set before the first render below — builderPaneHeadHtml (builder.js)
   // reads S.isPopup to decide whether to show the "move to main window" tab
@@ -2221,9 +2232,9 @@ function clearWorkspaceTabs() {
   S.world = null; S.game = null; S.write = null;
   S.scribeNote = null; S.scribeOpenFolders = new Set();
   S.moduleTree = []; S.activeModuleNode = null; S.moduleTabs = [];
-  S.builder = null; S.filePreview = null; S.sageHut = null; S.kindBrowserPage = false; S.importFiles = undefined;
+  S.builder = null; S.filePreview = null; S.sageHut = null; S.sageHutCache = null; S.kindBrowserPage = false; S.importFiles = undefined;
   if (S.importDbMode) { S.importDbMode = false; api.setImportDbMode(false); }
-  S.displayImageCache = null;
+  if (typeof invalidateDisplayImages === 'function') invalidateDisplayImages();
   q('#main-inner')?.querySelectorAll(':scope > .bpane').forEach(el => el.remove());
   renderProjectTabs();
 }
@@ -2234,8 +2245,16 @@ async function selectNexus(id) {
   if (!S.nexus) return;
   localStorage.setItem(NEXUS_ACTIVE_KEY, String(id));
   clearWorkspaceTabs();
-  S.projects = await api.project.getAll(null, S.nexus.id);
-  S.moduleTree = await api.module.getTree(S.nexus.id);
+  // Same three-call wave as boot (Plan part2 #2.5): seeding the Nest items
+  // here is what stops the first render firing one lazy fetch + one full
+  // re-render per content module. Two sequential awaits became one.
+  const [projects, moduleTree, nestItems] = await Promise.all([
+    api.project.getAll(null, S.nexus.id),
+    api.module.getTree(S.nexus.id),
+    api.module.getNestItems(S.nexus.id),
+  ]);
+  S.projects = projects; S.moduleTree = moduleTree;
+  seedNestItems(nestItems);
   renderNexusHome();
   renderModuleRail();
   updateStatusBar({ item: null, words: null, saveState: null });

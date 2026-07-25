@@ -167,6 +167,12 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
   (`resolveDanglingLinks`)
 - Migration แรกที่สร้างตาราง `wiki_link` จะ backfill index จากเนื้อหาเดิม
   ทั้งหมดที่มีอยู่ก่อน (`rebuildWikiIndex`)
+- **ลำดับของ backlink ที่แสดงผล** มาจากลำดับที่ `resolveEntityKeys` คืนค่า
+  ซึ่งเท่ากับลำดับ input — Plan part2 #2.4 เปลี่ยนภายในจาก 1 query ต่อคีย์เป็น
+  `IN` ต่อ entity type แล้วเรียงกลับตาม input ก่อนคืน จึงไม่กระทบลำดับที่ผู้ใช้
+  เห็น (ยืนยันด้วยการเทียบผลก่อน/หลังในแอปจริง: ทั้ง `resolveKeys`,
+  `backlinks`, `outgoing` และ index ทั้งชุดหลัง `rebuildWikiIndex` เหมือนเดิมทุก
+  แถว รวมถึงลิงก์ค้างที่ resolve ไม่ได้ซึ่งยังถูกตัดทิ้งเหมือนเดิม)
 
 ## 2d. IDE Shell (Explorer / Status bar / Shortcuts / Quick switcher) — v2.8
 
@@ -374,6 +380,49 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
   ไทยของ ICU ใน Blink ทำให้ตัดกลางพยางค์ (ไทยไม่มีเว้นวรรคระหว่างคำ)
 - **ไม่** ปรับ `line-height` ทั่วแอป — ตรวจแล้วว่า 13 จุดที่ใช้ `line-height:1`
   ล้วนแสดง emoji/สัญลักษณ์/ตัวเลขเท่านั้น ไม่มีจุดไหนใส่ข้อความไทยที่วรรณยุกต์ถูกตัด
+
+### ประสิทธิภาพ IPC — จำนวน round-trip ต่อ flow (Plan part2, 2026-07-26)
+
+Part 1 แก้ชั้นข้อมูล (statement cache/index/transaction); part 2 แก้ **ผิวสัมผัส
+IPC** — จุดที่ renderer ยิงหนึ่ง round-trip ต่อหนึ่งแถว วัดจริงด้วยการ hook
+`ipcMain._invokeHandlers` แล้วขับแอปด้วย `run-dracondex` บนวอลต์ตัวอย่างเดียวกัน
+(12 classifier object × 4 template, 3 timeline × 4 event, 5 chapter, 4 session,
+6 design node, manager 5 ลูก × 3 attribute):
+
+| flow | ก่อน | หลัง |
+|---|---|---|
+| โหลด nest tree ของวอลต์ | 10 IPC · **6 full re-render** | 2 IPC · **1 render** |
+| เปิดโมดูล classifier (12 object) | 34 IPC | 6 IPC (ส่วนของ classifier+inspector: 30 → 4) |
+| คลิกครบ 4 แท็บ Sage Hut | 12 IPC | 3 IPC |
+| เปิดโมดูล manager (5 ลูก) | 13 IPC | 6 IPC |
+| เรนเดอร์ display image K รูป | K IPC (base64 ผ่าน bridge, `readFileSync` บล็อก main process) | **0 IPC** (`ddx-file://`) |
+| สร้าง object 1 ตัว | 35 IPC · 3 render | 7 IPC · 2 render |
+| ลบ object 1 ตัว | 35 IPC · 4 render | 7 IPC · 2 render |
+
+พฤติกรรมที่ผู้ใช้เห็นเหมือนเดิมทุกอย่าง — ตรวจด้วยการเทียบ payload ก่อน/หลังใน
+แอปจริง (รายการ nest ต่อโมดูล, `attrMap`/`privateTemplates` ของ object,
+คีย์ของ `S.inspectorData`, attribute count ของ manager, ตัวเลขสถิติ Sage Hut
+ทั้ง 4 ตัว, ลำดับ backlink, และ index ทั้งชุดหลัง `rebuildWikiIndex`) — ทั้งหมด
+ตรงกันแบบแถวต่อแถว
+
+**หมายเหตุ scope**: `object:getAttrsBulk/getTagsBulk`, `object:upsertAttrs` และ
+world bulk ที่อยู่ในแผน part2 #2.1 **ยังไม่ได้ทำ** — ทั้งหมดอยู่ใน Director/
+Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อนจาก nav rail แล้ว
+
+### รูป display image ผ่าน `ddx-file://` (Plan part2 #2.2, 2026-07-26)
+- การ์ด Manager และ grid ของ Classifier แสดง "display image" ของ entity ได้ —
+  เดิมแต่ละรูปคือหนึ่ง IPC (`importdock:readFile`) ที่ `await` เรียงกันทีละรูป
+  และคืน base64 data URL, ฝั่ง main อ่านไฟล์ด้วย `readFileSync` (บล็อก)
+- ตอนนี้ `<img src="ddx-file://<importFileId>">` ตรงๆ — ไม่มี IPC เลย, bytes ไม่
+  ข้าม bridge, และ Chromium cache/revalidate ให้ผ่าน ETag ของ handler
+- **แถมแก้บั๊กที่มีอยู่เดิม**: cache `S.displayImageData` ไม่เคยถูกล้าง (จุด
+  invalidate ทุกจุดล้างแต่ `S.displayImageCache`) — เปลี่ยนไฟล์บนดิสก์แล้วรูปเก่า
+  ค้างทั้ง session และ blob สะสมไปเรื่อยๆ ตอนนี้มี `invalidateDisplayImages()`
+  ล้างทั้งคู่ และทางหลักไม่ได้เก็บ blob ไว้ใน JS อีกแล้ว
+- renderer ที่ไม่มี protocol (web-driver harness ของ `run-dracondex` ซึ่ง stub
+  Electron shell ทิ้ง) จะตกลงทาง `<img onerror>` → รวมทุกรูปที่ล้มเป็น
+  `importdock:readFiles` **ครั้งเดียว** (ตรวจแล้ว: 3 รูป + 1 id ที่ไม่มีจริง =
+  1 round-trip, id ที่ไม่มีจะขึ้น empty state ไม่ throw)
 
 ### หน้าต่าง frameless
 - ไม่มีขอบ OS — title bar เป็น DOM: แท็บโปรเจกต์/entity + ปุ่ม `#win-min`,

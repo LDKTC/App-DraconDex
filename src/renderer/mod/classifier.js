@@ -12,29 +12,19 @@
 const CLASSIFIER_VIEWS = ['table', 'listDetail', 'relationCat', 'grid'];
 const CLASSIFIER_VIEW_LABEL = { table: 'Table', listDetail: 'Detail', relationCat: 'Relation', grid: 'Grid' };
 
+// Plan part2 #2.1: this used to cost 4 + 2N round-trips — objects +
+// templates + ui, then getAttrs AND getObjectTemplates per object. The two
+// per-object queries hit the same two tables for every object in the module,
+// so src/db/classifier.js's getObjectsFull does them as one pass each and
+// hydrates attrMap/conditionMap/privateTemplates server-side. Now a flat 3
+// (4 counting the inspector's own composite load, which runs in parallel).
 async function loadClassifierData(m) {
-  const [objects, templates, ui] = await Promise.all([
-    api.classifier.getObjects(m.id),
-    api.classifier.getTemplates(m.id),
+  const [full, ui, relations] = await Promise.all([
+    api.classifier.getObjectsFull(m.id),
     api.module.getUi(m.id),
+    api.viewer.getRelations(S.nexus.id),
   ]);
-  await Promise.all(objects.map(async (o) => {
-    // getAttrs only returns templates that already have a saved value row;
-    // getObjectTemplates lists every template (shared + this object's own
-    // private one) so a freshly-created private template with no value yet
-    // still shows up as an empty editable field.
-    const [attrs, objTemplates] = await Promise.all([
-      api.classifier.getAttrs(o.id),
-      api.classifier.getObjectTemplates(m.id, o.id),
-    ]);
-    o.attrMap = {};
-    o.conditionMap = {};
-    for (const a of attrs) { o.attrMap[a.template_ref] = a.attribute_value; o.conditionMap[a.template_ref] = a.condition_value; }
-    o.privateTemplates = objTemplates
-      .filter(tpl => tpl.object_ref === o.id)
-      .map(tpl => ({ id: tpl.id, description: tpl.description, value: o.attrMap[tpl.id] || '' }));
-  }));
-  const relations = await api.viewer.getRelations(S.nexus.id);
+  const { objects, templates } = full;
   S.classifierData = { moduleId: m.id, objects, templates, relations };
   S.classifierView = CLASSIFIER_VIEWS.includes(ui.activeView) ? ui.activeView : 'listDetail';
   if (S.classifierSelectedObject && !objects.find(o => o.id === S.classifierSelectedObject)) S.classifierSelectedObject = null;
@@ -343,7 +333,8 @@ async function submitClassifierObjectForm(moduleId, objectId) {
   else await api.classifier.createObject(moduleId, name, colorId, icon);
   closeModal();
   await loadClassifierData(S.activeModuleNode);
-  renderNexusHome();
+  // No renderNexusHome() here — invalidateNestItems schedules a coalesced
+  // one (Plan part2 #2.5), so this path repaints once instead of twice.
   invalidateNestItems(moduleId, objectId ? 0 : 1);
   toast(objectId ? t('saved') : t('created'), 'ok');
 }
@@ -355,8 +346,8 @@ async function deleteClassifierObjectRow(objectId) {
   closeModal();
   if (S.classifierSelectedObject === objectId) S.classifierSelectedObject = null;
   await loadClassifierData(S.activeModuleNode);
-  renderNexusHome();
   if (moduleId != null) invalidateNestItems(moduleId, -1);
+  else renderNexusHome();
   toast(t('deleted'), 'ok');
 }
 

@@ -19,6 +19,58 @@
 
 ---
 
+## 2026-07-26 — Part 2: backend efficiency (ผิวสัมผัส IPC + call site ฝั่ง renderer)
+- commit: uncommitted
+- ไฟล์ที่แก้: `main.js`, `preload.js`, `src/db/module.js`,
+  `src/db/classifier.js`, `src/db/sage.js`, `src/db/wiki.js`,
+  `src/renderer/core.js`, `src/renderer/hub.js`, `src/renderer/inspector.js`,
+  `src/renderer/mod/classifier.js`, `src/renderer/mod/manager.js`,
+  `src/renderer/mod/sagehut.js`, `src/renderer/mod/fileviewer.js`
+- อะไรเปลี่ยน:
+  - **#2.1 batch IPC** — `classifier:getObjectsFull` รวม object+template+
+    attribute+private template ของทั้งโมดูลเป็นคำเรียกเดียว (เดิม 4+2N โดย N =
+    จำนวน object: `getAttrs`+`getObjectTemplates` ต่อ object) และประกอบ
+    `attrMap`/`conditionMap`/`privateTemplates` ให้เสร็จฝั่ง db;
+    `module:getInspector` รวม 4 read ของ Inspector เป็นก้อนเดียว (คีย์
+    `{attrs,tags,links,ui}` เท่าเดิม เพราะมีที่อื่นอ่าน/แก้ `S.inspectorData`
+    ตรงๆ); `module:getAttrCounts` นับ attribute ของ Minor ทุกตัวด้วย GROUP BY
+    เดียว (เดิม Manager ดึง attribute เต็มของลูกทุกตัวมาเพื่ออ่าน `.length`)
+  - **#2.2 `ddx-file://`** — display image ชี้ `<img src>` ไป protocol ตรงๆ
+    (0 IPC) แทน base64 ผ่าน bridge; handler พก **row id ไม่ใช่ path** และเสิร์ฟ
+    เฉพาะ row ที่เป็นรูปจริง (ไฟล์ import ไม่ถูกคัดลอกเข้า data dir จึงไม่มี
+    prefix ให้ sandbox); ทางสำรอง `<img onerror>` รวมเป็น `importdock:readFiles`
+    ครั้งเดียวสำหรับ renderer ที่ไม่มี protocol
+  - **#2.3 Sage Hut** — ดึงเฉพาะ payload ที่แท็บนั้นใช้ + memo ต่อ nexus
+    (`S.sageHutCache`); ยุบ query `LENGTH(description)` ต่อโมดูลที่ `prepare()`
+    ซ้ำใน loop เข้าไปเป็นคอลัมน์ของคิวรีรายชื่อโมดูลที่ดึงอยู่แล้ว
+  - **#2.4 `wiki.js`** — `rebuildWikiIndex`/`resolveDanglingLinks` ห่อ
+    transaction เดียว (เดิม R แถว = R BEGIN/COMMIT); memo `resolveWikiName`
+    เฉพาะช่วง bulk; `resolveEntityKeys` เปลี่ยนเป็น `IN` ต่อ entity type
+    (arity คงที่ 64 + pad ด้วย id ซ้ำ เพื่อไม่ให้ statement cache แตกเป็นหลายรูป)
+    โดยยังรักษาลำดับ input ที่ UI ใช้แสดง backlink
+  - **#2.5 nest render storm** — `module:getNestItems` คืน content item ของทุก
+    โมดูลในวอลต์ในคำเรียกเดียว (แถวบางเฉพาะคอลัมน์ที่ `nameOf` ใช้) เติมเข้า
+    `S.nestItems` ตั้งแต่ตอนโหลด tree ทั้งใน `reloadModuleTree`, boot wave และ
+    `selectNexus` — จึงไม่มี lazy fetch + full re-render ทีละโมดูลอีก;
+    `scheduleNestRender()` รวบ re-render จาก path async เป็นครั้งเดียวต่อ
+    microtask; `module:getItemCounts`/`getContentItemCounts`/`S.moduleItemCounts`
+    ถูกลบเพราะนับจาก `.length` ได้แล้ว
+- ทำไม: part 1 แก้ชั้นข้อมูลไปแล้ว แต่ renderer ยังยิงหนึ่ง IPC round-trip ต่อ
+  หนึ่งแถวในหลาย hot path — แต่ละ round-trip เสียทั้ง structured-clone hop และ
+  lock cycle ของ statement ฝั่ง main. วัดจริงด้วยการ hook `ipcMain` แล้วขับแอป
+  บนวอลต์ตัวอย่างเดียวกันก่อน/หลัง: โหลด nest tree 10 IPC + 6 render → 2 + 1,
+  เปิด classifier 12 object 34 → 6, คลิกครบ 4 แท็บ Sage Hut 12 → 3, รูป display
+  image K รูป K → 0, สร้าง/ลบ object 35 IPC → 7
+- แถมที่แก้ระหว่างทาง (บั๊กจริง ไม่ใช่แค่ perf): `S.displayImageData` ไม่เคยถูก
+  ล้าง (จุด invalidate ล้างแต่ `S.displayImageCache`) ทำให้รูปที่ถูกแทนที่บน
+  ดิสก์ค้างทั้ง session + blob สะสม; และ guard `if (protocol)` ใน `main.js`
+  เพราะ web-driver harness โหลดไฟล์นี้โดย stub Electron shell ทิ้ง — ถ้าไม่ guard
+  เครื่องมือ verify ทั้งตัวจะพังทันที
+- Doc ที่อัปเดต: docs/SYSTEMS.md §2c, §10 (หัวข้อใหม่ "ประสิทธิภาพ IPC" +
+  "รูป display image ผ่าน ddx-file://"), docs/FILES.md (main.js, src/db/module.js,
+  classifier.js, sage.js, wiki.js, src/renderer/hub.js, inspector.js,
+  mod/sagehut.js, mod/fileviewer.js)
+
 ## 2026-07-25 — หน้า Loading (boot splash) + progress bar ตอนเปิดแอพ
 - commit: uncommitted
 - ไฟล์ที่แก้: `index.html`, `style.css`, `src/renderer/core.js`,

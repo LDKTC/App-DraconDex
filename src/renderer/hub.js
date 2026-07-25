@@ -98,19 +98,26 @@ function isSelfOrDescendant(node, targetId) {
   return (node.children || []).some(c => isSelfOrDescendant(c, targetId));
 }
 
+// Plan part2 #2.5: the second call used to be module:getItemCounts, which
+// only gated the expand chevron and left the actual item rows to be fetched
+// lazily, one IPC (and one full re-render) per expanded content module.
+// module:getNestItems returns them all at once, so the count is just
+// .length and the tree paints in a single render.
 async function reloadModuleTree() {
-  [S.moduleTree, S.moduleItemCounts] = S.nexus
-    ? await Promise.all([api.module.getTree(S.nexus.id), api.module.getItemCounts(S.nexus.id)])
+  const [tree, nestItems] = S.nexus
+    ? await Promise.all([api.module.getTree(S.nexus.id), api.module.getNestItems(S.nexus.id)])
     : [[], {}];
+  S.moduleTree = tree;
+  seedNestItems(nestItems);
+  // Vault content changed under it, so the memoised analytics payloads
+  // (Plan part2 #2.3) can't be reused.
+  S.sageHutCache = null;
   S.activeModuleNode = S.activeModuleNode ? findModuleNode(S.activeModuleNode.id) : null;
   // prune builder tabs pointing at deleted modules
   for (const pane of (S.builder?.panes || [])) {
     pane.tabs = pane.tabs.filter(k => !k.startsWith('module:') || !!findModuleNode(Number(k.slice(7))));
     if (pane.active && !pane.tabs.includes(pane.active)) pane.active = pane.tabs[0] || null;
   }
-  // Plan part4: drop the lazy content-item cache for any module no longer
-  // in the tree (deleted, or moved to a different nexus).
-  for (const id of [...S.nestItems.keys()]) if (!findModuleNode(id)) S.nestItems.delete(id);
   renderModuleRail();
   renderProjectTabs();
   if (S.view === 'nexus' && !S.activeModule) renderNexusHome();
@@ -414,7 +421,7 @@ function buildNestRow(m, depth, parentId) {
   const isContentKind = !!ITEM_KIND[m.kind];
   if (isContentKind && !collapsed) ensureNestItemsLoaded(m.id);
   const itemRows = S.nestItems.get(m.id);
-  const itemCount = Array.isArray(itemRows) ? itemRows.length : (S.moduleItemCounts[m.id] || 0);
+  const itemCount = Array.isArray(itemRows) ? itemRows.length : 0;
   // Plan part1 #2/#4: the "show minor modules" toggle hides content-item
   // leaves tree-wide — when off, a content-kind module with only items and
   // no nested module children shows no chevron at all (nothing to expand).
@@ -487,46 +494,93 @@ function buildNestItemRow(item, itemKind, moduleId, depth) {
   </div>`;
 }
 
-// Lazy per-module content-item fetch (Plan part4) — idempotent (checked via
-// S.nestItems.has), triggered opportunistically from buildNestRow whenever
-// a content-bearing-kind module's row renders expanded, so it fires both
-// for a module that starts expanded by default and one explicitly toggled
-// open. Mirrors ensureImportDock's own loading-marker-then-cache pattern.
+// Plan part2 #2.5: replaces the old per-module lazy fetch. module:getNestItems
+// hands back {moduleId: [items]} for the whole nexus, so the map is rebuilt
+// wholesale here — every content-kind module gets an entry (an empty array
+// when it has no items), which is what makes ensureNestItemsLoaded below a
+// no-op instead of a re-fetch trigger. Rebuilding also drops entries for
+// modules no longer in the tree, which reloadModuleTree used to prune by hand.
+function seedNestItems(itemsByModule) {
+  S.nestItems = new Map();
+  const walk = (nodes) => {
+    for (const m of nodes) {
+      if (ITEM_KIND[m.kind]) seedNestItemsFor(m, itemsByModule[m.id] || []);
+      if (m.children?.length) walk(m.children);
+    }
+  };
+  walk(S.moduleTree || []);
+}
+
+// Fallback lazy fetch, kept for the one case seedNestItems can't cover: a
+// module whose items were invalidated by a CRUD action (invalidateNestItems
+// deletes its entry) without a full tree reload. On a freshly loaded tree
+// every content module already has an entry, so this returns immediately.
 function ensureNestItemsLoaded(moduleId) {
   if (S.nestItems.has(moduleId)) return;
   const m = findModuleNode(moduleId);
   if (!m || !ITEM_KIND[m.kind]) return;
   S.nestItems.set(moduleId, null);
   ITEM_KIND[m.kind].list(moduleId).then(items => {
-    S.nestItems.set(moduleId, items);
-    for (const it of items) {
-      const key = `item:${m.kind}:${moduleId}:${it.id}`;
-      S.itemNodeCache.set(key, { name: ITEM_KIND[m.kind].nameOf(it), color: m.color_code, badge: t(ITEM_KIND[m.kind].badgeKey), icon: ITEM_KIND[m.kind].icon() });
-    }
-    renderNexusHome();
+    seedNestItemsFor(m, items);
+    scheduleNestRender();
   });
+}
+
+// Coalesces the async re-render points (Plan part2 #2.5). Each of them used
+// to call renderNexusHome() directly, so one user action could repaint the
+// whole left panel AND the builder panes three or four times. renderNexusHome
+// itself stays synchronous — callers that read the DOM straight after it
+// must keep working; only these deferred paths route through here.
+let _nestRenderQueued = false;
+function scheduleNestRender() {
+  if (_nestRenderQueued) return;
+  _nestRenderQueued = true;
+  queueMicrotask(() => { _nestRenderQueued = false; renderNexusHome(); });
 }
 
 // Called from every content-item create/rename/delete path (both a
 // module's own inline view and the item's own page) so the Nest tree's
-// lazy cache and count-gated chevron never drift stale. `delta` (+1/-1)
-// keeps the chevron accurate immediately, without waiting for a refetch,
-// when the row isn't currently expanded.
+// item cache never drifts stale. `delta` < 0 additionally sweeps Builder
+// tabs for items that no longer exist.
 function invalidateNestItems(moduleId, delta = 0) {
-  if (delta) S.moduleItemCounts[moduleId] = Math.max(0, (S.moduleItemCounts[moduleId] || 0) + delta);
   const wasLoaded = S.nestItems.has(moduleId);
   S.nestItems.delete(moduleId);
-  // A deleted item may still have its own Builder tab open in the
-  // background (unfocused, so openItemNode's own "stale tab" re-check never
-  // fires for it) — close those proactively instead of leaving a dead tab.
-  if (delta < 0) closeStaleItemTabs(moduleId, wasLoaded);
-  renderNexusHome();
+  S.sageHutCache = null; // content changed — analytics payloads are stale
+  const m = findModuleNode(moduleId);
+  const reg = m && ITEM_KIND[m.kind];
+  if (delta < 0 && reg) {
+    // A deleted item may still have its own Builder tab open in the
+    // background (unfocused, so openItemNode's own "stale tab" re-check
+    // never fires for it) — close those proactively instead of leaving a
+    // dead tab. Fetch the list ONCE here and hand it to both consumers:
+    // before Plan part2 #2.5 this path fetched the same list twice (once in
+    // closeStaleItemTabs, once more when the re-render hit
+    // ensureNestItemsLoaded on the entry just deleted above).
+    S.nestItems.set(moduleId, null); // loading marker, blocks the lazy path
+    reg.list(moduleId).then(items => {
+      seedNestItemsFor(m, items);
+      closeStaleItemTabs(moduleId, wasLoaded, items);
+    });
+  }
+  scheduleNestRender();
 }
 
-async function closeStaleItemTabs(moduleId, reload) {
+// One module's slice of what seedNestItems does for the whole tree.
+function seedNestItemsFor(m, items) {
+  const reg = ITEM_KIND[m.kind];
+  S.nestItems.set(m.id, items);
+  for (const it of items) {
+    S.itemNodeCache.set(`item:${m.kind}:${m.id}:${it.id}`,
+      { name: reg.nameOf(it), color: m.color_code, badge: t(reg.badgeKey), icon: reg.icon() });
+  }
+}
+
+// `items` is passed in by invalidateNestItems, which has just fetched the
+// list; omitted (direct callers), it fetches its own.
+async function closeStaleItemTabs(moduleId, reload, items) {
   const m = findModuleNode(moduleId);
   if (!m || !ITEM_KIND[m.kind]) return;
-  const items = await ITEM_KIND[m.kind].list(moduleId);
+  if (!items) items = await ITEM_KIND[m.kind].list(moduleId);
   if (reload) S.nestItems.set(moduleId, items);
   const liveIds = new Set(items.map(it => it.id));
   const prefix = `item:${m.kind}:${moduleId}:`;
@@ -541,7 +595,7 @@ async function closeStaleItemTabs(moduleId, reload) {
     }
   }
   if (closedAny) toast(t('itemNotFound'), 'error');
-  renderNexusHome();
+  scheduleNestRender();
 }
 
 // ═══ Drag-reorder / reparent — any depth, any module (Plan part1 #1) ═══

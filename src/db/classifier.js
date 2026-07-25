@@ -110,6 +110,58 @@ const getAttrs = (objectId) => getDB().prepare(`
   WHERE ca.object_ref=?
 `).all(objectId);
 
+// ── Composite read (Plan part2 #2.1) ───────────────────────────────────
+// Everything mod/classifier.js's loadClassifierData needs, in one call.
+// It used to issue 4 + 2N IPC round-trips (getObjects + getTemplates +
+// getUi, then getAttrs + getObjectTemplates PER OBJECT); the two per-object
+// queries are the same two tables scoped to the module instead of the row,
+// so they collapse into one pass each and the attrMap/privateTemplates
+// hydration moves here. The single-object case (ITEM_KIND.classifier's
+// renderBody in src/renderer/mod/item.js) deliberately keeps its own
+// getAttrs + getObjectTemplates pair — 1 object is not a fan-out — so it
+// still builds the same shape by hand; keep the two in step.
+function getObjectsFull(moduleRef) {
+  const d = getDB();
+  return d.readTx(() => {
+    const objects = getObjects(moduleRef);
+    const templates = getTemplates(moduleRef);
+    // getAttrs's SQL, scoped to the module rather than one object.
+    const attrs = d.prepare(`
+      SELECT ca.*, ct.description, ct.attribute_type, ct.levelable, ct.has_condition, ct.object_ref AS template_object_ref
+      FROM classifier_attribute ca
+      JOIN classifier_template ct ON ca.template_ref = ct.id
+      JOIN classifier_object o ON ca.object_ref = o.id
+      WHERE o.module_ref=?
+    `).all(moduleRef);
+    // Private (per-object) templates for every object at once. Shared ones
+    // are already in `templates`, so this only needs object_ref NOT NULL.
+    const privTpls = d.prepare(`
+      SELECT * FROM classifier_template
+      WHERE module_ref=? AND object_ref IS NOT NULL ORDER BY display_order, id
+    `).all(moduleRef);
+    const attrsByObj = new Map();
+    for (const a of attrs) {
+      if (!attrsByObj.has(a.object_ref)) attrsByObj.set(a.object_ref, []);
+      attrsByObj.get(a.object_ref).push(a);
+    }
+    const privByObj = new Map();
+    for (const tp of privTpls) {
+      if (!privByObj.has(tp.object_ref)) privByObj.set(tp.object_ref, []);
+      privByObj.get(tp.object_ref).push(tp);
+    }
+    for (const o of objects) {
+      o.attrMap = {}; o.conditionMap = {};
+      for (const a of (attrsByObj.get(o.id) || [])) {
+        o.attrMap[a.template_ref] = a.attribute_value;
+        o.conditionMap[a.template_ref] = a.condition_value;
+      }
+      o.privateTemplates = (privByObj.get(o.id) || [])
+        .map(tp => ({ id: tp.id, description: tp.description, value: o.attrMap[tp.id] || '' }));
+    }
+    return { objects, templates };
+  })();
+}
+
 const upsertAttr = (objectId, templateId, value) => {
   const d = getDB();
   const obj = d.prepare(`SELECT name, module_ref FROM classifier_object WHERE id=?`).get(objectId);
@@ -139,5 +191,5 @@ module.exports = {
   setCatType,
   getObjects, getObject, createObject, updateObject, updateObjectNote, deleteObject,
   getTemplates, getObjectTemplates, createTemplate, updateTemplate, deleteTemplate, countObjectTemplates,
-  getAttrs, upsertAttr, upsertAttrCondition,
+  getAttrs, getObjectsFull, upsertAttr, upsertAttrCondition,
 };

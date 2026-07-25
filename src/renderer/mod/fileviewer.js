@@ -133,7 +133,7 @@ function buildFileViewerHtml() {
   const c = f.content || {};
   let body;
   if (c.kind === 'image') {
-    body = `<div class="fv-imgwrap"><img id="fv-img" src="${c.dataUrl}" style="transform:scale(${f.zoom})" alt=""></div>
+    body = `<div class="fv-imgwrap"><img id="fv-img" src="${displayImageUrl(f.id)}" onerror="queueDisplayImageFallback(this,${f.id})" style="transform:scale(${f.zoom})" alt=""></div>
       <div class="czoom" data-no-i18n>
         <button class="btn btn-g btn-i" onclick="fileViewerZoom(-0.2)">−</button>
         <span id="fv-zoom-label">${Math.round(f.zoom * 100)}%</span>
@@ -200,14 +200,14 @@ async function submitImportLinker(id) {
   const key = q('#il-key').value || null;
   await api.importdock.setLinker(id, key);
   closeModal();
-  S.displayImageCache = null;
+  invalidateDisplayImages();
   await reopenImportFile(id);
   toast(t('saved'), 'ok');
 }
 
 async function toggleImportUseAsImage(id, on) {
   await api.importdock.setUseAsImage(id, on);
-  S.displayImageCache = null;
+  invalidateDisplayImages();
   await reopenImportFile(id);
   toast(t('saved'), 'ok');
 }
@@ -233,7 +233,7 @@ async function deleteImportFileRow(id) {
   // previewed — the dock row's own delete button (any row, not just the
   // open one) shouldn't blow away an unrelated file's open preview.
   if (S.filePreview?.id === id) S.filePreview = null;
-  S.displayImageCache = null;
+  invalidateDisplayImages();
   renderNexusHome();
   toast(t('deleted'), 'ok');
 }
@@ -256,6 +256,14 @@ async function createDrafterFromFile(id) {
 // One batched fetch per session (invalidated on linker/image changes);
 // returns linker_key -> import_file id. Callers then hydrate <img> tags
 // through hydrateDisplayImages().
+// Drops both the key->file map and the fallback data-URL cache. The
+// protocol path needs no invalidation (the handler's ETag covers it), but
+// the fallback Map would otherwise go stale exactly like the old one did.
+function invalidateDisplayImages() {
+  S.displayImageCache = null;
+  S.displayImageData = null;
+}
+
 async function getDisplayImageMap() {
   if (S.displayImageCache) return S.displayImageCache;
   if (!S.nexus) return new Map();
@@ -265,20 +273,63 @@ async function getDisplayImageMap() {
 }
 
 // Fills every <img data-display-key="..."> in the current DOM with its
-// entity's display image (if one is flagged). Data URLs are cached.
+// entity's display image (if one is flagged).
+//
+// Plan part2 #2.2: this used to await one importdock:readFile per image,
+// sequentially, and stash the base64 data URL in an S.displayImageData Map
+// that was never invalidated (so a file replaced on disk stayed stale for
+// the whole session and the blobs accumulated). Now each <img> just points
+// at ddx-file://<fileId> — no IPC at all, the bytes never cross the bridge,
+// and Chromium caches/revalidates them via the handler's ETag.
+//
+// The onerror hook is the fallback for renderers where that protocol isn't
+// registered — notably the Playwright web-driver harness, which loads
+// index.html over plain file:// with no Electron main process behind it.
+// There it degrades to ONE batched importdock:readFiles for the whole page.
 async function hydrateDisplayImages() {
   const imgs = [...document.querySelectorAll('img[data-display-key]')];
   if (!imgs.length) return;
   const map = await getDisplayImageMap();
-  S.displayImageData = S.displayImageData || new Map();
   for (const img of imgs) {
     const fileId = map.get(img.dataset.displayKey);
     if (!fileId) { img.closest('.card-thumb, .disp-thumb')?.classList.add('disp-empty'); continue; }
-    if (!S.displayImageData.has(fileId)) {
-      const c = await api.importdock.readFile(fileId);
-      S.displayImageData.set(fileId, c?.kind === 'image' ? c.dataUrl : null);
-    }
-    const url = S.displayImageData.get(fileId);
+    img.onerror = () => queueDisplayImageFallback(img, fileId);
+    img.src = displayImageUrl(fileId);
+    img.closest('.disp-thumb')?.classList.remove('disp-empty');
+  }
+}
+
+const displayImageUrl = (fileId) => `ddx-file://${fileId}`;
+
+// Collects every <img> that failed to load in this tick and resolves them
+// with a single readFiles round-trip. S.displayImageData only ever holds
+// fallback-path data URLs, and is dropped whenever the key->file map is.
+let _dispFallbackQueue = null;
+function queueDisplayImageFallback(img, fileId) {
+  img.onerror = null; // a failed data URL must not re-queue forever
+  S.displayImageData = S.displayImageData || new Map();
+  const cached = S.displayImageData.get(fileId);
+  if (cached !== undefined) {
+    if (cached) img.src = cached; else img.closest('.card-thumb, .disp-thumb')?.classList.add('disp-empty');
+    return;
+  }
+  if (!_dispFallbackQueue) {
+    _dispFallbackQueue = [];
+    queueMicrotask(flushDisplayImageFallback);
+  }
+  _dispFallbackQueue.push([img, fileId]);
+}
+
+async function flushDisplayImageFallback() {
+  const pending = _dispFallbackQueue || [];
+  _dispFallbackQueue = null;
+  if (!pending.length) return;
+  const ids = [...new Set(pending.map(([, id]) => id))];
+  const urls = await api.importdock.readFiles(ids);
+  for (const id of ids) S.displayImageData.set(id, urls[id] || null);
+  for (const [img, id] of pending) {
+    const url = urls[id];
     if (url) { img.src = url; img.closest('.disp-thumb')?.classList.remove('disp-empty'); }
+    else img.closest('.card-thumb, .disp-thumb')?.classList.add('disp-empty');
   }
 }
