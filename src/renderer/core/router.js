@@ -18,14 +18,14 @@ function selectModule(name) {
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
     q('.nav-btn[data-panel="navigator"]')?.classList.add('active');
     updateTopNavButton();
-    loadModule('src/renderer/navigator.js').then(() => renderNavigatorView());
+    loadGroup('navigator').then(() => renderNavigatorView());
   } else if (name === 'hero') {
     S.view = 'hero';
     S.game = null; S.gameTab = 'project';
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
     q('.nav-btn[data-panel="hero"]')?.classList.add('active');
     updateTopNavButton();
-    loadModule('src/renderer/hero.js').then(() => renderHeroView());
+    loadGroup('hero').then(() => renderHeroView());
   } else if (name === 'writer') {
     S.view = 'writer';
     S.write = null; S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null;

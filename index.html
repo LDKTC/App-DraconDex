@@ -322,7 +322,15 @@
   <script src="src/renderer/core/shortcuts.js"></script>
   <script>__splash.set(35)</script>
   <script src="src/renderer/builder.js"></script>
-  <script src="src/renderer/hub.js"></script>
+  <!-- hub.js split into src/renderer/hub/ (Plan part1) — verbatim slices,
+       kinds.js first (it owns MODULE_KINDS / KIND_* consts). -->
+  <script src="src/renderer/hub/kinds.js"></script>
+  <script src="src/renderer/hub/sections.js"></script>
+  <script src="src/renderer/hub/tree.js"></script>
+  <script src="src/renderer/hub/popups.js"></script>
+  <script src="src/renderer/hub/menus.js"></script>
+  <script src="src/renderer/hub/edit.js"></script>
+  <script src="src/renderer/hub/open.js"></script>
   <script src="src/renderer/inspector.js"></script>
   <script src="src/renderer/versions.js"></script>
   <script src="src/renderer/iconpicker.js"></script>

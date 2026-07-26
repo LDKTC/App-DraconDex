@@ -84,6 +84,25 @@ function loadModule(src) {
   });
 }
 
+// Lazy modules that were split into a folder (Plan part1). A dynamically
+// injected <script> is async — the browser gives no ordering guarantee within a
+// group — so every file in a group must be free of top-level reads of another
+// file's bindings, and callers must await the WHOLE group (Promise.all) before
+// calling its render entry. That holds today: the only top-level consts are
+// WORLD_TABS (navigator/shell.js) and the board/story canvas state, and each is
+// read from inside functions only.
+const LAZY_GROUPS = {
+  navigator: ['shell', 'sidebar', 'main', 'world', 'origcat', 'chars', 'cats', 'maps', 'board']
+    .map(f => `src/renderer/navigator/${f}.js`),
+  hero: ['shell', 'project', 'novel', 'story', 'tags', 'modals']
+    .map(f => `src/renderer/hero/${f}.js`),
+};
+// Unsplit modules fall through to their single file, so every lazy call site can
+// use the same helper regardless of whether that module is one file or nine.
+function loadGroup(name) {
+  return Promise.all((LAZY_GROUPS[name] || [`src/renderer/${name}.js`]).map(loadModule));
+}
+
 async function switchView(v) {
   if (typeof closeRelNodeNote === 'function') closeRelNodeNote();
   if (konvaStage) {
@@ -101,8 +120,8 @@ async function switchView(v) {
   else if (v==='hashtag')         { await loadModule('src/renderer/hashtag.js'); renderHashtagView(); }
   else if (v==='project-hashtag') { await loadModule('src/renderer/hashtag.js'); renderProjectHashtagView(); }
   else if (v==='colors')          { await loadModule('src/renderer/hashtag.js'); q('#left-panel-inner').innerHTML=`<div class="ph"><h4>${t('colorPanel')}</h4></div>`; renderColorSettings(); }
-  else if (v==='navigator')       { await loadModule('src/renderer/navigator.js'); renderNavigatorView(); }
-  else if (v==='hero')            { await loadModule('src/renderer/hero.js'); renderHeroView(); }
+  else if (v==='navigator')       { await loadGroup('navigator'); renderNavigatorView(); }
+  else if (v==='hero')            { await loadGroup('hero'); renderHeroView(); }
   else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
   else if (v==='scribe')          { await loadModule('src/renderer/scribe.js'); renderScribeView(); }
 }

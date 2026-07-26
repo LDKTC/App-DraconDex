@@ -134,7 +134,7 @@ async function goToNavigatorList(){
   document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
   q('.nav-btn[data-panel="navigator"]')?.classList.add('active');
   updateTopNavButton();
-  await loadModule('src/renderer/navigator.js');
+  await loadGroup('navigator');
   renderNavigatorView();
 }
 
