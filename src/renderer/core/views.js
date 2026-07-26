@@ -84,6 +84,27 @@ function loadModule(src) {
   });
 }
 
+// Konva (canvas) loader. Eager and global because four separate lazy modules
+// need it — map.js, relation.js, mod/{locator,wanderer}.js and
+// navigator/board.js — and it used to be copied verbatim into map.js AND
+// relation.js, so whichever loaded last silently won. Vendored copy first
+// (offline app); the CDN is only a fallback.
+function ensureKonva(){
+  if(window.Konva) return Promise.resolve();
+  if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
+  window.__konvaLoading = true;
+  const load = (src) => new Promise((resolve,reject)=>{
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = ()=>resolve();
+    s.onerror = ()=>{ s.remove(); reject(new Error('Failed to load '+src)); };
+    document.body.appendChild(s);
+  });
+  return load('vendor/konva.min.js')
+    .catch(()=>load('https://unpkg.com/konva@9/konva.min.js'))
+    .finally(()=>{ window.__konvaLoading = false; });
+}
+
 // Lazy modules that were split into a folder (Plan part1). A dynamically
 // injected <script> is async — the browser gives no ordering guarantee within a
 // group — so every file in a group must be free of top-level reads of another
