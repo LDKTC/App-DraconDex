@@ -33,12 +33,18 @@ for (let i = 0; i < argv.length; i++) {
   else files.push(argv[i].replace(/\\/g, '/'));
 }
 
-const coreSrc = read('src/renderer/core.js');
+// style.css and src/renderer/core.js were each split into a folder (Plan
+// part1) — these two checks need the whole family, not one file, or they go
+// green while checking nothing.
+const readDirJoined = (dir, ext) => readdirSync(path.join(root, dir))
+  .filter(f => f.endsWith(ext)).sort().map(f => read(`${dir}/${f}`)).join('\n');
+
+const coreSrc = readDirJoined('src/renderer/core', '.js');
 const i18nSrc = read('src/renderer/i18n.js');
 const preloadSrc = read('preload.js');
 const mainSrc = read('main.js');
 const indexSrc = read('index.html');
-const cssSrc = read('style.css');
+const cssSrc = readDirJoined('css', '.css');
 
 const stripInterp = s => s.replace(/\$\{[^}]*\}/g, '');
 const stripStrings = s => s.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`/g, "''");
@@ -122,8 +128,14 @@ console.log(`=== i18n parity (${localeNames.length} locales: ${localeNames.join(
 }
 
 // ═══ Per-file lint ═══
-const targets = files.length ? files
-  : readdirSync(path.join(root, 'src/renderer')).filter(f => f.endsWith('.js')).map(f => `src/renderer/${f}`);
+// Recursive: renderer code lives in src/renderer/{,mod/,core/,hub/,navigator/,
+// hero/}. A flat readdir here used to skip mod/ entirely and would now skip
+// every folder the Plan part1 split created.
+const walkJs = (dir) => readdirSync(path.join(root, dir), { withFileTypes: true })
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .flatMap(e => e.isDirectory() ? walkJs(`${dir}/${e.name}`) : (e.name.endsWith('.js') ? [`${dir}/${e.name}`] : []));
+
+const targets = files.length ? files : walkJs('src/renderer');
 
 const usedT = new Set();
 for (const file of targets) {
