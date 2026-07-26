@@ -16,14 +16,14 @@ App-NovelManager/
 ├─ main.js            ← Electron main process + IPC handlers ทั้งหมด
 ├─ preload.js         ← สะพาน window.api (contextBridge)
 ├─ database.js        ← รวม export ของ src/db/*
-├─ index.html         ← โครง HTML เปล่า + โหลดสคริปต์เริ่มต้น 7 ตัว
-├─ style.css          ← สไตล์ทั้งแอป + ธีมทั้งหมด
+├─ index.html         ← โครง HTML เปล่า + <link> css/ 14 ไฟล์ + <script> ตามลำดับ
 ├─ start.js           ← ตัวรัน npm start
 ├─ ensure-electron.js ← ตรวจ/ซ่อม Electron binary (postinstall)
+├─ css/               ← สไตล์ทั้งแอป 14 ไฟล์ (แยกจาก style.css เดิม — Plan part1)
 ├─ vendor/            ← D3 + Konva ที่ vendor ไว้ใช้ออฟไลน์ (v2.8)
 ├─ src/
-│  ├─ db/             ← ชั้นฐานข้อมูล (main process) 15 ไฟล์
-│  └─ renderer/       ← ชั้น UI (renderer) 19 ไฟล์
+│  ├─ db/             ← ชั้นฐานข้อมูล (main process) 37 ไฟล์ (รวม schema/ 5 ไฟล์)
+│  └─ renderer/       ← ชั้น UI (renderer) 72 ไฟล์ (รวม core/ hub/ navigator/ hero/ mod/)
 ├─ scripts/finish-portable.mjs
 ├─ Image/             ← ไอคอน/โลโก้
 ├─ flutter_app/       ← Flutter port (front-end แยก ใช้ schema เดียวกัน)
@@ -178,6 +178,103 @@ App-NovelManager/
 
 ---
 
+## Re-architecture — การแยกไฟล์ (Plan part1, 2026-07-26)
+
+ไฟล์ใหญ่ 6 ไฟล์ถูกแยกเป็นโฟลเดอร์ตามเกณฑ์ใน `Plan.md` (หนึ่งไฟล์ = หนึ่งหน้าที่
+หลัก; จำนวนบรรทัดเป็น "สัญญาณ" ไม่ใช่ "กฎ") **ทุกไฟล์ใหม่เป็นการตัดช่วงบรรทัด
+ต่อเนื่องของไฟล์เดิมแบบคำต่อคำ** และเรียงลำดับโหลดตามเดิม — เอาไฟล์ใหม่มาต่อกัน
+แล้วได้ไฟล์เดิมกลับมาแบบ byte ต่อ byte (พิสูจน์ด้วยสคริปต์ตอนแยก) ดังนั้น
+ลำดับ CSS cascade และลำดับ evaluate ของ classic script ไม่เปลี่ยนโดยโครงสร้าง
+
+เกณฑ์/ขั้นตอน/ตัวตรวจอยู่ในสกิลใหม่ `.claude/skills/dracondex-file-arch/`
+
+### css/ — แยกจาก `style.css` (3159 บรรทัด → 14 ไฟล์)
+
+`index.html` มี `<link>` 14 ตัว **เรียงตามลำดับเดิมของกฎ** (ห้ามสลับ — ลำดับคือ
+พฤติกรรมของ cascade)
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `tokens.css` | 78 | `html`, `:root` custom properties ทั้งหมด |
+| `themes.css` | 569 | 32 ธีม (`body[data-theme=…]`) + สลับโลโก้ต่อธีม (**data file**) |
+| `base.css` | 39 | typography, การตัดบรรทัดภาษาไทย, `select`, ตัวคูณ UI scale |
+| `titlebar.css` | 148 | `#window-frame`, title/tab bar, เมนูตั้งค่า, ปุ่มหน้าต่าง |
+| `nav-hub.css` | 195 | nav rail, module rail, vault picker, Hub accordion, Nest tree |
+| `inspector.css` | 225 | Module Inspector + icon/kind picker + Classifier/Manager/Locator |
+| `editor.css` | 119 | mdeditor, markdown preview, quick switcher, status bar, Scribe graph |
+| `layout.css` | 224 | `#left-panel`, `#main-area`, `.ph`, `.li`, folder, project sidebar |
+| `components.css` | 265 | ปุ่ม, ฟอร์ม, color grid, modal, floating panel, Preferences, splash |
+| `legacy-views.css` | 310 | หน้าเดิม Director/Navigator/Hero/Writer (การ์ด, แท็บ, timeline, relation, map) |
+| `legacy-tables.css` | 290 | table view, search bar, SVG icon sizing, Writer editor, Sage เดิม |
+| `compat.css` | 169 | ชั้น alias ที่ map คลาสเดิมเข้าโทเคน `.li`/`.ph`/`.btn` + Artisan |
+| `kinds.css` | 372 | CSS ของ 15 v3 module kinds + Sage Hut + Import Dock |
+| `builder.css` | 165 | Builder split-tree, tab strip, layout picker, overlay panels |
+
+> ⚠️ `url()` ใน CSS อ้างอิงจาก**ตัวไฟล์ CSS** ไม่ใช่จาก `index.html` — รูปใน
+> `css/nav-hub.css` จึงเป็น `../Image/…` (ตอนแยกครั้งแรกลืมจุดนี้ → รูปโลโก้
+> 404 ทั้งชุด; ตัวตรวจ `check-arch.mjs` จับกรณีนี้แล้ว)
+
+### src/renderer/core/ — แยกจาก `core.js` (2642 บรรทัด → 12 ไฟล์)
+
+โหลดด้วย `<script>` 12 ตัวเรียงตามเดิม — `state.js` **ต้องมาก่อน** เพราะ
+top-level `const` ข้ามสคริปต์อยู่ใน TDZ จนกว่าไฟล์นั้นจะถูก evaluate
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `state.js` | 223 | `I` (ไอคอน), storage keys, `UI_*`, `S` (state กลาง), `kindLabel` |
+| `boot.js` | 105 | `init()` (เรียกจาก `search.js` ตัวสุดท้าย) + splash handoff |
+| `ui.js` | 295 | `q`/`x`, `toast`, `setBusy`, modal, floating panel, `uiConfirm`/`uiPrompt`, resize |
+| `settings.js` | 379 | `t()`/`tr()`, UI settings, เมนูเฟือง, shortcuts modal, Preferences |
+| `theme.js` | 217 | ตัวแก้ธีมกำหนดเอง (gradient, ctm*, import/export palette) |
+| `chrome.js` | 122 | i18n DOM pass (`translateStaticChrome`/`translateCommonUiText`), window chrome |
+| `nav.js` | 311 | `MODULE_SUBNAV`, `updateTopNavButton`, tab strip (project/module/entity) |
+| `pickers.js` | 325 | novel picker, color/symbol picker, `hashtagSelector` |
+| `views.js` | 199 | `loadModule`/`loadGroup`/`LAZY_GROUPS`, `ensureKonva`, `switchView`, `renderNexusHome` |
+| `nexus.js` | 196 | vault switcher/picker/CRUD + welcome modal |
+| `router.js` | 167 | `selectModule()`, Import-DB hub, `openEntityByKey`, status bar |
+| `shortcuts.js` | 125 | คีย์ลัดรวม, `returnToNexus`, sidebar ของ Director |
+
+### src/renderer/{hub,navigator,hero}/ — 3 โมดูลใหญ่
+
+| โฟลเดอร์ | เดิม | ไฟล์ใหม่ | โหลดแบบ |
+|---|---|---|---|
+| `hub/` | 1301 | `kinds.js` 164 · `sections.js` 220 · `tree.js` 277 · `popups.js` 112 · `menus.js` 277 · `edit.js` 159 · `open.js` 93 | eager (`<script>` 7 ตัว, `kinds.js` ก่อน) |
+| `navigator/` | 1807 | `shell.js` 78 · `sidebar.js` 138 · `main.js` 144 · `world.js` 80 · `origcat.js` 358 · `chars.js` 253 · `cats.js` 97 · `maps.js` 293 · `board.js` 367 | lazy ผ่าน `loadGroup('navigator')` |
+| `hero/` | 1088 | `shell.js` 61 · `project.js` 255 · `novel.js` 76 · `story.js` 311 · `tags.js` 63 · `modals.js` 323 | lazy ผ่าน `loadGroup('hero')` |
+
+> ⚠️ `loadModule()` แทรก `<script>` เข้า `<head>` ซึ่งเป็น **async** — ไฟล์ใน
+> กลุ่ม lazy ไม่มีลำดับที่รับประกัน จึงต้องประกาศใน `LAZY_GROUPS`
+> (`core/views.js`) แล้วเรียก `loadGroup(name)` ที่ `await` ครบทุกไฟล์ก่อน
+> render และห้ามไฟล์ในกลุ่มอ่าน binding ของอีกไฟล์ที่ระดับ top level
+
+### src/db/ — แยกจาก `core.js` (2532 บรรทัด → 7 ไฟล์ + façade)
+
+`src/db/core.js` เหลือ 18 บรรทัดเป็น **façade** re-export ชื่อเดิมทั้ง 5
+(`getDB`, `adaptDb`, `exportDatabaseTo`, `importDatabaseMerge`, `perfLog`) —
+ไฟล์อื่นอีก ~29 ไฟล์ที่ `require('./core')` และ `database.js` จึงไม่ต้องแก้เลย
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `conn.js` | 266 | `adaptDb` (statement cache, `readTx`, transaction ซ้อนได้), `getDB`, `has*()` |
+| `schema/ddl.js` | 965 | `DDL_SQL` — CREATE TABLE ทั้งหมด (**data file**) |
+| `schema/indexes.js` | 142 | `INDEX_SQL` (**data file**) |
+| `schema/seed.js` | 21 | `SEED_SYMBOLS` (**data file**) |
+| `schema/init.js` | 123 | `schemaStamp()` + `initDB(db)` |
+| `schema/migrations.js` | 277 | migration เพิ่มคอลัมน์ 6 ตัว + `ensureIndexes` |
+| `import-merge.js` | 762 | `exportDatabaseTo`, `importDatabaseMerge` (merge ไฟล์ .ddx เข้าฐานปัจจุบัน) |
+
+การเปลี่ยนแปลงจริง 3 อย่าง (นอกเหนือจากการย้าย):
+- `initDB()` → `initDB(db)` รับ connection เป็นพารามิเตอร์แทนการปิดทับตัวแปร
+  `db` ระดับโมดูล (migration ทุกตัวข้างๆ ก็รับแบบนี้อยู่แล้ว) — ทำให้
+  `String(initDB)` เปลี่ยน → `schemaStamp()` เปลี่ยน → ฐานข้อมูลเดิมจะรัน
+  init path (idempotent) อีกครั้งหนึ่งครั้งเดียวแล้วประทับ stamp ใหม่
+  (วัดจริง: 131ms ครั้งเดียว จากนั้นเข้า fast path "skipped, stamp match")
+- ตัวคั่นใน `schemaStamp()` เดิมเป็น **byte NUL/`\x01` จริงในซอร์ส** ทำให้ git
+  มองไฟล์เป็น binary และไม่แสดง diff — เปลี่ยนเป็น escape `'\x00'`/`'\x01'`
+- แปลง CRLF → LF (เป็นไฟล์เดียวในรีโปที่ยังเป็น CRLF)
+
+---
+
 ## v3 Module System — ไฟล์ใหม่ (2026-07-16)
 
 ระบบใหม่ทั้งหมด (Nexus nest tree, Hub, Builder, Module Inspector, 15
@@ -316,7 +413,11 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   shortcut แทรก syntax ที่ `mdRender()` (markdown.js) รองรับอยู่แล้ว ไม่ได้
   แก้ rendering ใดๆ
 
-### core.js (~1700 บรรทัด) — โครงหลักของ renderer
+### core.js — โครงหลักของ renderer
+
+> 📁 **แยกเป็น `src/renderer/core/` 12 ไฟล์แล้ว (Plan part1)** — ดูตารางไฟล์ที่
+> [Re-architecture](#re-architecture--การแยกไฟล์-plan-part1-2026-07-26)
+> รายละเอียดพฤติกรรมด้านล่างยังถูกต้อง เพียงกระจายอยู่คนละไฟล์
 - **State**: object `S` (view, activeModule, project/category/object,
   world/game/write/scribe state, nexus ที่เปิดอยู่, แท็บ, settings,
   `recentEntities`, `explorerOpen`) + `loadUiSettings/saveUiSettings`
@@ -415,7 +516,10 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   (`renderProjectHashtagView` — เลือกแท็กเพื่อดู object/event ที่ใช้) และหน้า
   จัดการสี (`renderColorSettings` — wheel + ลบสี)
 
-### navigator.js (1803 บรรทัด — ใหญ่สุด)
+### navigator.js — Navigator (World)
+
+> 📁 **แยกเป็น `src/renderer/navigator/` 9 ไฟล์แล้ว (Plan part1)**, โหลดเป็นกลุ่ม
+> ผ่าน `loadGroup('navigator')`
 - `renderNavigatorView` (รายชื่อโลก) / `selectWorld` / `renderWorldSidebar`
   + `renderWorldMain` ตาม `S.worldTab` (original / chars-cats /
   maps-timeline / tags)
@@ -427,7 +531,10 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   (สร้าง timeline บนแผนที่นิยาย, เพิ่มเหตุการณ์, ลากวางตัวละคร/object เป็นจุดบน
   แผนที่), แท็กของโลก
 
-### hero.js (1086 บรรทัด)
+### hero.js — Hero (Game)
+
+> 📁 **แยกเป็น `src/renderer/hero/` 6 ไฟล์แล้ว (Plan part1)**, โหลดเป็นกลุ่ม
+> ผ่าน `loadGroup('hero')`
 - `renderHeroView` (รายชื่อเกม) / `selectGame` / `setGameTab`
 - หน้า project: ตัวละคร (`openCharModal`), Fields มี level
   (`openHeroTemplatesModal`, `saveHeroAttr`), element ต่อตัวละคร
