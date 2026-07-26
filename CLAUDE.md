@@ -19,7 +19,7 @@ same SQLite schema but a separate, behind-parity codebase (see its own
 section below). Everything else in this file describes the Electron app.
 
 This repo already has an extensive, actively-maintained documentation set and
-three project-specific Claude skills — **read those before re-deriving
+four project-specific Claude skills — **read those before re-deriving
 things from scratch.** This file is a map, not a replacement for them.
 
 | Need to know... | Go to |
@@ -30,6 +30,7 @@ things from scratch.** This file is a map, not a replacement for them.
 | History of what changed and why, session to session | `docs/CHANGELOG.md` |
 | How to run/click/screenshot the real app | `.claude/skills/run-dracondex/SKILL.md` |
 | UI/UX + wiring conventions and the static checker | `.claude/skills/dracondex-module-style/SKILL.md`, `STYLE.md` |
+| Whether a file should be split, and how to split it safely | `.claude/skills/dracondex-file-arch/SKILL.md` |
 | How to keep the docs above in sync after a change | `.claude/skills/write-docs/SKILL.md` |
 
 These docs are written in **Thai** (matching the project's primary language)
@@ -41,18 +42,23 @@ These docs are written in **Thai** (matching the project's primary language)
 main.js            Electron main process — window creation, all IPC handlers (no business logic; delegates straight to database.js)
 preload.js         contextBridge — exposes window.api.<namespace>.<fn>, 1:1 with main.js IPC channels
 database.js        require()s + re-exports everything in src/db/*.js as one object
-index.html         near-empty HTML shell; renderer builds all UI at runtime
-style.css          all styling + every theme (30+ CSS-variable theme families)
+index.html         near-empty HTML shell; <link>s css/ and loads every renderer script IN ORDER
+css/               all styling, 14 files (tokens → themes → base → chrome → layout → components → legacy → v3). ORDER IS THE CASCADE; url() paths are relative to css/, hence ../Image/…
 start.js           `npm start` entry point
 ensure-electron.js postinstall — validates/repairs the Electron binary
-src/db/            data layer (runs in main process), one file per system, ~15 files
+src/db/            data layer (runs in main process), one file per system
+src/db/schema/     ddl.js / indexes.js / seed.js (SQL data), init.js (schemaStamp+initDB), migrations.js
 src/renderer/       UI layer, one file per legacy module/system
+src/renderer/core/  global state, UI primitives, settings/theme, nav, pickers, views, routing (12 files; state.js first)
+src/renderer/hub/   the v3 Hub: kind registry, nest tree, menus, module CRUD (7 files, eager)
+src/renderer/navigator/, src/renderer/hero/  the two big legacy modules, lazy-loaded as a group via loadGroup()
 src/renderer/mod/   UI layer for the 15 v3 "module kind" renderers
 vendor/            vendored D3 + Konva (offline-first; unpkg CDN is fallback only)
 scripts/           finish-portable.mjs (post-build packaging step)
 docs/              Architec.md, SYSTEMS.md, FILES.md, CHANGELOG.md — see table above
 flutter_app/       separate Flutter front-end, same DB schema, behind parity
-.claude/skills/    run-dracondex, dracondex-module-style, write-docs (see above)
+.claude/skills/    run-dracondex, dracondex-module-style, dracondex-file-arch, write-docs (see above)
+test/              a handful of node --test regression tests (`node --test 'test/*.test.mjs'`)
 tmp-user-data/     real dev-mode database (gitignored) — don't wipe casually
 tmp-driver-data/   scratch data dir for the run-dracondex driver (gitignored)
 ```
@@ -118,9 +124,10 @@ npm run build:exe         # legacy single-file portable exe
 npm run build:installer   # NSIS installer
 ```
 
-There is **no automated test suite or linter** in this repo. Correctness is
-verified by actually running the app (see next section) and by the static
-style checker.
+There is **no linter**, and only a handful of regression tests
+(`node --test 'test/*.test.mjs'` — note the glob; `node --test test/` fails).
+Correctness is verified by actually running the app (see next section) and by
+the two static checkers.
 
 ## Verifying a change — always drive the real app
 
@@ -167,7 +174,20 @@ These are the **hard failures** the `dracondex-module-style` checker
   standard `.ph` header / `.li` row / empty state / modal / detail-head
   patterns every module reuses.
 
-Run the checker after any renderer/module change:
+Splitting or reorganising files has its own checker and its own rules — see
+`.claude/skills/dracondex-file-arch/SKILL.md` before moving code between files:
+
+```bash
+node .claude/skills/dracondex-file-arch/check-arch.mjs        # sizes + wiring
+```
+
+It hard-fails on the things a split breaks silently: a renderer file no
+`<script>` tag or `loadModule()` ever loads, the same top-level name declared in
+two renderer files (they share one global scope), an unlinked stylesheet or a
+`url()` that lost its `../`, `build.files` not shipping a source dir, and a
+`src/db` file `database.js` can't reach.
+
+Run the style checker after any renderer/module change:
 
 ```bash
 node .claude/skills/dracondex-module-style/check.mjs src/renderer/<file>.js
@@ -176,8 +196,11 @@ node .claude/skills/dracondex-module-style/check.mjs                            
 ```
 
 Warnings (hardcoded colors, untranslated Thai literals, unstyled classes) are
-metrics against a known baseline (~23) — new code should add **zero new
-warnings**, but don't chase down the pre-existing baseline unless asked.
+metrics against a known baseline (**55** as of 2026-07-26 — it jumped from 31
+when the sweep started recursing into `mod/` and the split folders, so those
+are newly-visible pre-existing warnings, not new debt) — new code should add
+**zero new warnings**, but don't chase down the pre-existing baseline unless
+asked.
 
 ## Keeping the docs in sync
 

@@ -349,7 +349,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 
 ### ธีมและขนาด UI
 - ธีม 32 แบบ (ครอบครัว Daylight/Moonlight/Midnight/Eclipse + sky/star/time)
-  เป็นชุดตัวแปร CSS ใน `style.css` เลือกจากเมนูเฟือง (มี swatch พาเลตให้ดู)
+  เป็นชุดตัวแปร CSS ใน `css/themes.css` เลือกจากเมนูเฟือง (มี swatch พาเลตให้ดู)
   ทุกธีมกำหนด 12 token เหมือนกัน; `--button` เป็น token **ทางเลือก** มีแค่ 13/32
   ธีมที่ประกาศ (ใช้ผ่าน `var(--button, var(--accent))` เสมอ)
 - สไลเดอร์ขนาด UI + ย่อ/ขยาย left panel — ทั้งหมดเก็บ `localStorage`
@@ -486,7 +486,7 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   `old_db_data/` (v1.1.0, v1.2.2) ว่า import ผ่านและ merge ข้อมูลได้ครบ
 - คอลัมน์ `relation_type.color` ก็มี `hasColumn` guard เพิ่มแล้ว (schema เก่ามาก
   ไม่มีคอลัมน์นี้ — เดิม unconditional SELECT ทำให้ transaction ทั้งก้อน rollback)
-- **Import DB hub** (`openImportDbHub`, src/renderer/core.js): เคลียร์
+- **Import DB hub** (`openImportDbHub`, src/renderer/core/router.js): เคลียร์
   `S.activeModuleNode` + เรียก `renderModuleRail()` ตอนเข้าโหมด ไม่ให้ icon
   module เดิมที่ pin ไว้ค้าง `.active` ในแถบ nav; และเพิ่ม `folder` เข้า
   `IMPORT_DB_READONLY_NS` (preload.js) เพราะ folder CRUD ของ Director ไม่เคย

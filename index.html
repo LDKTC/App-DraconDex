@@ -3,7 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <title>Novel Manager</title>
-  <link rel="stylesheet" href="style.css">
+  <!-- style.css was split into css/ (Plan part1). ORDER IS BEHAVIOUR: these are
+       contiguous slices of the old file and the cascade depends on them staying
+       in this sequence — tokens → themes → base → chrome → layout → components
+       → legacy → v3. Adding a file? Put it where its rules used to live. -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/titlebar.css">
+  <link rel="stylesheet" href="css/nav-hub.css">
+  <link rel="stylesheet" href="css/inspector.css">
+  <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/legacy-views.css">
+  <link rel="stylesheet" href="css/legacy-tables.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <link rel="stylesheet" href="css/kinds.css">
+  <link rel="stylesheet" href="css/builder.css">
 </head>
 <body>
 <div id="splash">
@@ -286,10 +303,34 @@
   <script>__splash.set(15)</script>
   <script src="src/renderer/markdown.js"></script>
   <script src="src/renderer/mdeditor.js"></script>
-  <script src="src/renderer/core.js"></script>
+  <!-- core.js was split into src/renderer/core/ (Plan part1). These are classic
+       scripts sharing one global scope and each file is a verbatim slice of the
+       old core.js, so ORDER MATTERS: state.js must parse first (every other
+       file's top level reads S / I / the UI_* tables), and the rest keep the
+       original sequence. init() is still called from search.js, last. -->
+  <script src="src/renderer/core/state.js"></script>
+  <script src="src/renderer/core/boot.js"></script>
+  <script src="src/renderer/core/ui.js"></script>
+  <script src="src/renderer/core/settings.js"></script>
+  <script src="src/renderer/core/theme.js"></script>
+  <script src="src/renderer/core/chrome.js"></script>
+  <script src="src/renderer/core/nav.js"></script>
+  <script src="src/renderer/core/pickers.js"></script>
+  <script src="src/renderer/core/views.js"></script>
+  <script src="src/renderer/core/nexus.js"></script>
+  <script src="src/renderer/core/router.js"></script>
+  <script src="src/renderer/core/shortcuts.js"></script>
   <script>__splash.set(35)</script>
   <script src="src/renderer/builder.js"></script>
-  <script src="src/renderer/hub.js"></script>
+  <!-- hub.js split into src/renderer/hub/ (Plan part1) — verbatim slices,
+       kinds.js first (it owns MODULE_KINDS / KIND_* consts). -->
+  <script src="src/renderer/hub/kinds.js"></script>
+  <script src="src/renderer/hub/sections.js"></script>
+  <script src="src/renderer/hub/tree.js"></script>
+  <script src="src/renderer/hub/popups.js"></script>
+  <script src="src/renderer/hub/menus.js"></script>
+  <script src="src/renderer/hub/edit.js"></script>
+  <script src="src/renderer/hub/open.js"></script>
   <script src="src/renderer/inspector.js"></script>
   <script src="src/renderer/versions.js"></script>
   <script src="src/renderer/iconpicker.js"></script>

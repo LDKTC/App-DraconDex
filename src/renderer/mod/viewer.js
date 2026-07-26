@@ -220,7 +220,7 @@ function buildViewerBoardHtml(d) {
 // keystroke.
 let filterPopupDebounce = null;
 
-function flattenModuleTree() {
+function flattenModulesForFilter() {
   const mods = [];
   for (const mm of S.moduleTree) {
     mods.push(mm);
@@ -260,7 +260,7 @@ function filterRuleRowHtml(r, gi, ri, mods) {
 
 function renderFilterPopupBody() {
   const def = S.filterDraft.def;
-  const mods = flattenModuleTree();
+  const mods = flattenModulesForFilter();
   const groupsHtml = def.groups.map((g, gi) => `
     ${gi > 0 ? `<div class="fp-or-divider">${t('filterOr')}</div>` : ''}
     <div class="fp-group">

@@ -56,7 +56,7 @@ nexus (vault, src/db/nexus.js — เหลือแค่ชั้นบาง�
 
 | kind | ความหมาย | renderer (`src/renderer/mod/*.js`) | db backend |
 |---|---|---|---|
-| `collector` | โฟลเดอร์เปล่า จัดกลุ่ม children เท่านั้น ไม่มีเนื้อหา คลิกแค่ expand/collapse | *(ไม่มี — hub.js render ตรง)* | *(ไม่มี)* |
+| `collector` | โฟลเดอร์เปล่า จัดกลุ่ม children เท่านั้น ไม่มีเนื้อหา คลิกแค่ expand/collapse | *(ไม่มี — hub/tree.js render ตรง)* | *(ไม่มี)* |
 | `manager` | คอนเทนเนอร์แสดง children ของ Major (4 มุมมอง: Cards/List/Table/Recent) | `manager.js` | *(ใช้ module.js เท่านั้น)* |
 | `inspector` | เอกสารโน้ตเดียว ("Detail") ผูก markdown editor กลางกับฟิลด์ description | `detail.js` | *(ใช้ module.js เท่านั้น)* |
 | `classifier` | ระบบ category/object/field แบบตารางเดียวกัน (Director เดิม) แยก `cat_type` (object/character/element) | `classifier.js` | `src/db/classifier.js` |
@@ -66,13 +66,13 @@ nexus (vault, src/db/nexus.js — เหลือแค่ชั้นบาง�
 | `narrator` | กราฟบทสนทนาแบบโหนด+เส้น (route board) | `narrator.js` | `src/db/narrator.js` (`story_dialogue/story_talk/story_edge`) |
 | `author` | หนังสือ/ตอน — คอลัมน์บทซ้าย + markdown editor (Outline/Reading) | `author.js` | `src/db/author.js` |
 | `scribe` | โน้ตแชทต่อโมดูล (ฟองข้อความ+เวลา, ไม่ใช่ Scribe เดิมทั้งแอป) | `chatscribe.js` | `src/db/chatscribe.js` |
-| `drafter` | หน้า markdown เปล่า (ใช้ฟิลด์ description ของ module เอง ไม่มีตารางแยก) | *(mount ตรงผ่าน `mountDrafterEditor` ใน core.js)* | *(ไม่มี)* |
+| `drafter` | หน้า markdown เปล่า (ใช้ฟิลด์ description ของ module เอง ไม่มีตารางแยก) | *(mount ตรงผ่าน `mountDrafterEditor` ใน mod/drafter.js)* | *(ไม่มี)* |
 | `viewer` | เลนส์ read-only เหนือ saved filter (Table/Cards/Board) | `viewer.js` | `src/db/viewer.js` |
 | `connector` | กราฟความสัมพันธ์เหนือ saved filter (node=item, edge=relation/wikilink) | `connector.js` | `src/db/viewer.js` |
 | `sketcher` | แคนวาสวาดฟรีแฮนด์ (ปากกา/ยางลบ, หลายหน้า, export PNG) | `sketcher.js` | `src/db/sketcher.js` |
 | `designer` | ผังไดอะแกรมอิสระ (shape/edge/label, drag จัดตำแหน่ง) | `designer.js` | `src/db/designer.js` |
 
-`hub.js` มี registry `KIND_MAIN_BUILDER` (kind → `build<Kind>MainHtml`) และ
+`hub/open.js` มี registry `KIND_MAIN_BUILDER` (kind → `build<Kind>MainHtml`) และ
 dispatch ใน `openModuleNode` (kind → `load<Kind>Data`) เป็นจุดต่อ kind เข้า
 ไฟล์ renderer จริง ทุกไฟล์ใน `src/renderer/mod/*.js` ถูก script-tag ตรงใน
 `index.html` (ไม่ lazy-load เหมือนโมดูลเดิม)
@@ -81,7 +81,7 @@ dispatch ใน `openModuleNode` (kind → `load<Kind>Data`) เป็นจุ�
 `sagehut.js` (สถิติวอลต์ในหน้า hub accordion, ใช้ `src/db/sage.js`'s
 `sageHutStats`/`sageHutLinkerList`) และ `fileviewer.js` (ตัวดู Import Dock)
 
-### 1.2 Hub (`src/renderer/hub.js`, 723 บรรทัด)
+### 1.2 Hub (`src/renderer/hub/` — 7 ไฟล์, เดิม `hub.js` 1301 บรรทัด)
 
 หน้า home ของ vault ที่เปิดอยู่ — accordion 3 ส่วนเท่านั้น: **Nest** (module
 tree), **Sage Hut**, **Import Dock** (ไม่มี section โมดูลเดิมแล้ว — Legacy
@@ -108,7 +108,7 @@ tree), **Sage Hut**, **Import Dock** (ไม่มี section โมดูลเ
   chip/แท็ก/จำนวนลิงก์) + เนื้อหาตาม kind (`KIND_MAIN_BUILDER`) + Module
   Inspector dock (§1.3)
 - **แต่ละ accordion section เลื่อนแยกกันเอง**: `#hub-body` เป็น flex column
-  (style.css), section ที่เปิดอยู่แชร์พื้นที่แนวตั้งที่เหลือเท่าๆ กัน
+  (css/nav-hub.css), section ที่เปิดอยู่แชร์พื้นที่แนวตั้งที่เหลือเท่าๆ กัน
   (`flex:1` ต่อ `.acc-body`) และมี scrollbar ของตัวเอง ไม่ใช่หน้าเดียวยาว
   scroll รวมกันทั้ง Nest/Sage Hut/Import Dock เหมือนเดิม; ลำดับ section
   ยังเป็น stable sort เดิม (`buildHubHtml`) — section ที่เปิดขึ้นบนสุดตาม
@@ -190,7 +190,7 @@ pane/pop-out เป็นหน้าต่างแยกได้ (Part 3)
 โค้ดและ IPC ของ 4 โมดูลตายตัวเดิม (Director/Navigator/Hero/Writer) **ไม่ได้
 ถูกลบ** — ไฟล์ `src/renderer/{director,navigator,hero,writer}.js` และ
 `src/db/{director,navigator,hero,writer}.js` เดิมทำงานปกติทุกอย่าง แต่ปุ่ม
-บน nav rail ของทั้ง 4 ถูกซ่อนด้วย regex filter ใน `core.js`
+บน nav rail ของทั้ง 4 ถูกซ่อนด้วย regex filter ใน `core/nav.js`
 (`updateTopNavButton`) ตั้งแต่ Phase 1 — เข้าถึงได้เฉพาะทาง **Artisan**
 (สร้างใหม่จากเทมเพลต v3) หรือ **migrate_v3.js** (นำเข้าของเก่าเข้า v3)
 เท่านั้น ปุ่ม **Scribe, Sage, Artisan เองยังอยู่บน rail ตามปกติ** ไม่ถูกซ่อน
@@ -226,8 +226,10 @@ Timelines ของ Navigator ฯลฯ) — ดู `docs/SYSTEMS.md` §3–§9 
 ├─ IDE Shell                (Explorer ครอบทั้ง v3+legacy ผ่าน wiki:explorerTree,
 │                            Status bar, Search-link overlay Ctrl+P — §1.5)
 ├─ i18n                     (src/renderer/i18n.js, 18 ภาษา)
-├─ Theme + UI scale         (style.css, ตั้งค่าใน core.js)
-└─ Modal/Toast/ColorPicker/SymbolPicker/HashtagSelector (คอมโพเนนต์กลาง, core.js)
+├─ Theme + UI scale         (css/tokens.css + css/themes.css,
+│                            ตั้งค่าใน core/settings.js + core/theme.js)
+└─ Modal/Toast/ColorPicker/SymbolPicker/HashtagSelector
+                            (คอมโพเนนต์กลาง, core/ui.js + core/pickers.js)
 ```
 
 ### ชั้นระบบ (นอกโมดูล UI)
@@ -241,9 +243,12 @@ main.js        — Electron main process, IPC handler ทุกช่อง name
                  world:, game:, write:, note:, wiki:, sage:, nexus:, window:)
 preload.js     — เปิด window.api.<namespace>.<fn> (สารบัญ API, 1:1 กับ main.js)
 database.js    — รวม export ของ src/db/*.js ทั้งหมด
-src/db/core.js — เปิด DB, schema (รวม module/module_attribute/module_ui/
-                 module_hashtag/module_version + CHECK ของ kind), migration,
-                 export/import
+src/db/core.js — façade 18 บรรทัด re-export 5 ชื่อเดิม; ตัวจริงแยกเป็น
+                 conn.js (เปิด DB + statement cache),
+                 schema/{ddl,indexes,seed}.js (SQL ล้วน — รวม module/
+                 module_attribute/module_ui/module_hashtag/module_version
+                 + CHECK ของ kind), schema/init.js (schemaStamp + initDB),
+                 schema/migrations.js, import-merge.js (export/import)
 ```
 
 ---
@@ -283,7 +288,7 @@ Flutter ไม่มีตาราง `module` เลย (`procress.md` บั�
 
 | kind | Renderer (`src/renderer/mod/`) | DB layer | IPC namespace |
 |---|---|---|---|
-| collector | *(hub.js)* | *(module.js)* | `module:` |
+| collector | *(hub/tree.js)* | *(module.js)* | `module:` |
 | manager | manager.js | *(module.js)* | `module:` |
 | inspector | detail.js | *(module.js)* | `module:` |
 | classifier | classifier.js | classifier.js | `classifier:` |
@@ -293,7 +298,7 @@ Flutter ไม่มีตาราง `module` เลย (`procress.md` บั�
 | narrator | narrator.js | narrator.js | `narrator:` |
 | author | author.js | author.js | `author:` |
 | scribe (ChatScribe) | chatscribe.js | chatscribe.js | `chatscribe:` |
-| drafter | *(core.js mountDrafterEditor)* | *(module.js)* | `module:` |
+| drafter | *(mod/drafter.js mountDrafterEditor)* | *(module.js)* | `module:` |
 | viewer | viewer.js | viewer.js | `viewer:` |
 | connector | connector.js | viewer.js | `viewer: wiki:` |
 | sketcher | sketcher.js | sketcher.js | `sketcher:` |
@@ -301,7 +306,7 @@ Flutter ไม่มีตาราง `module` เลย (`procress.md` บั�
 | *(Hub section)* sagehut | sagehut.js | sage.js | `sagehut:` |
 | *(Hub section)* Import Dock | fileviewer.js | importdock.js | `importdock:` |
 
-โครง Hub/Builder/Inspector เอง: `hub.js`, `builder.js`, `inspector.js`,
+โครง Hub/Builder/Inspector เอง: `hub/`, `builder.js`, `inspector.js`,
 `iconpicker.js`, `versions.js`/`src/db/versions.js`, `guide.js` —
 ไม่มี IPC namespace ของตัวเอง (เรียกผ่าน `module:`/`versions:`/`migrate:`)
 
@@ -309,13 +314,13 @@ Flutter ไม่มีตาราง `module` เลย (`procress.md` บั�
 
 | โมดูล | Renderer | DB layer | IPC namespace (main.js) |
 |---|---|---|---|
-| Nexus (vault) | core.js (renderNexusHome, hub.js) | nexus.js | `nexus:` |
+| Nexus (vault) | core/views.js (renderNexusHome) + hub/ | nexus.js | `nexus:` |
 | Director | director.js, modals.js, search.js, timeline.js, relation.js, map.js, hashtag.js | director.js, timeline.js, relation.js, map.js, hashtag.js, color.js | `folder: project: category: template: object: color: timeline: relation: map: hashtag: search:` |
 | Navigator | navigator.js | navigator.js | `world:` |
 | Hero | hero.js | hero.js | `game:` |
 | Writer | writer.js | writer.js | `write:` |
 | Scribe (เดิม, ทั้ง vault) | scribe.js, mdeditor.js | scribe.js | `note:` |
-| Wikilink/Backlinks | core.js (openEntityByKey ฯลฯ), explorer.js, quickswitch.js | wiki.js | `wiki:` |
+| Wikilink/Backlinks | core/router.js (openEntityByKey ฯลฯ), quickswitch.js | wiki.js | `wiki:` |
 | Sage (เดิม, ทั้ง vault) | sage.js | sage.js | `sage:` |
 | Artisan | artisan.js | *(stub — ประกอบผ่าน module:/classifier:/author: ตรงๆ)* | `module: classifier: author: migrate:` |
-| Window chrome | core.js (bindWindowChrome) | — | `window:` |
+| Window chrome | core/chrome.js (bindWindowChrome) | — | `window:` |

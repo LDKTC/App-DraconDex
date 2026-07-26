@@ -33,12 +33,18 @@ for (let i = 0; i < argv.length; i++) {
   else files.push(argv[i].replace(/\\/g, '/'));
 }
 
-const coreSrc = read('src/renderer/core.js');
+// style.css and src/renderer/core.js were each split into a folder (Plan
+// part1) — these two checks need the whole family, not one file, or they go
+// green while checking nothing.
+const readDirJoined = (dir, ext) => readdirSync(path.join(root, dir))
+  .filter(f => f.endsWith(ext)).sort().map(f => read(`${dir}/${f}`)).join('\n');
+
+const coreSrc = readDirJoined('src/renderer/core', '.js');
 const i18nSrc = read('src/renderer/i18n.js');
 const preloadSrc = read('preload.js');
 const mainSrc = read('main.js');
 const indexSrc = read('index.html');
-const cssSrc = read('style.css');
+const cssSrc = readDirJoined('css', '.css');
 
 const stripInterp = s => s.replace(/\$\{[^}]*\}/g, '');
 const stripStrings = s => s.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`/g, "''");
@@ -122,8 +128,14 @@ console.log(`=== i18n parity (${localeNames.length} locales: ${localeNames.join(
 }
 
 // ═══ Per-file lint ═══
-const targets = files.length ? files
-  : readdirSync(path.join(root, 'src/renderer')).filter(f => f.endsWith('.js')).map(f => `src/renderer/${f}`);
+// Recursive: renderer code lives in src/renderer/{,mod/,core/,hub/,navigator/,
+// hero/}. A flat readdir here used to skip mod/ entirely and would now skip
+// every folder the Plan part1 split created.
+const walkJs = (dir) => readdirSync(path.join(root, dir), { withFileTypes: true })
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .flatMap(e => e.isDirectory() ? walkJs(`${dir}/${e.name}`) : (e.name.endsWith('.js') ? [`${dir}/${e.name}`] : []));
+
+const targets = files.length ? files : walkJs('src/renderer');
 
 const usedT = new Set();
 for (const file of targets) {
@@ -197,8 +209,11 @@ for (const file of targets) {
 if (moduleName) {
   const m = moduleName;
   console.log(`=== module wiring: '${m}' ===`);
-  existsSync(path.join(root, `src/renderer/${m}.js`))
-    ? ok(`src/renderer/${m}.js exists`) : err(`src/renderer/${m}.js missing`);
+  // A module is either one file or a folder of them (Plan part1 split hub,
+  // navigator and hero into src/renderer/<name>/).
+  const moduleIsFolder = existsSync(path.join(root, `src/renderer/${m}`));
+  moduleIsFolder || existsSync(path.join(root, `src/renderer/${m}.js`))
+    ? ok(`src/renderer/${m}${moduleIsFolder ? '/' : '.js'} exists`) : err(`src/renderer/${m}.js missing`);
   coreSrc.includes(`selectModule('${m}')`)
     ? ok(`nexus tile / selectModule('${m}') present in core.js`) : err(`no selectModule('${m}') in src/renderer/core.js — add a .module-item in renderNexusHome() and a branch in selectModule()`);
   coreSrc.includes(`.nav-btn.${m}-only`)
@@ -206,8 +221,11 @@ if (moduleName) {
   indexSrc.includes(`${m}-only`)
     ? ok(`index.html has ${m}-only nav button(s)`) : err(`index.html has no 'nav-btn ${m}-only' buttons in #nav-sidebar`);
   if (m !== 'director') {
-    coreSrc.includes(`src/renderer/${m}.js`)
-      ? ok(`lazy-loaded via loadModule('src/renderer/${m}.js')`) : err(`core.js selectModule() must loadModule('src/renderer/${m}.js') then call its render entry`);
+    // One file → loadModule('src/renderer/x.js'); a folder → loadGroup('x'),
+    // which awaits every file in LAZY_GROUPS (src/renderer/core/views.js).
+    coreSrc.includes(`src/renderer/${m}.js`) || coreSrc.includes(`loadGroup('${m}')`)
+      ? ok(`lazy-loaded via ${moduleIsFolder ? `loadGroup('${m}')` : `loadModule('src/renderer/${m}.js')`}`)
+      : err(`core/ must loadModule('src/renderer/${m}.js') (or loadGroup('${m}') for a folder) then call its render entry`);
   }
   if (existsSync(path.join(root, `src/db/${m}.js`))) {
     read('database.js').includes(`./src/db/${m}`)

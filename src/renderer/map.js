@@ -1,20 +1,3 @@
-function ensureKonva(){
-  if(window.Konva) return Promise.resolve();
-  if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
-  window.__konvaLoading = true;
-  // Vendored copy first (offline app); CDN only as a fallback.
-  const load = (src) => new Promise((resolve,reject)=>{
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = ()=>resolve();
-    s.onerror = ()=>{ s.remove(); reject(new Error('Failed to load '+src)); };
-    document.body.appendChild(s);
-  });
-  return load('vendor/konva.min.js')
-    .catch(()=>load('https://unpkg.com/konva@9/konva.min.js'))
-    .finally(()=>{ window.__konvaLoading = false; });
-}
-
 // These three were previously (and incorrectly) only defined in relation.js —
 // map.js's own markup calls them, so opening Map without having first
 // visited Relation left them undefined (ReferenceError on click).
@@ -500,8 +483,4 @@ async function saveMapArea(id){ const n=q('#area-n').value.trim(); if(!n) return
 async function delMapArea(id){ if(!await uiConfirm('ลบ Area นี้?')) return; await api.map.deleteArea(id); closeModal(); if(S.mapAreaId===id) S.mapAreaId=null; delete mapState.pointsByArea[id]; await refreshMapHost(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ HASHTAG VIEW ══════════════════════════════════════
-function autoExpand(el){
-  el.style.height = 'auto';
-  el.style.height = el.scrollHeight + 'px';
-}
 

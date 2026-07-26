@@ -19,6 +19,50 @@
 
 ---
 
+## 2026-07-26 — Part 1 (Plan ใหม่): Re-architecture แยกไฟล์ + สกิล dracondex-file-arch
+- commit: d0b74d6, 81c3a12, 4884e87, bd51eb4
+- ไฟล์ที่แก้: `style.css` → `css/` 14 ไฟล์, `src/renderer/core.js` → `core/` 12 ไฟล์,
+  `src/db/core.js` → `conn.js` + `schema/` 5 ไฟล์ + `import-merge.js` + façade,
+  `src/renderer/hub.js` → `hub/` 7 ไฟล์, `navigator.js` → `navigator/` 9 ไฟล์,
+  `hero.js` → `hero/` 6 ไฟล์, `index.html`, `package.json`,
+  `src/renderer/{map,relation,mod/viewer}.js`, `test/onboarding-tour.test.mjs`,
+  `.claude/skills/dracondex-module-style/check.mjs`,
+  `.claude/skills/dracondex-file-arch/` (ใหม่)
+- อะไรเปลี่ยน:
+  - แยกไฟล์ใหญ่ 6 ไฟล์ (3159/2642/2532/1807/1301/1088 บรรทัด) ตามเกณฑ์ใน
+    `Plan.md` **ทุกไฟล์ใหม่เป็นการตัดช่วงบรรทัดต่อเนื่องแบบคำต่อคำ** และเรียง
+    ลำดับโหลดตามเดิม → ต่อกลับได้ byte ต่อ byte (พิสูจน์ด้วยสคริปต์) ลำดับ
+    cascade ของ CSS และลำดับ evaluate ของ classic script จึงไม่เปลี่ยน
+  - `src/db/core.js` เหลือเป็น façade re-export 5 ชื่อเดิม (ไฟล์อื่น ~29 ไฟล์
+    ที่ `require('./core')` ไม่ต้องแก้), `initDB()` → `initDB(db)`,
+    แก้ byte NUL/`\x01` จริงในซอร์สเป็น escape (git เคยมองไฟล์นี้เป็น binary),
+    CRLF → LF
+  - `navigator/` + `hero/` โหลดแบบกลุ่มผ่าน `LAZY_GROUPS` + `loadGroup()`
+    (`core/views.js`) เพราะ `<script>` ที่แทรกทีหลังเป็น async ไม่มีลำดับ
+  - สกิลใหม่ `dracondex-file-arch` (SKILL.md + `check-arch.mjs`): รายงานแถบ
+    ขนาดไฟล์ตาม Plan.md + สัญญาณ "หลายหน้าที่", และ **error** เมื่อ wiring พัง
+    (ไฟล์ renderer ที่ไม่มีใครโหลด, ชื่อ top-level ซ้ำข้ามไฟล์, CSS ที่ไม่ถูก
+    `<link>` / `url()` ที่ลืม `../`, `build.files` ไม่ครอบคลุม, ไฟล์ db ที่
+    `database.js` เข้าไม่ถึง)
+  - `check.mjs` เดิมถูกชี้ไปที่ layout ใหม่ (รวม `css/*.css`, รวม
+    `core/*.js`, และ **เดินโฟลเดอร์แบบ recursive** — เดิมข้าม `mod/` ทั้งหมด
+    จึงเป็นเหตุผลที่ warning ขยับ 31 → 55 โดยไม่ใช่โค้ดใหม่)
+- บั๊กที่เจอและแก้ระหว่างทาง (ทั้งหมดมีอยู่ก่อนแล้ว ยกเว้นข้อแรก):
+  - `url('Image/…')` ใน CSS ที่ย้ายเข้า `css/` กลายเป็น 404 (url อ้างจากตัวไฟล์
+    CSS ไม่ใช่จาก `index.html`) — แก้เป็น `../Image/…` ทั้ง 33 จุด
+  - `flattenModuleTree` ถูกประกาศ**คนละแบบ** ใน `hub/menus.js` (recursive, 3
+    args) กับ `mod/viewer.js` (flat, 0 args) — viewer โหลดทีหลังจึงชนะ ทำให้
+    เมนู "ย้ายไปยัง…" ของ Nest row โยน TypeError (ยืนยันจริงในแอปก่อน/หลังแก้);
+    เปลี่ยนชื่อฝั่ง viewer เป็น `flattenModulesForFilter`
+  - `ensureKonva` ถูกก็อปทั้งก้อนไว้ทั้ง `map.js` และ `relation.js` ทั้งที่มี
+    อีก 4 โมดูล lazy เรียกใช้ — ย้ายไปไว้ที่เดียวแบบ eager ใน `core/views.js`
+  - `autoExpand` ซ้ำใน `map.js` (ไม่มีใครเรียก — dead code) กับ `timeline.js`
+- ทำไม: `Plan.md` part 1 — ไฟล์ใหญ่หลายไฟล์ถือหลายหน้าที่พร้อมกัน หาโค้ดยาก
+  และแก้ทีหนึ่งเสี่ยงชนกันเอง; ต้องมีตัวตรวจถาวรกันไม่ให้ย้อนกลับไปโตแบบเดิม
+- Doc ที่อัปเดต: docs/FILES.md (§Re-architecture ใหม่ + ตัวชี้ที่ core/navigator/
+  hero), docs/Architec.md §1.2/§ชั้นระบบ/§4, docs/SYSTEMS.md (path ธีม +
+  openImportDbHub), CLAUDE.md (repo layout, ตารางสกิล, คำสั่งตรวจ)
+
 ## 2026-07-26 — Part 2: backend efficiency (ผิวสัมผัส IPC + call site ฝั่ง renderer)
 - commit: uncommitted
 - ไฟล์ที่แก้: `main.js`, `preload.js`, `src/db/module.js`,

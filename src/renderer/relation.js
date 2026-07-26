@@ -591,20 +591,4 @@ document.addEventListener('mouseup',function(){
   dragState=null;
 });
 
-function ensureKonva(){
-  if(window.Konva) return Promise.resolve();
-  if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
-  window.__konvaLoading = true;
-  // Vendored copy first (offline app); CDN only as a fallback.
-  const load = (src) => new Promise((resolve,reject)=>{
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = ()=>resolve();
-    s.onerror = ()=>{ s.remove(); reject(new Error('Failed to load '+src)); };
-    document.body.appendChild(s);
-  });
-  return load('vendor/konva.min.js')
-    .catch(()=>load('https://unpkg.com/konva@9/konva.min.js'))
-    .finally(()=>{ window.__konvaLoading = false; });
-}
 

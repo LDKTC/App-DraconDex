@@ -3,7 +3,8 @@
 This bundle was produced by `/design-sync` in **tokens-only** mode. DraconDex is a
 vanilla-JS Electron app with no React component library, so there are **no
 components to sync** — only the design-token layer was extracted from
-[`style.css`](../style.css).
+[`css/tokens.css`](../css/tokens.css) and [`css/themes.css`](../css/themes.css)
+(both were part of the single `style.css` when this bundle was produced).
 
 ## Contents
 - `styles.css` — entry stylesheet; `@import`s the tokens.
