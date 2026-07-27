@@ -3,3 +3,13 @@ DraconDexPortable/
 build/
 tmp-user-data/
 *.log
+
+
+tmp-driver-data/
+tmp-driver-data2/
+.worktrees/
+tmp-driver-data-a2/
+tmp-driver-data-b/
+
+module-showcase/
+
