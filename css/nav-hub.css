@@ -16,7 +16,7 @@
 }
 .nav-logo{font-size:calc(22px * var(--fsc,1));padding:6px 0 12px}
 .nav-logo-btn{
-	width:44px;height:44px;border:none;
+	width:40px;height:40px;border:none;
 	background:transparent;border-radius:var(--r);
 	cursor:pointer;color:var(--t2);
 	display:flex;align-items:center;justify-content:center;

@@ -21,7 +21,7 @@ html{height:100%;overflow:hidden}
 	   var(--button, var(--accent)), so the 19 themes that omit it fall back
 	   correctly; don't add it to them just for symmetry. */
 	--r:8px; --rs:4px; --rl:12px;
-	--nav:56px; --sidebar:264px;
+	--nav:42px; --sidebar:264px;
 	/* Written by core.js:507 but not consumed by any CSS rule — scaling is done
 	   with a transform on .ui-scale-wrap instead. Kept to document the contract. */
 	--ui-scale:1;

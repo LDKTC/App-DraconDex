@@ -13,6 +13,7 @@
 
 .panel-resize-handle{width:5px;flex-shrink:0;cursor:col-resize;background:transparent}
 .panel-resize-handle:hover,.panel-resize-handle.is-resizing{background:var(--accent)}
+.panel-resize-handle-v{width:auto;height:5px;cursor:row-resize}
 /* Plan part1 #2: resizable page view (Sage Hut / Import Dock file preview /
    Kind Browser) — #page-view-resize reuses .panel-resize-handle as-is. When
    S.pageViewWidth is unset .page-view has no inline style, so flex:1 1 auto

@@ -1,14 +1,15 @@
 // The Nexus Nest tree itself — module rows, content-item leaf rows, the lazy
 // item loading + coalesced re-render (scheduleNestRender), and drag-reorder /
 // reparent at any depth.
-function buildAccSection(key, label, bodyHtml, actHtml = '') {
+function buildAccSection(key, label, bodyHtml, actHtml = '', heightPx = null) {
   const open = !!S.hubOpen[key];
+  const bodyStyle = open ? (heightPx ? `flex:0 0 ${heightPx}px` : '') : 'display:none';
   return `
     <div class="acc-head${open ? '' : ' acc-collapsed'}" onclick="toggleHubSection('${key}')">
       <svg class="icon chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="${open ? '6 9 12 15 18 9' : '9 18 15 12 9 6'}"/></svg>
       ${x(label)}<span class="act">${actHtml}</span>
     </div>
-    <div class="acc-body" style="${open ? '' : 'display:none'}">${bodyHtml}</div>`;
+    <div class="acc-body" data-key="${key}" style="${bodyStyle}">${bodyHtml}</div>`;
 }
 
 // A brand-new vault used to show a text-only "no modules yet" with nothing to

@@ -32,6 +32,13 @@ function toggleNestSignatureMode() {
 }
 
 function buildHubHtml() {
+  // Vertical drag-resize (Plan part1 #2.1): once >1 section is open, an open
+  // section's stored height wins over the default equal-share flex:1 — see
+  // startHubSectionResize (core/ui.js). With 0-1 open there's no pair to
+  // redistribute between, so skip it and let flex:1 fill the space as before.
+  const heights = S.hubSectionHeights || {};
+  const openCount = ['nest', 'sage', 'dock'].filter(k => S.hubOpen[k]).length;
+  const h = (key) => openCount > 1 ? heights[key] : null;
   const sections = [
     { key: 'nest', html: buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
         // Plan part1 #6: one-click Collector create, no popup/name-prompt
@@ -39,11 +46,11 @@ function buildHubHtml() {
         // rename mode for every kind when called with no cat_type decision.
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();quickCreateModule('collector',null)" title="${kindLabel('collector')}">${I[KIND_ICON.collector]}</button>
          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>
-         <button class="btn btn-g btn-i" onclick="event.stopPropagation();openNestOptionsPopup(this)" title="${t('nestOptionsTitle')}">${I.options}</button>`) },
-    { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows()) },
+         <button class="btn btn-g btn-i" onclick="event.stopPropagation();openNestOptionsPopup(this)" title="${t('nestOptionsTitle')}">${I.options}</button>`, h('nest')) },
+    { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows(), '', h('sage')) },
     { key: 'dock', html: buildAccSection('dock', t('importDock'),
         typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
-        `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`) },
+        `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`, h('dock')) },
     // Plan part2 §2: this accordion section is removed — legacy import is
     // now offered via the import-choice modal (openImportChoiceModal) that
     // importDatabaseFile() (core.js) opens automatically after a merge
@@ -55,7 +62,19 @@ function buildHubHtml() {
   // original relative order at the top. Array#sort is stable, so within
   // each open/collapsed group the original order survives.
   sections.sort((a, b) => (S.hubOpen[b.key] ? 1 : 0) - (S.hubOpen[a.key] ? 1 : 0));
-  return `<div id="hub-body">${sections.map(s => s.html).join('')}</div>`;
+  // A resize handle only makes sense between two sections that are BOTH open
+  // (a collapsed section takes no flex space, so there'd be nothing to drag
+  // against) — checked in this post-sort order so e.g. Nest+Dock open with
+  // Sage Hut collapsed still get a handle between the two open ones.
+  const out = [];
+  sections.forEach((s, i) => {
+    out.push(s.html);
+    const next = sections[i + 1];
+    if (S.hubOpen[s.key] && next && S.hubOpen[next.key]) {
+      out.push(`<div class="panel-resize-handle panel-resize-handle-v" onmousedown="startHubSectionResize(event,'${s.key}','${next.key}')" title="${t('resizePanel')}"></div>`);
+    }
+  });
+  return `<div id="hub-body">${out.join('')}</div>`;
 }
 
 // ═══ SAGE HUT SECTION (Phase 17) ═══════════════════════════════════════

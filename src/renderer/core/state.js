@@ -69,16 +69,33 @@ const INSPECTOR_WIDTH_KEY = 'novel-manager-inspector-width';
 const PAGE_VIEW_WIDTH_KEY = 'novel-manager-page-view-width';
 const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
 const HUB_OPEN_KEY = 'novel-manager-hub-open';
+const HUB_SECTION_HEIGHTS_KEY = 'novel-manager-hub-section-heights';
 
 function loadHubOpen(){
   try { return { nest:true, kinds:false, sage:false, dock:false, ...JSON.parse(localStorage.getItem(HUB_OPEN_KEY) || '{}') }; }
   catch(e){ return { nest:true, kinds:false, sage:false, dock:false }; }
+}
+function loadHubSectionHeights(){
+  try { return JSON.parse(localStorage.getItem(HUB_SECTION_HEIGHTS_KEY) || '{}'); }
+  catch(e){ return {}; }
 }
 const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse','clearAurora','atTwilight','atSunset','clearComet','atDaybreak','afterSunset','atSunrise','atNight','atNoon','clearDusk','atMidnight','clearMoon','clearGalaxy','clearNebula','afterStorm','afterSnow','atMorning','clearSun','atEvening','clearMeteor'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','de','ru','it','nl','pl','uk','tr','qd'];
 const UI_SIZE_MIN = 50;
 const UI_SIZE_MAX = 200;
 const UI_SIZE_STEP = 5;
+// First-run "UI Size" (S.settings.size) defaults to the screen instead of a
+// flat 100%. Baseline 1920px width == 100%, scaled proportionally, rounded
+// to the nearest UI_SIZE_STEP, clamped to the same 80-130 safety band
+// fontScale already uses elsewhere in this file — narrower than the full
+// manual 50-200 slider range, so an unusually small/huge monitor can't
+// silently produce an illegible or absurd auto default. The user can still
+// push further via the slider's full range.
+function autoUiSizeFromScreen(){
+  const w = (window.screen && window.screen.width) || 1920;
+  const stepped = Math.round((w / 1920) * 100 / UI_SIZE_STEP) * UI_SIZE_STEP;
+  return Math.min(130, Math.max(80, stepped));
+}
 // The 10 palette tokens a custom theme overrides (mockup 27).
 const CUSTOM_THEME_TOKENS = ['--bg','--surface','--raised','--hover','--border','--t1','--t2','--t3','--accent','--accentH'];
 
@@ -89,7 +106,7 @@ function loadUiSettings(){
   const theme = UI_THEME_OPTIONS.includes(saved.theme) ? saved.theme : 'midnight';
   const language = UI_LANGUAGE_OPTIONS.includes(saved.language) ? saved.language : 'th';
   const savedSize = Number(saved.size);
-  const size = Number.isFinite(savedSize) ? Math.min(UI_SIZE_MAX, Math.max(UI_SIZE_MIN, savedSize)) : 100;
+  const size = Number.isFinite(savedSize) ? Math.min(UI_SIZE_MAX, Math.max(UI_SIZE_MIN, savedSize)) : autoUiSizeFromScreen();
   const nameMode = saved.nameMode === 'classic' ? 'classic' : 'unique';
   const savedFont = Number(saved.fontScale);
   const fontScale = Number.isFinite(savedFont) ? Math.min(130, Math.max(80, Math.round(savedFont))) : 100;
@@ -199,6 +216,7 @@ const S = {
   chroniclerData:null,
   wandererData:null,
   hubOpen:loadHubOpen(),
+  hubSectionHeights:loadHubSectionHeights(),
   moduleCollapsed:new Set(),
   importFolderCollapsed:new Set(),
   dragNest:null,

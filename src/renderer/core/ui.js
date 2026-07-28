@@ -297,3 +297,42 @@ document.addEventListener('mouseup', () => {
   localStorage.setItem(PAGE_VIEW_WIDTH_KEY, String(S.pageViewWidth));
 });
 
+// Vertical drag-resize between adjacent OPEN Hub accordion sections (Plan
+// part1 #2.1) — same mousedown/document-mousemove/document-mouseup +
+// localStorage-persist shape as startLeftPanelResize/startPageViewResize
+// above, height instead of width. The [80, total-80] clamp matches the
+// existing CSS min-height:80px floor on .acc-body.
+let hubSectionResizeState = null;
+function startHubSectionResize(ev, topKey, bottomKey) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  const topEl = q(`.acc-body[data-key="${topKey}"]`);
+  const bottomEl = q(`.acc-body[data-key="${bottomKey}"]`);
+  if (!topEl || !bottomEl) return;
+  hubSectionResizeState = {
+    startY: ev.clientY, topKey, bottomKey,
+    topStart: topEl.getBoundingClientRect().height,
+    bottomStart: bottomEl.getBoundingClientRect().height,
+  };
+  ev.currentTarget.classList.add('is-resizing');
+}
+document.addEventListener('mousemove', (ev) => {
+  const st = hubSectionResizeState;
+  if (!st) return;
+  const total = st.topStart + st.bottomStart;
+  const top = Math.max(80, Math.min(total - 80, st.topStart + (ev.clientY - st.startY)));
+  if (!S.hubSectionHeights) S.hubSectionHeights = {};
+  S.hubSectionHeights[st.topKey] = Math.round(top);
+  S.hubSectionHeights[st.bottomKey] = Math.round(total - top);
+  const topEl = q(`.acc-body[data-key="${st.topKey}"]`);
+  const bottomEl = q(`.acc-body[data-key="${st.bottomKey}"]`);
+  if (topEl) topEl.style.flex = `0 0 ${top}px`;
+  if (bottomEl) bottomEl.style.flex = `0 0 ${total - top}px`;
+});
+document.addEventListener('mouseup', () => {
+  if (!hubSectionResizeState) return;
+  hubSectionResizeState = null;
+  document.querySelectorAll('.panel-resize-handle-v.is-resizing').forEach(h => h.classList.remove('is-resizing'));
+  localStorage.setItem(HUB_SECTION_HEIGHTS_KEY, JSON.stringify(S.hubSectionHeights || {}));
+});
+

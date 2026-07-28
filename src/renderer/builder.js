@@ -61,7 +61,15 @@ function builderNavigate(ref) {
   const b = builderState();
   const pane = b.panes[b.focused];
   const key = builderPageKey(ref);
-  if (!pane.tabs.includes(key)) pane.tabs.push(key);
+  if (ref.kind === 'sagehut') {
+    // Sub-view switches (Size/Objects/Links/Graph) reuse one tab in place
+    // instead of multiplying — every other ref kind keeps its own tab.
+    const sageIdx = pane.tabs.findIndex(k => k.startsWith('sagehut:'));
+    if (sageIdx === -1) pane.tabs.push(key);
+    else pane.tabs[sageIdx] = key;
+  } else if (!pane.tabs.includes(key)) {
+    pane.tabs.push(key);
+  }
   pane.active = key;
   if (!S._builderNav && builderPageKey(pane.history[pane.hIdx]) !== key) {
     pane.history.splice(pane.hIdx + 1);
