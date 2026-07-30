@@ -148,9 +148,52 @@ function uiSizeSlidersHtml(){
     </div>`;
 }
 
+// Trimmed to Plan.md's "quick setting" default (part1 #Setting): language +
+// module name-mode + UI size + a button into the full Setting window only.
+// Everything else (theme grid, font size, version limit, help) moved into
+// Setting-window pages (src/renderer/core/setting-window.js) — reachable
+// from there, not cluttering the fast popup. Optional extra blocks (today:
+// theme/account/profile) can be opted back into this popup via the Setting
+// window's Workspace → Tool toggle page (S.settings.quickExtras).
 function renderSettingsMenu(){
   const menu = q('#settings-menu');
   if(!menu) return;
+  const languageOptions = UI_LANGUAGE_OPTIONS.map(lang =>
+    `<option value="${lang}" ${S.settings.language===lang?'selected':''}>${LANGUAGE_LABELS[lang]}</option>`
+  ).join('');
+  const extras = S.settings.quickExtras || {};
+  const extraBlocks = [
+    extras.theme ? quickThemeExtraHtml() : '',
+    extras.account ? (typeof quickAccountExtraHtml === 'function' ? quickAccountExtraHtml() : '') : '',
+    extras.profile ? (typeof quickProfileExtraHtml === 'function' ? quickProfileExtraHtml() : '') : '',
+  ].join('');
+  menu.innerHTML = `
+    <div class="settings-head">
+      <span>${t('settings')}</span>
+      <button class="settings-close" onclick="toggleSettingsMenu(false)" title="${t('close')}">x</button>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">${t('language')}</div>
+      <select class="settings-select" onchange="setUiSetting('language', this.value)">
+        ${languageOptions}
+      </select>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">${t('moduleNameMode')}</div>
+      ${nameModeSegHtml()}
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">${t('uiSize')}</div>
+      ${uiSizeOnlySliderHtml()}
+    </div>
+    ${extraBlocks}
+    <button class="btn btn-p" style="width:100%;margin-top:4px" onclick="toggleSettingsMenu(false);openSettingWindow()">${I.settings} ${t('settingOpenWindow')}</button>
+  `;
+}
+
+// The quick popup's optional "Theme" extra (Tool toggle opt-in) — same swatch
+// list the old always-shown block used, just gated now instead of default.
+function quickThemeExtraHtml(){
   const palettes = getThemePalettes();
   const themeOptions = UI_THEME_OPTIONS.map(theme => {
     const active = S.settings.theme === theme;
@@ -171,51 +214,23 @@ function renderSettingsMenu(){
     return `<button type="button" class="theme-item${active?' active':''}" onclick="setUiSetting('theme','${key}')" title="${x(ct.name)}">
         <span class="theme-swatches">${swatches}</span>
         <span class="theme-name" data-no-i18n>${x(ct.name)}</span>
-        <span class="theme-tools">
-          <span class="theme-tool" onclick="event.stopPropagation();openCustomThemeModal('${ct.id}')" title="${t('edit')}">✎</span>
-          <span class="theme-tool" onclick="event.stopPropagation();deleteCustomTheme('${ct.id}')" title="${t('delete')}">×</span>
-        </span>
         ${active?'<span class="theme-check">✓</span>':''}
       </button>`;
   }).join('');
-  const languageOptions = UI_LANGUAGE_OPTIONS.map(lang =>
-    `<option value="${lang}" ${S.settings.language===lang?'selected':''}>${LANGUAGE_LABELS[lang]}</option>`
-  ).join('');
-  menu.innerHTML = `
-    <div class="settings-head">
-      <span>${t('settings')}</span>
-      <button class="settings-close" onclick="toggleSettingsMenu(false)" title="${t('close')}">x</button>
-    </div>
-    <button class="btn btn-p" style="width:100%;margin-bottom:8px" onclick="toggleSettingsMenu(false);openPreferencesPanel()">${I.settings} ${t('preferencesOpen')}</button>
-    <div class="settings-group">
+  return `<div class="settings-group">
       <div class="settings-label">${t('theme')}</div>
-      <div class="theme-list">
-        ${themeOptions}${customOptions}
-      </div>
-      <button class="btn btn-s" style="margin-top:8px;width:100%" onclick="openCustomThemeModal()">${I.plus} ${t('customThemeNew')}</button>
+      <div class="theme-list">${themeOptions}${customOptions}</div>
+    </div>`;
+}
+
+// UI-size-only slider (no font size — that lives on the Text&Size setting
+// page now) for the trimmed quick popup.
+function uiSizeOnlySliderHtml(){
+  return `<div class="settings-label settings-label-row">
+      <span id="settings-size-value">${S.settings.size}%</span>
     </div>
-    <div class="settings-group">
-      <div class="settings-label">${t('language')}</div>
-      <select class="settings-select" onchange="setUiSetting('language', this.value)">
-        ${languageOptions}
-      </select>
-    </div>
-    ${uiSizeSlidersHtml()}
-    <div class="settings-group">
-      <div class="settings-label">${t('moduleNameMode')}</div>
-      ${nameModeSegHtml()}
-    </div>
-    <div class="settings-group">
-      <div class="settings-label">${t('versionLimit')}</div>
-      <input class="settings-number" type="number" min="1" max="500" value="${S.versionLimitCache ?? 50}"
-        onchange="setVersionLimit(this.value)">
-    </div>
-    <div class="settings-group">
-      <div class="settings-label">${t('help')}</div>
-      <button class="btn btn-s" style="width:100%;margin-bottom:6px" onclick="toggleSettingsMenu(false);openShortcutsModal()">${I.info} ${t('shortcuts')}</button>
-      <button class="btn btn-s" style="width:100%" onclick="toggleSettingsMenu(false);replayGuideTour()">${I.book} ${t('replayTour')}</button>
-    </div>
-  `;
+    <input class="settings-slider" type="range" min="${UI_SIZE_MIN}" max="${UI_SIZE_MAX}" step="${UI_SIZE_STEP}" value="${S.settings.size}" oninput="updateUiSizeLabel(this.value)" onchange="setUiSizeFromSlider(this.value)">
+    <div class="settings-slider-scale"><span>${UI_SIZE_MIN}%</span><span>100%</span><span>${UI_SIZE_MAX}%</span></div>`;
 }
 
 // The Ctrl+P/W/Tab/N/E bindings in bindGlobalShortcuts() were previously
@@ -251,126 +266,10 @@ async function setVersionLimit(v){
   toast(t('applied'),'ok');
 }
 
-// ═══ PREFERENCES PANEL (Plan part3 setting#2) ═══════════════════════════
-// Modeless floating panel with sidebar navigation, reached from the quick
-// settings dropdown's "Preferences..." button. Deeper/richer surface for
-// theme (grid+mockup+duplicate+gradient), language (list+preview) and UI
-// size (sliders+advanced numeric entry) — the quick dropdown stays as the
-// fast flat picker for the same underlying S.settings.
-const PREFS_SECTIONS = ['theme', 'language', 'uisize'];
-function openPreferencesPanel(section = S.prefsSection || 'theme'){
-  S.prefsSection = section;
-  openFloatingPanel('prefs-panel', `${I.settings} ${t('preferencesOpen')}`, prefsBodyHtml(), {width:900, height:620});
-}
-function selectPrefsSection(key){
-  S.prefsSection = key;
-  renderPreferencesPanel();
-}
-function renderPreferencesPanel(){
-  const body = q('#prefs-panel .fp-body');
-  if(body) body.innerHTML = prefsBodyHtml();
-}
-function prefsBodyHtml(){
-  const nav = PREFS_SECTIONS.map(k =>
-    `<button type="button" class="prefs-nav-item${S.prefsSection===k?' active':''}" onclick="selectPrefsSection('${k}')">${t('prefs_'+k)}</button>`
-  ).join('');
-  const content = S.prefsSection === 'theme' ? prefsThemeSectionHtml()
-    : S.prefsSection === 'language' ? prefsLanguageSectionHtml()
-    : prefsUiSizeSectionHtml();
-  return `<div class="prefs-shell"><div class="prefs-sidebar">${nav}</div><div class="prefs-content">${content}</div></div>`;
-}
-
-// ── Theme color section: grid of mini mockups instead of the quick
-// dropdown's flat swatch list, plus duplicate + the custom-theme "+" box.
-function themeGridCellHtml(key, name, vars, {active, isCustom} = {}){
-  const rawId = isCustom ? key.split(':')[1] : null;
-  return `<div class="prefs-theme-cell${active?' active':''}" onclick="setUiSetting('theme','${key}')">
-    <div class="ctm-preview mini" style="background:${x(vars['--bg'])};border-color:${x(vars['--border'])}">
-      <div class="ctm-pv-side" style="background:${x(vars['--surface'])}">
-        <i class="ctm-pv-acc" style="background:${x(vars['--accent'])}"></i>
-        <i style="background:${x(vars['--raised'])}"></i>
-        <i style="background:${x(vars['--raised'])}"></i>
-      </div>
-      <div class="ctm-pv-main">
-        <span class="ctm-pv-txt w80" style="color:${x(vars['--t2'])}"></span>
-        <span class="ctm-pv-txt w60" style="color:${x(vars['--t3'])}"></span>
-        <span class="ctm-pv-btn" style="background:${x(vars['--accent'])}"></span>
-      </div>
-    </div>
-    <div class="prefs-theme-name" data-no-i18n>${x(name)}</div>
-    <div class="prefs-theme-tools">
-      <span onclick="event.stopPropagation();duplicateTheme('${key}')" title="${t('duplicate')}">⧉</span>
-      ${isCustom ? `<span onclick="event.stopPropagation();openCustomThemeModal('${rawId}')" title="${t('edit')}">✎</span>
-                    <span onclick="event.stopPropagation();deleteCustomTheme('${rawId}')" title="${t('delete')}">×</span>` : ''}
-    </div>
-    ${active ? '<span class="prefs-theme-check">✓</span>' : ''}
-  </div>`;
-}
-function prefsThemeSectionHtml(){
-  const palettes = getThemePalettes();
-  const builtins = UI_THEME_OPTIONS.map(key =>
-    themeGridCellHtml(key, t(key), palettes[key] || {}, {active: S.settings.theme === key})
-  ).join('');
-  const customs = (S.settings.customThemes || []).map(ct =>
-    themeGridCellHtml(`custom:${ct.id}`, ct.name, ct.vars || {}, {active: S.settings.theme === `custom:${ct.id}`, isCustom: true})
-  ).join('');
-  const addBox = `<div class="prefs-theme-cell prefs-theme-add" onclick="openCustomThemeModal()" title="${t('customThemeNew')}">+</div>`;
-  return `<div class="settings-label">${t('theme')}</div><div class="prefs-theme-grid">${builtins}${customs}${addBox}</div>`;
-}
-
-// ── Languages section: real list box + live translation preview (reads
-// straight from the L locale table, no separate preview data needed) +
-// the module name-mode control underneath.
-// kcFolder/kcProject/kcCategory are the Classic-mode module-kind labels
-// (KIND_CLASSIC_KEY) — real translated strings, unlike the Unique-mode kind
-// names (KIND_LABEL), which are intentionally locale-invariant by design.
-const PREFS_LANG_PREVIEW_KEYS = ['settings', 'theme', 'uiSize', 'kcFolder', 'kcProject', 'kcCategory', 'edit', 'delete'];
-function previewLangStrings(lang){
-  return PREFS_LANG_PREVIEW_KEYS.map(k => L[lang]?.[k] || L.en[k] || k);
-}
-function prefsLangPreviewHtml(lang){
-  return previewLangStrings(lang).map(s => `<div data-no-i18n>${x(s)}</div>`).join('');
-}
-function prefsPreviewLang(lang){
-  S.prefsPreviewLang = lang;
-  const el = q('.prefs-lang-preview');
-  if (el) el.innerHTML = prefsLangPreviewHtml(lang);
-}
-function prefsLanguageSectionHtml(){
-  const rows = UI_LANGUAGE_OPTIONS.map(lang => `
-    <div class="lang-item${S.settings.language===lang?' active':''}" onmouseenter="prefsPreviewLang('${lang}')" onclick="setUiSetting('language','${lang}')">
-      <span>${LANGUAGE_LABELS[lang]}</span>${S.settings.language===lang?'<span class="theme-check">✓</span>':''}
-    </div>`).join('');
-  return `<div class="settings-label">${t('language')}</div>
-    <div class="prefs-lang-shell">
-      <div class="lang-list">${rows}</div>
-      <div class="prefs-lang-preview">${prefsLangPreviewHtml(S.prefsPreviewLang || S.settings.language)}</div>
-    </div>
-    <div class="settings-group">
-      <div class="settings-label">${t('moduleNameMode')}</div>
-      ${nameModeSegHtml()}
-    </div>`;
-}
-
-// ── UI size section: the same sliders as the quick dropdown, plus an
-// "Advanced" reveal for typed exact-percent entry (the sliders snap to
-// step 5) — reuses S.settings.size/fontScale through the same setUiSetting
-// path, no new state surface.
-function prefsUiSizeSectionHtml(){
-  return `<div class="settings-label">${t('uiSize')}</div>
-    ${uiSizeSlidersHtml()}
-    <button class="btn ${S.prefsAdvanced ? 'btn-p' : 'btn-s'}" onclick="togglePrefsAdvanced()">${t('advanced')}</button>
-    ${S.prefsAdvanced ? `<div class="prefs-advanced">
-      <div class="fg"><label>${t('uiSize')} (%)</label>
-        <input class="settings-number" type="number" min="${UI_SIZE_MIN}" max="${UI_SIZE_MAX}" value="${S.settings.size}" onchange="setUiSetting('size', this.value)"></div>
-      <div class="fg"><label>${t('fontSize')} (%)</label>
-        <input class="settings-number" type="number" min="80" max="130" value="${S.settings.fontScale || 100}" onchange="setUiSetting('fontScale', this.value)"></div>
-    </div>` : ''}`;
-}
-function togglePrefsAdvanced(){
-  S.prefsAdvanced = !S.prefsAdvanced;
-  renderPreferencesPanel();
-}
+// The old "Preferences panel" (PREFS_SECTIONS/openPreferencesPanel/
+// prefsBodyHtml/theme-grid/language-preview/ui-size-advanced) has been
+// replaced by the full Setting window — see src/renderer/core/setting-window.js,
+// which owns the Workspace → Theme/Text&Size pages that absorbed this code.
 
 // ═══ CUSTOM THEME EDITOR (Phase 22, mockup 27) ═════════════════════════
 function currentPaletteVars(){

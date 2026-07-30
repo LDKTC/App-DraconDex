@@ -27,6 +27,10 @@ const importdock = require('./src/db/importdock');
 const versions  = require('./src/db/versions');
 const migrate   = require('./src/db/migrate_v3');
 const sync      = require('./src/db/sync');
+const drive     = require('./src/db/drive');
+const update    = require('./src/db/update');
+const extension = require('./src/db/extension');
+const dbTransfer = require('./src/db/db-transfer');
 
 module.exports = {
   ...core,
@@ -57,4 +61,8 @@ module.exports = {
   ...versions,
   ...migrate,
   ...sync,
+  ...drive,
+  ...update,
+  ...extension,
+  ...dbTransfer,
 };

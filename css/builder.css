@@ -115,7 +115,7 @@
 .vh-time{font-size:calc(10px * var(--fsc,1));color:var(--t3);margin-top:3px}
 .vh-foot{padding:10px 14px;border-top:1px solid var(--border);font-size:calc(10px * var(--fsc,1));color:var(--t3);line-height:1.6}
 
-/* Cloud Sync modal (Supabase prototype) */
+/* Cloud Sync modal (Token Sync — Supabase) */
 .sync-status-row{display:flex;justify-content:space-between;gap:12px;padding:4px 2px;
 	font-size:calc(12.5px * var(--fsc,1));color:var(--t2)}
 .sync-status-row b{color:var(--t1);font-weight:600;text-align:right}
@@ -125,6 +125,18 @@
 	padding:7px 10px;font-family:monospace;font-size:calc(13px * var(--fsc,1));color:var(--t1);
 	letter-spacing:.5px;user-select:all}
 .sync-hint{font-size:calc(11px * var(--fsc,1));color:var(--t3);margin:2px 0 8px;line-height:1.45}
+.sync-upload-row{display:flex;justify-content:space-between;align-items:center;gap:12px;
+	padding:8px 10px;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px}
+.sync-upload-row-mine{border-color:var(--accent)}
+.sync-upload-actions{display:flex;gap:6px;flex-shrink:0}
+.sync-tag-chip{font-size:calc(9.5px * var(--fsc,1));color:var(--accentH);border:1px solid var(--accent);
+	border-radius:8px;padding:1px 6px;margin-left:6px}
+
+/* Google Drive backup (Preferences panel "Backup" section) */
+.drive-bar{height:6px;border-radius:3px;background:var(--raised);overflow:hidden;margin:2px 0 8px}
+.drive-bar-fill{height:100%;background:var(--accent);border-radius:3px}
+.drive-bar-fill.drive-bar-near{background:var(--accent)}
+.drive-bar-fill.drive-bar-full{background:var(--danger)}
 
 /* Settings expansion (Phase 22, mockup 27) */
 .name-mode-seg{display:flex;gap:6px}

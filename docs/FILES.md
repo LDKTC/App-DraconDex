@@ -331,24 +331,130 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 
 `vendor/` เพิ่ม konva/d3 เดิมยังใช้ร่วม (ไม่มีไฟล์ vendor ใหม่ในรอบนี้)
 
-## Cloud Sync (Supabase) — ไฟล์ใหม่ (2026-07-17)
+## Cloud Sync (Supabase) — ไฟล์ใหม่ (2026-07-17), เปลี่ยนเป็น Token Sync (2026-07-30)
 
-ต้นแบบซิงก์ Nexus vault ขึ้น Supabase แบบ snapshot + คีย์เข้าถึงต่อ vault
-(`Xxxx-Xxxx-Xxxx-Xxxx`) — ดูรายละเอียดพฤติกรรม/วิธีใช้ที่ [SYNC.md](SYNC.md)
+ซิงก์ Nexus vault ขึ้น Supabase แบบ snapshot + โทเคน 16 หลักต่อการ push
+(`1234-5678-9012-3456`, สร้างใหม่ทุกครั้ง) + login Google (Supabase Auth) +
+quota ตาม tier บัญชี — ดูรายละเอียดพฤติกรรม/วิธีใช้ที่ [SYNC.md](SYNC.md)
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/db/sync.js` | ~560 | ทั้งฟีเจอร์ฝั่ง main: `generateAccessKey` (crypto, 4×4 alphanumeric), config ใน `app_setting` (`sync:url`/`sync:anonKey`/`sync:nexus:<id>`), `rpc()` fetch wrapper (PostgREST, error taxonomy `{ok,code,error}` ไม่ throw), `serializeVault` (vault → JSON snapshot, lookup FK → natural key), `applySnapshot` (wipe-and-rebuild + id remap ใน transaction เดียว แล้ว `rebuildWikiIndex()`), ops: `syncStatus/syncPushVault/syncPullVault/syncLinkVault/syncCreateReadKey/unlinkVault` |
-| `src/renderer/sync.js` | ~210 | หน้าต่างซิงก์ 3 สถานะ (ตั้งค่าเซิร์ฟเวอร์ / ยังไม่เชื่อม / เชื่อมแล้ว), แผงคีย์แบบแสดงครั้งเดียว + คัดลอก, `syncErrToast` map error code → i18n toast; เข้าจากปุ่ม ☁ ใน vault-head (core.js); โหมด dev ข้ามหน้าตั้งค่าและแสดงป้าย dev server |
-| `src/db/sync-devserver.js` | ~140 | เซิร์ฟเวอร์ซิงก์ต้นแบบสำหรับ build dev (`!app.isPackaged`): HTTP in-process บน loopback, endpoint/กติกา auth/error body เหมือน migration ทุกอย่าง, เก็บ state เป็น `dev-sync-server.json` ข้าง novel-manager.db; `ensureDevSyncServer()` เริ่ม lazy ครั้งเดียวต่อโปรเซส |
-| `supabase/migrations/20260717000000_dracondex_sync_prototype.sql` | ~200 | ฝั่งเซิร์ฟเวอร์ทั้งหมด: ตาราง `sync_vault`/`sync_key` (เก็บ sha-256 ของคีย์), RLS ล็อกไม่มี policy, RPC SECURITY DEFINER 5 ตัว (`sync_create_vault/push/pull/create_read_key/vault_status`) |
+| `src/db/sync.js` | ~1005 | ทั้งฟีเจอร์ฝั่ง main: config ใน `app_setting` (`sync:url`/`sync:anonKey`/`google:refreshToken`/`sync:slotMap`), Google login (`syncGoogleLogin/Logout/AuthStatus` — PKCE + loopback ผ่าน `src/db/oauth-loopback.js` ที่ใช้ร่วมกับ Google Drive Backup, access-token refresh อัตโนมัติ), `generateToken` (crypto, 16 หลัก), `rpc()` fetch wrapper (แนบ Bearer access-token เมื่อ login แล้ว, error taxonomy `{ok,code,error}` ไม่ throw), `serializeVault(nexusId, moduleIds?)` (2026-07-30: เพิ่ม `moduleIds` optional — scope ทุกคิวรีจาก `m.nexus_ref=?` เป็น `m.id IN (...)`, ตารางระดับ vault-global อย่าง relations/notes ถูกข้ามเมื่อ scope ผ่าน `allGlobal()`), `collectModuleSubtreeIds(nexusId, moduleId)` (เดินต้นไม้ `parent_id` ในหน่วยความจำ ไม่ใช้ SQL recursive CTE), `applySnapshotCore(nexusId, payload, {wipe, updateNexusMeta, reparentRootTo})` (แกนกลางที่ `applySnapshot`/`importModuleSnapshot` เรียกใช้ร่วมกัน), `applySnapshot` (wipe-and-rebuild ทั้ง nexus เหมือนเดิม, เรียก core ด้วย `wipe:true`), `importModuleSnapshot(nexusId, parentModuleId, payload)` (ใหม่ — merge module subtree เข้า nexus แบบเพิ่มเข้าไปเท่านั้น ไม่ล้างของเดิม, ใช้โดย `src/db/db-transfer.js`), ops: `syncStatus/syncPushVault/syncPullVault/syncPullByToken/syncDeleteUpload` (คืนรายการ "ช่องอัปโหลด" ของบัญชี ไม่ใช่ช่องเดียวอีกต่อไป) |
+| `src/renderer/sync.js` | ~230 | หน้าต่างซิงก์หลายสถานะ (ตั้งค่าเซิร์ฟเวอร์ / ยังไม่ login / login แล้ว—รายการช่องอัปโหลด), แผงโทเคนแบบแสดงครั้งเดียว + คัดลอก, ช่องกรอกโทเคนพร้อม sub-flow เผยรหัสผ่านเมื่อเจอ `bad_password`, `syncErrToast` map error code → i18n toast; เข้าจากปุ่ม ☁ ใน vault-head (core.js); โหมด dev ข้ามหน้าตั้งค่าและแสดงป้าย dev server |
+| `src/db/sync-devserver.js` | ~230 | เซิร์ฟเวอร์ซิงก์จำลองสำหรับ build dev (`!app.isPackaged`): HTTP in-process บน loopback, endpoint/กติกา auth/tier-quota/expiry/lockout เหมือน migration ใหม่ทุกอย่าง, bearer token รูปแบบ `<uid>:<tier>` (login จำลองฝั่ง `sync.js` ไม่ผ่าน `/auth/*` จริง), เก็บ state เป็น `dev-sync-server.json` ข้าง novel-manager.db; `ensureDevSyncServer()` เริ่ม lazy ครั้งเดียวต่อโปรเซส |
+| `supabase/migrations/20260717000000_dracondex_sync_prototype.sql` | ~200 | migration เดิม (ตาราง/ฟังก์ชันคีย์ถาวรถูก `drop` ทิ้งทั้งหมดโดย migration ถัดไป — คงไฟล์นี้ไว้เพราะเคย apply แล้ว ห้ามแก้ไข) |
+| `supabase/migrations/20260730000000_dracondex_token_sync.sql` | ~250 | Token Sync จริง: ตาราง `sync_account(owner_id, tier)`, คอลัมน์ใหม่บน `sync_vault` (`owner_id`/`token_hash`/`password_hash`/`expires_at`/`pull_fail_count`/`pull_locked_until`, ไม่ unique ต่อ owner อีกต่อไป — หลายแถวต่อบัญชีได้ตาม quota), RPC SECURITY DEFINER 5 ตัว (`token_sync_push/status/delete/pull_own/pull_by_token`), helper `_sync_tier/_sync_max_bytes/_sync_max_slots` (free 1 ช่อง/10MB, pro 3 ช่อง/20MB) |
 | `docs/SYNC.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ |
 
-ไฟล์เดิมที่แตะ: `main.js` (+8 handler `sync:*`), `preload.js` (+namespace
-`api.sync`), `database.js` (re-export `src/db/sync.js`), `index.html`
-(script tag `src/renderer/sync.js`), `src/renderer/core.js` (ปุ่ม ☁ ใน
-vault-head), `src/renderer/i18n.js` (+41 คีย์ `sync*` ครบ 18 locale),
-`style.css` (block `.sync-*`)
+ไฟล์เดิมที่แตะ: `main.js` (`sync:*` handler เปลี่ยนชุด — เพิ่ม
+`googleLogin/googleLogout/authStatus/pullByToken/deleteUpload`, ตัด
+`link/createReadKey/unlink`), `preload.js` (`api.sync` namespace ตามชุดใหม่),
+`css/builder.css` (เพิ่ม `.sync-upload-row`/`.sync-upload-actions`/
+`.sync-tag-chip`), `src/renderer/i18n.js` (คีย์ `sync*` ชุดใหม่ครบ 18 locale
+แทนที่ชุดคีย์ระบบคีย์ถาวรเดิม)
+
+## Google Drive Backup — ไฟล์ใหม่ (2026-07-30)
+
+สำรอง layout profile และ/หรือไฟล์ฐานข้อมูล .ddx ไปยังโฟลเดอร์ appdata ของ
+Google Drive ผู้ใช้ — login แยกอิสระจาก Cloud Sync — ดูรายละเอียดที่
+[DRIVE.md](DRIVE.md)
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `src/db/oauth-loopback.js` | ~55 | ดึงออกจาก `src/db/sync.js` (ไม่มีการเปลี่ยนพฤติกรรม): `makePkcePair()` + `runOAuthLoopback(buildAuthUrl, {timeoutMs})` — เซิร์ฟเวอร์ loopback ชั่วคราวบน `127.0.0.1` ที่รับ redirect ของ authorization code, คืน `{code, redirectUri}`; ใช้ร่วมกันทั้ง Cloud Sync (`sync.js`) และ Google Drive Backup (`drive.js`) |
+| `src/db/drive.js` | ~450 | ทั้งฟีเจอร์ฝั่ง main: config ใน `app_setting` (`drive:clientId`/`drive:clientSecret`/`drive:refreshToken`/`drive:email`/`drive:autoBackup`/`drive:backupLayout`/`drive:backupDdx`/`drive:backupLog`/`drive:lastBackupAt`), Google OAuth ตรงกับ Google (ไม่ผ่าน Supabase) ผ่าน `oauth-loopback.js`, token refresh ตรงที่ `oauth2.googleapis.com`, Drive API v3 บน `appDataFolder` เท่านั้น (`driveFindFile`/`driveUpsertFile`/`driveDownloadFile`/`driveGetQuota`, multipart upload ตาม RFC 2387), ops: `driveBackupNow`/`driveRestoreLayoutProfile`/`driveRestoreDatabase` (reuse `exportDatabaseTo`/`importDatabaseMerge` จาก `import-merge.js` โดยตรง), `driveGetBackupLog()` (2026-07-30, ใหม่ — getter ตัวแรกของ `drive:backupLog` ที่เขียนไว้อยู่แล้วแต่ไม่เคยมีใครอ่านกลับ), layout-slot ops (2026-07-30, ใหม่ — Setting window User profile): `driveListLayoutSlots`/`driveSaveLayoutSlot`/`driveRestoreLayoutSlot`/`driveDeleteLayoutSlot` เก็บลง appdata **คนละไฟล์** กับ auto-backup (`LAYOUT_SLOTS_FILE = 'dracondex-layout-slots.json'` แยกจาก `LAYOUT_FILE` เดิม) เพื่อไม่ให้ auto-backup รายชั่วโมงเขียนทับรายการ slot ที่ตั้งชื่อไว้ |
+| `src/db/drive-devserver.js` | ~200 | เซิร์ฟเวอร์ Drive จำลองสำหรับ build dev: HTTP in-process บน loopback, endpoint รูปแบบเดียวกับ Drive API v3 จริง (about/files list/create/update/get) รวมถึง multipart parsing ด้วย Buffer (ไม่ใช่ string) เพื่อไม่ทำลายไฟล์ .ddx ไบนารี, จำลองโควตาผ่าน env var `DDX_DEV_DRIVE_QUOTA_PCT`, เก็บ state เป็น `dev-drive-server.json` ข้าง novel-manager.db |
+| `docs/DRIVE.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ |
+
+ไฟล์เดิมที่แตะ: `main.js`/`preload.js` (namespace `drive:*`/`api.drive` ใหม่
++ layout-slot/backup-log channels ใหม่ 2026-07-30), `database.js`
+(re-export `src/db/drive.js`), `index.html` (script tag
+`src/renderer/drive.js`), `src/renderer/core/boot.js`
+(`initDriveAutoBackup()` ใน `init()`), `css/builder.css` (เพิ่ม
+`.drive-bar`/`.drive-bar-fill`), `src/renderer/i18n.js` (คีย์
+`drive*`/`prefs_backup` ใหม่ครบ 18 locale). **2026-07-30**: หน้าตั้งค่านี้
+ย้ายจาก Preferences panel (`PREFS_SECTIONS`+`'backup'`) ไปเป็นหน้า
+**BackupData** ใน Setting window ใหม่ — `prefsBackupSectionHtml()` ถูก
+เปลี่ยนชื่อเป็น `settingBackupPageHtml()` ลงทะเบียนผ่าน
+`registerSettingPage('appdata','backup', ...)` แทน (ดูหัวข้อ "Setting
+Window" ด้านล่าง)
+
+## Firebase Version Notice — ไฟล์ใหม่ (2026-07-30)
+
+แจ้งเตือนเมื่อมีเวอร์ชันใหม่ (ไม่ใช่ auto-updater) — ดูรายละเอียดที่
+[UPDATE.md](UPDATE.md)
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `src/db/update.js` | ~90 | `checkForUpdate()` (อ่าน Firestore REST doc สาธารณะ 1 ชิ้น, เช็ก login ผ่าน `syncAuthStatus()`/`driveStatus()`, เปรียบเทียบเวอร์ชันแบบ semver-ย่อ, ไม่ throw เด็ดขาด), `dismissUpdate`/`openUpdateDownload`; โหมด dev ไม่มี mock server แยก — ใช้ env var `DDX_DEV_UPDATE_VERSION` บังคับเวอร์ชัน "ล่าสุด" จำลอง |
+| `src/renderer/update.js` | ~30 | `initVersionCheck()` (เรียกจาก boot.js ครั้งเดียว, fire-and-forget) + modal แสดงเวอร์ชันใหม่/release notes/ปุ่มดาวน์โหลด+เตือนภายหลัง |
+| `docs/UPDATE.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ |
+
+ไฟล์เดิมที่แตะ: `main.js`/`preload.js`/`database.js` (namespace `update:*`
+ใหม่), `index.html` (script tag `src/renderer/update.js`),
+`src/renderer/core/boot.js` (`initVersionCheck()` ใน `init()`),
+`src/renderer/i18n.js` (คีย์ `update*` ใหม่ครบ 18 locale)
+
+## Github Sandboxed Extensions — ไฟล์ใหม่ (2026-07-30)
+
+ดาวน์โหลด extension จาก GitHub ที่ประกาศตารางฐานข้อมูลของตัวเอง รันใน
+หน้าต่างแยกที่ถูกจำกัดสิทธิ์ — ดูรายละเอียดที่ [EXTENSIONS.md](EXTENSIONS.md)
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `src/db/extension.js` | ~290 | manifest validator (identifier whitelist ใหม่ทั้งหมด — `EXT_ID_RE`/`EXT_TABLE_RE`/`EXT_COLUMN_RE`/`FULL_TABLE_RE`, จำกัดชนิดคอลัมน์แค่ TEXT/INTEGER/REAL), `extensionInstall`/`extensionUninstall`/`extensionList`/`extensionGetById` (ดาวน์โหลดทีละไฟล์จาก `raw.githubusercontent.com`, เขียนไฟล์+DB แบบ transaction, ล้างทิ้งถ้าล้มเหลวกลางทาง), `extApiQuery/Insert/Update/Delete/GetSchema` (ผูก ownership จาก `(extension_ref, local_name)` เสมอ ไม่มี raw-SQL passthrough) |
+| `preload-ext.js` (repo root) | ~20 | preload แยกต่างหากสำหรับหน้าต่าง extension เท่านั้น — expose แค่ `window.extApi.table.*`, ไม่มี `window.api` เลย |
+| `docs/EXTENSIONS.md` | — | คู่มือวิธีใช้ + หลักการทำงาน + ข้อจำกัดด้านความปลอดภัยแบบตรงไปตรงมา |
+
+ไฟล์เดิมที่แตะ: `src/db/schema/ddl.js` (ตาราง `extension`/`extension_table`
+ใหม่), `main.js` (`createExtensionWindow`/`extensionWindows` map, namespace
+`extension:*` ผ่าน `h()` ปกติ + `extapi:table:*` ผ่าน raw `ipcMain.handle`
+เพราะต้องอ่าน `event.sender`), `preload.js` (เพิ่มแค่ `extension:*` —
+**ไม่แตะ** `extApi`), `database.js`, `src/renderer/extension.js` (ใหม่ —
+ฟอร์มติดตั้ง + รายการ extension), `index.html` (script tag), `package.json`
+(`build.files` +`preload-ext.js`), `src/renderer/i18n.js` (คีย์
+`extension*`/`prefs_extension` ใหม่ครบ 18 locale, +`extensionStop` 2026-07-30),
+`.claude/skills/dracondex-file-arch/check-arch.mjs` (`ROOT_FILES`
++`preload-ext.js` — ไฟล์ root ที่ถูกต้องตามหลักการ ไม่ใช่ stray file).
+**2026-07-30**: หน้าฟอร์มติดตั้งย้ายจาก Preferences panel
+(`PREFS_SECTIONS`+`'extension'`) ไปเป็นหน้า **Extension** ใน Setting window
+ใหม่ (`prefsExtensionSectionHtml()` → `settingExtensionPageHtml()`,
+ลงทะเบียนผ่าน `registerSettingPage('extension','extension', ...)`) พร้อมปุ่ม
+Stop ใหม่ที่เรียก `extension:stop`/`extension:isRunning` ที่มีอยู่แล้วแต่ไม่
+เคยถูกเรียก และหน้า **Extension setting** ใหม่ (placeholder รอ manifest
+ประกาศ settings schema — ดูหัวข้อ "Setting Window")
+
+## Setting Window — แทนที่ Preferences panel เดิม (2026-07-30)
+
+Quick Setting popup ถูกตัดให้เหลือแค่ 4 อย่างตาม Plan.md + Setting window
+เต็มรูปแบบ 2 ชั้น (group → page) แทนที่ `PREFS_SECTIONS`/
+`openPreferencesPanel`/`prefsBodyHtml` เดิมทั้งหมด — พฤติกรรมละเอียดที่
+[SYSTEMS.md §Setting Window](SYSTEMS.md)
+
+| ไฟล์ | บรรทัด | รับผิดชอบ |
+|---|---|---|
+| `src/renderer/core/settings.js` | ~300 | (เปลี่ยน) `renderSettingsMenu()` ตัดเหลือ 4 อย่าง (ภาษา/name-mode/UI size/ปุ่มเปิด Setting window) + `quickThemeExtraHtml()`/`uiSizeOnlySliderHtml()` ใหม่; เก็บ `t/tr`, `setUiSetting()` (จุดเดียวที่ mutate `S.settings`), slider helper, theme-palette cache, `SHORTCUT_HELP`/`openShortcutsModal`/`replayGuideTour`/`setVersionLimit` (ย้ายไปแสดงใน Text&Size's Advanced reveal แทน) ไว้เหมือนเดิมเพราะ Setting window เรียกใช้ร่วม; ลบ `PREFS_SECTIONS`/`openPreferencesPanel`/`prefsBodyHtml`/theme-grid/language-preview/ui-size-advanced ทั้งหมด (ย้ายไป `setting-window.js`) |
+| `src/renderer/core/setting-window.js` | ~200 | ใหม่ — เชลล์ของ Setting window: `SETTING_GROUPS`/`registerSettingPage(group,page,fn)`/`openSettingWindow()`/`selectSettingPage()`/`renderSettingWindow()` (แทนที่ `PREFS_SECTIONS`/`selectPrefsSection`/`renderPreferencesPanel` เดิม), หน้า Workspace→Theme (ย้ายจาก `prefsThemeSectionHtml`) และ Workspace→Text&Size (รวมภาษา+ขนาด UI+ขนาดตัวอักษร, `applyAreaScales()`/`setAreaScale()` — override `--fsc` เฉพาะ container ของแต่ละพื้นที่) |
+| `src/renderer/core/tool-toggle.js` | ~85 | ใหม่ — หน้า Workspace→Tool toggle + gating จริง: `applyNavToggles()` (ซ่อน/โชว์ 4 ปุ่ม nav sidebar ผ่าน class `.tool-toggle-hidden`), `toggleNavSetting/toggleStatusSetting/toggleQuickExtra` (mutate `S.settings.{navToggles,statusToggles,quickExtras}`) |
+| `src/renderer/core/account.js` | ~140 | ใหม่ — หน้า User→Account (อ่าน `api.sync.authStatus/status` ตรงๆ ไม่มี backend ใหม่) และ User→User profile (layout slot manager เรียก `api.drive.*LayoutSlot*` ใหม่) |
+| `src/renderer/core/db-transfer.js` | ~110 | ใหม่ — หน้า Appdata→Database: list Nexus (`api.nexus.getAll`), module tree ต่อ Nexus แบบ expand (`api.module.getTree`), ปุ่ม export/import ทั้งระดับ Nexus และระดับ module เดี่ยว เรียก `api.db.export/importNexusFile`/`export/importModuleFile` ใหม่ — onclick ทุกจุดส่งแค่ id ไม่ฝัง name (กัน quote-escaping กรณีชื่อมี `'`) |
+| `src/db/db-transfer.js` | ~40 | ใหม่ — ห่อ `serializeVault`/`applySnapshot`/`collectModuleSubtreeIds`/`importModuleSnapshot` (จาก `src/db/sync.js`) ด้วย file I/O: `exportNexusFile`/`importNexusFile`/`exportModuleFile`/`importModuleFile` |
+| `test/module-transfer.test.mjs` | ~35 | ใหม่ — source-inspection test (แพทเทิร์นเดียวกับ `onboarding-tour.test.mjs` เพราะ `getDB()` ต้องการ Electron `app` จริง รันใน `node --test` ตรงๆ ไม่ได้) ยืนยันว่า `importModuleSnapshot` ไม่มีทาง wipe nexus ปลายทาง |
+
+ไฟล์เดิมที่แตะ: `index.html` (script tag ใหม่ 4 ไฟล์ข้างต้น + ลำดับหลัง
+`settings.js`), `src/renderer/core/state.js` (`loadUiSettings()` เพิ่ม
+default `quickExtras`/`navToggles`/`statusToggles`), `src/renderer/core/
+boot.js` (`applyNavToggles()`/`applyAreaScales()` เรียกครั้งเดียวหลัง
+`renderModuleRail()`), `src/renderer/core/router.js` (`updateStatusBar()`
+gate ทุก segment ด้วย `S.settings.statusToggles`), `src/renderer/sync.js`
+(`settingTokenSyncPageHtml()` ใหม่ — หน้า Appdata→TokenSync เป็นแค่ทางลัดเปิด
+`openSyncModal()` เดิม), `main.js`/`preload.js` (`db:export/importNexusFile`/
+`export/importModuleFile`, `drive:listLayoutSlots`/`saveLayoutSlot`/
+`restoreLayoutSlot`/`deleteLayoutSlot`/`getBackupLog` ใหม่), `database.js`
+(re-export `src/db/db-transfer.js`), `css/nav-hub.css` (`.tool-toggle-hidden`),
+`css/components.css` (`.setting-shell`/`.setting-sidebar`/`.setting-nav-*`/
+`.setting-content` ใหม่ — `.prefs-*` เดิมยังอยู่เพราะ Theme/Text&Size page
+reuse), `src/renderer/i18n.js` (คีย์ `setting*` ใหม่ 51 คีย์ครบ 18 locale)
 
 ---
 

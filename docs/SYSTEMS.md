@@ -492,30 +492,180 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   `IMPORT_DB_READONLY_NS` (preload.js) เพราะ folder CRUD ของ Director ไม่เคย
   ถูกบล็อกตอน read-only mode มาก่อน
 
-### Cloud Sync — Supabase (prototype, 2026-07-17)
+### Cloud Sync — Supabase Token Sync (2026-07-30, แทนที่ prototype เดิม)
 
 ซิงก์ Nexus vault ขึ้นคลาวด์แบบ **snapshot ทั้ง vault, last-write-wins** —
 เอกสารเต็ม (วิธีใช้ + หลักการทำงาน + ข้อจำกัด) อยู่ที่ [SYNC.md](SYNC.md)
 สรุปพฤติกรรม:
 
-- เข้าจากปุ่ม **☁** ใน vault-head (ข้าง ⇄) → หน้าต่างเดียว 3 สถานะ:
-  ตั้งค่าเซิร์ฟเวอร์ (URL + anon key, เก็บใน `app_setting`) → ยังไม่เชื่อม
-  (Push ครั้งแรก หรือกรอกคีย์เชื่อม vault บนคลาวด์ที่มีอยู่) → เชื่อมแล้ว
-  (สถานะ role/เวลาซิงก์, Push/Pull/สร้างคีย์อ่านอย่างเดียว/ยกเลิกการเชื่อม)
-- **คีย์เข้าถึง** รูปแบบ `Xxxx-Xxxx-Xxxx-Xxxx` (4×4 alphanumeric ≈95 bit)
-  สร้างฝั่งเครื่อง แสดงครั้งเดียว; เซิร์ฟเวอร์เก็บ sha-256 เท่านั้น;
-  role `owner` = push+pull, `read` = pull อย่างเดียว (push โดน `not_owner`)
+- เข้าจากปุ่ม **☁** ใน vault-head (ข้าง ⇄) → หน้าต่างเดียวหลายสถานะ: ยังไม่ตั้ง
+  ค่าเซิร์ฟเวอร์ → ตั้งค่าแล้วแต่ยัง**ไม่ login** (ต้อง login Google ก่อนถึงจะ
+  อัปโหลดได้) → login แล้ว (รายการช่องอัปโหลดของบัญชี + push/pull/delete +
+  ช่องกรอกโทเคนเพื่อดึงจากบัญชีอื่น)
+- **Login** ผ่าน Supabase Auth (Google provider) — PKCE flow มาตรฐาน: เปิด
+  เบราว์เซอร์ระบบไปหน้า consent ของ Google แล้วรับ redirect กลับผ่าน loopback
+  HTTP server ชั่วคราวบนเครื่อง (`http://127.0.0.1:<port>/callback`); dev build
+  ข้ามขั้นตอนนี้ทั้งหมดด้วยบัญชีจำลอง
+- **โทเคน 16 หลัก** (`1234-5678-9012-3456`) สร้างใหม่ทุกครั้งที่ push (ไม่ใช่
+  คีย์ถาวรเหมือนเดิม) — เซิร์ฟเวอร์เก็บ sha-256 เท่านั้น; รหัสผ่านต่อช่อง
+  (ไม่บังคับ) จำเป็นเฉพาะเวลาบัญชีอื่น (ไม่ใช่เจ้าของ) กรอกโทเคนมาดึงข้อมูล —
+  ผิด 8 ครั้งล็อกช่องนั้น 15 นาที
+- **Quota ตาม tier บัญชี** (`sync_account.tier`, ยังไม่มีระบบชำระเงินเชื่อมต่อ):
+  free = 1 ช่อง/10MB, pro = 3 ช่อง/20MB — เกินโควตาได้ error `quota_exceeded`;
+  แต่ละช่องหมดอายุ 72 ชม.หลัง push ล่าสุด (ตรวจแบบ check-on-read)
 - Push = serialize ทั้ง closure ของ vault (module tree ทุก kind + attribute/ui/
   tag + entity_relation + note) เป็น JSON ก้อนเดียว ยิงผ่าน RPC ฝั่ง main
   process; **ไม่รวม** module_version, import_file, wiki_link, legacy projects
+  (ตรรกะ serialize/apply ไม่เปลี่ยนจากต้นแบบเดิม)
 - Pull = ยืนยันก่อน แล้ว **ล้างเนื้อหา vault ในเครื่องและสร้างใหม่จาก snapshot**
   พร้อม remap id (`entity_relation` keys, `linker_key` ของ sketch pin /
   design node, `mapModule`/`timelineModule` ของ Wanderer) แล้ว rebuild
-  wiki index; ชื่อ vault ในเครื่องคงเดิม (UNIQUE)
+  wiki index; ชื่อ vault ในเครื่องคงเดิม (UNIQUE); เจ้าของบัญชีดึงช่องตัวเองได้
+  โดยไม่ต้องใช้โทเคนเลย
 - ฝั่งเซิร์ฟเวอร์: ตาราง RLS ล็อกสนิท — ทางเข้าเดียวคือ RPC SECURITY DEFINER
-  5 ตัว, error ส่งกลับเป็น code (`bad_key`/`not_owner`/`too_large`) แสดงเป็น toast
-- ตรวจแล้วด้วย E2E (web-driver + mock RPC ครบ 5 ตัว): push→link→pull ข้อมูล
-  ครบและ remap ถูก, คีย์ read ถูกกัน push, คีย์ผิด/ฟอร์แมตผิดถูกปฏิเสธ
+  5 ตัว (`token_sync_push/status/delete/pull_own/pull_by_token`), error ส่งกลับ
+  เป็น code (`not_authenticated`/`bad_token`/`bad_password`/`locked`/
+  `token_collision`/`no_upload`/`too_large`/`quota_exceeded`/`not_owner`)
+  แสดงเป็น toast
+- ตรวจแล้วด้วย E2E ผ่าน mock RPC ใน `sync-devserver.js` (login จำลอง 2 บัญชี):
+  push→status→delete, push พร้อมรหัสผ่าน→อีกบัญชี pull ด้วยโทเคน→ถูกขอรหัสผ่าน
+  →ผิดครบ 8 ครั้ง→ล็อก, ข้อมูล remap ถูกต้องหลัง pull สำเร็จ (ตรรกะ remap เดิม
+  ไม่เปลี่ยน)
+
+### Cloud Sync — Google Drive Backup (2026-07-30)
+
+สำรอง "layout profile" (ธีม/ภาษา/ขนาด UI) และ/หรือไฟล์ฐานข้อมูล .ddx ไปยัง
+โฟลเดอร์ appdata ของ Google Drive ผู้ใช้ — เอกสารเต็มอยู่ที่
+[DRIVE.md](DRIVE.md) สรุปพฤติกรรม:
+
+- **แยก login อิสระจาก Cloud Sync (Supabase) โดยเจตนา** — คุย
+  `accounts.google.com`/`oauth2.googleapis.com` ตรงๆ ไม่ผ่าน Supabase เลย
+  เพราะ Supabase Auth ไม่รีเฟรช provider token ให้อยู่ดี การขอ scope
+  `drive.appdata` ผ่าน relay จึงไม่ประหยัดอะไร แต่จะบังคับผู้ใช้ Cloud Sync
+  ทุกคนยินยอมสิทธิ์ Drive ที่ไม่ได้ขอ
+- เข้าจากหน้า **BackupData** ใน Setting window (Appdata section — ดูหัวข้อ
+  "Setting Window" ด้านล่าง) — เดิมอยู่ใน Preferences panel เก่า
+  (`PREFS_SECTIONS`) ซึ่งถูกแทนที่ทั้งหมดแล้ว (2026-07-30, ดูหัวข้อ Setting
+  Window)
+- มีลิสต์ **ประวัติการสำรองข้อมูล** (backup history, ล่าสุด 20 รายการ) ต่อจาก
+  สถานะ Drive เดิม — อ่านจาก `app_setting['drive:backupLog']` ที่เขียนไว้อยู่
+  แล้วแต่ไม่เคยมีใครอ่านกลับมาก่อนหน้านี้ (`driveGetBackupLog()`)
+- เชื่อมต่อครั้งเดียว (PKCE + loopback redirect, ใช้ helper ร่วมกับ Cloud Sync
+  จาก `src/db/oauth-loopback.js`) → เลือกอย่างน้อย 1 อย่าง (layout profile
+  และ/หรือ .ddx เป็น opt-in อิสระตามคำที่ Plan.md ใช้ "หากผู้ใช้ต้องการ") →
+  สำรองด้วยมือหรือเปิด auto-backup ทุก 1 ชั่วโมง (timer อยู่ฝั่ง renderer
+  เพราะ layout profile มีอยู่ใน localStorage เท่านั้น)
+- .ddx backup/restore **reuse** `exportDatabaseTo`/`importDatabaseMerge` เดิม
+  ทั้งหมด ไม่มีกลไกใหม่ — กู้คืนเป็นการ **ผสาน (merge)** ไม่ใช่ล้างข้อมูลเดิม
+  (ต่างจาก Cloud Sync's pull-by-token ที่ล้างข้อมูลปลายทาง)
+- แถบสถานะพื้นที่ Drive เตือนที่ ≥90% (near_full) และบล็อกการสำรองข้อมูลที่
+  100% (full) ก่อนเรียก API อัปโหลดใดๆ
+- ตรวจแล้วด้วย E2E ผ่าน mock ใน `drive-devserver.js`: เชื่อมต่อ→เช็กโควตา
+  (บังคับ near_full/full ผ่าน env var `DDX_DEV_DRIVE_QUOTA_PCT`)→สำรอง
+  layout+ .ddx→กู้คืน layout (ตรงกัน)→กู้คืนฐานข้อมูลจริงครบวงจร (export→
+  upload multipart→download→importDatabaseMerge, ตรวจด้วย `nexus.getAll()`
+  ก่อน/หลัง)
+
+### Cloud Sync — Firebase Version Notice (2026-07-30)
+
+แจ้งเตือนเมื่อมีเวอร์ชันใหม่ **ไม่ใช่ auto-updater** — เอกสารเต็มที่
+[UPDATE.md](UPDATE.md) สรุปพฤติกรรม:
+
+- อ่านเอกสาร Firestore สาธารณะ 1 ชิ้นเดียว
+  (`public_config/latest_version` — version/notes/url) ผ่าน REST ตรงๆ
+  ไม่มี firebase SDK, ไม่ต้องใช้ credential (rule เป็น public-read)
+- แสดงเฉพาะผู้ใช้ที่ login เข้า Cloud Sync (Supabase) **หรือ** Google Drive
+  Backup อย่างใดอย่างหนึ่ง (ยังไม่มีระบบบัญชีรวมศูนย์)
+- `checkForUpdate()` ไม่ throw เด็ดขาด — เน็ตล่ม/ยังไม่ตั้งโปรเจกต์ Firebase
+  จะไม่มี error toast ทุกครั้งที่เปิดแอป
+- กด "ดาวน์โหลด" แค่เปิดเบราว์เซอร์ไปหน้าดาวน์โหลด ไม่ติดตั้งอัตโนมัติ; กด
+  "เตือนภายหลัง" จะจำเวอร์ชันนั้นไว้ไม่ให้เตือนซ้ำ (`app_setting['update:
+  seenVersion']`)
+- ตรวจแล้วด้วย E2E ผ่าน env var `DDX_DEV_UPDATE_VERSION` บังคับเวอร์ชัน
+  "ล่าสุด" จำลอง: ยังไม่ login→ไม่แจ้ง, login แล้ว→แจ้ง, กดเตือนภายหลัง→ไม่
+  แจ้งซ้ำสำหรับเวอร์ชันเดิม
+
+### Cloud Sync — Github Sandboxed Extensions (2026-07-30)
+
+ดาวน์โหลด "extension" จาก GitHub repo ที่ประกาศตารางฐานข้อมูลของตัวเอง รันใน
+หน้าต่างแยกที่ถูกจำกัดสิทธิ์จริงจัง (ไม่ใช่ stub) — เอกสารเต็มที่
+[EXTENSIONS.md](EXTENSIONS.md) สรุปพฤติกรรม:
+
+- แต่ละ extension มี manifest (`dracondex-extension.json`) ประกาศไฟล์และ
+  ตาราง (คอลัมน์ TEXT/INTEGER/REAL เท่านั้น) — ตรวจสอบเข้มงวดก่อนเขียนอะไรลง
+  ดิสก์/ฐานข้อมูล (identifier whitelist ใหม่ทั้งหมด เพราะไม่มี prepared-
+  statement parameter ตัวไหน bind ชื่อ table/column ได้)
+- รันในหน้าต่าง `BrowserWindow` แยก ได้ preload คนละไฟล์ (`preload-ext.js`)
+  **ไม่มี `window.api` เลย** — เข้าถึงข้อมูลได้แค่ `window.extApi.table.*`
+  ที่ผูก ownership กับตัวหน้าต่างเอง (`BrowserWindow.fromWebContents`) ไม่ใช่
+  จาก argument ที่ extension ส่งมา ไม่มี raw-SQL passthrough ใดๆ
+- **ข้อจำกัดที่ยอมรับไว้ตรงๆ**: ไม่มี OS-level Chromium sandbox จริง เพราะ
+  `main.js` ตั้ง `--no-sandbox` ทั้งโปรเซสไว้ก่อนหน้านี้แล้ว (เพื่อ portable
+  build) — ทุกหน้าต่างรวมถึงหน้าต่าง extension ได้รับผลกระทบเหมือนกัน; โค้ด
+  จาก GitHub ถูกเชื่อถือทันทีที่ติดตั้ง ไม่มี code review/signing
+- ดาวน์โหลดทีละไฟล์ผ่าน `raw.githubusercontent.com` (ไม่ใช่ zip, ไม่มี
+  dependency ใหม่) — ตรงตามแพทเทิร์น buffer-then-write ที่ `drive.js` ใช้อยู่
+  แล้ว
+- ตรวจแล้วด้วย E2E จริง: seed ข้อมูล extension 2 ตัวตรงในไฟล์ฐานข้อมูล
+  (ไม่ผ่าน network), เปิดหน้าต่าง extension จริง ให้ตัวมันเอง insert/query/
+  update/getSchema บนตารางตัวเอง (สำเร็จ), พยายามแตะตารางของอีก extension
+  (ถูกปฏิเสธ "not an owned table"), ยืนยันว่า `window.api` ไม่มีอยู่จริงใน
+  หน้าต่าง extension (`hasMainApi:false`)
+- ปุ่ม **Stop** (2026-07-30) — `extension:stop`/`extension:isRunning` ถูกต่อ
+  IPC ครบวงจรตั้งแต่แรกแต่ไม่มีใครเรียกใช้; ตอนนี้หน้า Extension ใน Setting
+  window เช็ก `isRunning` ต่อแถวแล้วสลับปุ่ม Launch/Stop ให้ตรงสถานะจริง
+
+### Setting Window (2026-07-30)
+
+แทนที่ Preferences panel เดิมทั้งหมด — เอกสารพฤติกรรมเก่าที่อ้าง
+`PREFS_SECTIONS`/`openPreferencesPanel` ในหัวข้อ Cloud Sync ด้านบนไม่ตรงกับ
+โค้ดปัจจุบันแล้ว โครงสร้างใหม่คือ 2 ชั้น (group → page):
+
+- **Quick Setting popup** (`renderSettingsMenu`, `src/renderer/core/
+  settings.js`) ถูกตัดให้เหลือแค่ 4 อย่างตาม Plan.md: เปลี่ยนภาษา, สลับโหมด
+  ชื่อโมดูล (Unique/Classic), ขนาด UI, ปุ่ม "เปิดการตั้งค่า" — ธีม/ขนาดตัวอักษร/
+  version limit/help ย้ายไป Setting window แล้ว ผู้ใช้เลือกเปิดกลับมาแสดงใน
+  popup ได้ผ่านหน้า Tool toggle (ดูล่าง)
+- **Setting window** (`src/renderer/core/setting-window.js`, floating panel
+  แทนที่ `#prefs-panel` เดิม) — sidebar 2 ชั้น: **Workspace** (Theme/
+  Text&Size/Tool toggle) → **User** (Account/User profile) → **Appdata**
+  (TokenSync/Database/BackupData) → **Extension** (Extension/Extension
+  setting) แต่ละหน้าลงทะเบียนตัวเองผ่าน `registerSettingPage(group, page, fn)`
+  จากไฟล์เจ้าของฟีเจอร์นั้น (เหมือนที่ `drive.js`/`extension.js` เคยทำกับ
+  Preferences panel เดิม) ไม่รวมศูนย์ไว้ที่ไฟล์เดียว
+- **Text&Size** รวมเปลี่ยนภาษา + ขนาด UI + ขนาดตัวอักษรไว้หน้าเดียว, ปุ่ม
+  Advanced เพิ่มตัวเลื่อนขนาดแยกตามพื้นที่ (left panel/nav sidebar/builder) —
+  ทำโดย override ตัวแปร CSS `--fsc` เฉพาะจุด (element ของพื้นที่นั้นเอง) ซึ่ง
+  กฎ `calc(Npx * var(--fsc,1))` กว่า 300 จุดในโปรเจกต์ใช้อยู่แล้วรับผลอัตโนมัติ
+  โดยไม่ต้องแก้ CSS ที่อื่นเพิ่ม; Advanced เดียวกันนี้ยังเก็บ version limit และ
+  ปุ่ม shortcuts/replay tour ที่ย้ายมาจาก popup เดิมด้วย
+- **Tool toggle** — คุมว่าอะไรโชว์ที่ไหนใน 3 จุด: popup extras (theme/account
+  status/user profile — ปิดไว้เป็น default), ปุ่มด่วน nav sidebar (import/
+  export/hashtag/colors — เปิดเป็น default, ซ่อนด้วย class `.tool-toggle-
+  hidden`), รายการใน status bar (ชื่อ vault/breadcrumb/word count/save state
+  — เปิดเป็น default) ทั้งหมดเก็บใน `S.settings.{quickExtras,navToggles,
+  statusToggles}` (localStorage, เทียบชั้นเดียวกับ theme/nameMode)
+- **Account** อ่านสถานะ login ของ Cloud Sync (Supabase) ตรงๆ ไม่สร้างระบบ
+  บัญชีรวมศูนย์ใหม่ — badge ระดับบัญชีอ่านจาก `sync_account.tier` จริง (มีแค่
+  free/pro ในฐานข้อมูล ยังไม่มี "Team-Subscriber" ตามที่ Plan.md เขียนไว้ —
+  ข้อความส่วนนั้นคือเป้าหมายอนาคต ไม่ใช่ของที่มีจริงตอนนี้)
+- **User profile** — layout slot ตั้งชื่อได้ไม่จำกัดจำนวน เก็บใน Google Drive
+  appdata คนละไฟล์กับ auto-backup เดิม (`dracondex-layout-slots.json` แยกจาก
+  `dracondex-layout-profile.json`) เพื่อไม่ให้ auto-backup รายชั่วโมงเขียนทับ
+  รายการ slot ที่ผู้ใช้ตั้งชื่อไว้
+- **TokenSync** ในนี้เป็นแค่ทางลัด (แสดงชื่อ Nexus ที่เปิดอยู่ + ปุ่มเปิด
+  modal เดิมของ Cloud Sync) ไม่ได้ย้าย logic ทั้งหมดมาไว้ในหน้านี้ เพราะ Token
+  Sync ผูกกับ `S.nexus.id` แต่ Setting window ไม่ผูกกับ nexus ที่เปิดอยู่
+- **Database** — list Nexus ทั้งหมด, export/import ได้ทั้งระดับ Nexus และ
+  ระดับ module เดี่ยว (subtree) ใช้ snapshot format เดียวกับ Token Sync
+  (`serializeVault`/`applySnapshot` ใน `src/db/sync.js`, ขยาย
+  `moduleIds` param ใหม่ให้ scope ลงเฉพาะ module ได้) — import ระดับ module
+  เป็นการ**เพิ่มเข้าไป**เท่านั้น ไม่ล้าง Nexus ปลายทางเหมือน import ระดับ
+  Nexus (มี unit test คุมพฤติกรรมนี้ที่ `test/module-transfer.test.mjs`)
+- **Extension setting** — แสดงลิสต์ extension ที่ติดตั้งพร้อมข้อความ "ไม่มี
+  การตั้งค่า" ต่อรายการ เพราะ manifest (`dracondex-extension.json`) ยังไม่มี
+  ฟิลด์ประกาศ settings schema — เตรียมช่องไว้ให้ ยังไม่สร้าง UI จริงสำหรับ
+  schema ที่ยังไม่มีอยู่
 
 ---
 

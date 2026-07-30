@@ -62,6 +62,8 @@ async function init() {
   removeLegacyDirectorProjectButton();
   buildModuleSubNav();
   renderModuleRail();
+  applyNavToggles();
+  applyAreaScales();
   renderSettingsMenu();
   translateStaticChrome();
   renderProjectTabs();
@@ -99,6 +101,8 @@ async function init() {
     document.querySelectorAll('.kind-popup').forEach(d => d.remove());
   });
   bindSearch();
+  initDriveAutoBackup(); // fire-and-forget — must not block first paint
+  initVersionCheck();    // fire-and-forget — must not block first paint
   window.__splash?.finish();
 }
 

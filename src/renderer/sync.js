@@ -1,23 +1,26 @@
 'use strict';
-// Cloud Sync modal (Supabase prototype). One surface for everything:
-// server config (Supabase URL + anon key), first push (generates the owner
-// access key, shown ONCE), linking with an existing key, push/pull, and
-// read-only key creation. All network work happens in the main process via
-// api.sync.* — this file only renders and dispatches.
-
-const SYNC_KEY_RE = /^[A-Za-z0-9]{4}(-[A-Za-z0-9]{4}){3}$/;
+// Cloud Sync modal (Token Sync — Supabase). One surface for everything:
+// server config (Supabase URL + anon key), Google login, the account's
+// upload slots (push/pull/delete, quota by tier), and pulling a DIFFERENT
+// account's upload via its 16-digit token (+ password if the uploader set
+// one). All network work happens in the main process via api.sync.* — this
+// file only renders and dispatches.
 
 function syncErrToast(r) {
   const map = {
     no_config: 'syncErrNoConfig',
-    not_linked: 'syncErrBadKey',
-    already_linked: 'syncErrAlreadyLinked',
-    bad_key_format: 'syncErrBadKeyFormat',
-    bad_key: 'syncErrBadKey',
-    not_owner: 'syncErrNotOwner',
+    not_authenticated: 'syncErrNotAuthenticated',
+    bad_token: 'syncErrBadToken',
+    bad_password: 'syncErrBadPassword',
+    locked: 'syncErrLocked',
+    token_collision: 'syncErrServer',
+    no_upload: 'syncErrNoUpload',
     too_large: 'syncErrTooLarge',
+    quota_exceeded: 'syncErrQuotaExceeded',
+    not_owner: 'syncErrNotOwner',
     network: 'syncErrNetwork',
     auth: 'syncErrAuth',
+    login_timeout: 'syncErrLoginTimeout',
     bad_snapshot: 'syncErrServer',
   };
   toast(t(map[r?.code] || 'syncErrServer'), 'error');
@@ -28,38 +31,42 @@ function syncFmtTime(iso) {
   try { return new Date(iso).toLocaleString(); } catch (_) { return iso; }
 }
 
-function syncMaskKey(key) {
-  if (!key) return '';
-  return `${key.split('-')[0]}-••••-••••-••••`;
-}
-
-// One-time key panel (first push / new read key) — the only place the
-// plaintext ever appears.
-function syncKeyPanelHtml(key, labelKey) {
-  return `
-    <div class="fg"><label>${t(labelKey)}</label>
-      <div class="sync-key-row">
-        <code class="sync-key-code" id="sync-shown-key">${x(key)}</code>
-        <button class="btn btn-s btn-sm" onclick="syncCopyKey()">${t('syncCopy')}</button>
-      </div>
-    </div>
-    <div class="modal-hint">${I.info}<span>${t('syncKeyShownOnce')}</span></div>`;
+function syncFmtSize(bytes) {
+  if (!bytes && bytes !== 0) return '—';
+  return `${Math.max(1, Math.round(bytes / 1024))}KB`;
 }
 
 async function openSyncModal() {
   if (!S.nexus) return;
   const st = await api.sync.status(S.nexus.id);
   if (!st.dev && !st.configured) return syncRenderConfig();
-  if (!st.linked) return syncRenderUnlinked(st);
-  return syncRenderLinked(st);
+  if (!st.loggedIn) return syncRenderLoggedOut(st);
+  return syncRenderMain(st);
 }
+
+// Setting window → Appdata → TokenSync (Plan.md part1 #Setting). Token Sync
+// is per-open-Nexus (push/pull operate on S.nexus.id — see openSyncModal
+// above), while the Setting window itself isn't Nexus-scoped, so rather
+// than re-plumb the whole modal flow into a page-render function, this page
+// just launches the existing, already-working modal for whichever Nexus is
+// currently open.
+function settingTokenSyncPageHtml(){
+  if (!S.nexus) {
+    return `<div class="settings-label">${t('settingPageTokenSync')}</div>
+      <div class="modal-hint">${I.info}<span>${t('settingTokenSyncPickNexus')}</span></div>`;
+  }
+  return `<div class="settings-label">${t('settingPageTokenSync')}</div>
+    <div class="sync-status-row"><span>${t('syncTitle')}</span><b data-no-i18n>${x(S.nexus.name)}</b></div>
+    <button class="btn btn-p" onclick="openSyncModal()">☁ ${t('syncTitle')}</button>`;
+}
+registerSettingPage('appdata', 'tokensync', settingTokenSyncPageHtml);
 
 // Dev runs are pinned to the local prototype server — no Supabase config.
 function syncDevHintHtml(st) {
   return st.dev ? `<div class="modal-hint">${I.info}<span>${t('syncDevServer')}</span></div>` : '';
 }
 
-// --- state 1: server not configured (also reachable from the other states)
+// --- state: server not configured (also reachable from the other states)
 async function syncRenderConfig() {
   const cfg = await api.sync.getConfig();
   openModal(`☁ ${t('syncTitle')} — ${t('syncServerSettings')}`, `
@@ -82,53 +89,88 @@ async function syncSaveConfig() {
   openSyncModal();
 }
 
-// --- state 2: configured, vault not linked yet
-function syncRenderUnlinked(st = {}) {
+// --- state: configured, not logged in
+function syncRenderLoggedOut(st = {}) {
   openModal(`☁ ${t('syncTitle')}`, `
     ${syncDevHintHtml(st)}
-    <div class="modal-hint">${I.info}<span>${t('syncNotLinked')}</span></div>
-    <div class="fg"><label>${t('syncPush')}</label>
-      <div class="sync-hint">${t('syncPushNewHint')}</div>
-      <button class="btn btn-p" id="sync-push-btn" onclick="syncPushNow()">☁ ${t('syncPush')}</button>
-    </div>
-    <div class="fg"><label>${t('syncLinkTitle')}</label>
-      <div class="sync-key-row">
-        <input id="sync-link-key" placeholder="Xxxx-Xxxx-Xxxx-Xxxx" spellcheck="false">
-        <button class="btn btn-s" id="sync-link-btn" onclick="syncLinkSubmit()">${t('syncLinkBtn')}</button>
-      </div>
-    </div>
+    <div class="modal-hint">${I.info}<span>${t('syncLoggedOutHint')}</span></div>
     <div class="mfoot">
       ${st.dev ? '' : `<button class="btn btn-s" onclick="syncRenderConfig()">${t('syncServerSettings')}</button>`}
       <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-p" id="sync-login-btn" onclick="syncLoginNow()">☁ ${t('syncLoginGoogle')}</button>
     </div>`);
 }
 
-// --- state 3: linked
-function syncRenderLinked(st) {
-  const owner = st.role === 'owner';
-  const rows = [
-    [t('syncRole'), owner ? t('syncRoleOwner') : t('syncRoleRead')],
-    [t('syncCloudName'), x(st.remote?.name ?? st.cloudName ?? '—')],
-    [t('syncLastPush'), syncFmtTime(st.lastPushAt)],
-    [t('syncLastPull'), syncFmtTime(st.lastPullAt)],
-    [t('syncRemoteUpdated'), st.remote ? syncFmtTime(st.remote.snapshotAt) : (st.remoteError ? t('syncErrNetwork') : '—')],
-  ].map(([k, v]) => `<div class="sync-status-row"><span>${k}</span><b>${v}</b></div>`).join('');
+async function syncLoginNow() {
+  syncBtnBusy('#sync-login-btn', true);
+  const r = await api.sync.googleLogin();
+  syncBtnBusy('#sync-login-btn', false);
+  if (!r.ok) return syncErrToast(r);
+  toast(t('syncLoggedIn'), 'ok');
+  openSyncModal();
+}
 
-  openModal(`☁ ${t('syncTitle')}`, `
-    ${syncDevHintHtml(st)}
-    ${rows}
-    <div class="fg"><label>${t('syncAccessKey')}</label>
+async function syncLogoutNow() {
+  await api.sync.googleLogout();
+  toast(t('syncLoggedOut'), 'ok');
+  openSyncModal();
+}
+
+// --- state: logged in — upload slots + push + enter-token
+function syncUploadRowHtml(u, st) {
+  const isThis = u.vaultId === st.mappedVaultId;
+  return `
+    <div class="sync-upload-row${isThis ? ' sync-upload-row-mine' : ''}">
+      <div>
+        <b>${x(u.name)}</b>${isThis ? `<span class="sync-tag-chip">${t('syncThisNexus')}</span>` : ''}${u.hasPassword ? ' 🔒' : ''}
+        <div class="sync-hint">${syncFmtSize(u.sizeBytes)} · ${t('syncExpires')} ${syncFmtTime(u.expiresAt)}</div>
+      </div>
+      <div class="sync-upload-actions">
+        <button class="btn btn-s btn-sm" onclick="syncPullOwnNow('${x(u.vaultId)}')">${t('syncPullIn')}</button>
+        <button class="btn btn-d btn-sm" onclick="syncDeleteUploadNow('${x(u.vaultId)}')">${t('delete')}</button>
+      </div>
+    </div>`;
+}
+
+function syncTokenPanelHtml(rawToken) {
+  const display = rawToken.replace(/(.{4})(?=.)/g, '$1-');
+  return `
+    <div class="fg"><label>${t('syncNewToken')}</label>
       <div class="sync-key-row">
-        <code class="sync-key-code">${x(syncMaskKey(st.accessKey))}</code>
-        <button class="btn btn-s btn-sm" onclick="syncCopyKey('${x(st.accessKey)}')">${t('syncCopy')}</button>
+        <code class="sync-key-code" id="sync-shown-token">${x(display)}</code>
+        <button class="btn btn-s btn-sm" onclick="syncCopyToken()">${t('syncCopy')}</button>
       </div>
     </div>
-    <div id="sync-newkey-area"></div>
+    <div class="modal-hint">${I.info}<span>${t('syncTokenShownOnce')}</span></div>`;
+}
+
+function syncRenderMain(st) {
+  const rows = st.uploads.length
+    ? st.uploads.map((u) => syncUploadRowHtml(u, st)).join('')
+    : `<div class="modal-hint">${I.info}<span>${t('syncNoUploads')}</span></div>`;
+  const tierLabel = st.tier === 'pro' ? t('syncTierPro') : t('syncTierFree');
+
+  openModal(`☁ ${t('syncTitle')} — ${x(st.email || '')}`, `
+    ${syncDevHintHtml(st)}
+    <div class="sync-status-row"><span>${t('syncSlots')}</span><b>${st.uploads.length}/${st.maxSlots} (${tierLabel})</b></div>
+    ${rows}
+    <div id="sync-newtoken-area"></div>
+    <div class="fg"><label>${t('syncPush')}</label>
+      <div class="sync-hint">${t('syncPushHint')}</div>
+      <input id="sync-push-password" type="password" placeholder="${t('syncPasswordOptional')}">
+      <button class="btn btn-p" id="sync-push-btn" onclick="syncPushNow()">☁ ${t('syncPush')}</button>
+    </div>
+    <div class="fg"><label>${t('syncEnterToken')}</label>
+      <div class="sync-key-row">
+        <input id="sync-token-input" placeholder="1234-5678-9012-3456" spellcheck="false" oninput="syncFormatTokenInput(this)">
+      </div>
+      <div id="sync-token-password-area"></div>
+      <button class="btn btn-s" id="sync-token-btn" onclick="syncPullByTokenSubmit()">${t('syncPullBtn')}</button>
+    </div>
     <div class="mfoot">
-      <button class="btn btn-d" onclick="syncUnlinkNow()">${t('syncUnlink')}</button>
-      ${owner ? `<button class="btn btn-s" id="sync-readkey-btn" onclick="syncCreateReadKeyNow()">${t('syncReadKeyBtn')}</button>` : ''}
-      <button class="btn btn-s" id="sync-pull-btn" onclick="syncPullNow()">${t('syncPull')}</button>
-      ${owner ? `<button class="btn btn-p" id="sync-push-btn" onclick="syncPushNow()">${t('syncPush')}</button>` : ''}
+      ${st.dev ? '' : `<button class="btn btn-s" onclick="syncRenderConfig()">${t('syncServerSettings')}</button>`}
+      <button class="btn btn-s" onclick="syncLogoutNow()">${t('syncLogout')}</button>
+      <button class="btn btn-s" onclick="closeModal()">${t('cancel')}</button>
     </div>`);
 }
 
@@ -140,65 +182,59 @@ function syncBtnBusy(id, busy) {
   else if (b.dataset.label) b.textContent = b.dataset.label;
 }
 
-async function syncPushNow() {
-  syncBtnBusy('#sync-push-btn', true);
-  const r = await api.sync.push(S.nexus.id);
-  syncBtnBusy('#sync-push-btn', false);
-  if (!r.ok) return syncErrToast(r);
-  if (r.created) {
-    // First push: the owner key exists only here — show it once.
-    openModal(`☁ ${t('syncTitle')} — ${t('syncPushed')}`, `
-      ${syncKeyPanelHtml(r.accessKey, 'syncAccessKey')}
-      <div class="mfoot">
-        <button class="btn btn-p" onclick="openSyncModal()">OK</button>
-      </div>`);
-    toast(t('syncPushed'), 'ok');
-    return;
-  }
-  toast(t('syncPushed'), 'ok');
-  openSyncModal();
+function syncFormatTokenInput(el) {
+  const digits = el.value.replace(/[^0-9]/g, '').slice(0, 16);
+  el.value = digits.replace(/(.{4})(?=.)/g, '$1-').replace(/-$/, '');
 }
 
-async function syncPullNow() {
+async function syncPushNow() {
+  const password = q('#sync-push-password')?.value || '';
+  syncBtnBusy('#sync-push-btn', true);
+  const r = await api.sync.push(S.nexus.id, password || null);
+  syncBtnBusy('#sync-push-btn', false);
+  if (!r.ok) return syncErrToast(r);
+  toast(t('syncPushed'), 'ok');
+  await openSyncModal();
+  const area = q('#sync-newtoken-area');
+  if (area) area.innerHTML = syncTokenPanelHtml(r.token);
+}
+
+async function syncPullOwnNow(vaultId) {
   if (!(await uiConfirm(t('syncPullConfirm')))) return;
-  syncBtnBusy('#sync-pull-btn', true);
-  const r = await api.sync.pull(S.nexus.id);
-  syncBtnBusy('#sync-pull-btn', false);
+  const r = await api.sync.pull(S.nexus.id, vaultId);
   if (!r.ok) return syncErrToast(r);
   closeModal();
   toast(t('syncPulled'), 'ok');
   renderNexusHome();
 }
 
-async function syncLinkSubmit() {
-  const key = q('#sync-link-key').value.trim();
-  if (!SYNC_KEY_RE.test(key)) return toast(t('syncErrBadKeyFormat'), 'error');
-  syncBtnBusy('#sync-link-btn', true);
-  const r = await api.sync.link(S.nexus.id, key);
-  syncBtnBusy('#sync-link-btn', false);
+async function syncDeleteUploadNow(vaultId) {
+  if (!(await uiConfirm(t('syncDeleteConfirm')))) return;
+  const r = await api.sync.deleteUpload(vaultId);
   if (!r.ok) return syncErrToast(r);
-  toast(t('syncLinked'), 'ok');
+  toast(t('syncDeleted'), 'ok');
   openSyncModal();
 }
 
-async function syncCreateReadKeyNow() {
-  syncBtnBusy('#sync-readkey-btn', true);
-  const r = await api.sync.createReadKey(S.nexus.id);
-  syncBtnBusy('#sync-readkey-btn', false);
-  if (!r.ok) return syncErrToast(r);
-  const area = q('#sync-newkey-area');
-  if (area) area.innerHTML = syncKeyPanelHtml(r.readKey, 'syncReadKeyBtn');
-}
-
-function syncCopyKey(key) {
-  const v = key || q('#sync-shown-key')?.textContent || '';
-  if (!v) return;
-  navigator.clipboard.writeText(v).then(() => toast(t('syncKeyCopied'), 'ok'));
-}
-
-async function syncUnlinkNow() {
-  if (!(await uiConfirm(t('syncUnlinkConfirm')))) return;
-  await api.sync.unlink(S.nexus.id);
-  toast(t('syncUnlinked'), 'ok');
-  openSyncModal();
+async function syncPullByTokenSubmit() {
+  const token = (q('#sync-token-input')?.value || '').replace(/[^0-9]/g, '');
+  if (token.length !== 16) return toast(t('syncErrBadToken'), 'error');
+  const passwordInput = q('#sync-token-password-input');
+  const password = passwordInput ? passwordInput.value : '';
+  if (!(await uiConfirm(t('syncPullConfirm')))) return;
+  syncBtnBusy('#sync-token-btn', true);
+  const r = await api.sync.pullByToken(S.nexus.id, token, password || null);
+  syncBtnBusy('#sync-token-btn', false);
+  if (!r.ok) {
+    if (r.code === 'bad_password') {
+      const area = q('#sync-token-password-area');
+      if (area && !passwordInput) {
+        area.innerHTML = `<input id="sync-token-password-input" type="password" placeholder="${t('syncPasswordPrompt')}">`;
+      }
+    }
+    return syncErrToast(r);
+  }
+  closeModal();
+  toast(t('syncPulled'), 'ok');
+  renderNexusHome();
 }

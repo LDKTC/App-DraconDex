@@ -19,6 +19,159 @@
 
 ---
 
+## 2026-07-30 — Part 1 v4.0.0: Setting (Quick Setting popup + Setting window เต็มรูปแบบ)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/core/settings.js` (ตัด `renderSettingsMenu()`
+  เหลือ 4 อย่าง, ลบ `PREFS_SECTIONS`/`openPreferencesPanel`/`prefsBodyHtml`/
+  theme-grid/language-preview/ui-size-advanced ทั้งหมด), `src/renderer/core/
+  setting-window.js` (ใหม่ — เชลล์ Setting window 2 ชั้น + หน้า
+  Theme/Text&Size), `src/renderer/core/tool-toggle.js` (ใหม่ — หน้า Tool
+  toggle + `applyNavToggles()`), `src/renderer/core/account.js` (ใหม่ — หน้า
+  Account/User profile), `src/renderer/core/db-transfer.js` (ใหม่ — หน้า
+  Database), `src/db/db-transfer.js` (ใหม่ — export/import ระดับ
+  nexus/module), `src/db/sync.js` (`serializeVault` เพิ่ม param `moduleIds`,
+  `collectModuleSubtreeIds` ใหม่, แยก `applySnapshotCore` ออกจาก
+  `applySnapshot` แล้วเพิ่ม `importModuleSnapshot` ใหม่), `src/db/drive.js`
+  (layout-slot ops ใหม่ 4 ตัว + `driveGetBackupLog()`), `src/renderer/
+  drive.js` (`prefsBackupSectionHtml`→`settingBackupPageHtml` + ประวัติการ
+  สำรองข้อมูล), `src/renderer/extension.js`
+  (`prefsExtensionSectionHtml`→`settingExtensionPageHtml` + ปุ่ม Stop + หน้า
+  Extension setting), `src/renderer/sync.js` (`settingTokenSyncPageHtml`
+  ใหม่), `src/renderer/core/state.js` (`loadUiSettings()` เพิ่ม default
+  `quickExtras`/`navToggles`/`statusToggles`), `src/renderer/core/boot.js`
+  (`applyNavToggles()`/`applyAreaScales()`), `src/renderer/core/router.js`
+  (`updateStatusBar()` gate ด้วย `statusToggles`), `main.js`/`preload.js`
+  (`db:export/importNexusFile`/`export/importModuleFile`,
+  `drive:listLayoutSlots`/`saveLayoutSlot`/`restoreLayoutSlot`/
+  `deleteLayoutSlot`/`getBackupLog`), `database.js`, `index.html` (script tag
+  4 ไฟล์ใหม่), `css/nav-hub.css` (`.tool-toggle-hidden`), `css/
+  components.css` (`.setting-shell`/`.setting-sidebar`/`.setting-nav-*`),
+  `src/renderer/i18n.js` (คีย์ `setting*` ใหม่ 51 คีย์ครบ 18 locale),
+  `test/module-transfer.test.mjs` (ใหม่), `Plan.md` (ติ๊ก checkbox หมวด
+  Setting ทั้งหมด)
+- อะไรเปลี่ยน: Quick Setting popup ตัดเหลือแค่ 4 อย่างตาม Plan.md (ภาษา/
+  name-mode/ขนาด UI/ปุ่มเปิดการตั้งค่า) แทนที่ Preferences panel เดิมด้วย
+  Setting window เต็มรูปแบบ 2 ชั้น (Workspace/User/Appdata/Extension × หน้า
+  ย่อย) — Tool toggle คุมว่าอะไรโชว์กลับมาที่ popup/nav sidebar/status bar
+  ได้ Account/User profile ใหม่ (layout slot หลายอันเก็บใน Drive appdata
+  แยกไฟล์จาก auto-backup) Database ใหม่ (export/import ทั้งระดับ nexus และ
+  ระดับ module เดี่ยว reuse snapshot format จาก Token Sync)
+- ทำไม: Plan.md ส่วน `#### Setting` (Part 1 v4.0.0) — Cloud Sync Function
+  เสร็จแล้วก่อนหน้านี้ Setting เป็นรายการถัดไปที่ยังไม่ทำ
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Setting Window (ใหม่) + แก้อ้างอิง
+  Preferences panel เดิมในหัวข้อ Google Drive Backup, docs/FILES.md
+  §Setting Window (ใหม่) + แก้แถว `sync.js`/`drive.js` + แก้ "ไฟล์เดิมที่แตะ"
+  ของ Drive/Extension, docs/DRIVE.md (§1.3b layout slot ใหม่, §2.5 แก้),
+  docs/EXTENSIONS.md (§1.2 ปุ่ม Stop, §1.2b Extension setting ใหม่)
+
+## 2026-07-30 — Part 1 v4.0.0: Cloud Sync Function — Github (sandboxed extensions)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/extension.js` (ใหม่), `preload-ext.js` (ใหม่, repo root),
+  `src/db/schema/ddl.js` (ตาราง `extension`/`extension_table`), `main.js`
+  (createExtensionWindow, extensionWindows map, `extension:*` +
+  `extapi:table:*` IPC), `preload.js` (`extension:*` เท่านั้น — ไม่แตะ
+  `extApi`), `database.js`, `src/renderer/extension.js` (ใหม่),
+  `src/renderer/core/settings.js` (`PREFS_SECTIONS` +`'extension'`),
+  `package.json` (`build.files` +`preload-ext.js`), `src/renderer/i18n.js`
+  (18 locale), `.claude/skills/dracondex-file-arch/check-arch.mjs`
+  (`ROOT_FILES` +`preload-ext.js`)
+- อะไรเปลี่ยน: เพิ่มระบบดาวน์โหลด "extension" จาก GitHub repo (ต้องมี
+  `dracondex-extension.json` manifest ที่ root) — แต่ละ extension ประกาศตาราง
+  ฐานข้อมูลของตัวเอง (`ext_<id>_<name>`, คอลัมน์ TEXT/INTEGER/REAL เท่านั้น)
+  และรันในหน้าต่าง `BrowserWindow` แยกต่างหากที่ได้ preload คนละไฟล์
+  (`preload-ext.js`) ไม่มี `window.api` เลย — เข้าถึงข้อมูลได้แค่ผ่าน
+  `window.extApi.table.*` ที่ผูก ownership กับตัวหน้าต่างเอง (ไม่ใช่จาก argument)
+  ก่อนรัน SQL ทุกครั้ง ไม่มี raw-SQL passthrough ใดๆ; ระบุ identifier
+  whitelist ใหม่ทั้งหมด (ไม่มี pattern เดิมให้ใช้ซ้ำ) เพราะไม่มี prepared-
+  statement parameter ตัวไหน bind ชื่อ table/column ได้
+- ทำไม: Plan.md part 1 v4.0.0 "Cloud Sync Function > Github" ระบุให้ดาวน์โหลด
+  extension จาก GitHub ที่ขยายตาราง database ของตัวเองได้ — ผู้ใช้เลือกทำแบบ
+  sandboxed plugin runtime จริงจัง (ไม่ใช่ stub, ไม่ใช่รันแบบเต็มสิทธิ์) หลังจาก
+  พบว่า `contextIsolation` ของหน้าต่างหลักป้องกันแค่การเข้าถึง Node/Electron
+  โดยตรง ไม่ได้ sandbox สคริปต์หนึ่งจากอีกสคริปต์ในหน้าเดียวกัน — extension ที่
+  โหลดแบบไม่แยกหน้าต่างจะมีสิทธิ์เท่ากับตัวแอปเอง (อ่าน/เขียน/ลบได้ทุก Nexus)
+- ข้อจำกัดที่ยอมรับไว้ (ไม่ใช่สิ่งที่ plan นี้อ้างว่าแก้): ไม่มี OS-level Chromium
+  sandbox จริง เพราะ `main.js` ตั้ง `--no-sandbox` ทั้งโปรเซสไว้ก่อนหน้านี้แล้ว
+  (เพื่อ portable build) — ทุกหน้าต่างรวมถึงหน้าต่าง extension ได้รับผลกระทบ
+  เหมือนกัน; ไม่มีการตรวจสอบ/code review โค้ดจาก GitHub ก่อนติดตั้ง
+- Doc ที่อัปเดต: docs/EXTENSIONS.md (ใหม่ทั้งไฟล์)
+
+---
+
+## 2026-07-30 — Part 1 v4.0.0: Cloud Sync Function — Firebase (version notice)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/update.js` (ใหม่), `main.js`, `preload.js`,
+  `database.js`, `src/renderer/update.js` (ใหม่),
+  `src/renderer/core/boot.js`, `index.html`, `src/renderer/i18n.js`
+  (18 locale)
+- อะไรเปลี่ยน: เพิ่มการแจ้งเตือนเมื่อมีเวอร์ชันใหม่ — อ่านเอกสาร Firestore
+  สาธารณะ 1 ชิ้น (`public_config/latest_version`, ไม่ต้องใช้ credential)
+  เทียบเวอร์ชันแบบง่าย (ตัด `-n` suffix ก่อนเทียบ) ให้เฉพาะผู้ใช้ที่ login เข้า
+  Cloud Sync (Supabase) หรือ Google Drive Backup อย่างใดอย่างหนึ่ง — **ไม่ใช่
+  auto-updater** ไม่มีการติดตั้งอัตโนมัติ แค่แจ้งเตือน + ปุ่มเปิดหน้าดาวน์โหลด
+  ในเบราว์เซอร์; จำ "เวอร์ชันที่เพิ่งเตือนไปแล้ว" ไว้ไม่ให้เตือนซ้ำ
+- ทำไม: Plan.md part 1 v4.0.0 "Cloud Sync Function > Firebase" ระบุสเปกนี้
+  ตรงๆ — ขอบเขตจำกัดเฉพาะแจ้งเตือน+ลิงก์ดาวน์โหลดตามที่ผู้ใช้ยืนยัน เพราะแอปนี้
+  ไม่มี publish/release pipeline อยู่แล้ว (ไม่มี electron-updater, ไม่มี
+  GitHub Releases/tag ใช้งานจริง)
+- Doc ที่อัปเดต: docs/UPDATE.md (ใหม่ทั้งไฟล์)
+
+---
+
+## 2026-07-30 — Part 1 v4.0.0: Cloud Sync Function — Google Drive Backup
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/oauth-loopback.js` (ใหม่, ดึงออกจาก `sync.js`),
+  `src/db/drive.js` (ใหม่), `src/db/drive-devserver.js` (ใหม่),
+  `src/db/sync.js` (refactor ใช้ helper ร่วม, ไม่เปลี่ยนพฤติกรรม), `main.js`,
+  `preload.js`, `database.js`, `index.html`, `src/renderer/drive.js` (ใหม่),
+  `src/renderer/core/settings.js`, `src/renderer/core/boot.js`,
+  `css/builder.css`, `src/renderer/i18n.js` (18 locale)
+- อะไรเปลี่ยน: เพิ่มฟีเจอร์สำรองข้อมูลผ่าน Google Drive appdata folder — สำรอง
+  "layout profile" (ธีม/ภาษา/ขนาด UI จาก localStorage) และ/หรือไฟล์ฐานข้อมูล
+  .ddx (reuse `exportDatabaseTo`/`importDatabaseMerge` เดิมทั้งหมด) แบบ opt-in
+  อิสระต่อกัน; login Google **แยกอิสระ** จาก Cloud Sync (Supabase) — คุย
+  Google โดยตรง ไม่ผ่าน Supabase relay; auto-backup ทุก 1 ชั่วโมง (timer อยู่
+  ฝั่ง renderer); แถบสถานะพื้นที่ Drive เตือน/บล็อกเมื่อใกล้เต็ม/เต็ม; เพิ่มแท็บ
+  "สำรองข้อมูล" ใหม่ใน Preferences panel เดิม (ไม่ได้สร้าง Settings Window
+  เต็มรูปแบบ — ส่วนนั้นยังไม่ทำในรอบนี้)
+- ทำไม: Plan.md part 1 v4.0.0 "Cloud Sync Function > Google" ระบุสเปกนี้ตรงๆ
+  (backup ผ่าน Drive appdata, layout profile, .ddx, ทั้งคู่ "หากผู้ใช้ต้องการ")
+  — ขอบเขตจำกัดเฉพาะ Google Drive ตามที่ผู้ใช้ยืนยัน (Firebase update-check /
+  GitHub extension เป็นแผนแยกในอนาคต); เลือก login แยกจาก Supabase เพราะวิจัย
+  พบว่า Supabase Auth ไม่รีเฟรช provider token ให้เอง ทำให้การ bundle เข้ากับ
+  login เดิมไม่ได้ประหยัดอะไรแต่กลับบังคับผู้ใช้ Cloud Sync ทุกคนยินยอมสิทธิ์
+  Drive ที่ไม่ได้ขอ
+- Doc ที่อัปเดต: docs/DRIVE.md (ใหม่ทั้งไฟล์), docs/SYSTEMS.md §Cloud Sync —
+  Google Drive Backup, docs/FILES.md §Google Drive Backup
+
+---
+
+## 2026-07-30 — Part 1 v4.0.0: Cloud Sync → Token Sync (Supabase)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/sync.js`, `src/db/sync-devserver.js`,
+  `supabase/migrations/20260730000000_dracondex_token_sync.sql` (ใหม่),
+  `src/renderer/sync.js`, `main.js`, `preload.js`, `css/builder.css`,
+  `src/renderer/i18n.js` (18 locale)
+- อะไรเปลี่ยน: แทนที่ระบบคีย์เข้าถึงถาวรเดิม (access-key prototype, v3.8.0)
+  ด้วยระบบโทเคน 16 หลักที่สร้างใหม่ทุกครั้งที่ push; เพิ่ม login Google
+  ผ่าน Supabase Auth (PKCE + loopback redirect) เป็นเงื่อนไขก่อนอัปโหลดได้;
+  เพิ่ม quota ช่องอัปโหลดตาม tier บัญชี (`sync_account.tier`: free 1 ช่อง/
+  10MB, pro 3 ช่อง/20MB — ระหว่างทำแผนผู้ใช้เปลี่ยนสเปกจาก "20MB ทุกบัญชี"
+  เป็นสองระดับนี้กลางคัน); เพิ่มรหัสผ่านต่อช่องอัปโหลด (ไม่บังคับ, แฮชด้วย
+  `pgcrypto`, ข้ามได้เมื่อบัญชีที่ดึงตรงกับบัญชีที่อัปโหลด, ผิด 8 ครั้งล็อก
+  15 นาที); เพิ่มวันหมดอายุ 72 ชม.ต่อช่อง (ตรวจแบบ check-on-read); ยกเลิก
+  โมเดล owner/read-key เดิมทั้งหมด (ตาราง `sync_key` + RPC ที่เกี่ยวข้องถูก
+  drop) เพราะบัญชี Google ทำหน้าที่ยืนยันตัวตนแทน
+- ทำไม: Plan.md part 1 v4.0.0 "Cloud Sync Function > Supabase" ระบุสเปกนี้
+  ตรง ๆ (โทเคนใหม่ทุกครั้ง, ขนาด/อายุจำกัด, ต้อง login ก่อนอัปโหลด, quota
+  ต่อบัญชี, รหัสผ่านล็อก) — ขอบเขตจำกัดเฉพาะ Supabase ตามที่ผู้ใช้ยืนยัน
+  (Google Drive backup/Firebase update-check/GitHub extension เป็นแผนแยก
+  ในอนาคต)
+- Doc ที่อัปเดต: docs/SYNC.md (เขียนใหม่ทั้งไฟล์), docs/SYSTEMS.md
+  §Cloud Sync, docs/FILES.md §Cloud Sync (Supabase)
+
+---
+
 ## 2026-07-26 — Part 1 (Plan ใหม่): Re-architecture แยกไฟล์ + สกิล dracondex-file-arch
 - commit: d0b74d6, 81c3a12, 4884e87, bd51eb4
 - ไฟล์ที่แก้: `style.css` → `css/` 14 ไฟล์, `src/renderer/core.js` → `core/` 12 ไฟล์,

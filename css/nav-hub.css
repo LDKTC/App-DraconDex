@@ -70,6 +70,11 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../Image/DraconDex_WhiteO
 .nav-btn.active{background:var(--accent);color:var(--on-accent)}
 .nav-util{font-size:calc(15px * var(--fsc,1))}
 .nav-btn.director-only{display:none}
+/* Setting window → Workspace → Tool toggle (Plan part1 #Setting): user-
+   hidden "quick buttons" (import/export/hashtag/colors). !important because
+   these buttons also carry visibility classes like .nexus-only that toggle
+   display:flex/none based on app state — this must win regardless. */
+.nav-btn.tool-toggle-hidden{display:none!important}
 
 /* MODULE ITEM (nexus left panel) */
 .module-item{

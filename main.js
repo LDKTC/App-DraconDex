@@ -89,6 +89,48 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
   win.loadFile('index.html', params.toString() ? { search: params.toString() } : undefined);
 }
 
+// Github extensions (Plan part1 v4.0.0 > Cloud Sync Function > Github): one
+// dedicated BrowserWindow per running extension, tracked winId -> extension
+// row id so extapi:table:* handlers below can resolve "which extension is
+// this" from the WINDOW's own identity (never renderer/extension-supplied),
+// and so launch/stop/uninstall can find or refuse an already-open extension.
+// This window gets preload-ext.js — a categorically smaller contextBridge
+// surface than preload.js, never the main app's window.api. See
+// docs/EXTENSIONS.md for the full security notes (including why
+// `sandbox: true` here is honest, not reassuring, given the process-wide
+// --no-sandbox switch set above for portable-build compatibility).
+const extensionWindows = new Map(); // BrowserWindow.id -> extension row id
+
+function findExtensionWindow(extId) {
+  for (const [winId, id] of extensionWindows) {
+    if (id === extId) return BrowserWindow.fromId(winId);
+  }
+  return null;
+}
+
+function createExtensionWindow(ext) {
+  const existing = findExtensionWindow(ext.id);
+  if (existing && !existing.isDestroyed()) { existing.focus(); return existing; }
+  const win = new BrowserWindow({
+    width: 900, height: 650, minWidth: 480, minHeight: 360,
+    backgroundColor: '#050506',
+    frame: false,
+    autoHideMenuBar: true,
+    icon: path.join(__dirname, 'Image', 'DraconDex_Icon.ico'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload-ext.js'), // NEW, narrow — never preload.js
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webviewTag: false,
+    },
+  });
+  extensionWindows.set(win.id, ext.id);
+  win.on('closed', () => extensionWindows.delete(win.id));
+  win.loadFile(path.join(tempDataPath, 'extensions', ext.ext_key, ext.entry_html));
+  return win;
+}
+
 app.whenReady().then(() => {
   // Frameless window means no menu bar is ever visible, but keeping a real
   // application menu (rather than setApplicationMenu(null)) preserves its
@@ -178,6 +220,45 @@ h('db:importMergeFile', async (filePath) => {
   if (!filePath) return { canceled: true };
   const summary = db.importDatabaseMerge(filePath);
   return { canceled: false, summary };
+});
+
+// Setting window → Appdata → Database: per-nexus / per-module export-import
+// (Plan.md part1 #Setting) — same save/open-dialog-then-call split as the
+// whole-database flow above, reusing Token Sync's snapshot format/functions
+// (src/db/sync.js) under the hood (src/db/db-transfer.js).
+h('db:exportNexusFile', async (nexusId, nexusName) => {
+  const defaultName = `${String(nexusName || 'nexus').replace(/[\\/:*?"<>|]/g, '_')}.json`;
+  const result = await dialog.showSaveDialog({
+    title: 'Export Nexus', defaultPath: path.join(app.getPath('documents'), defaultName),
+    filters: [{ name: 'DraconDex Nexus Snapshot', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  return db.exportNexusFile(nexusId, result.filePath);
+});
+h('db:importNexusFile', async (nexusId) => {
+  const result = await dialog.showOpenDialog({
+    title: 'Import Nexus', properties: ['openFile'],
+    filters: [{ name: 'DraconDex Nexus Snapshot', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true };
+  return db.importNexusFile(nexusId, result.filePaths[0]);
+});
+h('db:exportModuleFile', async (nexusId, moduleId, moduleName) => {
+  const defaultName = `${String(moduleName || 'module').replace(/[\\/:*?"<>|]/g, '_')}.json`;
+  const result = await dialog.showSaveDialog({
+    title: 'Export Module', defaultPath: path.join(app.getPath('documents'), defaultName),
+    filters: [{ name: 'DraconDex Module Snapshot', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  return db.exportModuleFile(nexusId, moduleId, result.filePath);
+});
+h('db:importModuleFile', async (nexusId, parentModuleId) => {
+  const result = await dialog.showOpenDialog({
+    title: 'Import Module', properties: ['openFile'],
+    filters: [{ name: 'DraconDex Module Snapshot', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true };
+  return db.importModuleFile(nexusId, parentModuleId, result.filePaths[0]);
 });
 
 // Nexus (vault)
@@ -376,15 +457,78 @@ h('versions:restore', (id)   => db.restoreVersion(id));
 h('setting:get',      (k)    => db.getAppSetting(k));
 h('setting:set',      (k,v)  => db.setAppSetting(k,v));
 
-// Cloud sync prototype (Supabase) — snapshot push/pull per vault
-h('sync:getConfig',     ()       => db.getSyncConfig());
-h('sync:setConfig',     (u,k)    => db.setSyncConfig(u,k));
-h('sync:status',        (nx)     => db.syncStatus(nx));
-h('sync:push',          (nx)     => db.syncPushVault(nx));
-h('sync:pull',          (nx)     => db.syncPullVault(nx));
-h('sync:link',          (nx,key) => db.syncLinkVault(nx,key));
-h('sync:createReadKey', (nx)     => db.syncCreateReadKey(nx));
-h('sync:unlink',        (nx)     => db.unlinkVault(nx));
+// Cloud sync — Token Sync (Supabase) — snapshot push/pull per vault slot
+h('sync:getConfig',     ()             => db.getSyncConfig());
+h('sync:setConfig',     (u,k)          => db.setSyncConfig(u,k));
+h('sync:googleLogin',   (u,t)          => db.syncGoogleLogin(u,t));
+h('sync:googleLogout',  ()             => db.syncGoogleLogout());
+h('sync:authStatus',    ()             => db.syncAuthStatus());
+h('sync:status',        (nx)           => db.syncStatus(nx));
+h('sync:push',          (nx,pw)        => db.syncPushVault(nx,pw));
+h('sync:pull',          (nx,vaultId)   => db.syncPullVault(nx,vaultId));
+h('sync:pullByToken',   (nx,tok,pw)    => db.syncPullByToken(nx,tok,pw));
+h('sync:deleteUpload',  (vaultId)      => db.syncDeleteUpload(vaultId));
+
+// Google Drive appdata backup — independent Google login from Sync's
+h('drive:getConfig',       ()      => db.getDriveConfig());
+h('drive:setConfig',       (i,s)   => db.setDriveConfig(i,s));
+h('drive:connect',         ()      => db.driveConnect());
+h('drive:disconnect',      ()      => db.driveDisconnect());
+h('drive:status',          ()      => db.driveStatus());
+h('drive:setAutoBackup',   (en)    => db.driveSetAutoBackup(en));
+h('drive:setBackupLayout', (en)    => db.driveSetBackupLayout(en));
+h('drive:setBackupDdx',    (en)    => db.driveSetBackupDdx(en));
+h('drive:backupNow',       (lyt)   => db.driveBackupNow(lyt));
+h('drive:restoreLayout',   ()      => db.driveRestoreLayoutProfile());
+h('drive:restoreDatabase', ()      => db.driveRestoreDatabase());
+h('drive:getBackupLog',    ()      => db.driveGetBackupLog());
+h('drive:listLayoutSlots',   ()          => db.driveListLayoutSlots());
+h('drive:saveLayoutSlot',    (name,json) => db.driveSaveLayoutSlot(name,json));
+h('drive:restoreLayoutSlot', (id)        => db.driveRestoreLayoutSlot(id));
+h('drive:deleteLayoutSlot',  (id)        => db.driveDeleteLayoutSlot(id));
+
+// Firebase — app-update notice (read-only Firestore doc check, no auto-updater)
+h('update:check',        ()    => db.checkForUpdate());
+h('update:dismiss',      (v)   => db.dismissUpdate(v));
+h('update:openDownload', (url) => db.openUpdateDownload(url));
+
+// Github extensions — main-app-facing surface (install/list/manage). The
+// extapi:table:* bridge extension windows actually use is a SEPARATE surface
+// below, registered with raw ipcMain.handle (never through h()) since it
+// must resolve the calling extension from event.sender, not from an argument.
+h('extension:list',      ()               => db.extensionList());
+h('extension:install',   (owner,repo,ref) => db.extensionInstall(owner,repo,ref));
+h('extension:uninstall', (id) => {
+  if (findExtensionWindow(id)) return { ok: false, code: 'running' };
+  return db.extensionUninstall(id);
+});
+h('extension:launch', (id) => {
+  const ext = db.extensionGetById(id);
+  if (!ext) return { ok: false, code: 'not_found' };
+  createExtensionWindow(ext);
+  return { ok: true };
+});
+h('extension:stop', (id) => {
+  const win = findExtensionWindow(id);
+  if (win && !win.isDestroyed()) win.close();
+  return { ok: true };
+});
+h('extension:isRunning', (id) => !!findExtensionWindow(id));
+
+// extApi.* bridge (preload-ext.js) — extension windows ONLY. Resolves the
+// calling extension from the window itself (BrowserWindow.fromWebContents),
+// exactly like window:getId above, since a compromised extension page must
+// never be able to claim a different extension's identity by argument.
+function callerExtId(event) {
+  const extId = extensionWindows.get(BrowserWindow.fromWebContents(event.sender)?.id);
+  if (!extId) throw new Error('not an extension window');
+  return extId;
+}
+ipcMain.handle('extapi:table:getSchema', (event, localName)      => db.extApiGetSchema(callerExtId(event), localName));
+ipcMain.handle('extapi:table:query',     (event, localName, f)   => db.extApiQuery(callerExtId(event), localName, f));
+ipcMain.handle('extapi:table:insert',    (event, localName, row) => db.extApiInsert(callerExtId(event), localName, row));
+ipcMain.handle('extapi:table:update',    (event, localName, id, row) => db.extApiUpdate(callerExtId(event), localName, id, row));
+ipcMain.handle('extapi:table:delete',    (event, localName, id)  => db.extApiDelete(callerExtId(event), localName, id));
 
 // Legacy -> v3 migration (v3 Phase 24)
 h('migrate:list',   (target,nx)          => db.listLegacyProjects(target,nx));

@@ -1,13 +1,20 @@
 'use strict';
-// Cloud sync prototype (Supabase). Snapshot-based: push serializes the whole
-// vault (v3 module tree + notes + relations) into one JSON payload stored in
-// the cloud; pull wipes the local vault content and rebuilds it from the
-// snapshot with id remapping. Last-write-wins — no merging. All HTTP lives
-// here in the main process (renderer never fetches); the server side is the
-// RPC set in supabase/migrations/20260717000000_dracondex_sync_prototype.sql.
+// Cloud sync — Token Sync (Supabase). Snapshot-based: push serializes the
+// whole vault (v3 module tree + notes + relations) into one JSON payload
+// stored in the cloud under a 16-digit token; pull wipes the local vault
+// content and rebuilds it from the snapshot with id remapping. Last-write-
+// wins — no merging. The account (Google login via Supabase Auth) gets N
+// upload slots by tier (free: 1 slot/10MB, pro: 3 slots/20MB, enforced
+// server-side) and can always manage/pull/delete its OWN slots without a
+// token; a token + optional password is the door for any OTHER account.
+// All HTTP lives here in the main process (renderer never fetches); the
+// server side is the RPC set in
+// supabase/migrations/20260730000000_dracondex_token_sync.sql.
 const crypto = require('crypto');
+const { app } = require('electron');
 const { getDB } = require('./core');
 const { getAppSetting, setAppSetting } = require('./versions');
+const { makePkcePair, runOAuthLoopback } = require('./oauth-loopback');
 
 const SNAPSHOT_FORMAT = 'dracondex-vault-snapshot';
 const SNAPSHOT_VERSION = 1;
@@ -16,7 +23,7 @@ const SNAPSHOT_VERSION = 1;
 // Supabase backend configured by the user; an unpackaged run (`npm start`,
 // drivers) is pinned to the in-process dev prototype server instead
 // (src/db/sync-devserver.js) — zero setup, loopback-only, JSON persistence.
-const IS_DEV = !require('electron').app.isPackaged;
+const IS_DEV = !app.isPackaged;
 let devUrl = null;
 
 async function ensureDevBackend() {
@@ -25,21 +32,7 @@ async function ensureDevBackend() {
 }
 
 // ---------------------------------------------------------------------------
-// Access keys — "Ertt-3fu6-Dd5t-Fd34": 4 groups of 4 mixed-case alphanumerics
-// (62^16 ≈ 95 bits). The key is the sole credential; the server stores only
-// its sha-256, so a generated key can never be re-shown later.
-// ---------------------------------------------------------------------------
-const KEY_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-const KEY_RE = /^[A-Za-z0-9]{4}(-[A-Za-z0-9]{4}){3}$/;
-
-function generateAccessKey() {
-  const group = () =>
-    Array.from({ length: 4 }, () => KEY_CHARSET[crypto.randomInt(KEY_CHARSET.length)]).join('');
-  return [group(), group(), group(), group()].join('-');
-}
-
-// ---------------------------------------------------------------------------
-// Config + per-vault link state (app_setting K/V)
+// Config (app_setting K/V)
 // ---------------------------------------------------------------------------
 function getSyncConfig() {
   if (IS_DEV) {
@@ -57,35 +50,173 @@ function setSyncConfig(url, anonKey) {
   return { ok: true };
 }
 
-const vaultStateKey = (nexusId) => `sync:nexus:${nexusId}`;
+// ---------------------------------------------------------------------------
+// Local, best-effort "which slot did I last push THIS nexus to" hint. Never
+// trusted as ground truth — the server's own upload list is authoritative;
+// this only lets the renderer pre-select the right slot for push/pull.
+// ---------------------------------------------------------------------------
+const SLOT_MAP_KEY = 'sync:slotMap'; // JSON { [nexusId]: vaultId }
 
-function getVaultSyncState(nexusId) {
-  try {
-    const raw = getAppSetting(vaultStateKey(nexusId));
-    if (!raw) return { linked: false };
-    const s = JSON.parse(raw);
-    return { linked: !!(s.vaultId && s.accessKey), ...s };
-  } catch (_) {
-    return { linked: false };
+function getSlotMap() {
+  try { return JSON.parse(getAppSetting(SLOT_MAP_KEY) || '{}') || {}; }
+  catch (_) { return {}; }
+}
+
+function setSlotForNexus(nexusId, vaultId) {
+  const map = getSlotMap();
+  map[String(nexusId)] = vaultId;
+  setAppSetting(SLOT_MAP_KEY, JSON.stringify(map));
+}
+
+function clearSlot(vaultId) {
+  const map = getSlotMap();
+  let changed = false;
+  for (const k of Object.keys(map)) {
+    if (map[k] === vaultId) { delete map[k]; changed = true; }
   }
+  if (changed) setAppSetting(SLOT_MAP_KEY, JSON.stringify(map));
 }
 
-function saveVaultSyncState(nexusId, state) {
-  setAppSetting(vaultStateKey(nexusId), JSON.stringify(state));
+// ---------------------------------------------------------------------------
+// 16-digit tokens — "1234-5678-9012-3456" as displayed; the wire/hash form
+// is digits-only. A fresh one is generated on every push (see syncPushVault).
+// ---------------------------------------------------------------------------
+function generateToken() {
+  return Array.from({ length: 16 }, () => crypto.randomInt(10)).join('');
 }
 
-function unlinkVault(nexusId) {
-  getDB().prepare(`DELETE FROM app_setting WHERE key=?`).run(vaultStateKey(nexusId));
+// ---------------------------------------------------------------------------
+// Google login via Supabase Auth (GoTrue), PKCE + system-browser loopback
+// redirect. In dev mode this is skipped entirely — no browser, no Google
+// account needed — in favor of a fabricated session so the whole flow is
+// testable locally (src/db/sync-devserver.js trusts the fabricated
+// `<uid>:<tier>` bearer token as-is).
+// ---------------------------------------------------------------------------
+const REFRESH_TOKEN_KEY = 'google:refreshToken';
+const LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
+
+let memSession = null; // { accessToken, accessTokenExp (epoch ms or Infinity), uid, email }
+
+async function syncGoogleLogin(devUid, devTier) {
+  if (IS_DEV) {
+    const uid = String(devUid || 'dev-user-1');
+    const tier = devTier === 'pro' ? 'pro' : 'free';
+    memSession = { accessToken: `${uid}:${tier}`, accessTokenExp: Infinity, uid, email: `${uid}@local.test` };
+    return { ok: true, email: memSession.email };
+  }
+  const { url, anonKey, configured } = getSyncConfig();
+  if (!configured) return { ok: false, code: 'no_config' };
+  const { verifier, challenge } = makePkcePair();
+  let code;
+  try {
+    ({ code } = await runOAuthLoopback(
+      (redirectTo) => `${url}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`
+        + `&code_challenge=${challenge}&code_challenge_method=s256`,
+      { timeoutMs: LOGIN_TIMEOUT_MS },
+    ));
+  } catch (e) {
+    return { ok: false, code: e.message === 'login_timeout' ? 'login_timeout' : 'auth', error: String(e?.message || e) };
+  }
+  let res;
+  try {
+    res = await fetch(`${url}/auth/v1/token?grant_type=pkce`, {
+      method: 'POST',
+      headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auth_code: code, code_verifier: verifier }),
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (e) {
+    return { ok: false, code: 'network', error: String(e?.message || e) };
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    return { ok: false, code: 'auth', error: body.error_description || body.msg || `HTTP ${res.status}` };
+  }
+  const data = await res.json();
+  memSession = {
+    accessToken: data.access_token,
+    accessTokenExp: Date.now() + (data.expires_in || 3600) * 1000,
+    uid: data.user?.id,
+    email: data.user?.email,
+  };
+  setAppSetting(REFRESH_TOKEN_KEY, data.refresh_token || '');
+  return { ok: true, email: memSession.email };
+}
+
+async function syncGoogleLogout() {
+  if (!IS_DEV) {
+    const { url, anonKey, configured } = getSyncConfig();
+    if (configured && memSession?.accessToken) {
+      try {
+        await fetch(`${url}/auth/v1/logout`, {
+          method: 'POST',
+          headers: { apikey: anonKey, Authorization: `Bearer ${memSession.accessToken}` },
+          signal: AbortSignal.timeout(10000),
+        });
+      } catch (_) { /* best-effort */ }
+    }
+    setAppSetting(REFRESH_TOKEN_KEY, '');
+  }
+  memSession = null;
   return { ok: true };
+}
+
+// Refreshes the access token from the stored refresh token when needed.
+// A network failure must NOT silently log the user out — only an explicit
+// invalid-grant/401 response clears the stored refresh token.
+async function ensureAccessToken() {
+  if (IS_DEV) return memSession ? memSession.accessToken : null;
+  if (memSession && memSession.accessTokenExp > Date.now() + 5000) return memSession.accessToken;
+  const refreshToken = getAppSetting(REFRESH_TOKEN_KEY);
+  if (!refreshToken) { memSession = null; return null; }
+  const { url, anonKey, configured } = getSyncConfig();
+  if (!configured) return null;
+  let res;
+  try {
+    res = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (_) {
+    return memSession ? memSession.accessToken : null; // network hiccup — stay logged in
+  }
+  if (!res.ok) {
+    if (res.status === 400 || res.status === 401) {
+      setAppSetting(REFRESH_TOKEN_KEY, '');
+      memSession = null;
+    }
+    return null;
+  }
+  const data = await res.json();
+  memSession = {
+    accessToken: data.access_token,
+    accessTokenExp: Date.now() + (data.expires_in || 3600) * 1000,
+    uid: data.user?.id,
+    email: data.user?.email,
+  };
+  if (data.refresh_token) setAppSetting(REFRESH_TOKEN_KEY, data.refresh_token); // GoTrue rotates refresh tokens
+  return memSession.accessToken;
+}
+
+async function syncAuthStatus() {
+  const { configured, dev } = getSyncConfig();
+  if (IS_DEV) return { ok: true, configured: true, dev: true, loggedIn: !!memSession, email: memSession?.email || null };
+  if (!configured) return { ok: true, configured: false, dev: false, loggedIn: false, email: null };
+  const token = await ensureAccessToken();
+  return { ok: true, configured: true, dev: false, loggedIn: !!token, email: memSession?.email || null };
 }
 
 // ---------------------------------------------------------------------------
 // PostgREST RPC wrapper. Public sync functions never throw — they return
 // { ok:true, ... } or { ok:false, code, error } so IPC never has to
-// serialize an Error. Codes: no_config, not_linked, bad_key_format, bad_key,
-// not_owner, too_large, bad_snapshot, network, auth, server.
+// serialize an Error.
 // ---------------------------------------------------------------------------
-const RPC_KNOWN_ERRORS = ['bad_key', 'not_owner', 'too_large'];
+const RPC_KNOWN_ERRORS = [
+  'not_authenticated', 'bad_token', 'bad_password', 'locked',
+  'token_collision', 'no_upload', 'too_large', 'quota_exceeded', 'not_owner',
+];
 
 async function rpc(fn, params) {
   try { await ensureDevBackend(); } catch (e) {
@@ -93,13 +224,14 @@ async function rpc(fn, params) {
   }
   const { url, anonKey, configured } = getSyncConfig();
   if (!configured || !url) return { ok: false, code: 'no_config' };
+  const accessToken = await ensureAccessToken();
   let res;
   try {
     res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
       method: 'POST',
       headers: {
         apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
+        Authorization: `Bearer ${accessToken || anonKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(params),
@@ -130,14 +262,31 @@ async function rpc(fn, params) {
 // ---------------------------------------------------------------------------
 const dateKey = (d) => `${d.day}|${d.month}|${d.years}|${d.hour}|${d.minute}`;
 
-function serializeVault(nexusId) {
+// moduleIds (optional): scopes the snapshot to one module subtree instead of
+// the whole nexus — used by exportModuleFile (src/db/db-transfer.js). Every
+// query below reaches `module m` via a JOIN and filters `m.nexus_ref=?`; in
+// scoped mode that one literal substring is swapped for `m.id IN (...)` so
+// all ~25 of them narrow together with no other change. relations/notes are
+// vault-global (not owned by any module) so scoped mode omits them entirely
+// via allGlobal() rather than trying to force them through the same
+// substitution — a module import has nowhere sensible to put a vault-wide
+// note or an arbitrary-entity relation anyway.
+function serializeVault(nexusId, moduleIds = null) {
   const db = getDB();
   const nexus = db.prepare(`
     SELECT n.name, n.memo, c.color_code AS colorCode
     FROM nexus n LEFT JOIN use_color c ON n.color = c.id WHERE n.id=?`).get(nexusId);
   if (!nexus) return null;
 
-  const all = (sql) => db.prepare(sql).all(nexusId);
+  const scoped = Array.isArray(moduleIds) && moduleIds.length > 0;
+  const all = (sql) => {
+    if (scoped) {
+      const inClause = `m.id IN (${moduleIds.map(() => '?').join(',')})`;
+      return db.prepare(sql.replace('m.nexus_ref=?', inClause)).all(...moduleIds);
+    }
+    return db.prepare(sql).all(nexusId);
+  };
+  const allGlobal = (sql) => (scoped ? [] : db.prepare(sql).all(nexusId));
 
   const modules = all(`
     SELECT m.id, m.parent_id AS parentId, m.name, m.kind, m.icon,
@@ -306,16 +455,16 @@ function serializeVault(nexusId) {
       FROM design_edge e JOIN module m ON e.module_ref=m.id WHERE m.nexus_ref=?`),
   };
 
-  const relations = all(`
+  const relations = allGlobal(`
     SELECT from_key AS fromKey, to_key AS toKey, label
     FROM entity_relation WHERE nexus_ref=? ORDER BY id`);
 
   const notes = {
-    folders: all(`
+    folders: allGlobal(`
       SELECT f.id, f.parent_ref AS parentId, f.name, c.color_code AS colorCode
       FROM note_folder f LEFT JOIN use_color c ON f.color=c.id
       WHERE f.nexus_ref=? ORDER BY f.id`),
-    notes: all(`
+    notes: allGlobal(`
       SELECT n.id, n.folder_ref AS folderId, n.title, n.content,
              c.color_code AS colorCode, n.pinned
       FROM note n LEFT JOIN use_color c ON n.color=c.id
@@ -362,6 +511,29 @@ function serializeVault(nexusId) {
   };
 }
 
+// "This module + every descendant" — walked in memory (mirrors the
+// parents-first BFS pattern applySnapshotCore itself uses below) rather than
+// a SQL recursive CTE, so it doesn't depend on the WASM SQLite build
+// supporting WITH RECURSIVE. Used by exportModuleFile/importModuleFile
+// (src/db/db-transfer.js) to scope serializeVault to one module subtree.
+function collectModuleSubtreeIds(nexusId, moduleId) {
+  const db = getDB();
+  const rows = db.prepare(`SELECT id, parent_id AS parentId FROM module WHERE nexus_ref=?`).all(nexusId);
+  const byParent = new Map();
+  for (const r of rows) {
+    if (!byParent.has(r.parentId)) byParent.set(r.parentId, []);
+    byParent.get(r.parentId).push(r.id);
+  }
+  const out = [];
+  const stack = [moduleId];
+  while (stack.length) {
+    const id = stack.pop();
+    out.push(id);
+    for (const child of byParent.get(id) || []) stack.push(child);
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // applySnapshot(nexusId, payload) — wipe-and-rebuild with id remap.
 // Preserving snapshot ids is impossible (autoincrement collisions with other
@@ -383,20 +555,38 @@ function remapEntityKey(key, maps) {
   return mapped == null ? null : `${m[1]}_${mapped}`;
 }
 
-function applySnapshot(nexusId, payload) {
+// Shared by applySnapshot (whole-nexus wipe-and-rebuild, Token Sync pull)
+// and importModuleSnapshot (module-subtree merge-in, Setting window →
+// Appdata → Database). Only 3 things differ between the two callers:
+//   wipe            — clear the nexus's existing module/relation/note/
+//                      wiki_link rows first (whole-nexus only; a module
+//                      import must never touch anything already there)
+//   updateNexusMeta — overwrite the nexus row's memo/color (whole-nexus
+//                      only; a module import is going INTO an existing
+//                      nexus, whose own memo/color must stay untouched)
+//   reparentRootTo  — id (or null) every snapshot module with no parent of
+//                      its own gets re-pointed to. null for a whole-nexus
+//                      replace (they really are top-level); the chosen
+//                      target parent for a module import.
+// Everything else — lookups, the modules BFS insert, every per-kind child
+// insert, relation/note insert, module_ui remap — is identical either way.
+function applySnapshotCore(nexusId, payload, opts = {}) {
+  const { wipe = false, updateNexusMeta = false, reparentRootTo = null } = opts;
   if (!validateSnapshot(payload)) return { ok: false, code: 'bad_snapshot' };
   const db = getDB();
   const arr = (a) => (Array.isArray(a) ? a : []);
   const sect = (s) => (s && typeof s === 'object' ? s : {});
 
   const summary = db.transaction(() => {
-    // 1. Wipe the vault's synced content. module CASCADEs to every per-kind
-    //    child incl. v3 map→map_area→map_point and timeline→timeline_event.
-    db.prepare(`DELETE FROM module WHERE nexus_ref=?`).run(nexusId);
-    db.prepare(`DELETE FROM entity_relation WHERE nexus_ref=?`).run(nexusId);
-    db.prepare(`DELETE FROM note WHERE nexus_ref=?`).run(nexusId);
-    db.prepare(`DELETE FROM note_folder WHERE nexus_ref=?`).run(nexusId);
-    db.prepare(`DELETE FROM wiki_link WHERE nexus_ref=?`).run(nexusId);
+    if (wipe) {
+      // Wipe the vault's synced content. module CASCADEs to every per-kind
+      // child incl. v3 map→map_area→map_point and timeline→timeline_event.
+      db.prepare(`DELETE FROM module WHERE nexus_ref=?`).run(nexusId);
+      db.prepare(`DELETE FROM entity_relation WHERE nexus_ref=?`).run(nexusId);
+      db.prepare(`DELETE FROM note WHERE nexus_ref=?`).run(nexusId);
+      db.prepare(`DELETE FROM note_folder WHERE nexus_ref=?`).run(nexusId);
+      db.prepare(`DELETE FROM wiki_link WHERE nexus_ref=?`).run(nexusId);
+    }
 
     // 2. Lookups by natural key (same pattern as importDatabaseMerge).
     const lookups = sect(payload.lookups);
@@ -427,8 +617,10 @@ function applySnapshot(nexusId, payload) {
 
     // 3. Nexus row: memo/color only — the local vault NAME is kept (UNIQUE
     //    across vaults; the cloud name is display info in the sync state).
-    db.prepare(`UPDATE nexus SET memo=?, color=?, update_at=datetime('now') WHERE id=?`)
-      .run(payload.nexus.memo ?? null, colorId(payload.nexus.colorCode), nexusId);
+    if (updateNexusMeta) {
+      db.prepare(`UPDATE nexus SET memo=?, color=?, update_at=datetime('now') WHERE id=?`)
+        .run(payload.nexus.memo ?? null, colorId(payload.nexus.colorCode), nexusId);
+    }
 
     // 4. Modules, parents-first (BFS so a child never lands before its parent).
     const modMap = new Map();
@@ -438,11 +630,12 @@ function applySnapshot(nexusId, payload) {
       let progressed = false;
       for (const m of pending) {
         if (m.parentId != null && !modMap.has(m.parentId)) { next.push(m); continue; }
+        const parentId = m.parentId != null ? modMap.get(m.parentId) : reparentRootTo;
         const r = db.prepare(`
           INSERT INTO module (nexus_ref, parent_id, name, kind, icon, icon_color, color,
                               description, display_order, pinned, cat_type, create_at, update_at)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,COALESCE(?,datetime('now')),COALESCE(?,datetime('now')))`)
-          .run(nexusId, m.parentId != null ? modMap.get(m.parentId) : null, m.name, m.kind,
+          .run(nexusId, parentId, m.name, m.kind,
                m.icon ?? null, colorId(m.iconColorCode), colorId(m.colorCode),
                m.description ?? null, m.displayOrder ?? 0, m.pinned ?? 0, m.catType ?? null,
                m.createAt ?? null, m.updateAt ?? null);
@@ -702,119 +895,111 @@ function applySnapshot(nexusId, payload) {
   return { ok: true, summary };
 }
 
+// Whole-nexus wipe-and-rebuild — Token Sync pull's only caller, same
+// behavior as before applySnapshotCore existed.
+function applySnapshot(nexusId, payload) {
+  return applySnapshotCore(nexusId, payload, { wipe: true, updateNexusMeta: true, reparentRootTo: null });
+}
+
+// Module-subtree merge-in (Setting window → Appdata → Database "import
+// module") — additive, never wipes the target nexus, and reparents the
+// snapshot's root module(s) under parentModuleId (or to top-level if null).
+function importModuleSnapshot(nexusId, parentModuleId, payload) {
+  return applySnapshotCore(nexusId, payload, { wipe: false, updateNexusMeta: false, reparentRootTo: parentModuleId ?? null });
+}
+
 // ---------------------------------------------------------------------------
 // Public sync operations (IPC surface)
 // ---------------------------------------------------------------------------
 async function syncStatus(nexusId) {
   const { configured, dev } = getSyncConfig();
-  const state = getVaultSyncState(nexusId);
+  const auth = await syncAuthStatus();
   const out = {
-    ok: true,
-    configured,
-    dev,
-    linked: state.linked,
-    role: state.role || null,
-    accessKey: state.accessKey || null,
-    cloudName: state.cloudName || null,
-    lastPushAt: state.lastPushAt || null,
-    lastPullAt: state.lastPullAt || null,
-    remote: null,
+    ok: true, configured, dev, loggedIn: auth.loggedIn, email: auth.email,
+    tier: null, maxSlots: 0, maxBytes: 0, uploads: [], mappedVaultId: null,
   };
-  if (configured && state.linked) {
-    const r = await rpc('sync_vault_status', { p_key: state.accessKey });
-    if (r.ok) {
-      out.remote = {
-        name: r.data.name,
-        snapshotAt: r.data.snapshot_at,
-        keyCount: r.data.key_count,
-      };
-      if (r.data.role && r.data.role !== state.role) {
-        out.role = r.data.role;
-        saveVaultSyncState(nexusId, { ...state, role: r.data.role });
-      }
-    } else {
-      out.remoteError = r.code;
-    }
-  }
+  if (!configured && !dev) return out;
+  if (!auth.loggedIn) return out;
+  const r = await rpc('token_sync_status', {});
+  if (!r.ok) { out.remoteError = r.code; return out; }
+  out.tier = r.data.tier;
+  out.maxSlots = r.data.max_slots;
+  out.maxBytes = r.data.max_bytes;
+  out.uploads = (r.data.uploads || []).map((u) => ({
+    vaultId: u.vault_id, name: u.name, snapshotAt: u.snapshot_at, expiresAt: u.expires_at,
+    sizeBytes: u.size_bytes, hasPassword: u.has_password,
+  }));
+  const mapped = getSlotMap()[String(nexusId)];
+  out.mappedVaultId = out.uploads.some((u) => u.vaultId === mapped) ? mapped : null;
   return out;
 }
 
-async function syncPushVault(nexusId) {
-  const state = getVaultSyncState(nexusId);
-  if (state.linked && state.role !== 'owner') return { ok: false, code: 'not_owner' };
+// Pushes to this nexus's previously-mapped slot if one exists, else asks the
+// server for a new slot (rejected with quota_exceeded once the account's
+// tier limit is reached — the caller must free a slot first).
+async function syncPushVault(nexusId, password) {
   const snapshot = serializeVault(nexusId);
   if (!snapshot) return { ok: false, code: 'bad_snapshot', error: 'nexus not found' };
-
-  if (!state.linked) {
-    const key = generateAccessKey();
-    const r = await rpc('sync_create_vault', {
-      p_name: snapshot.nexus.name, p_snapshot: snapshot, p_owner_key: key,
+  const existingVaultId = getSlotMap()[String(nexusId)] || null;
+  let lastErr = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const token = generateToken();
+    const r = await rpc('token_sync_push', {
+      p_snapshot: snapshot, p_name: snapshot.nexus.name, p_token: token,
+      p_password: password ? String(password) : null,
+      p_vault_id: existingVaultId,
     });
-    if (!r.ok) return r;
-    const now = new Date().toISOString();
-    saveVaultSyncState(nexusId, {
-      vaultId: r.data.vault_id, accessKey: key, role: 'owner',
-      cloudName: snapshot.nexus.name, lastPushAt: now,
-    });
-    return { ok: true, created: true, accessKey: key, vaultId: r.data.vault_id, pushedAt: now };
+    if (r.ok) {
+      setSlotForNexus(nexusId, r.data.vault_id);
+      return { ok: true, token, vaultId: r.data.vault_id, pushedAt: r.data.snapshot_at, expiresAt: r.data.expires_at };
+    }
+    if (r.code !== 'token_collision') return r;
+    lastErr = r;
   }
-
-  const r = await rpc('sync_push_vault', {
-    p_key: state.accessKey, p_name: snapshot.nexus.name, p_snapshot: snapshot,
-  });
-  if (!r.ok) return r;
-  const now = new Date().toISOString();
-  saveVaultSyncState(nexusId, { ...state, cloudName: snapshot.nexus.name, lastPushAt: now });
-  return { ok: true, pushedAt: now };
+  return lastErr || { ok: false, code: 'server' };
 }
 
-// The renderer runs its uiConfirm BEFORE invoking this — pulling overwrites
-// the local vault's synced content.
-async function syncPullVault(nexusId) {
-  const state = getVaultSyncState(nexusId);
-  if (!state.linked) return { ok: false, code: 'not_linked' };
-  const r = await rpc('sync_pull_vault', { p_key: state.accessKey });
-  if (!r.ok) return r;
+function applyPulledSnapshot(nexusId, vaultId, data) {
   let applied;
-  try {
-    applied = applySnapshot(nexusId, r.data.snapshot);
-  } catch (e) {
+  try { applied = applySnapshot(nexusId, data.snapshot); }
+  catch (e) {
     console.error('sync: applySnapshot failed:', e);
     return { ok: false, code: 'bad_snapshot', error: String(e?.message || e) };
   }
   if (!applied.ok) return applied;
-  const now = new Date().toISOString();
-  saveVaultSyncState(nexusId, { ...state, cloudName: r.data.name, lastPullAt: now });
-  return { ok: true, pulledAt: now, summary: applied.summary };
+  if (vaultId) setSlotForNexus(nexusId, vaultId);
+  return { ok: true, pulledAt: new Date().toISOString(), cloudName: data.name, summary: applied.summary };
 }
 
-async function syncLinkVault(nexusId, accessKey) {
-  const key = String(accessKey || '').trim();
-  if (!KEY_RE.test(key)) return { ok: false, code: 'bad_key_format' };
-  const state = getVaultSyncState(nexusId);
-  if (state.linked) return { ok: false, code: 'already_linked' };
-  const r = await rpc('sync_vault_status', { p_key: key });
+// Pulls one of the CALLER'S OWN slots (picked from the list syncStatus
+// returns) into nexusId — no token needed.
+async function syncPullVault(nexusId, vaultId) {
+  if (!vaultId) return { ok: false, code: 'no_upload' };
+  const r = await rpc('token_sync_pull_own', { p_vault_id: vaultId });
   if (!r.ok) return r;
-  saveVaultSyncState(nexusId, {
-    vaultId: r.data.vault_id, accessKey: key, role: r.data.role, cloudName: r.data.name,
-  });
-  return { ok: true, role: r.data.role, cloudName: r.data.name, snapshotAt: r.data.snapshot_at };
+  return applyPulledSnapshot(nexusId, vaultId, r.data);
 }
 
-// Read-only key: generated locally, registered by hash server-side, shown
-// once in the modal, never stored on this machine.
-async function syncCreateReadKey(nexusId) {
-  const state = getVaultSyncState(nexusId);
-  if (!state.linked) return { ok: false, code: 'not_linked' };
-  if (state.role !== 'owner') return { ok: false, code: 'not_owner' };
-  const newKey = generateAccessKey();
-  const r = await rpc('sync_create_read_key', { p_owner_key: state.accessKey, p_new_key: newKey });
+// Cross-account/cross-device entry point via the shared 16-digit token.
+async function syncPullByToken(nexusId, token, password) {
+  const tok = String(token || '').replace(/[^0-9]/g, '');
+  if (!/^\d{16}$/.test(tok)) return { ok: false, code: 'bad_token' };
+  const r = await rpc('token_sync_pull_by_token', { p_token: tok, p_password: password ? String(password) : null });
   if (!r.ok) return r;
-  return { ok: true, readKey: newKey };
+  return applyPulledSnapshot(nexusId, r.data.vault_id || null, r.data);
+}
+
+async function syncDeleteUpload(vaultId) {
+  if (!vaultId) return { ok: false, code: 'no_upload' };
+  const r = await rpc('token_sync_delete', { p_vault_id: vaultId });
+  if (!r.ok) return r;
+  clearSlot(vaultId);
+  return { ok: true };
 }
 
 module.exports = {
-  getSyncConfig, setSyncConfig, getVaultSyncState, unlinkVault,
-  generateAccessKey, serializeVault, applySnapshot,
-  syncStatus, syncPushVault, syncPullVault, syncLinkVault, syncCreateReadKey,
+  getSyncConfig, setSyncConfig, serializeVault, applySnapshot,
+  collectModuleSubtreeIds, importModuleSnapshot,
+  syncGoogleLogin, syncGoogleLogout, syncAuthStatus,
+  syncStatus, syncPushVault, syncPullVault, syncPullByToken, syncDeleteUpload,
 };

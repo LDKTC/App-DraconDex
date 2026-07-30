@@ -120,7 +120,14 @@ function loadUiSettings(){
   const nestShowMajorIcon = saved.nestShowMajorIcon !== false;
   const nestShowMinorIcon = saved.nestShowMinorIcon === true;
   const nestSignatureMode = saved.nestSignatureMode === 'icon' ? 'icon' : 'name';
-  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode };
+  // Setting window "Tool toggle" page (Plan part1 #Setting) — quick-setting
+  // popup extras default OFF (popup stays trimmed unless opted into), nav
+  // quick-buttons + status-bar segments default ON (matches today's always-
+  // visible behavior so nobody's UI silently changes on upgrade).
+  const quickExtras = Object.assign({ theme: false, account: false, profile: false }, saved.quickExtras || {});
+  const navToggles = Object.assign({ importDb: true, exportDb: true, hashtag: true, colors: true }, saved.navToggles || {});
+  const statusToggles = Object.assign({ vault: true, breadcrumb: true, words: true, saveState: true }, saved.statusToggles || {});
+  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, statusToggles };
 }
 
 // Kind display names (Phase 22): the Unique set (KIND_LABEL, locale-

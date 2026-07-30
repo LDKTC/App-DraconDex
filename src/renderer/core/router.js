@@ -147,12 +147,13 @@ function updateStatusBar(patch = {}) {
   Object.assign(_statusState, patch);
   const el = q('#status-bar');
   if (!el) return;
+  const st = S.settings.statusToggles || {};
   const parts = [];
-  if (S.nexus) parts.push(`<span class="sb-item sb-nexus" onclick="renderNexusHome()"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</span>`);
+  if (S.nexus && st.vault !== false) parts.push(`<span class="sb-item sb-nexus" onclick="renderNexusHome()"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</span>`);
   // Breadcrumb + module-type badge for the focused v3 module (mockups /
   // Section A status-bar spec): `Major › Minor` + `Major|Minor · Kind`.
   const mNode = (!S.activeModule && S.activeModuleNode) ? S.activeModuleNode : null;
-  if (mNode) {
+  if (mNode && st.breadcrumb !== false) {
     const major = mNode.parent_id != null && typeof moduleRootAncestor === 'function' ? moduleRootAncestor(mNode) : null;
     const crumb = major ? `${x(major.name)} › <b>${x(mNode.name)}</b>` : `<b>${x(mNode.name)}</b>`;
     parts.push(`<span class="sb-item sb-crumb">${crumb}</span>`);
@@ -163,8 +164,8 @@ function updateStatusBar(patch = {}) {
   }
   if (_statusState.item) parts.push(`<span class="sb-item">${x(_statusState.item)}</span>`);
   const right = [];
-  if (_statusState.words != null) right.push(`<span class="sb-item">${_statusState.words} ${t('words')}</span>`);
-  if (_statusState.saveState) right.push(`<span class="sb-item sb-save">${x(_statusState.saveState)}</span>`);
+  if (_statusState.words != null && st.words !== false) right.push(`<span class="sb-item">${_statusState.words} ${t('words')}</span>`);
+  if (_statusState.saveState && st.saveState !== false) right.push(`<span class="sb-item sb-save">${x(_statusState.saveState)}</span>`);
   el.innerHTML = `<div class="sb-left">${parts.join('')}</div><div class="sb-right">${right.join('')}</div>`;
 }
 

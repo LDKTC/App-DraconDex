@@ -959,6 +959,37 @@ const DDL_SQL = `
       update_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(object_ref, template_ref)
     );
+
+    -- Github extensions (Plan.md part1 v4.0.0 > Cloud Sync Function > Github):
+    -- a downloaded extension owns its own ext_<key>_<name> table(s), tracked
+    -- here so src/db/extension.js can enforce ownership before any dynamic
+    -- SQL touches an extension-derived identifier. table_name is the ONLY
+    -- identifier ever spliced into a query — always resolved by ?-bound
+    -- lookup on (extension_ref, local_name), never reconstructed by string
+    -- concatenation from renderer/extension-window input.
+    CREATE TABLE IF NOT EXISTS extension (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ext_key TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      version TEXT,
+      repo_owner TEXT NOT NULL,
+      repo_name TEXT NOT NULL,
+      repo_ref TEXT NOT NULL DEFAULT 'main',
+      entry_html TEXT NOT NULL,
+      manifest_json TEXT NOT NULL,
+      installed_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS extension_table (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      extension_ref INTEGER NOT NULL REFERENCES extension(id) ON DELETE CASCADE,
+      local_name TEXT NOT NULL,
+      table_name TEXT NOT NULL UNIQUE,
+      columns_json TEXT NOT NULL,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(extension_ref, local_name)
+    );
 `;
 
 
