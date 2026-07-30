@@ -136,7 +136,7 @@ function renderModuleRail() {
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
   const pinned = S.moduleTree.filter(m => m.pinned);
-  const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut && !S.kindBrowserPage;
+  const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut && !S.kindBrowserPage && !S.importDockPage;
   let html = `<button class="nav-btn module-rail-tool${atHubHome ? ' active' : ''}" title="${t('nexusNest')}" onclick="goToNexusNestHub()">${I.home}</button>
     <button class="nav-btn module-rail-tool${S.kindBrowserPage ? ' active' : ''}" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()">${I.layer}</button>
     <div class="rail-sep module-rail-tool"></div>
@@ -163,6 +163,12 @@ function goToNexusNestHub() {
   S.sageHut = null;
   S.activeItemNode = null;
   S.kindBrowserPage = false;
+  S.importDockPage = false;
+  // Wyvern (Plan part2 #New Workspace): jumping to Nexus Nest from the
+  // View-set menu returns to the browse root rather than wherever the user
+  // last drilled — matches Drake's own "home" button (clears state, doesn't
+  // remember position).
+  S.wyvernBrowsePath = [];
   renderNexusHome();
 }
 

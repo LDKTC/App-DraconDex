@@ -150,6 +150,11 @@ async function switchView(v) {
 // ═══ NEXUS HUB ═════════════════════════════════════════
 // Two-level home: no vault open → vault picker; vault open → module cards.
 function renderNexusHome() {
+  // Plan part2 #New Workspace: every caller of renderNexusHome() already
+  // goes through this one chokepoint, so the workspace-style swap lives
+  // here instead of at every call site. Drake (default/unset) falls
+  // straight through, unchanged.
+  if (S.settings.workspaceStyle === 'wyvern' && typeof renderWyvernHome === 'function') return renderWyvernHome();
   S.view = 'nexus';
   S.activeModule = null;
   // Rename-mode focus lock (Plan part1 #5) — while a module name is being
@@ -183,6 +188,7 @@ function buildBuilderPageHtml() {
     : (S.filePreview && typeof buildFileViewerHtml === 'function') ? buildFileViewerHtml()
     : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
     : (S.kindBrowserPage && typeof buildKindBrowserPageHtml === 'function') ? buildKindBrowserPageHtml()
+    : (S.importDockPage && typeof buildImportDockPageHtml === 'function') ? buildImportDockPageHtml()
     : `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
     <h3>${x(S.nexus.name)}</h3>

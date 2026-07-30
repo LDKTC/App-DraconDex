@@ -667,6 +667,47 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   ฟิลด์ประกาศ settings schema — เตรียมช่องไว้ให้ ยังไม่สร้าง UI จริงสำหรับ
   schema ที่ยังไม่มีอยู่
 
+### Workspace Styles — Wyvern (2026-07-31, ส่วนหนึ่งของ part2 #New Workspace)
+
+Plan.md part 2 (v4.1.0) ต้องการ 3 workspace style ที่ผู้ใช้เลือกได้: **Wyvern**
+(newcomer/simple, สเปกใน `featureplan.md` ที่ root repo), **Drake** (=UI
+ปัจจุบันทั้งหมด แค่เปลี่ยนชื่อ), **Dragon** (expert/sandbox, ยังไม่สร้าง) — รอบนี้
+ทำเฉพาะ **Wyvern** เท่านั้น (checkbox "Standard workspace: Wyvern" ใน Plan.md
+ติ๊กแล้ว, ส่วนที่เหลือ — Drake ให้เลือกได้จริง/Dragon/หน้า Setting "workspace"
+— ยังไม่ทำ):
+
+- **สลับด้วย** `S.settings.workspaceStyle` (`'drake'` default/`'wyvern'`/
+  `'dragon'`, เก็บใน localStorage เทียบชั้นเดียวกับ theme) หรือ query param
+  `?workspace=wyvern` สำหรับทดสอบ (override ใน memory เท่านั้น ไม่เขียนทับ
+  localStorage เหมือน `?nexus=` เดิม) — ยังไม่มี UI จริงให้ผู้ใช้กดเลือก
+  (รอ Setting window "workspace" page ในรอบถัดไป)
+- **Chrome**: ซ่อน nav-sidebar/left-panel (Nexus Nest tree)/legacy tab
+  strip/split-layout picker/hub-toggle/titlebar vault name ทั้งหมด (มิเรอร์
+  `.popup-mode` เดิมใน `css/titlebar.css` แต่**คงปุ่ม Settings และ status bar
+  ไว้** ต่างจาก popup window) — แทนที่ด้วย toolbar แนวตั้งบางๆ ทางซ้าย
+  (`#workspace-toolbar`, `src/renderer/wyvern.js`)
+- **Toolbar**: ปุ่ม "Views" (popup 4 ตัวเลือก: Nexus Nest/Sage Hut/Import
+  Dock/Import DB — Import Dock เป็นหน้าเดี่ยวใหม่ `goToImportDockPage()`,
+  มิเรอร์ `goToKindBrowserHub()` เดิม), Import DB, Export DB, Hashtag, Color,
+  และปุ่ม "+สร้าง module" (โชว์เฉพาะตอนเรียกดู Nexus Nest เท่านั้น) — ทุกปุ่ม
+  เรียกฟังก์ชันเดิมของ Drake ตรงๆ ไม่มี logic ใหม่ซ้ำซ้อน
+- **Drill-down navigation แทน left-panel tree**: breadcrumb ด้านบน + card
+  grid ด้านล่าง (`buildWyvernBrowseHtml`) — module ที่มีลูกจะ "เจาะลึก" เข้าไป
+  เมื่อคลิก (breadcrumb โตขึ้น 1 ระดับ), module ที่ไม่มีลูกเปิดหน้ารายละเอียด
+  จริงทันที; right-click ยังเปิด context menu ปกติ (ไม่มี "เปิดใน pane ใหม่"
+  เพราะ Wyvern ไม่มี split pane)
+- **ไม่มี split pane, ไม่ auto-tab**: `S.builder.layoutTree.type` ค้างที่
+  `'leaf'` เสมอ (ปุ่ม split ถูกซ่อน, ลาก tab ไปขอบไม่ auto-split) และ
+  `pane.tabs` ว่างเปล่าเสมอไม่ว่าเปิดอะไร (ไม่มี tab chip ให้เห็นเลย) — สอด
+  คล้องกับ featureplan.md ที่ต้องการ "เปิดได้ทีละหน้าเดียว ไม่เปิด tab ใหม่
+  อัตโนมัติ"
+- ตรวจแล้วด้วย E2E จริงผ่าน `run-dracondex`: chrome ถูกซ่อน/โชว์ถูกต้อง,
+  toolbar ทำงานครบทุกปุ่ม, drill-down + breadcrumb กลับ root ถูกต้อง, เปิด
+  module ซ้อนกันไม่สร้าง tab ใหม่, ไม่มีปุ่ม split ที่ไหนเลย, **และยืนยันว่า
+  Drake (workspaceStyle ว่าง/`'drake'`) ทำงานเหมือนเดิมทุกจุดไม่มี regression**
+  (nav-sidebar/left-panel/split/auto-tab/context-menu "เปิดใน pane ใหม่" ปกติ
+  หมด)
+
 ---
 
 ## 11. บั๊ก/จุดอ่อนที่รู้แล้ว (จากการรันทดสอบ 2026-07-04)

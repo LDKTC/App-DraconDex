@@ -61,7 +61,17 @@ function builderNavigate(ref) {
   const b = builderState();
   const pane = b.panes[b.focused];
   const key = builderPageKey(ref);
-  if (ref.kind === 'sagehut') {
+  if (S.settings.workspaceStyle === 'wyvern') {
+    // Wyvern (Plan part2 #New Workspace): no visible tab strip at all, for
+    // ANY ref kind (module/file/item/sagehut alike) — builderPaneHeadHtml
+    // never has tab chips to render for this style, so pane.tabs simply
+    // stays empty. pane.active/history below still track the current page
+    // and keep back/forward navigation working; only the visible chip
+    // strip is suppressed. Deliberately deferred: no affordance yet for a
+    // user who explicitly wants to keep more than one page reachable —
+    // not asked for in the spec's MVP.
+    pane.tabs = [];
+  } else if (ref.kind === 'sagehut') {
     // Sub-view switches (Size/Objects/Links/Graph) reuse one tab in place
     // instead of multiplying — every other ref kind keeps its own tab.
     const sageIdx = pane.tabs.findIndex(k => k.startsWith('sagehut:'));
@@ -80,7 +90,7 @@ function builderNavigate(ref) {
 
 async function builderOpenPage(ref) {
   if (!ref) {
-    S.activeModuleNode = null; S.filePreview = null; S.sageHut = null; S.activeItemNode = null; S.kindBrowserPage = false;
+    S.activeModuleNode = null; S.filePreview = null; S.sageHut = null; S.activeItemNode = null; S.kindBrowserPage = false; S.importDockPage = false;
     renderNexusHome();
     return;
   }
@@ -489,7 +499,10 @@ function builderPaneHeadHtml(i, pane, focused) {
   const inspectorToggle = !isSplit
     ? `<button class="btn btn-g btn-i bnav ${S.inspectorCollapsed ? '' : 'active'}" onclick="toggleModuleInspector()" title="${t('toggleInspector')}">${I.panelRight}</button>`
     : '';
-  const splitBtns = `
+  // Wyvern (Plan part2 #New Workspace) never splits — no split/close-pane
+  // affordance to offer at all, matching builderNavigate's single-tab guard
+  // above and onBodyDrop's disarmed drag-to-split below.
+  const splitBtns = S.settings.workspaceStyle === 'wyvern' ? '' : `
     <button class="btn btn-g btn-i bnav" onclick="builderSplitPane(${i},'h')" title="${t('splitPane')}">◫</button>
     <button class="btn btn-g btn-i bnav" onclick="builderSplitPane(${i},'v')" title="${t('splitPane')}">⬓</button>
     ${isSplit ? `<button class="btn btn-g btn-i bnav" onclick="builderClosePane(${i})" title="${t('closePane')}">${I.close}</button>` : ''}`;
@@ -691,6 +704,10 @@ async function onBodyDrop(ev, targetPaneIdx, bodyEl) {
   bodyEl.classList.remove('drop-left', 'drop-right', 'drop-top', 'drop-bottom', 'drop-center');
   clearDragReflow();
   S.dragTab = null;
+  // Wyvern (Plan part2 #New Workspace) never splits — disarm the whole
+  // drag-to-edge auto-split gesture rather than letting it silently create
+  // a pane the rest of Wyvern's chrome has no controls to close/navigate.
+  if (S.settings.workspaceStyle === 'wyvern') return;
   const zone = bodyDropZone(ev, bodyEl);
   if (zone === 'center') { await builderMoveTabTo(drag, targetPaneIdx, null, null); return; }
   const dir = (zone === 'left' || zone === 'right') ? 'h' : 'v';

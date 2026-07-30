@@ -151,6 +151,7 @@ function goToKindBrowserHub() {
   S.filePreview = null;
   S.sageHut = null;
   S.kindBrowserPage = true;
+  S.importDockPage = false;
   renderNexusHome();
 }
 
@@ -175,6 +176,30 @@ function buildKindBrowserPageHtml() {
       <div class="drafter-hint">${x(S.nexus.name)}</div>
     </div>
     <div class="acc-body" style="display:block">${buildKindBrowserHtml()}</div>`);
+}
+
+// Plan part2 #New Workspace: same "promoted out of the accordion into its
+// own full page" move as goToKindBrowserHub/buildKindBrowserPageHtml above
+// — Wyvern's View-set menu needs Import Dock as a standalone page (today
+// it's accordion-only), and this is the exact precedent to copy.
+// buildImportDockRows() (mod/fileviewer.js) is reused verbatim; only its
+// container moved.
+function goToImportDockPage() {
+  S.activeModuleNode = null;
+  S.activeItemNode = null;
+  S.filePreview = null;
+  S.sageHut = null;
+  S.kindBrowserPage = false;
+  S.importDockPage = true;
+  renderNexusHome();
+}
+
+function buildImportDockPageHtml() {
+  return wrapPageView(`<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
+      <h2 style="margin:0;font-size:1.15em">${x(t('importDock'))}</h2>
+      <div class="drafter-hint">${x(S.nexus.name)}</div>
+    </div>
+    <div class="acc-body" style="display:block">${typeof buildImportDockRows === 'function' ? buildImportDockRows() : ''}</div>`);
 }
 
 // ═══ IMPORT-CHOICE MODAL (Plan part2 §2) ════════════════════════════════

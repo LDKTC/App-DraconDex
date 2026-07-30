@@ -19,6 +19,34 @@
 
 ---
 
+## 2026-07-31 — Part 2 v4.1.0 (เริ่มแรก): Workspace Styles — Wyvern
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/wyvern.js` (ใหม่), `css/workspace.css` (ใหม่),
+  `index.html` (splash script อ่าน `?workspace=`, `#workspace-toolbar` div,
+  script/link tag ใหม่), `src/renderer/core/state.js`
+  (`WORKSPACE_STYLE_OPTIONS`, `loadUiSettings()` เพิ่ม `workspaceStyle`/
+  `wyvernToolbarOrientation`, `S.wyvernBrowsePath`/`S.importDockPage` ใหม่),
+  `src/renderer/core/boot.js` (`applyWorkspaceStyle()` ใหม่), `src/renderer/
+  core/views.js` (`renderNexusHome()` branch ใหม่, `buildBuilderPageHtml()`
+  เพิ่ม `importDockPage`), `src/renderer/builder.js` (`builderNavigate()`/
+  `builderPaneHeadHtml()`/`onBodyDrop()` เพิ่ม guard เฉพาะ Wyvern),
+  `src/renderer/hub/menus.js` (ซ่อน "เปิดใน pane ใหม่" ใน Wyvern),
+  `src/renderer/hub/sections.js` (`goToImportDockPage()`/
+  `buildImportDockPageHtml()` ใหม่), `src/renderer/hub/kinds.js`,
+  `src/renderer/hub/open.js`, `src/renderer/core/nexus.js`, `src/renderer/
+  mod/{fileviewer,item,sagehut}.js` (clear `S.importDockPage` ที่จุดเดิม),
+  `src/renderer/i18n.js` (คีย์ `wyvernViewSet` ใหม่ครบ 18 locale), `Plan.md`
+  (ติ๊ก "Standard workspace: Wyvern")
+- อะไรเปลี่ยน: เพิ่ม workspace style ใหม่ **Wyvern** (newcomer/simple —
+  toolbar แนวตั้ง + drill-down browsing แทน left-panel tree, ไม่มี split
+  pane, ไม่ auto-tab) เลือกได้ผ่าน `S.settings.workspaceStyle`/`?workspace=`
+  — ยังไม่มี UI จริงให้กด (รอ Setting window "workspace" page รอบถัดไป)
+  Drake (ค่าเริ่มต้น) ยืนยันแล้วว่าไม่มี regression จากการเพิ่ม guard นี้
+- ทำไม: Plan.md ส่วน `### part 2 version.4.1.0 #### New Workspace` — 1 ใน 3
+  workspace style ที่ต้องการ, สเปกจาก `featureplan.md` ที่เขียนไว้ก่อนหน้า
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Workspace Styles — Wyvern (ใหม่),
+  docs/FILES.md §Workspace Styles (ใหม่)
+
 ## 2026-07-30 — Part 1 v4.0.0: Setting (Quick Setting popup + Setting window เต็มรูปแบบ)
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/core/settings.js` (ตัด `renderSettingsMenu()`

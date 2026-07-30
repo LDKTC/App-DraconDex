@@ -11,6 +11,7 @@ async function openModuleNode(id) {
   S.activeModuleNode = m;
   S.activeItemNode = null;
   S.kindBrowserPage = false;
+  S.importDockPage = false;
   upsertModuleTab(id);
   updateStatusBar({ item: null, words: null, saveState: null });
   renderModuleRail();

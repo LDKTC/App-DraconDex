@@ -4,6 +4,7 @@
 // (window.__splash, index.html).
 async function init() {
   applyUiSettings();
+  applyWorkspaceStyle();
   // Boot-splash checkpoints (window.__splash, defined inline in index.html).
   // 0–55% is script parsing; from here on the ticks track the real boot chain,
   // so the bar never advances on a timer. finish() is at the very bottom.
@@ -109,5 +110,22 @@ async function init() {
 // ═══ HELPERS ═══════════════════════════════════════════
 function removeLegacyDirectorProjectButton(){
   q('#nav-sidebar > .nav-btn.director-only[data-panel="projects"]')?.remove();
+}
+
+// Plan part2 #New Workspace — authoritative apply, re-confirming the early
+// splash-script guess (index.html) now that S.settings is real. body's own
+// data-workspace is the single hook every workspace-specific CSS rule and
+// renderNexusHome()'s style branch key off — see wyvern.js/dragon.js for
+// the chrome each style builds on top of this attribute.
+// A real ?workspace= always wins, for manual QA, same idiom as ?nexus=/
+// ?popup= elsewhere in this file — and like ?nexus=, it's applied to
+// S.settings.workspaceStyle IN MEMORY ONLY (never saveUiSettings()'d), so
+// every later check against S.settings.workspaceStyle (renderNexusHome's
+// branch, builder.js's guards, etc.) sees the override consistently for
+// this session without it leaking into the persisted setting.
+function applyWorkspaceStyle(){
+  const qsWorkspace = new URLSearchParams(location.search).get('workspace');
+  if (WORKSPACE_STYLE_OPTIONS.includes(qsWorkspace)) S.settings.workspaceStyle = qsWorkspace;
+  document.body.dataset.workspace = S.settings.workspaceStyle;
 }
 

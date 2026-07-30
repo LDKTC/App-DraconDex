@@ -1,0 +1,35 @@
+/* Workspace styles (Plan part2 #New Workspace) — chrome overrides layered
+   on top of body[data-workspace], set early by index.html's splash script
+   and authoritatively by applyWorkspaceStyle() (core/boot.js). Loaded last
+   in the cascade so its overrides always win over the fixed chrome rules
+   in nav-hub.css/layout.css/titlebar.css. Dragon's own overrides land here
+   too once built (Plan part2 M5) — this file, not a new one, per the
+   "one file per system" convention now that a workspace-style system
+   exists at all. */
+
+/* Wyvern: no nav-rail, no left panel/Nexus-Nest tree, no split-layout
+   picker, no legacy tab strip — mirrors .popup-mode's hide-list
+   (titlebar.css) except #settings-menu-wrap stays visible (the only way
+   back into Setting to switch styles again) and #status-bar stays visible
+   (still useful footer info for a newcomer, unlike a focused popup tab). */
+body[data-workspace="wyvern"] #nav-sidebar,
+body[data-workspace="wyvern"] #left-panel,
+body[data-workspace="wyvern"] #left-panel-resize,
+body[data-workspace="wyvern"] #builder-tabs,
+body[data-workspace="wyvern"] #layout-menu-wrap,
+body[data-workspace="wyvern"] #hub-toggle-btn,
+body[data-workspace="wyvern"] #titlebar-vault{display:none}
+
+#workspace-toolbar{
+	flex-direction:column;align-items:center;gap:4px;padding:8px 4px;
+	width:var(--nav);flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);
+}
+#workspace-toolbar.hidden{display:none}
+.wyvern-toolbar-sep{width:70%;height:1px;background:var(--border);margin:2px 0}
+
+/* Wyvern drill-down breadcrumb (replaces the docked Nest tree entirely). */
+.wyvern-breadcrumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:calc(13px * var(--fsc,1))}
+.wyvern-crumb{cursor:pointer;color:var(--t2)}
+.wyvern-crumb:last-child{color:var(--t1);font-weight:600;cursor:default}
+.wyvern-crumb:hover:not(:last-child){color:var(--accentH)}
+.wyvern-crumb-sep{color:var(--t3)}

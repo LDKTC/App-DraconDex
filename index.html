@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="css/compat.css">
   <link rel="stylesheet" href="css/kinds.css">
   <link rel="stylesheet" href="css/builder.css">
+  <link rel="stylesheet" href="css/workspace.css">
 </head>
 <body>
 <div id="splash">
@@ -50,6 +51,17 @@
       document.body.dataset.theme = theme;
     }
   }catch(e){ document.body.dataset.theme = 'midnight'; }
+
+  /* (a2) Workspace style, early — same reasoning as theme above (Plan part2
+     #New Workspace): a real ?workspace= query param always wins, for manual
+     QA, same idiom as boot.js's ?nexus=/?popup= reads. applyWorkspaceStyle()
+     in boot.js re-applies authoritatively once S.settings exists. */
+  try{
+    var qsWorkspace = new URLSearchParams(location.search).get('workspace');
+    var workspace = ['drake','wyvern','dragon'].indexOf(qsWorkspace) !== -1 ? qsWorkspace
+      : (['drake','wyvern','dragon'].indexOf(saved.workspaceStyle) !== -1 ? saved.workspaceStyle : 'drake');
+    document.body.dataset.workspace = workspace;
+  }catch(e){ document.body.dataset.workspace = 'drake'; }
 
   /* (b) Progress controller. Ticks come from real checkpoints — the script tags
      below, then init() in core.js — never a timer pretending to be progress. */
@@ -287,6 +299,7 @@
     <div id="left-panel-foot"></div>
   </aside>
   <div id="left-panel-resize" class="panel-resize-handle" onmousedown="startLeftPanelResize(event)" title="Resize panel"></div>
+  <div id="workspace-toolbar" class="hidden"></div>
   <main id="main-area"><div id="main-inner"></div></main>
 </div>
 <footer id="status-bar"></footer>
@@ -362,6 +375,7 @@
   <script src="src/renderer/drive.js"></script>
   <script src="src/renderer/update.js"></script>
   <script src="src/renderer/extension.js"></script>
+  <script src="src/renderer/wyvern.js"></script>
   <script>__splash.set(55)</script>
   <script src="src/renderer/search.js"></script>
 </body>

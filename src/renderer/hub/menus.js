@@ -72,14 +72,17 @@ function buildModuleContextMenuHtml(id, isMajor, pinned) {
   }
   // Plan part1 #3: modules with their own Builder page (any kind except the
   // pure-folder Collector, see KIND_MAIN_BUILDER) get "open in a new window"
-  // and a hover "open in a new pane" direction submenu.
+  // and a hover "open in a new pane" direction submenu. The pane submenu is
+  // meaningless in Wyvern (Plan part2 #New Workspace — no split panes at
+  // all there), so it's hidden rather than offering an action that would
+  // silently no-op or fight the single-pane guard in builderNavigate.
   const m = findModuleNode(id);
   if (m && m.kind !== 'collector') {
     html += `
     <div class="kind-list-item" onclick="closeAllPopups();openModuleInNewWindow(${id})"><span class="kli-name">${x(t('openInNewWindow'))}</span></div>
-    <div class="kind-list-item kli-submenu-parent" onmouseenter="openPaneDirectionSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
+    ${S.settings.workspaceStyle === 'wyvern' ? '' : `<div class="kind-list-item kli-submenu-parent" onmouseenter="openPaneDirectionSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
       <span class="kli-name">${x(t('openInNewPane'))}</span><span class="kli-arrow">›</span>
-    </div>
+    </div>`}
     <div class="ctx-sep"></div>`;
   }
   html += `

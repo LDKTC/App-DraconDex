@@ -81,6 +81,11 @@ function loadHubSectionHeights(){
 }
 const UI_THEME_OPTIONS = ['daylight','moonlight','midnight','redEclipse','clearSky','clearStar','afterRain','rainbow','atDawn','atDusk','atDay','blueEclipse','clearAurora','atTwilight','atSunset','clearComet','atDaybreak','afterSunset','atSunrise','atNight','atNoon','clearDusk','atMidnight','clearMoon','clearGalaxy','clearNebula','afterStorm','afterSnow','atMorning','clearSun','atEvening','clearMeteor'];
 const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','de','ru','it','nl','pl','uk','tr','qd'];
+// Plan part2 #New Workspace — which top-level app layout is active. 'drake'
+// (today's nav-rail+left-panel+split-pane Builder) is the default so
+// nobody's UI changes on upgrade; 'wyvern' (newcomer/simple) and 'dragon'
+// (expert/sandbox) are opt-in via Setting window -> Layout -> Workspace.
+const WORKSPACE_STYLE_OPTIONS = ['drake', 'wyvern', 'dragon'];
 const UI_SIZE_MIN = 50;
 const UI_SIZE_MAX = 200;
 const UI_SIZE_STEP = 5;
@@ -127,7 +132,9 @@ function loadUiSettings(){
   const quickExtras = Object.assign({ theme: false, account: false, profile: false }, saved.quickExtras || {});
   const navToggles = Object.assign({ importDb: true, exportDb: true, hashtag: true, colors: true }, saved.navToggles || {});
   const statusToggles = Object.assign({ vault: true, breadcrumb: true, words: true, saveState: true }, saved.statusToggles || {});
-  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, statusToggles };
+  const workspaceStyle = WORKSPACE_STYLE_OPTIONS.includes(saved.workspaceStyle) ? saved.workspaceStyle : 'drake';
+  const wyvernToolbarOrientation = saved.wyvernToolbarOrientation === 'horizontal' ? 'horizontal' : 'vertical';
+  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, statusToggles, workspaceStyle, wyvernToolbarOrientation };
 }
 
 // Kind display names (Phase 22): the Unique set (KIND_LABEL, locale-
@@ -196,6 +203,16 @@ const S = {
   // button) instead of a Hub accordion section — mutually exclusive with
   // activeModuleNode/filePreview/sageHut below.
   kindBrowserPage:false,
+  // Plan part2 #New Workspace: Import Dock promoted to its own full page
+  // for Wyvern's View-set menu, same "own S.*Page flag" pattern as
+  // kindBrowserPage above — mutually exclusive with it and with
+  // activeModuleNode/filePreview/sageHut.
+  importDockPage:false,
+  // Plan part2 #New Workspace — Wyvern's drill-down browse position: an
+  // array of module ids from the Nexus root down to wherever the user has
+  // navigated, empty = at the Nexus root. Per-session only (not persisted),
+  // same tier as S.wyvernBrowsePath's siblings above.
+  wyvernBrowsePath:[],
   // Plan part2 §2: read-only "Import DB" legacy view — reuses the existing
   // (normally hidden) Director/Navigator/Hero/Writer panels via
   // selectModule(), gated read-only by installImportDbGuard() below.

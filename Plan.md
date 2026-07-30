@@ -47,7 +47,7 @@
 ### part 2 version.4.1.0
 #### New Workspace 
 - [ ] Adding new three Workspace style for app as for new, amataur, and expert user
-    - [ ] Standard workspace : "Wyvern" from featureplan.md
+    - [x] Standard workspace : "Wyvern" from featureplan.md
     - [ ] Studio workspace : "Drake" from current available workspace
     - [ ] Sandbox workspace : "Dragon" create as new workspace
         - [ ] สิ่งที่ต้องการ :
