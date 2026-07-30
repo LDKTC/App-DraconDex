@@ -1,6 +1,6 @@
 ---
 name: version-update
-description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default), and a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part-finished checkpoint flow that also commits + pushes when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open. Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
+description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default), and a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part checkpoint flow that also commits + pushes — either when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open, or (far more common day to day) when explicitly asked for a checkpoint mid-way through a still-unfinished Part N, in which case X.Y.Z stays at the last version that actually finished and only a per-part round counter -N advances (re-derived each time from prior "Part N:"-tagged commits, never just incremented blindly). Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
 ---
 
 # version-update — bump package.json's version per DraconDex's x.y.z-n scheme
@@ -19,11 +19,14 @@ This skill has **two flows**, and picking the right one matters:
   bumps the field and stops — the caller (`procress-writing`) is the one
   that stages, commits, and pushes afterward, and it also writes
   `procress.md` and resets `Plan.md` as part of that same close-out.
-- **Flow B — part-finished checkpoint, bumps *and* commits + pushes.**
-  Triggers when a single `part N` block in `Plan.md`'s body just had its
-  last checklist item ticked, but `Plan.md`'s body still has at least one
-  `- [ ]` left somewhere else (the plan as a whole isn't done yet). This is
-  the exception to "never commits" — see Flow B below.
+- **Flow B — part checkpoint, bumps *and* commits + pushes.** Triggers
+  either when a single `part N` block in `Plan.md`'s body just had its last
+  checklist item ticked (the **fully-finished** case), or when the user
+  explicitly asks for a checkpoint/round commit mid-way through a `part N`
+  that ISN'T fully checked yet (the **unfinished-part** case — see "Flow B,
+  unfinished-part variant" below). Either way `Plan.md`'s body still has at
+  least one `- [ ]` left somewhere else (the plan as a whole isn't done
+  yet). This is the exception to "never commits" — see Flow B below.
 
 **Which flow applies:**
 
@@ -31,7 +34,8 @@ This skill has **two flows**, and picking the right one matters:
 |---|---|
 | User explicitly asks to bump/release the version, unrelated to a Plan.md part | A |
 | Invoked by `procress-writing` as its own step 7, after it already confirmed *every* checklist item in `Plan.md` is checked | A (procress-writing owns the commit) |
-| A single `part N` block just became fully checked, and other `- [ ]` items remain elsewhere in `Plan.md`'s body | **B** |
+| A single `part N` block just became fully checked, and other `- [ ]` items remain elsewhere in `Plan.md`'s body | **B** (fully-finished case) |
+| User explicitly requests a checkpoint/round commit for a `part N` that is NOT fully checked yet — most day-to-day work lands here, since a part is usually many sessions of partial progress | **B** (unfinished-part variant — see below; never fires automatically, only on an explicit ask) |
 | A single `part N` block just became fully checked, and it was the *last* unchecked block (finishing it finishes the whole plan) | Not this skill directly — hand off to `procress-writing`, which does its full write-up/reset/bump/commit close-out. Don't also fire Flow B here; that would double-bump and double-commit. |
 
 ## Flow A — bump only (unchanged)
@@ -121,7 +125,10 @@ This skill has **two flows**, and picking the right one matters:
 
 Same classification machinery as Flow A, scoped to one `part N` block, plus
 a commit and push at the end. Use this the moment a part's last checkbox
-gets ticked during a work session — don't wait for someone to ask.
+gets ticked during a work session — don't wait for someone to ask. (For a
+checkpoint mid-way through a part that ISN'T fully checked yet, see "Flow B,
+unfinished-part variant" right after step 7 — that's the far more common
+case day to day, since most sessions only finish a slice of a part.)
 
 1. **Confirm the trigger.** Re-read `Plan.md`'s body. The `part N` block
    that just finished must have every checklist line under it `[x]`/`[X]`,
@@ -173,6 +180,73 @@ gets ticked during a work session — don't wait for someone to ask.
    confirmation the push succeeded. Note that `Plan.md`'s checkboxes for
    this part stay as-is (checked) — only the full close-out in
    `procress-writing` ever resets `Plan.md`.
+
+## Flow B, unfinished-part variant (checkpoint mid-part)
+
+The far more common shape in practice: the user wants to commit+push a
+slice of real, working progress toward a `part N` that's still mostly
+unchecked — Drake/Dragon/the Setting page might all still be open while
+Wyvern alone just shipped, say. This never fires on its own; it only runs
+on an **explicit** ask (the user saying something like "flow b", "checkpoint
+this", "commit this round") — Plan.md's checklist state here is a *label*
+for which part is open, not a decisive trigger the way the fully-finished
+case's "every line just got checked" is.
+
+Differs from the fully-finished flow (steps 1–3 above) in exactly two
+ways — steps 4–7 (stage/commit/push/report) are otherwise identical:
+
+1. **No "every line checked" requirement.** Identify which `part N` the
+   work belongs to (the part block the diff's own files/behavior match —
+   usually obvious, and it's the same `N` that goes in the commit message's
+   `Part N:` tag). Most of Plan.md's body can still be unchecked elsewhere,
+   including inside this same part.
+
+2. **Version computation is different from both Flow A's generic
+   IN-PROGRESS rows and Flow B's fully-finished case** — deliberately
+   *skip* the classify-scope-and-bump-segment step entirely:
+   - **Base `X.Y.Z`**: the anchor version's own base (Flow A step 2's
+     anchor — i.e. whatever `X.Y.Z` is *already* in `package.json`, the
+     last version that actually finished and shipped clean). Do **not**
+     bump it, and do **not** jump ahead to the part's own `### part N
+     version.X.Y.Z` header label — that label is only earned once the
+     whole part finishes (see the fully-finished case above); a mid-part
+     checkpoint hasn't earned it yet regardless of how big this round's
+     diff looks.
+   - **`N`**: the round number *for this specific part*, re-derived from
+     git every time rather than trusted from whatever's currently in
+     `package.json` (a manual override, like an explicit target the user
+     hands you, can otherwise desync a blindly-incremented counter):
+     ```bash
+     # anchor = Flow A step 2's anchor commit for the CURRENT X.Y.Z base
+     # P = the part number this checkpoint belongs to, e.g. 2
+     priorRounds=$(git log --oneline "$anchor..HEAD" --grep="Part $P:" | wc -l)
+     N=$(( priorRounds + 1 ))
+     target="$X.$Y.$Z-$N"
+     ```
+     This naturally resets to `-1` the moment a *new* anchor exists (the
+     part before this one finished and shipped clean, moving `X.Y.Z`
+     forward) — no separate counter/marker file needed, same
+     re-derive-from-git philosophy as the rest of this skill.
+   - If the user hands you an explicit target version directly (e.g. "set
+     it to v.4.0.0-1"), that instruction wins outright — don't re-derive
+     and second-guess it, just apply it (still via `npm version <target>
+     --no-git-tag-version`, still no commit until they separately ask for
+     one).
+
+Worked example (real): Part 1 finished clean at `4.0.0` (anchor commit
+`4996cc5`). Part 2 ("New Workspace") starts; only its Wyvern line item
+finishes this round, everything else in Part 2 stays unchecked. First
+checkpoint: `git log 4996cc5..HEAD --grep="Part 2:"` finds 0 prior
+commits → `N=1` → `4.0.0-1`, committed as `v.4.0.0-1 — Part 2: New
+Workspace — Wyvern (simple/newcomer layout)`. A later session ships Drake's
+selectability as its own checkpoint, Part 2 still not fully done: the same
+grep now finds 1 prior `Part 2:` commit → `N=2` → `4.0.0-2`. Only once every
+line in Part 2 (Drake, Dragon, the Setting page) is finally checked does the
+fully-finished case above take over: classify the *whole* accumulated diff
+since `4996cc5` fresh, drop the suffix, and land on whatever `X.Y.Z` that
+classification actually earns (`4.1.0` if Plan.md's own pre-announced label
+turns out right, but the classification step still decides that for real —
+never just copy the label unchecked).
 
 ## Commit value — the `V.x.y.z-n a-b-c-dd/mm/yy` trailer
 
@@ -273,6 +347,16 @@ Worked examples:
   change → Flow B: `3.7.4`, committed as `v.3.7.4 — Part 2: <summary>`,
   pushed. Part 3 finishing later, if it also empties the whole checklist,
   routes to `procress-writing`'s full close-out instead of Flow B.
+- `4.0.0` (Part 1 shipped clean), Part 2 is wide open with only one line
+  item done, user explicitly asks for a checkpoint → Flow B unfinished-part
+  variant: `X.Y.Z` stays `4.0.0` (not bumped, not jumped to Part 2's own
+  `4.1.0` label), `N` = 1 (no prior `Part 2:` commits since the `4.0.0`
+  anchor) → `4.0.0-1`. A second Part-2 checkpoint later → `N`=2 (1 prior
+  `Part 2:` commit found) → `4.0.0-2`. Neither of these is Flow A's generic
+  "`3.7.3` → `3.7.4-1`" pattern — that row bumps the segment immediately
+  because a single self-contained fix defines the next version outright;
+  here, several unrelated slices are all converging on one not-yet-earned
+  future target, so the base stays put and only the round counter moves.
 
 ## Gotchas
 
@@ -325,3 +409,20 @@ Worked examples:
 - The commit-value trailer's `dd/mm/yy` is intentionally day-month-year with
   2-digit year — don't normalize it to this project's usual ISO date style
   elsewhere in docs; this format is specific to the trailer.
+- **The unfinished-part variant's `N` is a per-part round counter, not the
+  same thing as Flow A's generic IN-PROGRESS `-N`.** Flow A's "no suffix +
+  IN-PROGRESS → bump the segment, append `-1`" describes a single
+  self-contained fix/feature spanning several commits before *it* finishes
+  — the segment bumps immediately because that fix *is* what the next
+  version will be. The unfinished-part variant is different: many unrelated
+  slices (Wyvern, then Drake, then Dragon, ...) all converge on one
+  not-yet-classified future target, so `X.Y.Z` deliberately stays at the
+  last *finished* anchor and only `N` moves, recomputed via `git log
+  <anchor>..HEAD --grep="Part $P:"` rather than trusted from whatever's
+  currently sitting in `package.json`. Don't reach for Flow A's "just
+  increment the existing suffix" instinct here — re-derive `N` from git
+  every time, exactly as documented in "Flow B, unfinished-part variant."
+- The unfinished-part variant never auto-fires — always require an explicit
+  ask (the user saying "flow b" / "checkpoint this" / equivalent). Plan.md's
+  checklist state for that part is context here, not a trigger, unlike the
+  fully-finished case where "every line just got checked" *is* decisive.
