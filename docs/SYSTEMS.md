@@ -667,20 +667,29 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   ฟิลด์ประกาศ settings schema — เตรียมช่องไว้ให้ ยังไม่สร้าง UI จริงสำหรับ
   schema ที่ยังไม่มีอยู่
 
-### Workspace Styles — Wyvern (2026-07-31, ส่วนหนึ่งของ part2 #New Workspace)
+### Workspace Styles — Wyvern/Drake/Dragon ครบทั้ง 3 (2026-07-31, part2 #New Workspace จบรอบ)
 
 Plan.md part 2 (v4.1.0) ต้องการ 3 workspace style ที่ผู้ใช้เลือกได้: **Wyvern**
-(newcomer/simple, สเปกใน `featureplan.md` ที่ root repo), **Drake** (=UI
-ปัจจุบันทั้งหมด แค่เปลี่ยนชื่อ), **Dragon** (expert/sandbox, ยังไม่สร้าง) — รอบนี้
-ทำเฉพาะ **Wyvern** เท่านั้น (checkbox "Standard workspace: Wyvern" ใน Plan.md
-ติ๊กแล้ว, ส่วนที่เหลือ — Drake ให้เลือกได้จริง/Dragon/หน้า Setting "workspace"
-— ยังไม่ทำ):
+(newcomer/simple, สเปกใน `featureplan.md` ที่ root repo — ทำในรอบก่อนหน้า),
+**Drake** (=UI ปัจจุบันทั้งหมด ไม่มีโค้ดใหม่ เป็น default อยู่แล้ว), **Dragon**
+(expert/sandbox — ทิศทางที่เลือกกับผู้ใช้คือ "freeform spatial canvas": การ์ด
+module ที่ลากจัดวางเองได้ ใกล้เคียง `mod/designer.js` มากที่สุด) — รอบนี้ทำ
+Dragon + หน้า Setting "Workspace Style" ให้เสร็จ ครบทั้ง 3 style แล้ว
+(checkbox ทั้งหมดใน Plan.md ส่วน New Workspace ติ๊กแล้ว):
 
 - **สลับด้วย** `S.settings.workspaceStyle` (`'drake'` default/`'wyvern'`/
   `'dragon'`, เก็บใน localStorage เทียบชั้นเดียวกับ theme) หรือ query param
-  `?workspace=wyvern` สำหรับทดสอบ (override ใน memory เท่านั้น ไม่เขียนทับ
-  localStorage เหมือน `?nexus=` เดิม) — ยังไม่มี UI จริงให้ผู้ใช้กดเลือก
-  (รอ Setting window "workspace" page ในรอบถัดไป)
+  `?workspace=` สำหรับทดสอบ (override ใน memory เท่านั้น ไม่เขียนทับ
+  localStorage เหมือน `?nexus=` เดิม) **หรือผ่าน Setting window → Workspace →
+  หน้า "Workspace Style" ใหม่** (`src/renderer/core/workspace-style.js`) —
+  3 mockup card วาดด้วย CSS (ไม่ใช้รูปภาพ), คลิกแค่ stage ตัวเลือกไว้ใน
+  `S.settingPendingWorkspace` ยังไม่ apply ทันที ต้องกดปุ่ม "Apply & Restart"
+  (ยืนยันผ่าน `uiConfirm()` ก่อน) ถึงจะเขียนลง `S.settings.workspaceStyle`
+  แล้ว `location.reload()` — เพราะสลับ chrome ต้องรีบูตหน้าใหม่ ไม่ใช่ apply
+  สดแบบ theme/language
+
+#### Wyvern
+
 - **Chrome**: ซ่อน nav-sidebar/left-panel (Nexus Nest tree)/legacy tab
   strip/split-layout picker/hub-toggle/titlebar vault name ทั้งหมด (มิเรอร์
   `.popup-mode` เดิมใน `css/titlebar.css` แต่**คงปุ่ม Settings และ status bar
@@ -696,17 +705,63 @@ Plan.md part 2 (v4.1.0) ต้องการ 3 workspace style ที่ผู�
   เมื่อคลิก (breadcrumb โตขึ้น 1 ระดับ), module ที่ไม่มีลูกเปิดหน้ารายละเอียด
   จริงทันที; right-click ยังเปิด context menu ปกติ (ไม่มี "เปิดใน pane ใหม่"
   เพราะ Wyvern ไม่มี split pane)
-- **ไม่มี split pane, ไม่ auto-tab**: `S.builder.layoutTree.type` ค้างที่
-  `'leaf'` เสมอ (ปุ่ม split ถูกซ่อน, ลาก tab ไปขอบไม่ auto-split) และ
-  `pane.tabs` ว่างเปล่าเสมอไม่ว่าเปิดอะไร (ไม่มี tab chip ให้เห็นเลย) — สอด
-  คล้องกับ featureplan.md ที่ต้องการ "เปิดได้ทีละหน้าเดียว ไม่เปิด tab ใหม่
-  อัตโนมัติ"
 - ตรวจแล้วด้วย E2E จริงผ่าน `run-dracondex`: chrome ถูกซ่อน/โชว์ถูกต้อง,
   toolbar ทำงานครบทุกปุ่ม, drill-down + breadcrumb กลับ root ถูกต้อง, เปิด
-  module ซ้อนกันไม่สร้าง tab ใหม่, ไม่มีปุ่ม split ที่ไหนเลย, **และยืนยันว่า
-  Drake (workspaceStyle ว่าง/`'drake'`) ทำงานเหมือนเดิมทุกจุดไม่มี regression**
-  (nav-sidebar/left-panel/split/auto-tab/context-menu "เปิดใน pane ใหม่" ปกติ
-  หมด)
+  module ซ้อนกันไม่สร้าง tab ใหม่, ไม่มีปุ่ม split ที่ไหนเลย
+
+#### Drake
+
+ไม่มีโค้ดพฤติกรรมใหม่เลย — nav-sidebar + left-panel Nest tree + split-pane
+Builder เหมือนเดิมทุกจุด ทุก guard ที่เพิ่มให้ Wyvern/Dragon (ดูหัวข้อ "ไม่มี
+split pane" ด้านล่าง) เขียนเป็น `workspaceStyle !== 'drake'` เสมอ ดังนั้น Drake
+falls through ทุกจุดโดยอัตโนมัติ งานรอบนี้คือทำให้เลือกได้จริงผ่านหน้า Setting
+ใหม่ (ก่อนหน้านี้เป็น default อยู่แล้วแต่ไม่มี "ตัวเลือก" ให้เห็นเทียบกับอีก 2
+style)
+
+#### Dragon
+
+- **Chrome**: **คง nav-sidebar ไว้** (import/export/hashtag/color ครบตามที่
+  Plan.md ระบุ "แสดง tool ตามเดิม") — ต่างจาก Wyvern ที่ซ่อน nav-sidebar
+  ไปเลย จุดที่ซ่อนมีแค่ left-panel (Nest tree)/left-panel-resize/builder-tabs/
+  layout-menu-wrap ไม่มี toolbar เป็นของตัวเอง (`src/renderer/dragon.js` ไม่มี
+  `render*Toolbar()` แบบ Wyvern)
+- **บอร์ดอิสระแทน left-panel tree**: `buildDragonCanvasHtml()` วาด module
+  ระดับปัจจุบันเป็นการ์ด absolute-positioned บน `#dragon-stage` ภายใน
+  `.dragon-board` (scroll ธรรมชาติ ไม่มี custom pan/zoom ในเวอร์ชันนี้ —
+  จงใจตัดออกเพื่อความง่าย ถ้าต้องการทีหลังค่อยเพิ่ม) `mountDragonBoard()`
+  ผูก `pointerdown`/`pointermove`/`pointerup` ต่อการ์ด มิเรอร์วิธีของ
+  `mod/designer.js`'s free-drag ทุกจุด (ไม่ใช้ HTML5 dragstart/drop เพราะ
+  ไม่เหมาะกับตำแหน่ง x/y อิสระ) — ลากแล้วปล่อยเก็บตำแหน่งจริง ถ้าไม่ขยับถือ
+  เป็นคลิก (เจาะลึก/เปิด module)
+- **ตำแหน่งการ์ด — client-only โดยตั้งใจ**: เก็บใน
+  `S.settings.dragonLayout[nexusId][parentKey][moduleId] = {x,y}`
+  (localStorage ชั้นเดียวกับ theme) ไม่ใช่ DB table แบบ `designer_node` ของ
+  `mod/designer.js` — เพราะไม่มีใครขอ sync ข้ามเครื่อง ถ้าต้องการทีหลัง
+  อัปเกรดเป็น DB + IPC ได้โดยมิเรอร์ของ designer.js ได้เลย โมดูลที่ยังไม่เคย
+  ลากจะได้ตำแหน่ง grid อัตโนมัติจาก `dragonNodePosition()` (ไม่ทับกันเป็นกอง
+  ที่ 0,0)
+- **Drill-down เหมือน Wyvern แต่ render เป็นบอร์ด**: `S.dragonBrowsePath`
+  (array เดียวกับ `S.wyvernBrowsePath` ทุกจุด รีเซ็ตพร้อมกันทุกที่ที่
+  `wyvernBrowsePath` ถูกรีเซ็ต) — เพราะ module kind `collector` ไม่มีหน้า
+  detail ของตัวเอง (`hub/open.js`'s `openModuleNode` แค่ toggle left-panel
+  tree ให้) Dragon เลยต้องมีกลไกเจาะลึกเป็นของตัวเองเหมือน Wyvern ถึงจะเข้าถึง
+  ลูกของ collector ได้ — สิ่งที่ทำให้ไม่ใช่ Wyvern ซ้ำคือ **การ render แต่ละ
+  ระดับเป็นบอร์ดลากอิสระ ไม่ใช่ grid ตายตัว**
+  ไม่มี edge/เส้นเชื่อมให้ผู้ใช้ลากวาดเอง (ต่างจาก `designer.js`'s
+  click-to-connect) — เพราะความสัมพันธ์ parent/child มีอยู่แล้วจาก module
+  tree, เพิ่ม edge ที่แก้ไขเองได้จะซ้ำกับฟีเจอร์ reparent-by-drag ของ Nest
+  tree เดิมโดยไม่มีใครขอ
+- **ไม่มี split pane, ไม่ auto-tab เหมือน Wyvern**: guard เดิมใน
+  `builder.js`/`hub/menus.js` ที่เคยเช็กแค่ `workspaceStyle === 'wyvern'`
+  ขยายเป็น `workspaceStyle !== 'drake'` แทนการก็อปเช็ก `'dragon'` เพิ่มอีกชุด
+- ตรวจแล้วด้วย E2E จริงผ่าน `run-dracondex`: nav-sidebar ยังอยู่, left-panel/
+  builder-tabs หายไป, บอร์ดวาดการ์ดถูกต้อง, ลากการ์ดแล้ว reload ตำแหน่ง
+  ยังอยู่ (ยืนยันแล้วว่า `S.settings.dragonLayout` persist ผ่าน localStorage
+  จริง), คลิก collector เจาะลึกถูกต้อง breadcrumb อัปเดต, คลิก module ปกติ
+  เปิดหน้า detail/builder ปกติแล้วกลับบอร์ดผ่านปุ่ม home ได้, right-click มีแค่
+  "เปิดในหน้าต่างใหม่" ไม่มี "เปิดใน pane ใหม่", **และยืนยันว่า Drake/Wyvern
+  ไม่มี regression จาก guard ที่ขยายออกเป็น `!== 'drake'`** (สลับกลับ Drake
+  แล้ว pane tab strip/context menu "เปิดใน pane ใหม่" กลับมาปกติทุกจุด)
 
 ---
 

@@ -167,8 +167,9 @@ function goToNexusNestHub() {
   // Wyvern (Plan part2 #New Workspace): jumping to Nexus Nest from the
   // View-set menu returns to the browse root rather than wherever the user
   // last drilled — matches Drake's own "home" button (clears state, doesn't
-  // remember position).
+  // remember position). Dragon gets the same treatment.
   S.wyvernBrowsePath = [];
+  S.dragonBrowsePath = [];
   renderNexusHome();
 }
 

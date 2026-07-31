@@ -7,7 +7,7 @@
 // this file only owns the shell plus the Workspace → Theme/Text&Size pages
 // that used to live in settings.js's Preferences panel code.
 const SETTING_GROUPS = {
-  workspace: ['theme', 'textsize', 'tooltoggle'],
+  workspace: ['theme', 'textsize', 'tooltoggle', 'style'],
   user: ['account', 'profile'],
   appdata: ['tokensync', 'database', 'backup'],
   extension: ['extension', 'extsettings'],
@@ -18,6 +18,7 @@ const SETTING_GROUP_LABEL_KEY = {
 };
 const SETTING_PAGE_LABEL_KEY = {
   theme: 'theme', textsize: 'settingPageTextSize', tooltoggle: 'settingPageToolToggle',
+  style: 'settingPageWorkspaceStyle',
   account: 'settingPageAccount', profile: 'settingPageProfile',
   tokensync: 'settingPageTokenSync', database: 'settingPageDatabase', backup: 'prefs_backup',
   extension: 'prefs_extension', extsettings: 'settingPageExtSettings',

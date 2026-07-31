@@ -2,10 +2,10 @@
    on top of body[data-workspace], set early by index.html's splash script
    and authoritatively by applyWorkspaceStyle() (core/boot.js). Loaded last
    in the cascade so its overrides always win over the fixed chrome rules
-   in nav-hub.css/layout.css/titlebar.css. Dragon's own overrides land here
-   too once built (Plan part2 M5) — this file, not a new one, per the
-   "one file per system" convention now that a workspace-style system
-   exists at all. */
+   in nav-hub.css/layout.css/titlebar.css. Wyvern, Dragon, and the Setting
+   window's own "Workspace Style" picker mockups all land in this one file
+   per the "one file per system" convention now that a workspace-style
+   system exists at all. */
 
 /* Wyvern: no nav-rail, no left panel/Nexus-Nest tree, no split-layout
    picker, no legacy tab strip — mirrors .popup-mode's hide-list
@@ -27,9 +27,41 @@ body[data-workspace="wyvern"] #titlebar-vault{display:none}
 #workspace-toolbar.hidden{display:none}
 .wyvern-toolbar-sep{width:70%;height:1px;background:var(--border);margin:2px 0}
 
-/* Wyvern drill-down breadcrumb (replaces the docked Nest tree entirely). */
+/* Wyvern drill-down breadcrumb (replaces the docked Nest tree entirely).
+   Reused verbatim by Dragon's own breadcrumb below — same markup/classes,
+   only the board underneath it differs. */
 .wyvern-breadcrumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:calc(13px * var(--fsc,1))}
 .wyvern-crumb{cursor:pointer;color:var(--t2)}
 .wyvern-crumb:last-child{color:var(--t1);font-weight:600;cursor:default}
 .wyvern-crumb:hover:not(:last-child){color:var(--accentH)}
 .wyvern-crumb-sep{color:var(--t3)}
+
+/* Dragon: keeps nav-sidebar/hub-toggle/titlebar-vault/status-bar (per
+   Plan.md's "แสดง tool ตามเดิม") — only the left-panel Nest tree and the
+   Builder's tab strip/split-layout picker hide, replaced by the freeform
+   board below. */
+body[data-workspace="dragon"] #left-panel,
+body[data-workspace="dragon"] #left-panel-resize,
+body[data-workspace="dragon"] #builder-tabs,
+body[data-workspace="dragon"] #layout-menu-wrap{display:none}
+
+/* Dragon's freeform board — a scrollable viewport (native scroll, no
+   custom pan/zoom for this first version — see Plan.md's Dragon section)
+   over an absolutely-sized stage sized to fit every card's position. */
+.dragon-board{position:relative;width:100%;height:560px;overflow:auto;
+	background:var(--raised);border:1px solid var(--border);border-radius:var(--r);
+	background-image:linear-gradient(rgba(90,90,114,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(90,90,114,.14) 1px,transparent 1px);
+	background-size:24px 24px;
+}
+.dragon-card{position:absolute;width:170px;cursor:grab}
+.dragon-card.dragging{cursor:grabbing;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+
+/* Setting window → Workspace → Workspace Style page (core/workspace-style.js)
+   — CSS-drawn wireframe mockups reusing the Theme page's .prefs-theme-cell/
+   -grid/-name/-check idiom for the cards themselves; only these small
+   preview-block rules are new. */
+.wsp-cell-preview{display:flex;gap:3px;height:56px;padding:4px;margin-bottom:6px;
+	border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;background:var(--bg)}
+.wsp-blk{border-radius:2px}
+.wsp-board-mini{position:relative;flex:1;background:var(--bg)}
+.wsp-dot{position:absolute;width:12px;height:8px;border-radius:2px;background:var(--accent);opacity:.55}

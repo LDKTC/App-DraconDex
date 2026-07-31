@@ -456,36 +456,48 @@ gate ทุก segment ด้วย `S.settings.statusToggles`), `src/renderer/s
 `.setting-content` ใหม่ — `.prefs-*` เดิมยังอยู่เพราะ Theme/Text&Size page
 reuse), `src/renderer/i18n.js` (คีย์ `setting*` ใหม่ 51 คีย์ครบ 18 locale)
 
-## Workspace Styles — Wyvern เท่านั้น (2026-07-31, part2 #New Workspace เริ่มแรก)
+## Workspace Styles — Wyvern/Drake/Dragon ครบทั้ง 3 (2026-07-31, part2 #New Workspace จบรอบ)
 
-3 workspace style ตาม Plan.md (Wyvern/Drake/Dragon) — รอบนี้ทำแค่ **Wyvern**
-(newcomer/simple, สเปกที่ `featureplan.md` ที่ root) พฤติกรรมละเอียดที่
-[SYSTEMS.md §Workspace Styles](SYSTEMS.md)
+3 workspace style ตาม Plan.md (Wyvern/Drake/Dragon) ครบแล้วทั้ง 3
+พฤติกรรมละเอียดที่ [SYSTEMS.md §Workspace Styles](SYSTEMS.md)
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/renderer/wyvern.js` | ~140 | ใหม่ — ทั้งฟีเจอร์ Wyvern: `renderWyvernToolbar()` (toolbar ใหม่ ปุ่ม Views/Import/Export/Hashtag/Color/Create-module ทุกปุ่มเรียกฟังก์ชันเดิมของ Drake), `openWyvernViewSetMenu()` (popup 4 ตัวเลือก: Nexus Nest/Sage Hut/Import Dock/Import DB), `buildWyvernBrowseHtml()`/`wyvernDrillInto()`/`wyvernDrillUp()` (drill-down card-grid browser แทน left-panel tree), `renderWyvernHome()`/`buildWyvernPageHtml()` (`renderNexusHome()` override), `buildWyvernNexusPickerHtml()` (มิเรอร์ nexus picker list เข้า `#main-inner` เพราะ left-panel ถูกซ่อน) |
-| `css/workspace.css` | ~35 | ใหม่ — stylesheet ที่ 15 (โหลดหลังสุด): ซ่อน chrome เดิมเมื่อ `body[data-workspace="wyvern"]` (มิเรอร์ `.popup-mode` แต่คง `#settings-menu-wrap`/`#status-bar`), style `#workspace-toolbar`/`.wyvern-breadcrumb`/`.wyvern-crumb` |
+| `src/renderer/wyvern.js` | ~140 | Wyvern (เซสชันก่อนหน้า): `renderWyvernToolbar()` (toolbar ปุ่ม Views/Import/Export/Hashtag/Color/Create-module ทุกปุ่มเรียกฟังก์ชันเดิมของ Drake), `openWyvernViewSetMenu()` (popup 4 ตัวเลือก: Nexus Nest/Sage Hut/Import Dock/Import DB), `buildWyvernBrowseHtml()`/`wyvernDrillInto()`/`wyvernDrillUp()` (drill-down card-grid browser แทน left-panel tree), `renderWyvernHome()`/`buildWyvernPageHtml()` (`renderNexusHome()` override), `buildWyvernNexusPickerHtml()` (มิเรอร์ nexus picker list เข้า `#main-inner`, Dragon เรียกใช้ซ้ำตัวนี้ด้วย) |
+| `src/renderer/dragon.js` | ~175 | ใหม่ — ทั้งฟีเจอร์ Dragon (freeform spatial canvas): `dragonLayoutFor()`/`dragonNodePosition()` (ตำแหน่งการ์ดต่อ nexus+parent เก็บใน `S.settings.dragonLayout`, client-only ไม่ผ่าน DB), `dragonBrowseCurrentList()`/`dragonDrillInto()`/`dragonDrillUp()` (drill-down เหมือน Wyvern แต่ render เป็นบอร์ดอิสระ), `buildDragonCanvasHtml()`/`mountDragonBoard()` (วาดการ์ด + ผูก pointerdown/move/up drag มิเรอร์ `mod/designer.js`), `renderDragonHome()`/`buildDragonPageHtml()` (`renderNexusHome()` override, ไม่มี toolbar ของตัวเอง) |
+| `src/renderer/core/workspace-style.js` | ~65 | ใหม่ — Setting window → Workspace → หน้า "Workspace Style": `settingWorkspaceStylePageHtml()` (3 มockup card แบบ CSS wireframe, ไม่ apply ทันที), `selectPendingWorkspaceStyle()`/`applyWorkspaceStyleChoice()` (stage แล้วค่อย apply ผ่านปุ่ม "Apply & Restart" + `uiConfirm()` + `location.reload()`) |
+| `css/workspace.css` | ~70 | stylesheet ที่ 15 (โหลดหลังสุด): เดิม (Wyvern) + เพิ่ม `body[data-workspace="dragon"]` (ซ่อนแค่ left-panel/builder-tabs/layout-menu-wrap, **คง nav-sidebar**), `.dragon-board`/`.dragon-card`, และ `.wsp-*` (mockup preview บนหน้า Setting) |
 
-ไฟล์เดิมที่แตะ: `index.html` (splash script อ่าน `?workspace=`/`saved.workspaceStyle`
-เพิ่ม, `#workspace-toolbar` div ใหม่, script/link tag ใหม่), `src/renderer/core/
-state.js` (`WORKSPACE_STYLE_OPTIONS`, `loadUiSettings()` เพิ่ม `workspaceStyle`/
-`wyvernToolbarOrientation`, `S.wyvernBrowsePath`/`S.importDockPage` ใหม่),
-`src/renderer/core/boot.js` (`applyWorkspaceStyle()` ใหม่ — อ่าน `?workspace=`
+ไฟล์เดิมที่แตะ (รอบ Wyvern เดิม + รอบ Dragon/Setting page นี้รวมกัน):
+`index.html` (splash script อ่าน `?workspace=`/`saved.workspaceStyle`,
+`#workspace-toolbar` div, script tag ใหม่ 3 ไฟล์: `dragon.js`/
+`workspace-style.js` เพิ่มจากรอบนี้), `src/renderer/core/state.js`
+(`WORKSPACE_STYLE_OPTIONS`, `loadUiSettings()` เพิ่ม `workspaceStyle`/
+`wyvernToolbarOrientation`/`dragonLayout`, `S.wyvernBrowsePath`/
+`S.dragonBrowsePath`/`S.settingPendingWorkspace`/`S.importDockPage` ใหม่),
+`src/renderer/core/boot.js` (`applyWorkspaceStyle()` — อ่าน `?workspace=`
 override ใน memory เท่านั้น แล้วเรียกหลัง `applyUiSettings()`), `src/renderer/
-core/views.js` (`renderNexusHome()` เพิ่ม branch แรกสุดเช็ก `workspaceStyle`,
+core/views.js` (`renderNexusHome()` เพิ่ม branch เช็ก `workspaceStyle==='wyvern'`
+และ `==='dragon'`, `runBuilderMounts()` เรียก `mountDragonBoard()` ท้ายสุด,
 `buildBuilderPageHtml()` เพิ่ม `S.importDockPage` เข้า precedence chain),
 `src/renderer/builder.js` (`builderNavigate()`/`builderPaneHeadHtml()`/
-`onBodyDrop()` เพิ่ม guard `workspaceStyle==='wyvern'` — no-tab/no-split/no-
-drag-split, ยืนยันแล้วว่า Drake ไม่กระทบ), `src/renderer/hub/menus.js`
-(`buildModuleContextMenuHtml()` ซ่อน "เปิดใน pane ใหม่" ใน Wyvern),
+`onBodyDrop()` guard เดิมจาก `workspaceStyle==='wyvern'` ขยายเป็น
+`workspaceStyle!=='drake'` ให้ Dragon ได้ no-tab/no-split/no-drag-split
+แบบเดียวกันโดยไม่ก็อปโค้ดซ้ำ, ยืนยันแล้วว่า Drake ไม่กระทบ), `src/renderer/
+hub/menus.js` (guard "เปิดใน pane ใหม่" ขยายจาก `==='wyvern'` เป็น
+`!=='drake'` เหมือนกัน), `src/renderer/core/setting-window.js`
+(`SETTING_GROUPS.workspace` เพิ่ม `'style'`, `SETTING_PAGE_LABEL_KEY.style`),
 `src/renderer/hub/sections.js` (`goToImportDockPage()`/`buildImportDockPageHtml()`
-ใหม่ — หน้า Import Dock แบบเดี่ยว มิเรอร์ `goToKindBrowserHub()`), `src/renderer/
-hub/kinds.js` (`goToNexusNestHub()`/`atHubHome` เพิ่ม clear `importDockPage`/
-`wyvernBrowsePath`), `src/renderer/hub/open.js`/`src/renderer/core/nexus.js`/
-`src/renderer/mod/fileviewer.js`/`item.js`/`sagehut.js` (clear `S.importDockPage`
-ที่จุดเดิมทุกจุดที่ clear `S.kindBrowserPage` อยู่แล้ว), `src/renderer/i18n.js`
-(คีย์ `wyvernViewSet` ใหม่ครบ 18 locale)
+— หน้า Import Dock แบบเดี่ยว มิเรอร์ `goToKindBrowserHub()`), `src/renderer/
+hub/kinds.js` (`goToNexusNestHub()`/`atHubHome` clear `importDockPage`/
+`wyvernBrowsePath`/`dragonBrowsePath`), `src/renderer/core/nexus.js`
+(`clearWorkspaceTabs()` clear `wyvernBrowsePath`/`dragonBrowsePath`),
+`src/renderer/hub/open.js`/`src/renderer/mod/fileviewer.js`/`item.js`/
+`sagehut.js` (clear `S.importDockPage` ที่จุดเดิมทุกจุดที่ clear
+`S.kindBrowserPage` อยู่แล้ว), `src/renderer/i18n.js` (คีย์ `wyvernViewSet`
+เดิม + คีย์ใหม่รอบนี้ `settingPageWorkspaceStyle`/`workspaceStyleDrakeDesc`/
+`workspaceStyleWyvernDesc`/`workspaceStyleDragonDesc`/`settingWorkspaceApply`/
+`settingWorkspaceApplyConfirm` ครบ 18 locale)
 
 ---
 

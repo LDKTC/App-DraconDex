@@ -134,7 +134,11 @@ function loadUiSettings(){
   const statusToggles = Object.assign({ vault: true, breadcrumb: true, words: true, saveState: true }, saved.statusToggles || {});
   const workspaceStyle = WORKSPACE_STYLE_OPTIONS.includes(saved.workspaceStyle) ? saved.workspaceStyle : 'drake';
   const wyvernToolbarOrientation = saved.wyvernToolbarOrientation === 'horizontal' ? 'horizontal' : 'vertical';
-  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, statusToggles, workspaceStyle, wyvernToolbarOrientation };
+  // Dragon's drag-to-arrange positions ({nexusId: {parentKey: {moduleId: {x,y}}}})
+  // — client-only, same tier as the other UI-chrome prefs above (see Plan
+  // part2 #New Workspace's Dragon section for why this isn't DB-backed).
+  const dragonLayout = saved.dragonLayout && typeof saved.dragonLayout === 'object' ? saved.dragonLayout : {};
+  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, statusToggles, workspaceStyle, wyvernToolbarOrientation, dragonLayout };
 }
 
 // Kind display names (Phase 22): the Unique set (KIND_LABEL, locale-
@@ -213,6 +217,16 @@ const S = {
   // navigated, empty = at the Nexus root. Per-session only (not persisted),
   // same tier as S.wyvernBrowsePath's siblings above.
   wyvernBrowsePath:[],
+  // Plan part2 #New Workspace — Dragon's own drill-down position, identical
+  // shape/semantics to S.wyvernBrowsePath above (Dragon still needs to walk
+  // into collector-kind modules, which have no standalone detail page) —
+  // kept as a separate array since the two styles' boards render
+  // independently and a user could in theory flip styles mid-session.
+  dragonBrowsePath:[],
+  // Setting window "Workspace Style" page — the card the user has clicked
+  // but not yet committed via "Apply & Restart" (core/workspace-style.js).
+  // Session-only UI state, not the persisted S.settings.workspaceStyle.
+  settingPendingWorkspace:null,
   // Plan part2 §2: read-only "Import DB" legacy view — reuses the existing
   // (normally hidden) Director/Navigator/Hero/Writer panels via
   // selectModule(), gated read-only by installImportDbGuard() below.

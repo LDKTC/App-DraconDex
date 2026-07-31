@@ -19,6 +19,50 @@
 
 ---
 
+## 2026-07-31 — Part 2 v4.1.0 (จบรอบ): Workspace Styles — Dragon + Setting page, ครบทั้ง 3 style
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/dragon.js` (ใหม่ — ทั้งฟีเจอร์ Dragon),
+  `src/renderer/core/workspace-style.js` (ใหม่ — Setting window → Workspace
+  → หน้า "Workspace Style"), `css/workspace.css` (เพิ่ม
+  `body[data-workspace="dragon"]`/`.dragon-board`/`.dragon-card`/`.wsp-*`),
+  `index.html` (script tag `dragon.js`/`workspace-style.js` ใหม่),
+  `src/renderer/core/state.js` (`S.dragonBrowsePath`/
+  `S.settingPendingWorkspace` ใหม่, `loadUiSettings()` เพิ่ม `dragonLayout`),
+  `src/renderer/core/views.js` (`renderNexusHome()` เพิ่ม branch
+  `workspaceStyle==='dragon'`, `runBuilderMounts()` เรียก
+  `mountDragonBoard()`), `src/renderer/builder.js` (3 guard เดิมที่เช็กแค่
+  `==='wyvern'` ขยายเป็น `!=='drake'` ให้ Dragon ได้ no-tab/no-split/no-
+  drag-split แบบเดียวกันโดยไม่ก็อปโค้ดซ้ำ), `src/renderer/hub/menus.js`
+  (guard "เปิดใน pane ใหม่" ขยายแบบเดียวกัน), `src/renderer/core/
+  setting-window.js` (`SETTING_GROUPS.workspace` เพิ่ม `'style'`),
+  `src/renderer/hub/kinds.js`/`src/renderer/core/nexus.js` (clear
+  `S.dragonBrowsePath` ทุกจุดที่ clear `wyvernBrowsePath` อยู่แล้ว),
+  `src/renderer/i18n.js` (คีย์ใหม่ `settingPageWorkspaceStyle`/
+  `workspaceStyleDrakeDesc`/`workspaceStyleWyvernDesc`/
+  `workspaceStyleDragonDesc`/`settingWorkspaceApply`/
+  `settingWorkspaceApplyConfirm` ครบ 18 locale), `Plan.md` (ติ๊ก 3 checkbox
+  ที่เหลือของ #New Workspace ทั้งหมด)
+- อะไรเปลี่ยน: เพิ่ม **Dragon** — workspace style ที่ 3 (expert/sandbox,
+  ทิศทางที่ตกลงกับผู้ใช้คือ "freeform spatial canvas") คงปุ่มเครื่องมือ
+  nav-sidebar ปกติไว้ (ต่างจาก Wyvern ที่ซ่อนหมด) แต่แทน left-panel Nest
+  tree + split-pane Builder ด้วยบอร์ดที่ลากจัดวางการ์ด module ได้อิสระ —
+  ตำแหน่งเก็บ client-only ใน `S.settings.dragonLayout` (ตัดสินใจไม่ทำ DB
+  table ใหม่แบบ `designer_node` เพราะไม่มีใครขอ sync ข้ามเครื่อง) ใช้กลไก
+  drill-down เดียวกับ Wyvern (`S.dragonBrowsePath`) สำหรับเจาะเข้า module
+  kind `collector` ที่ไม่มีหน้า detail ของตัวเอง แต่ render แต่ละระดับเป็น
+  บอร์ดลากอิสระแทน grid ตายตัว ไม่มี edge ให้ผู้ใช้ลากวาดเอง (ความสัมพันธ์
+  parent/child มาจาก module tree อยู่แล้ว) เพิ่มหน้า Setting window ใหม่
+  "Workspace Style" (3 mockup card วาดด้วย CSS ไม่ใช้รูป, เลือกแล้วต้องกด
+  "Apply & Restart" เพราะสลับ chrome ต้องรีบูตหน้า ไม่ใช่ apply สดแบบ
+  theme/language) — ทำให้ทั้ง 3 style (Drake/Wyvern/Dragon) เลือกได้จริงเป็น
+  ครั้งแรก ก่อนหน้านี้มีแค่ query param `?workspace=` เท่านั้น
+- ทำไม: Plan.md ส่วน `### part 2 version.4.1.0 #### New Workspace` — Wyvern
+  เสร็จไปแล้วรอบก่อน เหลือ Drake ให้เลือกได้จริง/Dragon/หน้า Setting
+  "workspace" ที่ยังไม่ทำ รอบนี้ปิดครบทั้ง 3 checkbox ที่เหลือ
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Workspace Styles (ขยายเป็น Wyvern/Drake/
+  Dragon ครบ 3 style), docs/FILES.md §Workspace Styles (ตารางไฟล์ใหม่ +
+  ไฟล์เดิมที่แตะ)
+
 ## 2026-07-31 — Part 2 v4.1.0 (เริ่มแรก): Workspace Styles — Wyvern
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/wyvern.js` (ใหม่), `css/workspace.css` (ใหม่),

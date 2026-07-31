@@ -80,7 +80,7 @@ function buildModuleContextMenuHtml(id, isMajor, pinned) {
   if (m && m.kind !== 'collector') {
     html += `
     <div class="kind-list-item" onclick="closeAllPopups();openModuleInNewWindow(${id})"><span class="kli-name">${x(t('openInNewWindow'))}</span></div>
-    ${S.settings.workspaceStyle === 'wyvern' ? '' : `<div class="kind-list-item kli-submenu-parent" onmouseenter="openPaneDirectionSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
+    ${S.settings.workspaceStyle !== 'drake' ? '' : `<div class="kind-list-item kli-submenu-parent" onmouseenter="openPaneDirectionSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
       <span class="kli-name">${x(t('openInNewPane'))}</span><span class="kli-arrow">›</span>
     </div>`}
     <div class="ctx-sep"></div>`;

@@ -155,6 +155,7 @@ function renderNexusHome() {
   // here instead of at every call site. Drake (default/unset) falls
   // straight through, unchanged.
   if (S.settings.workspaceStyle === 'wyvern' && typeof renderWyvernHome === 'function') return renderWyvernHome();
+  if (S.settings.workspaceStyle === 'dragon' && typeof renderDragonHome === 'function') return renderDragonHome();
   S.view = 'nexus';
   S.activeModule = null;
   // Rename-mode focus lock (Plan part1 #5) — while a module name is being
@@ -223,5 +224,8 @@ function runBuilderMounts() {
     mountSketcherExtras();
   }
   if (S.activeModuleNode?.kind === 'designer' && typeof mountDesignerBoard === 'function') mountDesignerBoard();
+  // Dragon (Plan part2 #New Workspace) — self-guards on workspaceStyle/
+  // dragonSomethingOpen internally, same as the sagehut check above.
+  if (typeof mountDragonBoard === 'function') mountDragonBoard();
 }
 
