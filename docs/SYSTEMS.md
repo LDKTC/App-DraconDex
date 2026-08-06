@@ -585,35 +585,61 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   "ล่าสุด" จำลอง: ยังไม่ login→ไม่แจ้ง, login แล้ว→แจ้ง, กดเตือนภายหลัง→ไม่
   แจ้งซ้ำสำหรับเวอร์ชันเดิม
 
-### Cloud Sync — Github Sandboxed Extensions (2026-07-30)
+### Plugins — เดิม Github Sandboxed Extensions (2026-07-30, เปลี่ยนชื่อ + ติดตั้งจากลิงก์ 2026-08-06)
 
-ดาวน์โหลด "extension" จาก GitHub repo ที่ประกาศตารางฐานข้อมูลของตัวเอง รันใน
+ดาวน์โหลด "ปลั๊กอิน" จาก git repo ที่ประกาศตารางฐานข้อมูลของตัวเอง รันใน
 หน้าต่างแยกที่ถูกจำกัดสิทธิ์จริงจัง (ไม่ใช่ stub) — เอกสารเต็มที่
-[EXTENSIONS.md](EXTENSIONS.md) สรุปพฤติกรรม:
+[PLUGINS.md](PLUGINS.md) สรุปพฤติกรรม:
 
-- แต่ละ extension มี manifest (`dracondex-extension.json`) ประกาศไฟล์และ
-  ตาราง (คอลัมน์ TEXT/INTEGER/REAL เท่านั้น) — ตรวจสอบเข้มงวดก่อนเขียนอะไรลง
-  ดิสก์/ฐานข้อมูล (identifier whitelist ใหม่ทั้งหมด เพราะไม่มี prepared-
-  statement parameter ตัวไหน bind ชื่อ table/column ได้)
-- รันในหน้าต่าง `BrowserWindow` แยก ได้ preload คนละไฟล์ (`preload-ext.js`)
-  **ไม่มี `window.api` เลย** — เข้าถึงข้อมูลได้แค่ `window.extApi.table.*`
-  ที่ผูก ownership กับตัวหน้าต่างเอง (`BrowserWindow.fromWebContents`) ไม่ใช่
-  จาก argument ที่ extension ส่งมา ไม่มี raw-SQL passthrough ใดๆ
+- แต่ละปลั๊กอินมี manifest (`dracondex-plugin.json`, fallback
+  `dracondex-extension.json`) ประกาศไฟล์และตาราง (คอลัมน์ TEXT/INTEGER/REAL
+  เท่านั้น) — ตรวจสอบเข้มงวดก่อนเขียนอะไรลงดิสก์/ฐานข้อมูล (identifier
+  whitelist ทั้งชุด เพราะไม่มี prepared-statement parameter ตัวไหน bind ชื่อ
+  table/column ได้)
+- **ติดตั้งด้วยการวางลิงก์ `.git` ลิงก์เดียว (2026-08-06)** — `parseRepoUrl()`
+  รับ https/ssh/scp/ไม่มี scheme/`owner/repo` ย่อ/`/tree/<branch>` และ GitLab
+  nested group; ถ้าไม่ระบุ branch จะลอง `main` แล้ว `master` ให้เอง; รองรับ
+  เฉพาะ github.com และ gitlab.com (self-hosted → `unsupported_host`)
+- **พรีวิวก่อนยืนยัน** — วางลิงก์แล้วระบบดึง manifest มาแสดง (ชื่อ/เวอร์ชัน/id,
+  host+owner/repo@ref, entry, ไฟล์ที่จะโหลด, ตารางที่จะสร้าง) แบบ debounce
+  400ms โดยไม่แตะดิสก์และไม่แตะ DB เลย. **พรีวิวไม่ใช่ trust boundary** —
+  `pluginInstall(url)` รับ URL ตัวเดียวแล้ว resolve + validate ใหม่หมดเอง ไม่รับ
+  manifest/owner/repo/ref จาก renderer; ฝั่ง renderer ทุกฟิลด์ของ manifest
+  ผ่าน `x()` ก่อนวาด เพราะเป็นข้อความจากอินเทอร์เน็ตล้วนๆ
+- รันในหน้าต่าง `BrowserWindow` แยก ได้ preload คนละไฟล์
+  (`preload-plugin.js`) **ไม่มี `window.api` เลย** — เข้าถึงข้อมูลได้แค่
+  `window.pluginApi.table.*` ที่ผูก ownership กับตัวหน้าต่างเอง
+  (`BrowserWindow.fromWebContents`) ไม่ใช่จาก argument ที่ปลั๊กอินส่งมา ไม่มี
+  raw-SQL passthrough ใดๆ (`window.extApi` ยังอยู่เป็น alias ให้ของเก่า)
 - **ข้อจำกัดที่ยอมรับไว้ตรงๆ**: ไม่มี OS-level Chromium sandbox จริง เพราะ
   `main.js` ตั้ง `--no-sandbox` ทั้งโปรเซสไว้ก่อนหน้านี้แล้ว (เพื่อ portable
-  build) — ทุกหน้าต่างรวมถึงหน้าต่าง extension ได้รับผลกระทบเหมือนกัน; โค้ด
-  จาก GitHub ถูกเชื่อถือทันทีที่ติดตั้ง ไม่มี code review/signing
-- ดาวน์โหลดทีละไฟล์ผ่าน `raw.githubusercontent.com` (ไม่ใช่ zip, ไม่มี
-  dependency ใหม่) — ตรงตามแพทเทิร์น buffer-then-write ที่ `drive.js` ใช้อยู่
-  แล้ว
-- ตรวจแล้วด้วย E2E จริง: seed ข้อมูล extension 2 ตัวตรงในไฟล์ฐานข้อมูล
-  (ไม่ผ่าน network), เปิดหน้าต่าง extension จริง ให้ตัวมันเอง insert/query/
-  update/getSchema บนตารางตัวเอง (สำเร็จ), พยายามแตะตารางของอีก extension
-  (ถูกปฏิเสธ "not an owned table"), ยืนยันว่า `window.api` ไม่มีอยู่จริงใน
-  หน้าต่าง extension (`hasMainApi:false`)
-- ปุ่ม **Stop** (2026-07-30) — `extension:stop`/`extension:isRunning` ถูกต่อ
-  IPC ครบวงจรตั้งแต่แรกแต่ไม่มีใครเรียกใช้; ตอนนี้หน้า Extension ใน Setting
-  window เช็ก `isRunning` ต่อแถวแล้วสลับปุ่ม Launch/Stop ให้ตรงสถานะจริง
+  build) — ทุกหน้าต่างรวมถึงหน้าต่างปลั๊กอินได้รับผลกระทบเหมือนกัน; โค้ดจาก repo
+  ถูกเชื่อถือทันทีที่ติดตั้ง ไม่มี code review/signing และพรีวิวเป็นแค่การแจ้งให้
+  ทราบว่าจะติดตั้งอะไร ไม่ได้ตรวจว่าโค้ดข้างในทำอะไร
+- ดาวน์โหลดทีละไฟล์ผ่าน raw URL ของแต่ละโฮสต์ (`raw.githubusercontent.com` /
+  `gitlab.com/.../-/raw/...`) ไม่ใช่ zip, ไม่มี dependency ใหม่ — ตรงตาม
+  แพทเทิร์น buffer-then-write ที่ `drive.js` ใช้อยู่แล้ว
+- **การเปลี่ยนชื่อ v4.1→v4.2 migrate อัตโนมัติ** — `migratePluginV42()` ใน
+  `schema/migrations.js` เปลี่ยน `extension`→`plugin`, `ext_key`→`plugin_key`,
+  `extension_table`→`plugin_table`, `extension_ref`→`plugin_ref` และ rename
+  ตารางของแต่ละปลั๊กอิน `ext_<id>_<name>`→`plg_<id>_<name>`; ฝั่งดิสก์
+  `migratePluginDir()` ย้าย `extensions/`→`plugins/`. migration นี้ต้องรัน
+  **ก่อน** `db.exec(DDL_SQL)` (ไม่งั้น `CREATE TABLE IF NOT EXISTS plugin`
+  สร้างตารางเปล่าข้างๆ ข้อมูลเก่า) และต้องอยู่ใน `parts[]` ของ `schemaStamp()`
+  (ไม่งั้น DB เดิมข้าม initDB ทั้งก้อนแบบไม่มี error ให้เห็น)
+- ตรวจแล้วด้วย E2E จริง: migration บน DB v4.1 (แถว/ข้อมูลในตาราง/FK cascade
+  รอดครบ, รันซ้ำไม่เปลี่ยนอะไร), เส้นทางอัปเกรดเต็ม (บูต `database.js` จริงบน
+  data dir เก่า แล้ว `pluginApiQuery` ยังอ่านข้อมูลเดิมได้ + ไฟล์ย้ายไป
+  `plugins/`), preview/install ด้วย fetch ที่ stub เป็น repo ปลอม (preview ไม่
+  เขียนอะไร, install เขียนไฟล์+แถว+ตาราง, ติดตั้งซ้ำถูกปฏิเสธ, uninstall ลบครบ),
+  ownership ของ `pluginApi` (ตารางตัวเองผ่าน / ของตัวอื่น + คอลัมน์ที่ไม่ได้
+  ประกาศถูกปฏิเสธ), และ `rawUrl` ของทั้ง GitHub/GitLab ยิงโดนไฟล์จริงบนเน็ต
+- ปุ่ม **Stop** (2026-07-30) — `plugin:stop`/`plugin:isRunning` ถูกต่อ IPC ครบ
+  วงจรตั้งแต่แรกแต่ไม่มีใครเรียกใช้; หน้าปลั๊กอินใน Setting window เช็ก
+  `isRunning` ต่อแถวแล้วสลับปุ่ม Launch/Stop ให้ตรงสถานะจริง — **2026-08-06**
+  แก้บั๊กที่ทำให้สลับผิด: `extensionBodyHtml(list, running)` ถูกประกาศเป็น
+  `(list)` แล้ว `list.map(extensionRowHtml)` ส่ง index เข้าไปเป็น `isRunning`
+  ทำให้แถวแรกโชว์ Launch เสมอและแถวที่เหลือโชว์ Stop เสมอ
 
 ### Setting Window (2026-07-30)
 
@@ -629,9 +655,9 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
 - **Setting window** (`src/renderer/core/setting-window.js`, floating panel
   แทนที่ `#prefs-panel` เดิม) — sidebar 2 ชั้น: **Workspace** (Theme/
   Text&Size/Tool toggle) → **User** (Account/User profile) → **Appdata**
-  (TokenSync/Database/BackupData) → **Extension** (Extension/Extension
-  setting) แต่ละหน้าลงทะเบียนตัวเองผ่าน `registerSettingPage(group, page, fn)`
-  จากไฟล์เจ้าของฟีเจอร์นั้น (เหมือนที่ `drive.js`/`extension.js` เคยทำกับ
+  (TokenSync/Database/BackupData) → **Plugin** (ปลั๊กอิน/ตั้งค่าปลั๊กอิน)
+  แต่ละหน้าลงทะเบียนตัวเองผ่าน `registerSettingPage(group, page, fn)`
+  จากไฟล์เจ้าของฟีเจอร์นั้น (เหมือนที่ `drive.js`/`plugin.js` เคยทำกับ
   Preferences panel เดิม) ไม่รวมศูนย์ไว้ที่ไฟล์เดียว
 - **Text&Size** รวมเปลี่ยนภาษา + ขนาด UI + ขนาดตัวอักษรไว้หน้าเดียว, ปุ่ม
   Advanced เพิ่มตัวเลื่อนขนาดแยกตามพื้นที่ (left panel/nav sidebar/builder) —
@@ -662,8 +688,8 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   `moduleIds` param ใหม่ให้ scope ลงเฉพาะ module ได้) — import ระดับ module
   เป็นการ**เพิ่มเข้าไป**เท่านั้น ไม่ล้าง Nexus ปลายทางเหมือน import ระดับ
   Nexus (มี unit test คุมพฤติกรรมนี้ที่ `test/module-transfer.test.mjs`)
-- **Extension setting** — แสดงลิสต์ extension ที่ติดตั้งพร้อมข้อความ "ไม่มี
-  การตั้งค่า" ต่อรายการ เพราะ manifest (`dracondex-extension.json`) ยังไม่มี
+- **ตั้งค่าปลั๊กอิน** — แสดงลิสต์ปลั๊กอินที่ติดตั้งพร้อมข้อความ "ไม่มี
+  การตั้งค่า" ต่อรายการ เพราะ manifest (`dracondex-plugin.json`) ยังไม่มี
   ฟิลด์ประกาศ settings schema — เตรียมช่องไว้ให้ ยังไม่สร้าง UI จริงสำหรับ
   schema ที่ยังไม่มีอยู่
 

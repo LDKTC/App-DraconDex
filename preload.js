@@ -218,13 +218,14 @@ contextBridge.exposeInMainWorld('api', {
     dismiss:      (v)   => inv('update:dismiss', v),
     openDownload: (url) => inv('update:openDownload', url),
   },
-  extension: {
-    list:      ()               => inv('extension:list'),
-    install:   (owner,repo,ref) => inv('extension:install', owner,repo,ref),
-    uninstall: (id)             => inv('extension:uninstall', id),
-    launch:    (id)             => inv('extension:launch', id),
-    stop:      (id)             => inv('extension:stop', id),
-    isRunning: (id)             => inv('extension:isRunning', id),
+  plugin: {
+    list:      ()    => inv('plugin:list'),
+    preview:   (url) => inv('plugin:preview', url),
+    install:   (url) => inv('plugin:install', url),
+    uninstall: (id)  => inv('plugin:uninstall', id),
+    launch:    (id)  => inv('plugin:launch', id),
+    stop:      (id)  => inv('plugin:stop', id),
+    isRunning: (id)  => inv('plugin:isRunning', id),
   },
   importdock: {
     list:          (nx)     => inv('importdock:list', nx),

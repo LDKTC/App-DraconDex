@@ -395,34 +395,52 @@ Window" ด้านล่าง)
 `src/renderer/core/boot.js` (`initVersionCheck()` ใน `init()`),
 `src/renderer/i18n.js` (คีย์ `update*` ใหม่ครบ 18 locale)
 
-## Github Sandboxed Extensions — ไฟล์ใหม่ (2026-07-30)
+## Plugins (เดิม Github Sandboxed Extensions) — (2026-07-30, เปลี่ยนชื่อ 2026-08-06)
 
-ดาวน์โหลด extension จาก GitHub ที่ประกาศตารางฐานข้อมูลของตัวเอง รันใน
-หน้าต่างแยกที่ถูกจำกัดสิทธิ์ — ดูรายละเอียดที่ [EXTENSIONS.md](EXTENSIONS.md)
+ดาวน์โหลดปลั๊กอินจาก git repo ที่ประกาศตารางฐานข้อมูลของตัวเอง รันใน
+หน้าต่างแยกที่ถูกจำกัดสิทธิ์ — ดูรายละเอียดที่ [PLUGINS.md](PLUGINS.md)
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/db/extension.js` | ~290 | manifest validator (identifier whitelist ใหม่ทั้งหมด — `EXT_ID_RE`/`EXT_TABLE_RE`/`EXT_COLUMN_RE`/`FULL_TABLE_RE`, จำกัดชนิดคอลัมน์แค่ TEXT/INTEGER/REAL), `extensionInstall`/`extensionUninstall`/`extensionList`/`extensionGetById` (ดาวน์โหลดทีละไฟล์จาก `raw.githubusercontent.com`, เขียนไฟล์+DB แบบ transaction, ล้างทิ้งถ้าล้มเหลวกลางทาง), `extApiQuery/Insert/Update/Delete/GetSchema` (ผูก ownership จาก `(extension_ref, local_name)` เสมอ ไม่มี raw-SQL passthrough) |
-| `preload-ext.js` (repo root) | ~20 | preload แยกต่างหากสำหรับหน้าต่าง extension เท่านั้น — expose แค่ `window.extApi.table.*`, ไม่มี `window.api` เลย |
-| `docs/EXTENSIONS.md` | — | คู่มือวิธีใช้ + หลักการทำงาน + ข้อจำกัดด้านความปลอดภัยแบบตรงไปตรงมา |
+| `src/db/plugin-manifest.js` | ~180 | **ใหม่ 2026-08-06** — logic ล้วนๆ ไม่ `require` electron/db เลย จึงเทสต์ด้วย `node --test` ตรงได้: identifier whitelist ทั้งชุด (`PLUGIN_ID_RE`/`PLUGIN_TABLE_RE`/`PLUGIN_COLUMN_RE`/`FULL_TABLE_RE` = `plg_*`/`REPO_SEG_RE`, ชนิดคอลัมน์แค่ TEXT/INTEGER/REAL), `validateManifest()`, `parseRepoUrl()` (แกะลิงก์ git ทุกรูปแบบ: https/ssh/scp/ไม่มี scheme/`owner/repo` ย่อ/`/tree/<ref>`/GitLab nested group), `rawUrl()` (raw URL ของ GitHub และ GitLab), `MANIFEST_NAMES`/`REF_CANDIDATES` |
+| `src/db/plugin.js` | ~290 | `resolveRepo()` (ไล่ ref `main`→`master` × manifest `dracondex-plugin.json`→`dracondex-extension.json`), `pluginPreview()` (dry run อ่านอย่างเดียว ไม่แตะดิสก์/DB), `pluginInstall(url)` (รับ URL ตัวเดียวแล้ว resolve ใหม่เอง ไม่เชื่อพรีวิว — ดาวน์โหลดทีละไฟล์, เขียนไฟล์+DB แบบ transaction, ล้างทิ้งถ้าล้มเหลวกลางทาง), `pluginUninstall`/`pluginList`/`pluginGetById`, `migratePluginDir()` (ย้าย `extensions/`→`plugins/` บนดิสก์), `pluginApiQuery/Insert/Update/Delete/GetSchema` (ผูก ownership จาก `(plugin_ref, local_name)` เสมอ ไม่มี raw-SQL passthrough) |
+| `src/renderer/plugin.js` | ~215 | หน้า Setting → ปลั๊กอิน: ช่อง URL ช่องเดียว (`#plugin-url`) + auto-preview แบบ debounce 400ms + ปุ่มตรวจสอบ, `pluginPreviewHtml()` (การ์ดพรีวิว — ทุกฟิลด์ผ่าน `x()` เพราะเป็นข้อความจากอินเทอร์เน็ต), `pluginInstallClick()` (ส่งแค่ URL), รายการปลั๊กอิน + Launch/Stop/ลบ, หน้า Plugin setting (placeholder) |
+| `preload-plugin.js` (repo root) | ~30 | preload แยกต่างหากสำหรับหน้าต่างปลั๊กอินเท่านั้น — expose `window.pluginApi.table.*` (+ `window.extApi` เป็น alias ให้ของเก่า), ไม่มี `window.api` เลย |
+| `test/plugin-url.test.mjs` | ~140 | เทสต์ `parseRepoUrl`/`rawUrl`/`validateManifest` — ลิงก์ทุกรูปแบบที่ต้องผ่าน, โฮสต์อื่น/path traversal/percent-encoding ที่ต้องถูกปฏิเสธ, manifest fixture ที่ต้องไม่ผ่าน |
+| `docs/PLUGINS.md` | — | คู่มือวิธีใช้ + หลักการทำงาน + ข้อจำกัดด้านความปลอดภัยแบบตรงไปตรงมา + ตารางการเปลี่ยนชื่อ v4.1→v4.2 |
 
-ไฟล์เดิมที่แตะ: `src/db/schema/ddl.js` (ตาราง `extension`/`extension_table`
-ใหม่), `main.js` (`createExtensionWindow`/`extensionWindows` map, namespace
-`extension:*` ผ่าน `h()` ปกติ + `extapi:table:*` ผ่าน raw `ipcMain.handle`
-เพราะต้องอ่าน `event.sender`), `preload.js` (เพิ่มแค่ `extension:*` —
-**ไม่แตะ** `extApi`), `database.js`, `src/renderer/extension.js` (ใหม่ —
-ฟอร์มติดตั้ง + รายการ extension), `index.html` (script tag), `package.json`
-(`build.files` +`preload-ext.js`), `src/renderer/i18n.js` (คีย์
-`extension*`/`prefs_extension` ใหม่ครบ 18 locale, +`extensionStop` 2026-07-30),
-`.claude/skills/dracondex-file-arch/check-arch.mjs` (`ROOT_FILES`
-+`preload-ext.js` — ไฟล์ root ที่ถูกต้องตามหลักการ ไม่ใช่ stray file).
+ไฟล์เดิมที่แตะ: `src/db/schema/ddl.js` (ตาราง `plugin`/`plugin_table` +
+คอลัมน์ `repo_host`), `src/db/schema/migrations.js` (`migratePluginV42()`),
+`src/db/schema/init.js` (เรียก `migratePluginV42` **ก่อน** `db.exec(DDL_SQL)`
++ ใส่ใน `parts[]` ของ `schemaStamp()`), `main.js`
+(`createPluginWindow`/`pluginWindows` map, namespace `plugin:*` ผ่าน `h()`
+ปกติ + `pluginapi:table:*` ผ่าน raw `ipcMain.handle` เพราะต้องอ่าน
+`event.sender`, เรียก `db.migratePluginDir()` ที่ `app.whenReady()`),
+`preload.js` (namespace `plugin` + ช่องใหม่ `plugin:preview` —
+**ไม่แตะ** `pluginApi`), `database.js`, `index.html` (script tag),
+`package.json` (`build.files` `preload-ext.js`→`preload-plugin.js`),
+`css/builder.css` (`.plugin-preview*`), `src/renderer/i18n.js` (คีย์
+`plugin*`/`prefs_plugin`/`settingGroupPlugin`/`settingPagePluginSettings`/
+`settingPluginNoSettings` ครบ 18 locale),
+`src/renderer/core/setting-window.js` (group `extension`→`plugin`,
+pages `plugin`/`pluginsettings`).
+
 **2026-07-30**: หน้าฟอร์มติดตั้งย้ายจาก Preferences panel
-(`PREFS_SECTIONS`+`'extension'`) ไปเป็นหน้า **Extension** ใน Setting window
-ใหม่ (`prefsExtensionSectionHtml()` → `settingExtensionPageHtml()`,
-ลงทะเบียนผ่าน `registerSettingPage('extension','extension', ...)`) พร้อมปุ่ม
-Stop ใหม่ที่เรียก `extension:stop`/`extension:isRunning` ที่มีอยู่แล้วแต่ไม่
-เคยถูกเรียก และหน้า **Extension setting** ใหม่ (placeholder รอ manifest
-ประกาศ settings schema — ดูหัวข้อ "Setting Window")
+(`PREFS_SECTIONS`+`'extension'`) ไปเป็นหน้าใน Setting window ใหม่
+(ลงทะเบียนผ่าน `registerSettingPage(...)`) พร้อมปุ่ม Stop ใหม่ที่เรียก
+`extension:stop`/`extension:isRunning` ที่มีอยู่แล้วแต่ไม่เคยถูกเรียก และหน้า
+setting placeholder รอ manifest ประกาศ settings schema
+
+**2026-08-06 (v4.2.0)**: เปลี่ยนชื่อทั้งระบบ extension → plugin ลงลึกถึงชั้น
+DB/ดิสก์ (`extension`→`plugin`, `ext_key`→`plugin_key`,
+`extension_table`→`plugin_table`, `extension_ref`→`plugin_ref`,
+`ext_<id>_<name>`→`plg_<id>_<name>`, `extensions/`→`plugins/`) โดย migrate
+อัตโนมัติและ idempotent — ของเก่ายังใช้ได้ทั้ง `window.extApi` (alias) และ
+`dracondex-extension.json` (fallback). เพิ่มการติดตั้งจากลิงก์ `.git`
+ลิงก์เดียวพร้อมพรีวิวก่อนยืนยัน + รองรับ GitLab + เดา branch `main`→`master`
+อัตโนมัติ. แก้บั๊กเดิม: `extensionBodyHtml(list, running)` ถูกประกาศเป็น
+`(list)` แล้ว `list.map(extensionRowHtml)` ส่ง **index** เข้าไปเป็น
+`isRunning` ทำให้แถวแรกโชว์ "เปิดใช้งาน" เสมอและแถวที่เหลือโชว์ "หยุด" เสมอ
 
 ## Setting Window — แทนที่ Preferences panel เดิม (2026-07-30)
 

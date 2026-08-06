@@ -10,23 +10,23 @@ const SETTING_GROUPS = {
   workspace: ['theme', 'textsize', 'tooltoggle', 'style'],
   user: ['account', 'profile'],
   appdata: ['tokensync', 'database', 'backup'],
-  extension: ['extension', 'extsettings'],
+  plugin: ['plugin', 'pluginsettings'],
 };
 const SETTING_GROUP_LABEL_KEY = {
   workspace: 'settingGroupWorkspace', user: 'settingGroupUser',
-  appdata: 'settingGroupAppdata', extension: 'settingGroupExtension',
+  appdata: 'settingGroupAppdata', plugin: 'settingGroupPlugin',
 };
 const SETTING_PAGE_LABEL_KEY = {
   theme: 'theme', textsize: 'settingPageTextSize', tooltoggle: 'settingPageToolToggle',
   style: 'settingPageWorkspaceStyle',
   account: 'settingPageAccount', profile: 'settingPageProfile',
   tokensync: 'settingPageTokenSync', database: 'settingPageDatabase', backup: 'prefs_backup',
-  extension: 'prefs_extension', extsettings: 'settingPageExtSettings',
+  plugin: 'prefs_plugin', pluginsettings: 'settingPagePluginSettings',
 };
 // Populated by each page's owning file at parse time — key is 'group.page'.
 // A page renderer may be synchronous (returns final HTML) or kick off an
 // async load and patch its own DOM once ready (the pattern drive.js/
-// extension.js already used for the old Preferences panel sections).
+// plugin.js already used for the old Preferences panel sections).
 const SETTING_PAGE_RENDERERS = {};
 function registerSettingPage(group, page, fn){
   SETTING_PAGE_RENDERERS[`${group}.${page}`] = fn;
