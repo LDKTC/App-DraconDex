@@ -115,6 +115,16 @@
 .vh-time{font-size:calc(10px * var(--fsc,1));color:var(--t3);margin-top:3px}
 .vh-foot{padding:10px 14px;border-top:1px solid var(--border);font-size:calc(10px * var(--fsc,1));color:var(--t3);line-height:1.6}
 
+/* Plugin panel (v4.3.0) — a plugin's own page docked in the Inspector slot.
+   Same flex-column shape as .vh-panel above; the <webview> fills the body, so
+   everything inside it is styled by the plugin's own stylesheet, not ours. */
+.plugin-panel{display:flex;flex-direction:column}
+/* Only the title stretches — a bare `span` selector here would also stretch the
+   icon span next to it and push the title into the middle of the header. */
+.plugin-panel .plgp-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plgp-view{flex:1;width:100%;border:0;background:var(--bg)}
+.plgp-btn.active{color:var(--accentH)}
+
 /* Cloud Sync modal (Token Sync — Supabase) */
 .sync-status-row{display:flex;justify-content:space-between;gap:12px;padding:4px 2px;
 	font-size:calc(12.5px * var(--fsc,1));color:var(--t2)}

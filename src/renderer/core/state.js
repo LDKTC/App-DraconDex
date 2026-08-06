@@ -236,6 +236,12 @@ const S = {
   // modules; see progress.md Section C for the scoping decision.
   moduleTree:[], activeModuleNode:null, inspectorData:null,
   moduleTabs:[], renamingModuleId:null,
+  // Plugin panels (v4.3.0, src/renderer/pluginpanel.js). pluginPanels is the
+  // cached contribution list from api.plugin.list(); pluginPanel is the one
+  // currently replacing the Module Inspector dock, declared here rather than
+  // materialised on first use so it can be cleared on module switch (the
+  // versionPanel next door skipped that and leaks across modules).
+  pluginPanels:[], pluginPanel:null,
   // Content-item "minor module" pages (Plan part4) — a separate mirror from
   // activeModuleNode since an item is never itself a `module` row. nestItems
   // is the Nest tree's per-module item-list cache (moduleId -> null while

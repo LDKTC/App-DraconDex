@@ -69,6 +69,10 @@ async function init() {
   translateStaticChrome();
   renderProjectTabs();
   renderNexusHome();
+  // Plugin panel contributions (v4.3.0). Deliberately NOT awaited: it only
+  // adds buttons to the pane head, so it must not sit on the path to first
+  // paint. Re-renders itself once the list lands.
+  if (typeof loadPluginPanels === 'function') loadPluginPanels().then(() => { if (S.pluginPanels.length) renderNexusHome(); });
   window.__splash?.set(95);
   // Receives a tab moved from a popup window via the "move to main window"
   // button (Plan part1 #2) — opens it in the currently focused pane. Main

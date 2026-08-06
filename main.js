@@ -77,8 +77,15 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Plugin panels (v4.3.0) embed a plugin's page as a <webview> so it still
+      // runs in its own webContents with preload-plugin.js and no window.api —
+      // the same isolation a plugin WINDOW gets, just docked into the Module
+      // Inspector slot. Enabling the tag is only half of it: every attach is
+      // vetted by hardenWebviewAttach below, which is what keeps this narrow.
+      webviewTag: true,
     },
   });
+  hardenWebviewAttach(win.webContents);
   if (bootstrapTabKey) {
     popupWindowIds.add(win.id);
     win.on('closed', () => popupWindowIds.delete(win.id));
@@ -108,6 +115,70 @@ function findPluginWindow(pluginId) {
   return null;
 }
 
+// Plugin PANELS (v4.3.0): the same plugin page, embedded in the main window's
+// Module Inspector slot as a <webview> instead of getting its own window.
+// webContents.id -> plugin row id, the panel-side twin of pluginWindows above,
+// and read by callerPluginId() for exactly the same reason: a plugin's identity
+// must come from the contents that made the call, never from an argument.
+const pluginPanelContents = new Map();
+
+// Everything that makes an embedded panel as narrow as a plugin window. Runs on
+// EVERY attach in the main window — a page that tries to attach a <webview>
+// pointing anywhere other than a declared panel entry of an installed plugin is
+// refused outright, and the webPreferences it asked for are overwritten rather
+// than merged (params/webPreferences are attacker-controlled if the renderer is
+// ever compromised, so nothing from them is trusted).
+function hardenWebviewAttach(hostContents) {
+  let pendingPluginId = null;
+
+  hostContents.on('will-attach-webview', (event, webPreferences, params) => {
+    pendingPluginId = null;
+    let filePath = null;
+    try {
+      const u = new URL(String(params.src || ''));
+      if (u.protocol !== 'file:') { event.preventDefault(); return; }
+      filePath = decodeURIComponent(u.pathname);
+      // file:///C:/... on Windows parses with a leading slash before the drive.
+      if (process.platform === 'win32' && /^\/[A-Za-z]:/.test(filePath)) filePath = filePath.slice(1);
+    } catch (_) { event.preventDefault(); return; }
+
+    const plugin = db.pluginByPanelPath(filePath);
+    if (!plugin) { event.preventDefault(); return; }
+
+    delete webPreferences.preloadURL;
+    webPreferences.preload = path.join(__dirname, 'preload-plugin.js');
+    webPreferences.nodeIntegration = false;
+    webPreferences.nodeIntegrationInSubFrames = false;
+    webPreferences.contextIsolation = true;
+    webPreferences.sandbox = true;
+    webPreferences.webviewTag = false;
+    params.nodeintegration = 'off';
+    params.allowpopups = 'false';
+    pendingPluginId = plugin.id;
+  });
+
+  // Fires immediately after the will-attach it was vetted by, so the id parked
+  // above belongs to this guest and nothing else.
+  hostContents.on('did-attach-webview', (_event, guest) => {
+    if (pendingPluginId == null) return;
+    const pluginId = pendingPluginId;
+    pendingPluginId = null;
+    pluginPanelContents.set(guest.id, pluginId);
+    guest.on('destroyed', () => {
+      pluginPanelContents.delete(guest.id);
+      stopPluginStreamsFor(guest.id);
+    });
+    // A panel is a docked view, not a browser: it may not navigate off its own
+    // files and may not spawn windows.
+    guest.setWindowOpenHandler(() => ({ action: 'deny' }));
+    guest.on('will-navigate', (e, url) => {
+      let p = null;
+      try { p = decodeURIComponent(new URL(url).pathname); } catch (_) { /* not a file URL */ }
+      if (!p || !db.pluginByPanelPath(p)) e.preventDefault();
+    });
+  });
+}
+
 function createPluginWindow(plugin) {
   const existing = findPluginWindow(plugin.id);
   if (existing && !existing.isDestroyed()) { existing.focus(); return existing; }
@@ -126,7 +197,11 @@ function createPluginWindow(plugin) {
     },
   });
   pluginWindows.set(win.id, plugin.id);
-  win.on('closed', () => pluginWindows.delete(win.id));
+  const contentsId = win.webContents.id;
+  win.on('closed', () => {
+    pluginWindows.delete(win.id);
+    stopPluginStreamsFor(contentsId);
+  });
   win.loadFile(path.join(tempDataPath, 'plugins', plugin.plugin_key, plugin.entry_html));
   return win;
 }
@@ -521,20 +596,66 @@ h('plugin:stop', (id) => {
 });
 h('plugin:isRunning', (id) => !!findPluginWindow(id));
 
-// pluginApi.* bridge (preload-plugin.js) — plugin windows ONLY. Resolves the
-// calling plugin from the window itself (BrowserWindow.fromWebContents),
-// exactly like window:getId above, since a compromised plugin page must
-// never be able to claim a different plugin's identity by argument.
+// pluginApi.* bridge (preload-plugin.js) — plugin windows and plugin PANELS
+// only. Resolves the calling plugin from the calling contents itself, exactly
+// like window:getId above, since a compromised plugin page must never be able
+// to claim a different plugin's identity by argument. Two lookups because a
+// plugin can run either way: its own BrowserWindow, or a <webview> docked in
+// the main window (registered by hardenWebviewAttach, which vetted the src).
 function callerPluginId(event) {
-  const pluginId = pluginWindows.get(BrowserWindow.fromWebContents(event.sender)?.id);
-  if (!pluginId) throw new Error('not a plugin window');
-  return pluginId;
+  const byWindow = pluginWindows.get(BrowserWindow.fromWebContents(event.sender)?.id);
+  if (byWindow) return byWindow;
+  const byPanel = pluginPanelContents.get(event.sender.id);
+  if (byPanel) return byPanel;
+  throw new Error('not a plugin window');
 }
 ipcMain.handle('pluginapi:table:getSchema', (event, localName)      => db.pluginApiGetSchema(callerPluginId(event), localName));
 ipcMain.handle('pluginapi:table:query',     (event, localName, f)   => db.pluginApiQuery(callerPluginId(event), localName, f));
 ipcMain.handle('pluginapi:table:insert',    (event, localName, row) => db.pluginApiInsert(callerPluginId(event), localName, row));
 ipcMain.handle('pluginapi:table:update',    (event, localName, id, row) => db.pluginApiUpdate(callerPluginId(event), localName, id, row));
 ipcMain.handle('pluginapi:table:delete',    (event, localName, id)  => db.pluginApiDelete(callerPluginId(event), localName, id));
+
+// pluginApi.net.* / pluginApi.oauth.* (v4.3.0). The allowlist check lives in
+// src/db/plugin.js next to the manifest it reads; what main.js owns is the
+// plumbing that can only be done here — delivering stream chunks back to the
+// exact contents that asked, and tearing streams down when it goes away.
+const pluginStreams = new Map(); // streamId -> { abort, contentsId }
+let pluginStreamSeq = 0;
+
+function stopPluginStreamsFor(contentsId) {
+  for (const [streamId, s] of pluginStreams) {
+    if (s.contentsId !== contentsId) continue;
+    try { s.abort(); } catch (_) { /* already finished */ }
+    pluginStreams.delete(streamId);
+  }
+}
+
+ipcMain.handle('pluginapi:net:fetch', (event, url, init) => db.pluginNetFetch(callerPluginId(event), url, init));
+
+ipcMain.handle('pluginapi:net:stream:start', async (event, url, init) => {
+  const pluginId = callerPluginId(event);
+  const contents = event.sender;
+  const streamId = `s${++pluginStreamSeq}`;
+  const send = (channel, ...args) => { if (!contents.isDestroyed()) contents.send(channel, streamId, ...args); };
+  const abort = await db.pluginNetStream(pluginId, url, init, {
+    onChunk: (text) => send('pluginapi:net:stream:chunk', text),
+    onEnd: (result) => { pluginStreams.delete(streamId); send('pluginapi:net:stream:end', result); },
+  });
+  pluginStreams.set(streamId, { abort, contentsId: contents.id });
+  return { streamId };
+});
+
+// Scoped to the caller's own streams — a plugin cannot abort another's by
+// guessing an id, because the map records which contents opened each one.
+ipcMain.handle('pluginapi:net:stream:abort', (event, streamId) => {
+  const s = pluginStreams.get(streamId);
+  if (!s || s.contentsId !== event.sender.id) return { ok: false };
+  try { s.abort(); } catch (_) { /* already finished */ }
+  pluginStreams.delete(streamId);
+  return { ok: true };
+});
+
+ipcMain.handle('pluginapi:oauth:authorize', (event, opts) => db.pluginOAuthAuthorize(callerPluginId(event), opts));
 
 // Legacy -> v3 migration (v3 Phase 24)
 h('migrate:list',   (target,nx)          => db.listLegacyProjects(target,nx));

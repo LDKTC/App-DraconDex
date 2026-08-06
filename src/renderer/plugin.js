@@ -33,6 +33,10 @@ registerSettingPage('plugin', 'plugin', settingPluginPageHtml);
 
 async function pluginRefreshSection() {
   const list = await api.plugin.list();
+  // Panel contributions (v4.3.0) change with the plugin list, so an install or
+  // uninstall must be reflected in the pane-head buttons without a restart.
+  // Fire-and-forget — this section's own render must not wait on it.
+  if (typeof loadPluginPanels === 'function') loadPluginPanels().then(() => renderNexusHome());
   const el = q('#plugin-body');
   if (!el) return; // panel closed or switched section before this resolved
   const running = await Promise.all(list.map((p) => api.plugin.isRunning(p.id)));
@@ -132,6 +136,31 @@ async function pluginPreviewRun(silent) {
   if (el) el.innerHTML = pluginPreviewHtml(r);
 }
 
+// The two v4.3.0 grants that are NOT just "files and tables": a panel embeds
+// the plugin's page inside the main window, and each net origin is a host the
+// plugin may reach — and, because the request runs in the main process, read
+// the response from. Rendered as its own block so a user scanning the preview
+// sees them before confirming, not after. Omitted entirely when the manifest
+// asks for neither, which is every plugin written before v4.3.0.
+function pluginPreviewGrantsHtml(m) {
+  const panels = m.panels || [];
+  const origins = m.netOrigins || [];
+  if (!panels.length && !origins.length) return '';
+  let h = '';
+  if (panels.length) {
+    const items = panels.map((p) => `<li>${x(p.title)} <span class="sync-hint">(${x(p.entry)})</span></li>`).join('');
+    h += `<div class="plugin-preview-row"><span>${t('pluginPreviewPanelsLabel')}</span><b>${panels.length}</b></div>
+      <ul class="plugin-preview-files">${items}</ul>`;
+  }
+  if (origins.length) {
+    const items = origins.map((o) => `<li data-no-i18n>${x(o)}</li>`).join('');
+    h += `<div class="plugin-preview-row"><span>${t('pluginPreviewNetLabel')}</span><b>${origins.length}</b></div>
+      <ul class="plugin-preview-files">${items}</ul>
+      <div class="plugin-preview-warn">${t('pluginPreviewNetWarn')}</div>`;
+  }
+  return h;
+}
+
 // Everything rendered here came off the internet a moment ago — every single
 // field goes through x() before it touches an HTML string. This is the one
 // place in the app where remote text is drawn as markup.
@@ -153,6 +182,7 @@ function pluginPreviewHtml(p) {
       <ul class="plugin-preview-files">${files}</ul>
       <div class="plugin-preview-row"><span>${t('pluginPreviewTablesLabel')}</span><b>${(m.tables || []).length}</b></div>
       <ul class="plugin-preview-files">${tables}</ul>
+      ${pluginPreviewGrantsHtml(m)}
       <div class="plugin-preview-warn">${t('pluginPreviewWarn')}</div>
       <div class="plugin-preview-actions">
         ${p.alreadyInstalled
