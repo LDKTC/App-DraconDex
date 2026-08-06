@@ -16,6 +16,13 @@ async function loadInspectorData(moduleId) {
 }
 
 function buildInspectorHtml(m) {
+  // A plugin panel replaces the inspector dock while open (v4.3.0) — checked
+  // before Version History so an explicitly opened panel wins over a version
+  // panel left open on the same module.
+  if (S.pluginPanel?.moduleId === m.id && typeof buildPluginPanelHtml === 'function') {
+    const html = buildPluginPanelHtml(m);
+    if (html) return html;
+  }
   // Version History panel replaces the inspector dock while open (Phase 21).
   if (S.versionPanel?.moduleId === m.id && typeof buildVersionPanelHtml === 'function') {
     return buildVersionPanelHtml(m);

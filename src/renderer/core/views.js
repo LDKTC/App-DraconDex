@@ -204,6 +204,7 @@ function runBuilderMounts() {
   if (typeof hydrateDisplayImages === 'function') hydrateDisplayImages();
   if (S.activeModuleNode?.kind === 'inspector' && typeof mountDetailEditor === 'function') mountDetailEditor(S.activeModuleNode);
   if (S.activeModuleNode && typeof mountInspectorDescEditor === 'function') mountInspectorDescEditor(S.activeModuleNode);
+  if (S.pluginPanel && typeof mountPluginPanel === 'function') mountPluginPanel();
   if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
   if (S.activeModuleNode?.kind === 'chronicler' && typeof mountChroniclerGraph === 'function') mountChroniclerGraph();
   if (S.activeModuleNode?.kind === 'wanderer' && typeof mountWandererBoard === 'function') mountWandererBoard();

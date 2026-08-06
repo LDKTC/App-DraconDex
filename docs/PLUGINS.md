@@ -92,6 +92,91 @@
   ปลั๊กอินที่เขียนไว้ก่อน v4.2.0 พัง)
 - ชื่อไฟล์ `dracondex-extension.json` ยังใช้ได้ ระบบจะหาไฟล์นี้เป็นตัวสำรอง
 
+### 1.5 Plugin panel — ปลั๊กอินที่ฝังตัวในหน้าต่างหลัก (v4.3.0)
+
+ก่อน v4.3.0 ปลั๊กอินเปิดได้ทางเดียวคือหน้าต่างแยก ตั้งแต่ v4.3.0 ปลั๊กอิน
+ประกาศ **panel** ใน manifest ได้ แล้วจะได้ปุ่มโผล่ข้างปุ่มเปิด/ปิด Module
+Inspector — กดแล้วหน้าของปลั๊กอิน**เข้ามาแทนที่ Module Inspector dock**
+(แพทเทิร์นเดียวกับ Version History panel)
+
+- ปุ่มจะแสดง**เฉพาะตอนที่เปิดโมดูลอยู่** เพราะ panel เข้าไปแทน dock ของโมดูลนั้น
+  ไม่มีโมดูลเปิด = ไม่มี dock ให้แทน
+- panel เปิดได้ทีละอัน และ**ปิดเองเมื่อสลับโมดูล** (ไม่ค้างข้ามโมดูลเหมือน
+  Version History panel ที่ยังมีบั๊กนั้นอยู่)
+- panel ยัง resize/ยุบได้ด้วยปุ่มและที่จับเดิมของ Inspector
+- **หน้า panel โดน reload ทุกครั้งที่หน้าต่างหลัก re-render** (เช่นแก้ tag,
+  เพิ่ม attribute) เพราะ dock ถูกวาดใหม่ทั้งก้อน → **ปลั๊กอินต้องเก็บ state
+  ลงตารางของตัวเองและ restore ตอนโหลด** อย่าเก็บไว้แค่ในตัวแปร
+
+### 1.6 manifest v4.3.0 — `panels` และ `permissions`
+
+ทั้งสองฟิลด์เป็น optional ปลั๊กอินที่เขียนก่อน v4.3.0 ใช้ได้เหมือนเดิมทุกอย่าง
+
+```json
+{
+  "id": "myplugin", "name": "My Plugin", "version": "1.0.0",
+  "entry": "index.html",
+  "files": ["index.html", "panel.html", "app.js"],
+  "panels": [
+    { "id": "chat", "title": "My Chat", "icon": "💬", "entry": "panel.html" }
+  ],
+  "permissions": {
+    "net": ["https://api.example.com"],
+    "context": ["module"]
+  }
+}
+```
+
+- `panels`: ไม่เกิน 5 อัน
+  - `id`: `^[a-z0-9_-]{1,24}$` ห้ามซ้ำ
+  - `title`: ยาวไม่เกิน 40 ตัวอักษร (แสดงบนปุ่มและหัว panel)
+  - `icon`: optional ไม่เกิน 8 ตัวอักษร (อีโมจิ) ไม่ใส่ = ใช้ไอคอนดีฟอลต์
+  - `entry`: ไฟล์ `.html` และ**ต้องอยู่ใน `files`** — แอปดาวน์โหลดเฉพาะไฟล์ใน
+    `files` เท่านั้น และ main.js ปฏิเสธการฝัง `<webview>` ที่ชี้ไปไฟล์อื่น
+- `permissions.net`: ไม่เกิน 10 รายการ ต้องเป็น **origin `https://` ล้วนๆ**
+  (`https://api.example.com` ผ่าน แต่ `https://api.example.com/v1`,
+  `http://…`, มี query/fragment/user:pass → ไม่ผ่าน) เหตุผลอยู่ใน §2.4
+- `permissions.context`: ตอนนี้รับค่าเดียวคือ `"module"` — ขออนุญาตรับข้อมูล
+  ระบุตัวตนของโมดูลที่เปิดอยู่จากแอปหลัก (`moduleId`, `moduleName`, `kind`
+  เท่านั้น ไม่มีเนื้อหา)
+
+ทั้ง `panels` และ `permissions.net` **แสดงในการ์ดพรีวิวก่อนติดตั้ง** ผู้ใช้จึง
+เห็นว่าปลั๊กอินจะฝังหน้าอะไรเข้ามาและจะยิงเน็ตไปที่ไหนบ้าง ก่อนกดยืนยัน
+
+### 1.7 `window.pluginApi` เพิ่มเติมใน v4.3.0
+
+```js
+// เรียกเน็ต — เฉพาะ origin ที่ประกาศใน permissions.net เท่านั้น
+await window.pluginApi.net.fetch(url, { method, headers, body })
+//   → { ok, status, statusText, headers, body, truncated }
+//   → { ok:false, code:'network'|'redirect_blocked', error }
+
+// สตรีม (SSE) — คืนฟังก์ชัน abort()
+const abort = await window.pluginApi.net.stream(url, init, {
+  onChunk: (text) => {...},
+  onEnd:   (res)  => {...},   // { ok, status } หรือ { ok:false, code, error }
+});
+
+// OAuth 2.0 + PKCE — แอปเปิด browser ของระบบและดักลิงก์ redirect กลับมาให้
+// (หน้าเว็บของปลั๊กอินเปิด port รอเองไม่ได้) ปลั๊กอินเอา code+verifier ไป
+// แลก token เองด้วย net.fetch — client secret จึงไม่ต้องผ่าน main process เลย
+const { code, redirectUri, verifier, state } =
+  await window.pluginApi.oauth.authorize({ authorizeUrl, clientId, scope, extraParams });
+
+// คุยกับหน้าต่างหลัก (เฉพาะตอนรันเป็น panel)
+window.pluginApi.panel.send({ type: 'getContext' });
+const off = window.pluginApi.panel.onMessage((msg) => {
+  if (msg.type === 'context') { /* { moduleId, moduleName, kind } หรือ null */ }
+});
+window.pluginApi.panel.close();   // ขอให้แอปหลักปิด panel นี้
+```
+
+ข้อจำกัดของ `net.*`: เฉพาะ `https`, method อยู่ในชุด
+`GET/POST/PUT/PATCH/DELETE/HEAD`, header `Cookie`/`Host`/`Origin`/`Referer`
+ถูกตัดทิ้ง, `body` ต้องเป็น string, timeout 120 วินาที, response ไม่เกิน 8MB
+(เกินแล้วตัดพร้อมธง `truncated`), redirect ที่พาไป origin นอก allowlist ถูก
+ปฏิเสธ และ**ไม่มี cookie jar** — `fetch` ในฝั่ง main ไม่แตะ session ของ Electron
+
 ---
 
 ## ส่วนที่ 2 — หลักการทำงาน + ข้อจำกัดด้านความปลอดภัย (สำหรับผู้พัฒนา)
@@ -170,9 +255,18 @@ RESERVED_COLS    = {'id','rowid','oid','_rowid_'}
   ไม่ได้เด็ดขาด (เป็นข้อเท็จจริงเชิงโครงสร้าง ไม่ใช่การเช็คแบบ runtime ที่ bypass
   ได้)
 - แตะตารางของปลั๊กอินอื่นหรือของแอปหลักไม่ได้ — ทุกคำสั่ง `pluginApi.table.*`
-  resolve ownership จาก**ตัวหน้าต่างที่เรียกเอง** (`BrowserWindow.
-  fromWebContents`) ไม่ใช่จาก argument ที่ปลั๊กอินส่งมา
+  resolve ownership จาก**ตัว webContents ที่เรียกเอง** ไม่ใช่จาก argument ที่
+  ปลั๊กอินส่งมา (v4.3.0: หา 2 ทางคือ `BrowserWindow.fromWebContents` สำหรับ
+  หน้าต่างปลั๊กอิน และตาราง `pluginPanelContents` สำหรับ panel ที่ฝังอยู่ —
+  ตารางหลังถูกเติมโดย `hardenWebviewAttach` ซึ่งตรวจ src มาแล้ว)
 - รัน SQL เองไม่ได้เลย — ไม่มี raw-SQL passthrough ใน `pluginApi.*` แม้แต่จุดเดียว
+- **panel ฝังหน้าอื่นไม่ได้** (v4.3.0) — `will-attach-webview` ใน `main.js`
+  ปฏิเสธการฝังทุกกรณีที่ src ไม่ใช่ไฟล์ `panels[].entry` ที่ปลั๊กอินซึ่งติดตั้ง
+  แล้วประกาศไว้จริง เทียบ path ด้วย `path.relative` ไม่ใช่ prefix ของ string
+  (กัน `<plugins>/foo-evil` ผ่านเพราะขึ้นต้นเหมือน `<plugins>/foo`) และ
+  `webPreferences` ที่หน้าเว็บขอมาถูก**เขียนทับ ไม่ใช่ merge** — preload ถูก
+  บังคับเป็น `preload-plugin.js`, `nodeIntegration:false`, popup ถูกปิด และ
+  navigate ออกนอกไฟล์ตัวเองถูกบล็อก
 
 **ป้องกันไม่ได้ (ยอมรับเป็นข้อจำกัดที่รู้อยู่แล้ว ไม่ใช่สิ่งที่ระบบนี้อ้างว่าแก้ได้):**
 - **ไม่มี OS-level Chromium sandbox จริง** — `main.js` มี
@@ -189,6 +283,20 @@ RESERVED_COLS    = {'id','rowid','oid','_rowid_'}
 - โค้ดจาก repo ถูก**เชื่อถือทันทีที่ติดตั้ง ไม่มีการตรวจสอบหรือ code review/
   signing ใดๆ** — พรีวิวใน v4.2.0 เป็นแค่การ**แจ้งให้ทราบ** ว่าจะติดตั้งไฟล์และ
   ตารางอะไรบ้าง ไม่ได้ตรวจว่าโค้ดข้างในทำอะไร ไม่มีการป้องกัน supply-chain ใดๆ
+- **`pluginApi.net.*` (v4.3.0) เพิ่มสิทธิ์ให้ปลั๊กอินจริง — ไม่ใช่แค่ความสะดวก**
+  หน้าเว็บของปลั๊กอินยิงเน็ตเองได้อยู่แล้ว (มันคือหน้าเว็บ) แต่ CORS ห้ามมัน
+  **อ่าน** response ข้าม origin การให้ main process ยิงแทนคือการปลดข้อห้ามนั้น
+  ซึ่งเป็นการเพิ่ม capability ตรงๆ จึงบังคับ 3 อย่าง: (1) จำกัดเฉพาะ origin ที่
+  ประกาศใน `permissions.net` และ**โชว์ในพรีวิวก่อนติดตั้ง** (2) เทียบแบบ origin
+  ไม่ใช่ prefix — นี่คือเหตุผลที่ manifest ห้ามใส่ path ลงใน allowlist เพราะ
+  prefix match จะทำให้ `https://api.example.com.evil.test` ผ่านได้ และ (3) ไม่มี
+  cookie jar / จำกัด method / จำกัดขนาด / บล็อก redirect ออกนอก allowlist
+  **สิ่งที่ยังป้องกันไม่ได้:** ถ้าผู้ใช้อนุมัติ origin ไหนไปแล้ว ปลั๊กอินส่งอะไร
+  ไปที่นั่นก็ได้ — รวมถึงข้อมูลในตารางของตัวเอง ระบบนี้จำกัด**ปลายทาง** ไม่ได้
+  จำกัด**เนื้อหา**
+- **ปลั๊กอินเก็บ credential เป็น plaintext** — ตารางของปลั๊กอินคือ SQLite ธรรมดา
+  ไม่มี `safeStorage`/keytar ที่ไหนในแอปนี้ (`drive:clientSecret` ใน
+  `app_setting` ก็เก็บแบบเดียวกัน) ปลั๊กอินที่เก็บ API key/token ต้องบอกผู้ใช้ตรงๆ
 
 ### 2.5 การดาวน์โหลด — ไม่มี zip, ไม่มี dependency ใหม่
 

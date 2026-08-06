@@ -585,11 +585,27 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   "ล่าสุด" จำลอง: ยังไม่ login→ไม่แจ้ง, login แล้ว→แจ้ง, กดเตือนภายหลัง→ไม่
   แจ้งซ้ำสำหรับเวอร์ชันเดิม
 
-### Plugins — เดิม Github Sandboxed Extensions (2026-07-30, เปลี่ยนชื่อ + ติดตั้งจากลิงก์ 2026-08-06)
+### Plugins — เดิม Github Sandboxed Extensions (2026-07-30, เปลี่ยนชื่อ + ติดตั้งจากลิงก์ 2026-08-06, panel API 2026-08-06)
 
 ดาวน์โหลด "ปลั๊กอิน" จาก git repo ที่ประกาศตารางฐานข้อมูลของตัวเอง รันใน
 หน้าต่างแยกที่ถูกจำกัดสิทธิ์จริงจัง (ไม่ใช่ stub) — เอกสารเต็มที่
 [PLUGINS.md](PLUGINS.md) สรุปพฤติกรรม:
+
+- **Plugin panel (v4.3.0)** — manifest ประกาศ `panels[]` ได้ แล้วจะได้ปุ่มข้าง
+  ปุ่ม toggle Module Inspector ใน pane head (`builderPaneHeadHtml`) ปุ่มแสดง
+  **เฉพาะตอนมี `S.activeModuleNode`** กดแล้ว `buildInspectorHtml` สลับไปคืน
+  `buildPluginPanelHtml` (`src/renderer/pluginpanel.js`) ซึ่งเป็น
+  `<aside class="module-inspector plugin-panel">` ครอบ `<webview>` — คง class
+  `module-inspector` ไว้จึงได้ resize/collapse ของ dock เดิมฟรี. panel ปิดเอง
+  เมื่อสลับโมดูล และ**ถูก reload ทุกครั้งที่ pane re-render** (dock ถูกวาดใหม่
+  ทั้งก้อน) ปลั๊กอินจึงต้อง persist state ลงตารางของตัวเอง
+- **`permissions` (v4.3.0)** — `permissions.net` เป็น allowlist ของ origin
+  `https://` ที่ปลั๊กอินยิงผ่าน `pluginApi.net.fetch/stream` ได้ (main process
+  ยิงแทน → อ่าน response ข้าม origin ได้ ซึ่งเป็นการเพิ่ม capability จริง ดู
+  PLUGINS.md §2.4), `permissions.context: ["module"]` ให้ panel รับ
+  `{moduleId, moduleName, kind}` ของโมดูลที่เปิดอยู่. ทั้งคู่แสดงในการ์ดพรีวิว
+  ก่อนติดตั้ง. **ไม่มี migration** — อ่านกลับจาก `manifest_json` ที่เก็บ manifest
+  ทั้งก้อนอยู่แล้ว
 
 - แต่ละปลั๊กอินมี manifest (`dracondex-plugin.json`, fallback
   `dracondex-extension.json`) ประกาศไฟล์และตาราง (คอลัมน์ TEXT/INTEGER/REAL

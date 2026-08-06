@@ -501,6 +501,11 @@ function builderPaneHeadHtml(i, pane, focused) {
   const inspectorToggle = !isSplit
     ? `<button class="btn btn-g btn-i bnav ${S.inspectorCollapsed ? '' : 'active'}" onclick="toggleModuleInspector()" title="${t('toggleInspector')}">${I.panelRight}</button>`
     : '';
+  // Plugin panels (v4.3.0) sit immediately left of the inspector toggle: they
+  // open in that same dock, so they belong in that group rather than with the
+  // nav/split buttons at the far left. pluginPanelButtonsHtml self-guards on
+  // S.activeModuleNode — with no module open there is no dock to replace.
+  const pluginPanelBtns = !isSplit && typeof pluginPanelButtonsHtml === 'function' ? pluginPanelButtonsHtml() : '';
   // Wyvern/Dragon (Plan part2 #New Workspace) never split — no split/
   // close-pane affordance to offer at all, matching builderNavigate's
   // single-tab guard above and onBodyDrop's disarmed drag-to-split below.
@@ -508,7 +513,7 @@ function builderPaneHeadHtml(i, pane, focused) {
     <button class="btn btn-g btn-i bnav" onclick="builderSplitPane(${i},'h')" title="${t('splitPane')}">◫</button>
     <button class="btn btn-g btn-i bnav" onclick="builderSplitPane(${i},'v')" title="${t('splitPane')}">⬓</button>
     ${isSplit ? `<button class="btn btn-g btn-i bnav" onclick="builderClosePane(${i})" title="${t('closePane')}">${I.close}</button>` : ''}`;
-  return `${nav}${splitBtns}<div class="bpane-tabs" ondragover="onTabStripDragOver(event,${i})" ondrop="onTabStripDrop(event,${i})">${tabs}</div>${inspectorToggle}`;
+  return `${nav}${splitBtns}<div class="bpane-tabs" ondragover="onTabStripDragOver(event,${i})" ondrop="onTabStripDrop(event,${i})">${tabs}</div>${pluginPanelBtns}${inspectorToggle}`;
 }
 
 // ═══ Tab drag-reorder / cross-pane move (Plan part3 #1, reworked part1 #3)

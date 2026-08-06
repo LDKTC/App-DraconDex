@@ -25,6 +25,24 @@ const MAX_FILES = 30;
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB/file
 const MAX_GITLAB_NS_DEPTH = 5;          // gitlab.com/a/b/c/d/project
 
+// --- Plugin panels (v4.3.0) -------------------------------------------------
+// A panel is a second entry HTML the main window embeds in a <webview> in place
+// of the Module Inspector dock. Unlike `tables[].name`, a panel id never
+// reaches SQL — it is a lookup key in the renderer — so the character class is
+// only as strict as it needs to be to stay a safe DOM/attribute value.
+const PANEL_ID_RE = /^[a-z0-9_-]{1,24}$/;
+const MAX_PANELS = 5;
+const MAX_PANEL_TITLE = 40;
+const MAX_PANEL_ICON = 8;               // an emoji is up to ~7 UTF-16 units
+// Hosts a plugin may reach through pluginApi.net.* . Declared here so the
+// install preview can show them BEFORE any code is downloaded — see
+// docs/PLUGINS.md §2.4 for why this is an allowlist and not a free-for-all.
+const MAX_NET_ORIGINS = 10;
+// Host->plugin context a plugin may receive. One value today; kept as a list so
+// a second context kind doesn't change the manifest shape.
+const CONTEXT_KINDS = new Set(['module']);
+const MAX_CONTEXT_KINDS = CONTEXT_KINDS.size;
+
 // The manifest filename is looked up in this order, so a repo written for the
 // pre-v4.2.0 "extension" naming still installs unchanged.
 const MANIFEST_NAMES = ['dracondex-plugin.json', 'dracondex-extension.json'];
@@ -34,9 +52,78 @@ const REF_CANDIDATES = ['main', 'master'];
 // ---------------------------------------------------------------------------
 // Manifest validation — rejects before anything is written to disk or the DB.
 // ---------------------------------------------------------------------------
+// An entry of `permissions.net`: an https:// ORIGIN and nothing else. Rejecting
+// a path/query/fragment keeps the runtime check a plain `origin ===` compare —
+// a prefix match on a full URL would let `https://api.example.com/safe` be
+// satisfied by `https://api.example.com/safe.evil.com`.
+function normalizeNetOrigin(value) {
+  if (typeof value !== 'string' || !value) return null;
+  let u;
+  try { u = new URL(value); } catch (_) { return null; }
+  if (u.protocol !== 'https:') return null;
+  if (u.username || u.password) return null;
+  if (u.search || u.hash) return null;
+  if (u.pathname !== '/' && u.pathname !== '') return null;
+  return u.origin;
+}
+
+// `panels` and `permissions` are both optional and both absent from every
+// plugin written before v4.3.0, so a manifest that omits them stays valid.
+function validatePanels(panels, files) {
+  if (panels == null) return { ok: true };
+  if (!Array.isArray(panels) || panels.length > MAX_PANELS) {
+    return { ok: false, error: `"panels" must be an array of at most ${MAX_PANELS} entries` };
+  }
+  const seen = new Set();
+  for (const p of panels) {
+    if (!p || typeof p !== 'object') return { ok: false, error: 'invalid panel entry' };
+    if (!PANEL_ID_RE.test(String(p.id || ''))) return { ok: false, error: `invalid panel id: ${p?.id}` };
+    if (seen.has(p.id)) return { ok: false, error: `duplicate panel id: ${p.id}` };
+    seen.add(p.id);
+    if (!p.title || typeof p.title !== 'string' || p.title.length > MAX_PANEL_TITLE) {
+      return { ok: false, error: `invalid panel title for "${p.id}"` };
+    }
+    if (p.icon != null && (typeof p.icon !== 'string' || p.icon.length > MAX_PANEL_ICON)) {
+      return { ok: false, error: `invalid panel icon for "${p.id}"` };
+    }
+    if (!p.entry || typeof p.entry !== 'string' || !/\.html?$/i.test(p.entry)) {
+      return { ok: false, error: `panel "${p.id}" needs an HTML "entry"` };
+    }
+    // Same rule the top-level entry gets: the app only ever downloads paths
+    // listed in `files`, so a panel entry outside it could never be loaded.
+    if (!files.includes(p.entry)) return { ok: false, error: `panel "${p.id}" entry must be listed in "files"` };
+  }
+  return { ok: true };
+}
+
+function validatePermissions(permissions) {
+  if (permissions == null) return { ok: true };
+  if (typeof permissions !== 'object' || Array.isArray(permissions)) {
+    return { ok: false, error: '"permissions" must be an object' };
+  }
+  const { net, context } = permissions;
+  if (net != null) {
+    if (!Array.isArray(net) || net.length > MAX_NET_ORIGINS) {
+      return { ok: false, error: `"permissions.net" must be an array of at most ${MAX_NET_ORIGINS} origins` };
+    }
+    for (const origin of net) {
+      if (!normalizeNetOrigin(origin)) return { ok: false, error: `invalid net origin (https:// origin only): ${origin}` };
+    }
+  }
+  if (context != null) {
+    if (!Array.isArray(context) || context.length > MAX_CONTEXT_KINDS) {
+      return { ok: false, error: '"permissions.context" must be an array' };
+    }
+    for (const k of context) {
+      if (!CONTEXT_KINDS.has(k)) return { ok: false, error: `unknown context permission: ${k}` };
+    }
+  }
+  return { ok: true };
+}
+
 function validateManifest(manifest) {
   if (!manifest || typeof manifest !== 'object') return { ok: false, error: 'manifest is not an object' };
-  const { id, name, version, entry, files, tables } = manifest;
+  const { id, name, version, entry, files, tables, panels, permissions } = manifest;
 
   if (!PLUGIN_ID_RE.test(String(id || ''))) return { ok: false, error: 'invalid or missing "id"' };
   if (!name || typeof name !== 'string' || name.length > 80) return { ok: false, error: 'invalid or missing "name"' };
@@ -75,7 +162,48 @@ function validateManifest(manifest) {
       seenCols.add(cname);
     }
   }
+
+  const panelCheck = validatePanels(panels, files);
+  if (!panelCheck.ok) return panelCheck;
+  const permCheck = validatePermissions(permissions);
+  if (!permCheck.ok) return permCheck;
+
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Reading the v4.3.0 fields back out of a stored manifest. `manifest_json` in
+// the plugin row is the whole manifest verbatim, so these are the only place
+// that knows how to shape it for the renderer and the pluginApi guards — and
+// they re-validate rather than trusting what's on disk, since the row was
+// written by whatever manifest the repo served at install time.
+// ---------------------------------------------------------------------------
+function manifestPanels(manifest) {
+  if (!Array.isArray(manifest?.panels)) return [];
+  return manifest.panels
+    .filter((p) => p && PANEL_ID_RE.test(String(p.id || '')) && typeof p.entry === 'string')
+    .map((p) => ({ id: p.id, title: String(p.title || p.id), icon: typeof p.icon === 'string' ? p.icon : null, entry: p.entry }));
+}
+
+function manifestNetOrigins(manifest) {
+  const net = manifest?.permissions?.net;
+  if (!Array.isArray(net)) return [];
+  return net.map(normalizeNetOrigin).filter(Boolean);
+}
+
+function manifestContextKinds(manifest) {
+  const context = manifest?.permissions?.context;
+  if (!Array.isArray(context)) return [];
+  return context.filter((k) => CONTEXT_KINDS.has(k));
+}
+
+// The single yes/no a pluginApi.net.* call is gated on. Compares ORIGINS, never
+// prefixes — see normalizeNetOrigin above.
+function netOriginAllowed(manifest, url) {
+  let u;
+  try { u = new URL(String(url || '')); } catch (_) { return false; }
+  if (u.protocol !== 'https:') return false;
+  return manifestNetOrigins(manifest).includes(u.origin);
 }
 
 // ---------------------------------------------------------------------------
@@ -196,5 +324,7 @@ module.exports = {
   REPO_SEG_RE, COL_TYPES, RESERVED_COLS,
   MAX_TABLES_PER_PLUGIN, MAX_COLS_PER_TABLE, MAX_FILES, MAX_FILE_BYTES,
   MANIFEST_NAMES, REF_CANDIDATES,
+  PANEL_ID_RE, MAX_PANELS, MAX_NET_ORIGINS, CONTEXT_KINDS,
   validateManifest, parseRepoUrl, rawUrl,
+  manifestPanels, manifestNetOrigins, manifestContextKinds, netOriginAllowed,
 };

@@ -24,6 +24,7 @@ const {
   PLUGIN_TABLE_RE, FULL_TABLE_RE, MAX_FILE_BYTES,
   MANIFEST_NAMES, REF_CANDIDATES,
   validateManifest, parseRepoUrl, rawUrl,
+  manifestPanels, manifestNetOrigins, manifestContextKinds, netOriginAllowed,
 } = require('./plugin-manifest');
 
 const dataRoot = () => path.dirname(app.getPath('userData'));
@@ -116,6 +117,13 @@ async function pluginPreview(url) {
       id: r.manifest.id, name: r.manifest.name, version: r.manifest.version || null,
       entry: r.manifest.entry, files: r.manifest.files,
       tables: (r.manifest.tables || []).map((t) => ({ name: t.name, columns: t.columns })),
+      // v4.3.0 — surfaced so the preview card can warn about the two things
+      // that are NOT just "files and tables": a panel embeds the plugin's page
+      // inside the main window, and netOrigins is outbound network access the
+      // plugin gets through pluginApi.net.*. Shown before install, by design.
+      panels: manifestPanels(r.manifest),
+      netOrigins: manifestNetOrigins(r.manifest),
+      contextKinds: manifestContextKinds(r.manifest),
     },
   };
 }
@@ -199,21 +207,226 @@ function pluginUninstall(id) {
   return { ok: true };
 }
 
+// manifest_json holds the installed manifest verbatim, so the v4.3.0 fields
+// need no columns of their own and no migration — they are simply read back
+// out here. A pre-v4.3.0 install just has no `panels`/`permissions` key and
+// falls out as empty arrays.
+function parseManifestJson(row) {
+  try { return JSON.parse(row.manifest_json); } catch (_) { return null; }
+}
+
 function pluginList() {
   const db = getDB();
   const plugins = db.prepare(`
-    SELECT id, plugin_key, name, version, repo_host, repo_owner, repo_name, repo_ref, entry_html, installed_at
+    SELECT id, plugin_key, name, version, repo_host, repo_owner, repo_name, repo_ref, entry_html, installed_at, manifest_json
     FROM plugin ORDER BY installed_at DESC
   `).all();
   const tables = db.prepare(`SELECT plugin_ref, local_name, columns_json FROM plugin_table`).all();
-  return plugins.map((p) => ({
-    ...p,
-    tables: tables.filter((t) => t.plugin_ref === p.id).map((t) => ({ localName: t.local_name, columns: JSON.parse(t.columns_json) })),
-  }));
+  return plugins.map(({ manifest_json, ...p }) => {
+    const manifest = parseManifestJson({ manifest_json });
+    return {
+      ...p,
+      tables: tables.filter((t) => t.plugin_ref === p.id).map((t) => ({ localName: t.local_name, columns: JSON.parse(t.columns_json) })),
+      // The renderer needs an absolute on-disk path to point a <webview> at.
+      // It is composed here (not in the renderer) so the plugins root stays a
+      // main-process fact — the renderer never learns the data dir layout.
+      dir: pluginDir(p.plugin_key),
+      panels: manifest ? manifestPanels(manifest) : [],
+      netOrigins: manifest ? manifestNetOrigins(manifest) : [],
+      contextKinds: manifest ? manifestContextKinds(manifest) : [],
+    };
+  });
 }
 
 function pluginGetById(id) {
   return getDB().prepare(`SELECT * FROM plugin WHERE id=?`).get(id) || null;
+}
+
+// Resolve the plugin that owns an on-disk path, used by main.js to decide
+// whether a <webview> src is a legitimate plugin panel. Returns the plugin row
+// or null. Path containment is checked with path.relative rather than a string
+// prefix so `<plugins>/foo-evil` can't satisfy `<plugins>/foo`.
+function pluginByPanelPath(filePath) {
+  let rel;
+  try { rel = path.relative(pluginsRoot(), path.resolve(filePath)); } catch (_) { return null; }
+  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
+  const key = rel.split(path.sep)[0];
+  if (!key) return null;
+  const row = getDB().prepare(`SELECT * FROM plugin WHERE plugin_key=?`).get(key) || null;
+  if (!row) return null;
+  // The path must additionally be one of the panel entries this plugin
+  // declared — a plugin can't get its arbitrary files embedded in the dock.
+  const manifest = parseManifestJson(row);
+  const entries = new Set(manifestPanels(manifest || {}).map((p) => p.entry));
+  const relInPlugin = rel.split(path.sep).slice(1).join('/');
+  if (!entries.has(relInPlugin)) return null;
+  return row;
+}
+
+// The allowlist gate for pluginapi:net:* . pluginId comes from the calling
+// webContents' own identity (main.js), never from an argument.
+function pluginNetAllowed(pluginId, url) {
+  const row = getDB().prepare(`SELECT manifest_json FROM plugin WHERE id=?`).get(pluginId);
+  if (!row) return false;
+  const manifest = parseManifestJson(row);
+  return !!manifest && netOriginAllowed(manifest, url);
+}
+
+// ---------------------------------------------------------------------------
+// pluginApi.net.* / pluginApi.oauth.* (v4.3.0)
+//
+// BE HONEST ABOUT WHAT THIS IS. A plugin page could already reach the network
+// on its own — it's a web page. What running the request HERE adds is the
+// ability to read a cross-origin response, which CORS would otherwise deny.
+// That is a real capability increase, and it is why every call is gated on the
+// origin allowlist the manifest declared and the install preview showed. It is
+// NOT a general-purpose proxy: no cookie jar is attached (Node's fetch has no
+// access to the Electron session), the method set is fixed, and the response is
+// size-capped. See docs/PLUGINS.md §2.4.
+// ---------------------------------------------------------------------------
+const NET_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']);
+const NET_TIMEOUT_MS = 120000;
+const NET_MAX_BYTES = 8 * 1024 * 1024;
+
+// Headers a plugin must not be able to set: they either impersonate a browser
+// context the plugin doesn't have, or let it forge the request's origin.
+const NET_BLOCKED_HEADERS = new Set(['cookie', 'host', 'origin', 'referer', 'content-length']);
+
+function sanitizeNetInit(init) {
+  const method = String(init?.method || 'GET').toUpperCase();
+  if (!NET_METHODS.has(method)) throw new Error(`method not allowed: ${method}`);
+  const headers = {};
+  for (const [k, v] of Object.entries(init?.headers || {})) {
+    if (typeof v !== 'string') continue;
+    if (NET_BLOCKED_HEADERS.has(String(k).toLowerCase())) continue;
+    headers[k] = v;
+  }
+  const body = init?.body;
+  if (body != null && typeof body !== 'string') throw new Error('body must be a string');
+  return { method, headers, body: method === 'GET' || method === 'HEAD' ? undefined : body };
+}
+
+// Reads at most NET_MAX_BYTES so a hostile or broken endpoint can't balloon the
+// main process. Returns what it got plus `truncated`, rather than throwing --
+// the plugin can then decide whether a partial body is usable.
+async function readCapped(res) {
+  const reader = res.body?.getReader();
+  if (!reader) return { text: await res.text(), truncated: false };
+  const decoder = new TextDecoder();
+  let text = '';
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > NET_MAX_BYTES) { await reader.cancel(); return { text, truncated: true }; }
+    text += decoder.decode(value, { stream: true });
+  }
+  return { text: text + decoder.decode(), truncated: false };
+}
+
+async function pluginNetFetch(pluginId, url, init) {
+  if (!pluginNetAllowed(pluginId, url)) throw new Error('origin not allowed by this plugin\'s manifest');
+  const opts = sanitizeNetInit(init);
+  let res;
+  try {
+    res = await fetch(url, { ...opts, redirect: 'follow', signal: AbortSignal.timeout(NET_TIMEOUT_MS) });
+  } catch (e) {
+    return { ok: false, code: 'network', error: String(e?.message || e) };
+  }
+  // A redirect could land off-allowlist; re-check where we actually ended up.
+  if (res.redirected && !pluginNetAllowed(pluginId, res.url)) {
+    return { ok: false, code: 'redirect_blocked', error: 'redirected to a disallowed origin' };
+  }
+  const { text, truncated } = await readCapped(res);
+  return {
+    ok: true, status: res.status, statusText: res.statusText,
+    headers: Object.fromEntries(res.headers.entries()),
+    body: text, truncated,
+  };
+}
+
+// Streaming (SSE) sibling of pluginNetFetch. The caller supplies onChunk /
+// onEnd because delivering bytes back to a specific webContents is main.js's
+// job, not the data layer's. Returns an abort function.
+async function pluginNetStream(pluginId, url, init, { onChunk, onEnd }) {
+  if (!pluginNetAllowed(pluginId, url)) throw new Error('origin not allowed by this plugin\'s manifest');
+  const opts = sanitizeNetInit(init);
+  const ctrl = new AbortController();
+  (async () => {
+    let res;
+    try {
+      res = await fetch(url, { ...opts, redirect: 'follow', signal: ctrl.signal });
+    } catch (e) {
+      onEnd({ ok: false, code: ctrl.signal.aborted ? 'aborted' : 'network', error: String(e?.message || e) });
+      return;
+    }
+    if (res.redirected && !pluginNetAllowed(pluginId, res.url)) {
+      ctrl.abort();
+      onEnd({ ok: false, code: 'redirect_blocked', error: 'redirected to a disallowed origin' });
+      return;
+    }
+    // A non-2xx SSE request returns a normal JSON error body — read it whole
+    // and hand it back as the end payload so the plugin can surface the real
+    // message instead of "stream failed".
+    if (!res.ok) {
+      const { text } = await readCapped(res);
+      onEnd({ ok: false, code: 'http', status: res.status, error: text });
+      return;
+    }
+    const reader = res.body?.getReader();
+    if (!reader) { onEnd({ ok: false, code: 'network', error: 'no response body' }); return; }
+    const decoder = new TextDecoder();
+    let size = 0;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.length;
+        if (size > NET_MAX_BYTES) { await reader.cancel(); onEnd({ ok: false, code: 'too_large', error: 'stream exceeded size cap' }); return; }
+        onChunk(decoder.decode(value, { stream: true }));
+      }
+      const tail = decoder.decode();
+      if (tail) onChunk(tail);
+      onEnd({ ok: true, status: res.status });
+    } catch (e) {
+      onEnd({ ok: false, code: ctrl.signal.aborted ? 'aborted' : 'network', error: String(e?.message || e) });
+    }
+  })();
+  return () => ctrl.abort();
+}
+
+// Generic OAuth 2.0 + PKCE authorization for a plugin, reusing the same
+// loopback receiver Drive and Supabase login already use. The host owns the
+// PKCE pair and the redirect capture (a plugin page can't listen on a port);
+// the plugin does the token exchange itself with pluginApi.net.fetch, so no
+// client secret ever has to be handed to the main process.
+async function pluginOAuthAuthorize(pluginId, opts) {
+  const authorizeUrl = String(opts?.authorizeUrl || '');
+  if (!pluginNetAllowed(pluginId, authorizeUrl)) throw new Error('authorize URL not allowed by this plugin\'s manifest');
+  const clientId = String(opts?.clientId || '');
+  if (!clientId) throw new Error('clientId is required');
+
+  const { makePkcePair, runOAuthLoopback } = require('./oauth-loopback');
+  const { verifier, challenge } = makePkcePair();
+  const state = require('crypto').randomBytes(16).toString('hex');
+
+  const { code, redirectUri } = await runOAuthLoopback((redirect) => {
+    const u = new URL(authorizeUrl);
+    u.searchParams.set('response_type', 'code');
+    u.searchParams.set('client_id', clientId);
+    u.searchParams.set('redirect_uri', redirect);
+    u.searchParams.set('code_challenge', challenge);
+    u.searchParams.set('code_challenge_method', 'S256');
+    u.searchParams.set('state', state);
+    if (opts?.scope) u.searchParams.set('scope', String(opts.scope));
+    for (const [k, v] of Object.entries(opts?.extraParams || {})) {
+      if (typeof v === 'string') u.searchParams.set(k, v);
+    }
+    return u.toString();
+  });
+
+  return { code, redirectUri, verifier, state };
 }
 
 // ---------------------------------------------------------------------------
@@ -293,7 +506,8 @@ function pluginApiDelete(pluginId, localName, rowId) {
 
 module.exports = {
   pluginList, pluginGetById, pluginPreview, pluginInstall, pluginUninstall,
-  migratePluginDir,
+  migratePluginDir, pluginByPanelPath, pluginNetAllowed,
+  pluginNetFetch, pluginNetStream, pluginOAuthAuthorize,
   pluginApiGetSchema, pluginApiQuery, pluginApiInsert, pluginApiUpdate, pluginApiDelete,
   // re-exported so the run-dracondex `evalmain` checks can reach them through
   // database.js without knowing about the electron-free split

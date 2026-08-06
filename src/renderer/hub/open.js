@@ -8,6 +8,9 @@ async function openModuleNode(id) {
   const m = findModuleNode(id);
   if (!m) return;
   if (m.kind === 'collector') { if (m.parent_id == null) toggleMajorExpand(id); return; }
+  // A plugin panel is scoped to the module it was opened on — switching
+  // modules closes it rather than silently re-pointing it at new content.
+  if (S.pluginPanel && S.pluginPanel.moduleId !== id) S.pluginPanel = null;
   S.activeModuleNode = m;
   S.activeItemNode = null;
   S.kindBrowserPage = false;

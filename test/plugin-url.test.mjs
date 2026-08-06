@@ -7,7 +7,10 @@ import { createRequire } from 'node:module';
 // Everything a malicious repo URL or manifest could do goes through these two
 // functions, so they are the two things worth a real regression test.
 const require_ = createRequire(import.meta.url);
-const { parseRepoUrl, validateManifest, rawUrl } = require_('../src/db/plugin-manifest.js');
+const {
+  parseRepoUrl, validateManifest, rawUrl,
+  manifestPanels, manifestNetOrigins, manifestContextKinds, netOriginAllowed,
+} = require_('../src/db/plugin-manifest.js');
 
 test('parseRepoUrl accepts every shape a user can copy out of GitHub', () => {
   const github = (owner, repo, ref) => ({ ok: true, host: 'github', owner, repo, ref });
@@ -126,4 +129,97 @@ test('validateManifest rejects every shape that could reach SQL or the filesyste
 
   assert.equal(validateManifest(null).ok, false);
   assert.equal(validateManifest('nope').ok, false);
+});
+
+// --- v4.3.0: panels + permissions ------------------------------------------
+// Both fields are optional, so the first thing to protect is that every plugin
+// written before v4.3.0 still validates untouched.
+
+const panelManifest = () => {
+  const m = goodManifest();
+  m.files = ['index.html', 'app.js', 'panel.html'];
+  m.panels = [{ id: 'chat', title: 'Chat', icon: '💬', entry: 'panel.html' }];
+  m.permissions = { net: ['https://api.example.com'], context: ['module'] };
+  return m;
+};
+
+test('validateManifest keeps pre-v4.3.0 manifests valid and accepts the new fields', () => {
+  assert.deepEqual(validateManifest(goodManifest()), { ok: true }, 'no panels/permissions is still valid');
+  assert.deepEqual(validateManifest(panelManifest()), { ok: true });
+
+  const noIcon = panelManifest(); delete noIcon.panels[0].icon;
+  assert.equal(validateManifest(noIcon).ok, true, 'icon is optional');
+  const noContext = panelManifest(); delete noContext.permissions.context;
+  assert.equal(validateManifest(noContext).ok, true, 'context is optional');
+  const noNet = panelManifest(); delete noNet.permissions.net;
+  assert.equal(validateManifest(noNet).ok, true, 'net is optional');
+});
+
+test('validateManifest rejects panels that could be loaded or labelled unsafely', () => {
+  const bad = (mutate) => { const m = panelManifest(); mutate(m); return validateManifest(m); };
+
+  assert.equal(bad((m) => { m.panels[0].id = 'Chat Panel'; }).ok, false, 'id must be the safe character class');
+  assert.equal(bad((m) => { m.panels[0].id = '../x'; }).ok, false);
+  assert.equal(bad((m) => { m.panels[0].id = 'x'.repeat(25); }).ok, false);
+  assert.equal(bad((m) => { m.panels.push({ id: 'chat', title: 'Dup', entry: 'panel.html' }); }).ok, false, 'duplicate panel id');
+  assert.equal(bad((m) => { delete m.panels[0].title; }).ok, false);
+  assert.equal(bad((m) => { m.panels[0].title = 'x'.repeat(41); }).ok, false);
+  assert.equal(bad((m) => { m.panels[0].icon = 'x'.repeat(9); }).ok, false);
+
+  // The entry gate is what stops a panel pointing anywhere the app didn't
+  // download, and what main.js's attach check ultimately relies on.
+  assert.equal(bad((m) => { m.panels[0].entry = 'not-listed.html'; }).ok, false, 'entry must be in files');
+  assert.equal(bad((m) => { m.panels[0].entry = 'app.js'; }).ok, false, 'entry must be HTML');
+  assert.equal(bad((m) => { m.panels[0].entry = '../../index.html'; }).ok, false);
+  assert.equal(bad((m) => { delete m.panels[0].entry; }).ok, false);
+
+  assert.equal(bad((m) => { m.panels = 'chat'; }).ok, false);
+  assert.equal(bad((m) => {
+    m.panels = Array.from({ length: 6 }, (_, i) => ({ id: `p${i}`, title: 'P', entry: 'panel.html' }));
+  }).ok, false, 'too many panels');
+});
+
+test('validateManifest rejects any net origin that is not a bare https origin', () => {
+  const bad = (net) => validateManifest({ ...panelManifest(), permissions: { net } }).ok;
+
+  assert.equal(bad(['http://api.example.com']), false, 'plaintext http');
+  assert.equal(bad(['https://api.example.com/v1']), false, 'a path would make the check a prefix match');
+  assert.equal(bad(['https://api.example.com/']), true, 'a bare trailing slash is still an origin');
+  assert.equal(bad(['https://api.example.com?x=1']), false);
+  assert.equal(bad(['https://api.example.com#f']), false);
+  assert.equal(bad(['https://user:pw@api.example.com']), false);
+  assert.equal(bad(['file:///etc/passwd']), false);
+  assert.equal(bad(['not a url']), false);
+  assert.equal(bad(['']), false);
+  assert.equal(bad('https://api.example.com'), false, 'must be an array');
+  assert.equal(bad(Array.from({ length: 11 }, (_, i) => `https://h${i}.example.com`)), false, 'too many origins');
+
+  assert.equal(validateManifest({ ...panelManifest(), permissions: { context: ['everything'] } }).ok, false);
+  assert.equal(validateManifest({ ...panelManifest(), permissions: ['module'] }).ok, false, 'permissions is an object');
+});
+
+test('netOriginAllowed compares origins, never prefixes', () => {
+  const m = panelManifest();
+  assert.equal(netOriginAllowed(m, 'https://api.example.com/v1/messages'), true);
+  assert.equal(netOriginAllowed(m, 'https://api.example.com'), true);
+  // The whole reason a path is rejected at declare time: a prefix match would
+  // let a lookalike host satisfy the allowlist.
+  assert.equal(netOriginAllowed(m, 'https://api.example.com.evil.test/v1'), false);
+  assert.equal(netOriginAllowed(m, 'https://evil.test/?x=https://api.example.com'), false);
+  assert.equal(netOriginAllowed(m, 'http://api.example.com/v1'), false, 'scheme is part of the origin');
+  assert.equal(netOriginAllowed(m, 'https://api.example.com:8443/v1'), false, 'port is part of the origin');
+  assert.equal(netOriginAllowed(m, 'garbage'), false);
+  assert.equal(netOriginAllowed({}, 'https://api.example.com'), false, 'no permissions means no access');
+});
+
+test('manifest readers drop anything malformed rather than trusting the stored row', () => {
+  assert.deepEqual(manifestPanels(panelManifest()), [
+    { id: 'chat', title: 'Chat', icon: '💬', entry: 'panel.html' },
+  ]);
+  assert.deepEqual(manifestPanels({}), []);
+  assert.deepEqual(manifestPanels({ panels: [{ id: 'BAD ID', entry: 'x.html' }] }), [], 'a bad id is dropped, not surfaced');
+  assert.deepEqual(manifestNetOrigins(panelManifest()), ['https://api.example.com']);
+  assert.deepEqual(manifestNetOrigins({ permissions: { net: ['http://x.test'] } }), []);
+  assert.deepEqual(manifestContextKinds(panelManifest()), ['module']);
+  assert.deepEqual(manifestContextKinds({ permissions: { context: ['module', 'secrets'] } }), ['module']);
 });

@@ -19,6 +19,43 @@
 
 ---
 
+## 2026-08-06 — Plugin Panel API (v4.3.0): ปลั๊กอินฝังหน้าตัวเองแทน Module Inspector ได้
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/plugin-manifest.js` (ฟิลด์ `panels`/`permissions` +
+  `manifestPanels`/`manifestNetOrigins`/`manifestContextKinds`/`netOriginAllowed`),
+  `src/db/plugin.js` (`pluginList` คืน `dir`/`panels`/`netOrigins`/`contextKinds`,
+  `pluginPreview` คืน 3 ฟิลด์ใหม่, `pluginByPanelPath`, `pluginNetAllowed`,
+  `pluginNetFetch`, `pluginNetStream`, `pluginOAuthAuthorize`),
+  `main.js` (`webviewTag:true` + `hardenWebviewAttach`, `pluginPanelContents`,
+  `callerPluginId` หา 2 ทาง, `pluginapi:net:fetch`,
+  `pluginapi:net:stream:start`/`:abort`, `pluginapi:oauth:authorize`),
+  `preload-plugin.js` (`net`/`oauth`/`panel`), `src/renderer/pluginpanel.js` (ใหม่),
+  `src/renderer/inspector.js` (guard), `src/renderer/builder.js` (ปุ่มใน pane head),
+  `src/renderer/core/state.js` (`pluginPanels`/`pluginPanel`),
+  `src/renderer/core/views.js` (mount hook), `src/renderer/core/boot.js` (โหลดตอน init),
+  `src/renderer/hub/open.js` (ปิด panel เมื่อสลับโมดูล),
+  `src/renderer/plugin.js` (พรีวิวโชว์ panels/net + refresh contributions),
+  `index.html`, `css/builder.css` (`.plugin-panel`), `src/renderer/i18n.js` (5 คีย์ × 18 locale),
+  `test/plugin-url.test.mjs` (5 เทสต์ใหม่), `package.json` (4.2.0 → 4.3.0)
+- อะไรเปลี่ยน:
+  - ปลั๊กอินประกาศ `panels[]` ใน manifest ได้ → ได้ปุ่มข้างปุ่ม toggle Module
+    Inspector (แสดงเฉพาะตอนเปิดโมดูล) กดแล้วหน้าปลั๊กอินเข้าแทน inspector dock
+    ผ่าน `<webview>` ที่ยังได้ `preload-plugin.js` และไม่มี `window.api`
+  - ปลั๊กอินประกาศ `permissions.net` (origin `https://` ล้วน) แล้วเรียก
+    `pluginApi.net.fetch/stream` ให้ main process ยิงแทนได้ — อ่าน response ข้าม
+    origin ได้ ซึ่งเป็นการเพิ่ม capability จริง จึงบังคับ allowlist + โชว์ในพรีวิว
+  - `pluginApi.oauth.authorize` ใช้ `src/db/oauth-loopback.js` ตัวเดิมที่ Drive/
+    Supabase ใช้อยู่ ทำ PKCE + ดัก redirect ให้ ปลั๊กอินแลก token เอง
+  - **ไม่มี DB migration** — `manifest_json` เก็บ manifest ทั้งก้อนอยู่แล้ว จึง
+    อ่านฟิลด์ใหม่กลับออกมาได้เลย และปลั๊กอินเก่าไม่ต้องแก้อะไร
+- ทำไม: ผู้ใช้ต้องการปลั๊กอินแชทที่เปิดแทน Module Inspector แต่ runtime เดิม
+  เปิดปลั๊กอินได้ทางเดียวคือหน้าต่างแยกและไม่มีทางแทรก UI เข้าหน้าต่างหลักเลย
+  จึงทำเป็นจุดต่อขยายกลางที่ปลั๊กอินตัวไหนก็ใช้ได้ แทนที่จะฮาร์ดโค้ดให้ตัวเดียว
+- Doc ที่อัปเดต: `docs/PLUGINS.md` §1.5–1.7 (ใหม่) + §2.4 (ความซื่อสัตย์เรื่อง
+  `net.*` และ credential plaintext), `docs/SYSTEMS.md` §Plugins, `docs/FILES.md` §Plugins
+
+---
+
 ## 2026-08-06 — Extension → Plugin ทั้งระบบ + ติดตั้งจากลิงก์ `.git` ลิงก์เดียว
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/db/plugin-manifest.js` (ใหม่ — logic ล้วนๆ ไม่พึ่ง electron:
