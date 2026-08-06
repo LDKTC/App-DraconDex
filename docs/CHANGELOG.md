@@ -19,6 +19,57 @@
 
 ---
 
+## 2026-08-06 — Extension → Plugin ทั้งระบบ + ติดตั้งจากลิงก์ `.git` ลิงก์เดียว
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/plugin-manifest.js` (ใหม่ — logic ล้วนๆ ไม่พึ่ง electron:
+  `validateManifest`/`parseRepoUrl`/`rawUrl` + regex whitelist ทั้งชุด),
+  `test/plugin-url.test.mjs` (ใหม่), `src/db/extension.js` →
+  `src/db/plugin.js` (เพิ่ม `resolveRepo`/`pluginPreview`,
+  `pluginInstall(url)` รับ URL ตัวเดียว, `migratePluginDir()`),
+  `src/renderer/extension.js` → `src/renderer/plugin.js` (UI ช่อง URL
+  ช่องเดียว + การ์ดพรีวิว), `preload-ext.js` → `preload-plugin.js`
+  (`window.pluginApi` + alias `window.extApi`), `docs/EXTENSIONS.md` →
+  `docs/PLUGINS.md`, `main.js` (`createPluginWindow`/`pluginWindows`,
+  `plugin:*` + `plugin:preview`, `pluginapi:table:*`, เรียก
+  `migratePluginDir()` ที่ `whenReady`), `preload.js` (namespace `plugin`),
+  `database.js`, `index.html`, `package.json` (`build.files`),
+  `css/builder.css` (`.plugin-preview*`), `src/db/schema/ddl.js` (ตาราง
+  `plugin`/`plugin_table` + คอลัมน์ `repo_host`),
+  `src/db/schema/migrations.js` (`migratePluginV42`),
+  `src/db/schema/init.js` (เรียก migration ก่อน DDL + ใส่ใน `schemaStamp`),
+  `src/renderer/core/setting-window.js`, `src/renderer/i18n.js` (18 locale)
+- อะไรเปลี่ยน:
+  1. **เปลี่ยนชื่อทั้งระบบ extension → plugin** ลงลึกถึงชั้น DB และดิสก์ —
+     ไฟล์/ฟังก์ชัน/IPC (`plugin:*`, `pluginapi:table:*`)/ตาราง
+     (`extension`→`plugin`, `ext_key`→`plugin_key`,
+     `extension_table`→`plugin_table`, `extension_ref`→`plugin_ref`,
+     `ext_<id>_<name>`→`plg_<id>_<name>`)/โฟลเดอร์
+     (`extensions/`→`plugins/`)/i18n ครบ 18 locale. migrate อัตโนมัติและ
+     idempotent ทั้ง DB (`migratePluginV42`) และดิสก์ (`migratePluginDir`)
+     ของเดิมยังใช้ได้: `window.extApi` เป็น alias และ
+     `dracondex-extension.json` เป็นชื่อ manifest สำรอง
+  2. **ติดตั้งจากลิงก์ `.git` ลิงก์เดียว** แทนฟอร์ม 3 ช่อง (owner/repo/ref)
+     — `parseRepoUrl` รับ https/ssh/scp/ไม่มี scheme/`owner/repo` ย่อ/
+     `/tree/<branch>`/GitLab nested group; ไม่ระบุ branch ก็ลอง
+     `main`→`master` ให้เอง; รองรับ github.com + gitlab.com
+  3. **พรีวิวก่อนยืนยัน** — วางลิงก์แล้วดึง manifest มาแสดงอัตโนมัติ
+     (debounce 400ms) ว่าจะติดตั้งไฟล์อะไรและสร้างตารางอะไรบ้าง โดยไม่แตะ
+     ดิสก์/DB เลย; ตอนกดยืนยัน `pluginInstall(url)` resolve + validate ใหม่
+     ทั้งหมดเอง ไม่เชื่อค่าจากพรีวิว
+  4. **แก้บั๊ก** ปุ่ม Launch/Stop สลับผิดทุกแถว —
+     `extensionBodyHtml(list, running)` ถูกประกาศเป็น `(list)` แล้ว
+     `list.map(extensionRowHtml)` ส่ง **index** เข้าไปเป็น `isRunning`
+  5. คอลัมน์ใหม่ `plugin.repo_host` เก็บว่ามาจาก github หรือ gitlab
+- ทำไม: ชื่อเดิมไม่ตรงกับสิ่งที่มันเป็น (เอกสารของตัวเองยังเรียกว่า "Sandboxed
+  Plugin Runtime" อยู่แล้ว) และการติดตั้งเดิมบังคับให้ผู้ใช้แกะลิงก์ GitHub
+  เป็น owner/repo/branch ด้วยตัวเองก่อน ทั้งที่สิ่งที่ผู้ใช้มีอยู่ในมือคือ
+  ลิงก์ repo ลิงก์เดียว
+- Doc ที่อัปเดต: `docs/PLUGINS.md` (เขียนใหม่ทั้งฉบับ + §2.3b พรีวิวไม่ใช่
+  trust boundary + §2.6 ตารางการเปลี่ยนชื่อ v4.1→v4.2),
+  `docs/SYSTEMS.md` §Plugins + §Setting Window, `docs/FILES.md` §Plugins
+
+---
+
 ## 2026-07-31 — Part 2 v4.1.0 (จบรอบ): Workspace Styles — Dragon + Setting page, ครบทั้ง 3 style
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/dragon.js` (ใหม่ — ทั้งฟีเจอร์ Dragon),

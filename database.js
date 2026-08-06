@@ -29,7 +29,7 @@ const migrate   = require('./src/db/migrate_v3');
 const sync      = require('./src/db/sync');
 const drive     = require('./src/db/drive');
 const update    = require('./src/db/update');
-const extension = require('./src/db/extension');
+const plugin    = require('./src/db/plugin');
 const dbTransfer = require('./src/db/db-transfer');
 
 module.exports = {
@@ -63,6 +63,6 @@ module.exports = {
   ...sync,
   ...drive,
   ...update,
-  ...extension,
+  ...plugin,
   ...dbTransfer,
 };

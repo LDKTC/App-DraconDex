@@ -8,7 +8,7 @@ const { INDEX_SQL } = require('./indexes');
 const { SEED_SYMBOLS } = require('./seed');
 const {
   migrateInlineColumns, migrateNexusV28, migrateMapV3, migrateTimelineV3,
-  migrateWriterV27, migrateHeroV26, ensureIndexes,
+  migrateWriterV27, migrateHeroV26, migratePluginV42, ensureIndexes,
 } = require('./migrations');
 const SCHEMA_EPOCH = 1;
 let _schemaStamp = null;
@@ -18,7 +18,7 @@ function schemaStamp() {
     String(SCHEMA_EPOCH), DDL_SQL, INDEX_SQL, SEED_SYMBOLS.join('\x01'),
     String(initDB), String(migrateInlineColumns), String(migrateNexusV28),
     String(migrateMapV3), String(migrateTimelineV3), String(migrateWriterV27),
-    String(migrateHeroV26), String(ensureIndexes),
+    String(migrateHeroV26), String(migratePluginV42), String(ensureIndexes),
   ];
   // user_version is a signed 32-bit field; take 4 bytes and force it positive
   // so 0 stays reserved for "never stamped".
@@ -103,6 +103,13 @@ function initDB(db) {
     }
   } catch (_) {}
   _t('legacy-nav probe', tLegacyProbe);
+
+  // Must precede the DDL: it renames the pre-v4.2.0 `extension`/`extension_table`
+  // pair into `plugin`/`plugin_table`, and CREATE TABLE IF NOT EXISTS below
+  // would otherwise create an empty `plugin` alongside the old data instead.
+  const tPlugin = _now();
+  migratePluginV42(db);
+  _t('plugin v4.2 rename', tPlugin);
 
   const tDDL = _now();
   db.exec(DDL_SQL);

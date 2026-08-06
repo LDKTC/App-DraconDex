@@ -132,6 +132,19 @@
 .sync-tag-chip{font-size:calc(9.5px * var(--fsc,1));color:var(--accentH);border:1px solid var(--accent);
 	border-radius:8px;padding:1px 6px;margin-left:6px}
 
+/* Plugin install preview (Setting window -> Plugin): what a pasted repo link
+   would install, shown before anything is written. */
+.plugin-preview{border:1px solid var(--border);border-radius:var(--rs);background:var(--raised);
+	padding:10px 12px;margin:8px 0 12px}
+.plugin-preview-head{margin-bottom:6px}
+.plugin-preview-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+	font-size:calc(12px * var(--fsc,1));color:var(--t2);padding:2px 0}
+.plugin-preview-row b{color:var(--t1);font-weight:600;text-align:right}
+.plugin-preview-files{margin:2px 0 8px;padding-left:18px;max-height:132px;overflow-y:auto;
+	font-size:calc(11.5px * var(--fsc,1));color:var(--t3);line-height:1.6}
+.plugin-preview-warn{font-size:calc(11px * var(--fsc,1));color:var(--danger);line-height:1.45;margin:4px 0 8px}
+.plugin-preview-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+
 /* Google Drive backup (Preferences panel "Backup" section) */
 .drive-bar{height:6px;border-radius:3px;background:var(--raised);overflow:hidden;margin:2px 0 8px}
 .drive-bar-fill{height:100%;background:var(--accent);border-radius:3px}

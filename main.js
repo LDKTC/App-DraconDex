@@ -89,27 +89,27 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
   win.loadFile('index.html', params.toString() ? { search: params.toString() } : undefined);
 }
 
-// Github extensions (Plan part1 v4.0.0 > Cloud Sync Function > Github): one
-// dedicated BrowserWindow per running extension, tracked winId -> extension
-// row id so extapi:table:* handlers below can resolve "which extension is
-// this" from the WINDOW's own identity (never renderer/extension-supplied),
-// and so launch/stop/uninstall can find or refuse an already-open extension.
-// This window gets preload-ext.js — a categorically smaller contextBridge
+// Plugins (v4.0.0 as "Github extensions", renamed v4.2.0): one dedicated
+// BrowserWindow per running plugin, tracked winId -> plugin row id so
+// pluginapi:table:* handlers below can resolve "which plugin is this" from the
+// WINDOW's own identity (never renderer/plugin-supplied), and so
+// launch/stop/uninstall can find or refuse an already-open plugin.
+// This window gets preload-plugin.js — a categorically smaller contextBridge
 // surface than preload.js, never the main app's window.api. See
-// docs/EXTENSIONS.md for the full security notes (including why
+// docs/PLUGINS.md for the full security notes (including why
 // `sandbox: true` here is honest, not reassuring, given the process-wide
 // --no-sandbox switch set above for portable-build compatibility).
-const extensionWindows = new Map(); // BrowserWindow.id -> extension row id
+const pluginWindows = new Map(); // BrowserWindow.id -> plugin row id
 
-function findExtensionWindow(extId) {
-  for (const [winId, id] of extensionWindows) {
-    if (id === extId) return BrowserWindow.fromId(winId);
+function findPluginWindow(pluginId) {
+  for (const [winId, id] of pluginWindows) {
+    if (id === pluginId) return BrowserWindow.fromId(winId);
   }
   return null;
 }
 
-function createExtensionWindow(ext) {
-  const existing = findExtensionWindow(ext.id);
+function createPluginWindow(plugin) {
+  const existing = findPluginWindow(plugin.id);
   if (existing && !existing.isDestroyed()) { existing.focus(); return existing; }
   const win = new BrowserWindow({
     width: 900, height: 650, minWidth: 480, minHeight: 360,
@@ -118,16 +118,16 @@ function createExtensionWindow(ext) {
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'Image', 'DraconDex_Icon.ico'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload-ext.js'), // NEW, narrow — never preload.js
+      preload: path.join(__dirname, 'preload-plugin.js'), // narrow — never preload.js
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
       webviewTag: false,
     },
   });
-  extensionWindows.set(win.id, ext.id);
-  win.on('closed', () => extensionWindows.delete(win.id));
-  win.loadFile(path.join(tempDataPath, 'extensions', ext.ext_key, ext.entry_html));
+  pluginWindows.set(win.id, plugin.id);
+  win.on('closed', () => pluginWindows.delete(win.id));
+  win.loadFile(path.join(tempDataPath, 'plugins', plugin.plugin_key, plugin.entry_html));
   return win;
 }
 
@@ -140,6 +140,9 @@ app.whenReady().then(() => {
     { role: 'viewMenu' },
   ]));
   registerDisplayImageProtocol();
+  // On-disk half of the v4.2.0 extensions -> plugins rename (the DB half is
+  // migratePluginV42 in src/db/schema/migrations.js). Idempotent and silent.
+  db.migratePluginDir();
   createWindow();
 });
 
@@ -492,43 +495,46 @@ h('update:check',        ()    => db.checkForUpdate());
 h('update:dismiss',      (v)   => db.dismissUpdate(v));
 h('update:openDownload', (url) => db.openUpdateDownload(url));
 
-// Github extensions — main-app-facing surface (install/list/manage). The
-// extapi:table:* bridge extension windows actually use is a SEPARATE surface
+// Plugins — main-app-facing surface (preview/install/list/manage). The
+// pluginapi:table:* bridge plugin windows actually use is a SEPARATE surface
 // below, registered with raw ipcMain.handle (never through h()) since it
-// must resolve the calling extension from event.sender, not from an argument.
-h('extension:list',      ()               => db.extensionList());
-h('extension:install',   (owner,repo,ref) => db.extensionInstall(owner,repo,ref));
-h('extension:uninstall', (id) => {
-  if (findExtensionWindow(id)) return { ok: false, code: 'running' };
-  return db.extensionUninstall(id);
+// must resolve the calling plugin from event.sender, not from an argument.
+// `preview` and `install` each take the pasted repo URL and nothing else —
+// install re-resolves it from scratch rather than trusting the preview.
+h('plugin:list',      ()    => db.pluginList());
+h('plugin:preview',   (url) => db.pluginPreview(url));
+h('plugin:install',   (url) => db.pluginInstall(url));
+h('plugin:uninstall', (id) => {
+  if (findPluginWindow(id)) return { ok: false, code: 'running' };
+  return db.pluginUninstall(id);
 });
-h('extension:launch', (id) => {
-  const ext = db.extensionGetById(id);
-  if (!ext) return { ok: false, code: 'not_found' };
-  createExtensionWindow(ext);
+h('plugin:launch', (id) => {
+  const plugin = db.pluginGetById(id);
+  if (!plugin) return { ok: false, code: 'not_found' };
+  createPluginWindow(plugin);
   return { ok: true };
 });
-h('extension:stop', (id) => {
-  const win = findExtensionWindow(id);
+h('plugin:stop', (id) => {
+  const win = findPluginWindow(id);
   if (win && !win.isDestroyed()) win.close();
   return { ok: true };
 });
-h('extension:isRunning', (id) => !!findExtensionWindow(id));
+h('plugin:isRunning', (id) => !!findPluginWindow(id));
 
-// extApi.* bridge (preload-ext.js) — extension windows ONLY. Resolves the
-// calling extension from the window itself (BrowserWindow.fromWebContents),
-// exactly like window:getId above, since a compromised extension page must
-// never be able to claim a different extension's identity by argument.
-function callerExtId(event) {
-  const extId = extensionWindows.get(BrowserWindow.fromWebContents(event.sender)?.id);
-  if (!extId) throw new Error('not an extension window');
-  return extId;
+// pluginApi.* bridge (preload-plugin.js) — plugin windows ONLY. Resolves the
+// calling plugin from the window itself (BrowserWindow.fromWebContents),
+// exactly like window:getId above, since a compromised plugin page must
+// never be able to claim a different plugin's identity by argument.
+function callerPluginId(event) {
+  const pluginId = pluginWindows.get(BrowserWindow.fromWebContents(event.sender)?.id);
+  if (!pluginId) throw new Error('not a plugin window');
+  return pluginId;
 }
-ipcMain.handle('extapi:table:getSchema', (event, localName)      => db.extApiGetSchema(callerExtId(event), localName));
-ipcMain.handle('extapi:table:query',     (event, localName, f)   => db.extApiQuery(callerExtId(event), localName, f));
-ipcMain.handle('extapi:table:insert',    (event, localName, row) => db.extApiInsert(callerExtId(event), localName, row));
-ipcMain.handle('extapi:table:update',    (event, localName, id, row) => db.extApiUpdate(callerExtId(event), localName, id, row));
-ipcMain.handle('extapi:table:delete',    (event, localName, id)  => db.extApiDelete(callerExtId(event), localName, id));
+ipcMain.handle('pluginapi:table:getSchema', (event, localName)      => db.pluginApiGetSchema(callerPluginId(event), localName));
+ipcMain.handle('pluginapi:table:query',     (event, localName, f)   => db.pluginApiQuery(callerPluginId(event), localName, f));
+ipcMain.handle('pluginapi:table:insert',    (event, localName, row) => db.pluginApiInsert(callerPluginId(event), localName, row));
+ipcMain.handle('pluginapi:table:update',    (event, localName, id, row) => db.pluginApiUpdate(callerPluginId(event), localName, id, row));
+ipcMain.handle('pluginapi:table:delete',    (event, localName, id)  => db.pluginApiDelete(callerPluginId(event), localName, id));
 
 // Legacy -> v3 migration (v3 Phase 24)
 h('migrate:list',   (target,nx)          => db.listLegacyProjects(target,nx));

@@ -290,7 +290,50 @@ function migrateHeroV26(db) {
 }
 
 
+// v4.2.0 renames the whole "Github extension" system to "plugin". Unlike every
+// other migration here this one runs BEFORE the DDL block (schema/init.js), so
+// `CREATE TABLE IF NOT EXISTS plugin` finds the renamed table already in place
+// instead of creating an empty one next to the old data.
+//
+// The dynamic per-plugin tables are renamed too (ext_<id>_<name> ->
+// plg_<id>_<name>) because src/db/plugin.js's FULL_TABLE_RE only accepts the
+// new prefix — a table left as ext_* would be silently unreachable. Both the
+// old and the new name are re-checked against a regex before being spliced
+// into the ALTER, same rule as everywhere else in this system: an identifier
+// read back out of the DB is still validated before it reaches SQL.
+const PLG_LEGACY_TABLE_RE = /^ext_[a-z0-9_]{1,41}$/;
+const PLG_TABLE_RE = /^plg_[a-z0-9_]{1,41}$/;
+function migratePluginV42(db) {
+  try {
+    if (hasTable(db, 'extension') && !hasTable(db, 'plugin')) {
+      db.prepare(`ALTER TABLE extension RENAME TO plugin`).run();
+      db.prepare(`ALTER TABLE plugin RENAME COLUMN ext_key TO plugin_key`).run();
+      if (hasTable(db, 'extension_table')) {
+        db.prepare(`ALTER TABLE extension_table RENAME TO plugin_table`).run();
+        db.prepare(`ALTER TABLE plugin_table RENAME COLUMN extension_ref TO plugin_ref`).run();
+      }
+    }
+    if (hasTable(db, 'plugin') && !hasColumn(db, 'plugin', 'repo_host')) {
+      db.prepare(`ALTER TABLE plugin ADD COLUMN repo_host TEXT NOT NULL DEFAULT 'github'`).run();
+    }
+    if (hasTable(db, 'plugin_table')) {
+      const rows = db.prepare(`SELECT id, table_name FROM plugin_table WHERE table_name LIKE 'ext\\_%' ESCAPE '\\'`).all();
+      for (const row of rows) {
+        const oldName = String(row.table_name || '');
+        const newName = `plg_${oldName.slice(4)}`;
+        if (!PLG_LEGACY_TABLE_RE.test(oldName) || !PLG_TABLE_RE.test(newName)) continue;
+        if (!hasTable(db, oldName) || hasTable(db, newName)) continue;
+        db.prepare(`ALTER TABLE ${oldName} RENAME TO ${newName}`).run();
+        db.prepare(`UPDATE plugin_table SET table_name=? WHERE id=?`).run(newName, row.id);
+      }
+    }
+  } catch (e) {
+    console.error('plugin v4.2 migration error:', e);
+  }
+}
+
 module.exports = {
   migrateInlineColumns, NEXUS_PROJECT_TABLES, migrateNexusV28, migrateMapV3,
   migrateTimelineV3, migrateWriterV27, ensureIndexes, migrateHeroV26,
+  migratePluginV42,
 };

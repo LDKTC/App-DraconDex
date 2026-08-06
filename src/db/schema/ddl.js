@@ -960,18 +960,19 @@ const DDL_SQL = `
       UNIQUE(object_ref, template_ref)
     );
 
-    -- Github extensions (Plan.md part1 v4.0.0 > Cloud Sync Function > Github):
-    -- a downloaded extension owns its own ext_<key>_<name> table(s), tracked
-    -- here so src/db/extension.js can enforce ownership before any dynamic
-    -- SQL touches an extension-derived identifier. table_name is the ONLY
-    -- identifier ever spliced into a query — always resolved by ?-bound
-    -- lookup on (extension_ref, local_name), never reconstructed by string
-    -- concatenation from renderer/extension-window input.
-    CREATE TABLE IF NOT EXISTS extension (
+    -- Plugins (v4.0.0 as "Github extensions", renamed v4.2.0 — see
+    -- migratePluginV42 in schema/migrations.js): a downloaded plugin owns its
+    -- own plg_<key>_<name> table(s), tracked here so src/db/plugin.js can
+    -- enforce ownership before any dynamic SQL touches a plugin-derived
+    -- identifier. table_name is the ONLY identifier ever spliced into a query
+    -- — always resolved by ?-bound lookup on (plugin_ref, local_name), never
+    -- reconstructed by string concatenation from renderer/plugin-window input.
+    CREATE TABLE IF NOT EXISTS plugin (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ext_key TEXT NOT NULL UNIQUE,
+      plugin_key TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
       version TEXT,
+      repo_host TEXT NOT NULL DEFAULT 'github',
       repo_owner TEXT NOT NULL,
       repo_name TEXT NOT NULL,
       repo_ref TEXT NOT NULL DEFAULT 'main',
@@ -981,14 +982,14 @@ const DDL_SQL = `
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS extension_table (
+    CREATE TABLE IF NOT EXISTS plugin_table (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      extension_ref INTEGER NOT NULL REFERENCES extension(id) ON DELETE CASCADE,
+      plugin_ref INTEGER NOT NULL REFERENCES plugin(id) ON DELETE CASCADE,
       local_name TEXT NOT NULL,
       table_name TEXT NOT NULL UNIQUE,
       columns_json TEXT NOT NULL,
       create_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(extension_ref, local_name)
+      UNIQUE(plugin_ref, local_name)
     );
 `;
 

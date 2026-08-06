@@ -35,7 +35,7 @@ const argvFiles = process.argv.slice(2).map((f) => f.replace(/\\/g, '/'));
 
 // ── what counts as app source ──────────────────────────────────────────────
 const SOURCE_ROOTS = ['src', 'css', 'scripts'];
-const ROOT_FILES = ['main.js', 'preload.js', 'preload-ext.js', 'database.js', 'start.js', 'ensure-electron.js', 'index.html'];
+const ROOT_FILES = ['main.js', 'preload.js', 'preload-plugin.js', 'database.js', 'start.js', 'ensure-electron.js', 'index.html'];
 const SKIP_DIRS = new Set(['node_modules', 'vendor', 'flutter_app', 'ds-bundle', 'old_db_data', '.git']);
 
 // Data files: long by nature, exempt from the size bands. Plan.md names this
