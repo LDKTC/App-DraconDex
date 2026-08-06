@@ -585,7 +585,7 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   "ล่าสุด" จำลอง: ยังไม่ login→ไม่แจ้ง, login แล้ว→แจ้ง, กดเตือนภายหลัง→ไม่
   แจ้งซ้ำสำหรับเวอร์ชันเดิม
 
-### Plugins — เดิม Github Sandboxed Extensions (2026-07-30, เปลี่ยนชื่อ + ติดตั้งจากลิงก์ 2026-08-06, panel API 2026-08-06)
+### Plugins — เดิม Github Sandboxed Extensions (2026-07-30, เปลี่ยนชื่อ + ติดตั้งจากลิงก์ 2026-08-06, panel API 2026-08-06, loopback net 2026-08-06)
 
 ดาวน์โหลด "ปลั๊กอิน" จาก git repo ที่ประกาศตารางฐานข้อมูลของตัวเอง รันใน
 หน้าต่างแยกที่ถูกจำกัดสิทธิ์จริงจัง (ไม่ใช่ stub) — เอกสารเต็มที่
@@ -605,7 +605,12 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   PLUGINS.md §2.4), `permissions.context: ["module"]` ให้ panel รับ
   `{moduleId, moduleName, kind}` ของโมดูลที่เปิดอยู่. ทั้งคู่แสดงในการ์ดพรีวิว
   ก่อนติดตั้ง. **ไม่มี migration** — อ่านกลับจาก `manifest_json` ที่เก็บ manifest
-  ทั้งก้อนอยู่แล้ว
+  ทั้งก้อนอยู่แล้ว. **v4.4.0**: `permissions.net` เพิ่มข้อยกเว้นให้ `http://`
+  บน loopback (`localhost`/`127.0.0.1`/`[::1]`) ผ่านได้ **ต้องระบุ port เสมอ**
+  — เพื่อให้ปลั๊กอินอย่าง DraconDex-Plugin-Ollama ประกาศ server โมเดลภาษาที่
+  รันในเครื่องได้ (`normalizeNetOrigin`/`netOriginAllowed` ใน
+  `src/db/plugin-manifest.js` ตรวจทั้งตอนติดตั้งและตอน runtime, ดู PLUGINS.md
+  §1.6 และ §2.4). host ที่ไม่ใช่ loopback ยังถูกปฏิเสธเหมือนเดิม
 
 - แต่ละปลั๊กอินมี manifest (`dracondex-plugin.json`, fallback
   `dracondex-extension.json`) ประกาศไฟล์และตาราง (คอลัมน์ TEXT/INTEGER/REAL

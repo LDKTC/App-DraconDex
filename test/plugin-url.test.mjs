@@ -198,6 +198,48 @@ test('validateManifest rejects any net origin that is not a bare https origin', 
   assert.equal(validateManifest({ ...panelManifest(), permissions: ['module'] }).ok, false, 'permissions is an object');
 });
 
+// v4.4.0: the one plaintext exception, added so a plugin can name a local model
+// server (Ollama listens on http://localhost:11434 and offers no https).
+test('validateManifest accepts http only on loopback, and only with a port', () => {
+  const ok = (net) => validateManifest({ ...panelManifest(), permissions: { net } }).ok;
+
+  assert.equal(ok(['http://localhost:11434']), true);
+  assert.equal(ok(['http://127.0.0.1:11434']), true);
+  assert.equal(ok(['http://[::1]:11434']), true, 'IPv6 loopback stays bracketed through new URL()');
+  assert.equal(ok(['http://localhost:11434/']), true, 'a bare trailing slash is still an origin');
+
+  // No port means port 80 — a grant far wider than the one service being named.
+  assert.equal(ok(['http://localhost']), false, 'an explicit port is required');
+  assert.equal(ok(['http://127.0.0.1']), false);
+  // Everything that is not actually loopback stays plaintext-rejected: allowing
+  // it would be a downgrade plus an SSRF path into the user's network.
+  assert.equal(ok(['http://192.168.1.5:11434']), false, 'a LAN address is not loopback');
+  assert.equal(ok(['http://0.0.0.0:11434']), false, 'binding any-address is not loopback');
+  assert.equal(ok(['http://localhost.evil.test:11434']), false, 'a lookalike host is not loopback');
+  assert.equal(ok(['http://evil.test:11434']), false);
+  // The other origin rules still apply to the loopback form.
+  assert.equal(ok(['http://localhost:11434/api']), false, 'a path would make the check a prefix match');
+  assert.equal(ok(['http://user:pw@localhost:11434']), false);
+  assert.equal(ok(['http://localhost:11434?x=1']), false);
+
+  assert.equal(ok(['https://api.example.com']), true, 'https is unaffected');
+});
+
+test('netOriginAllowed agrees with the manifest rules about loopback http', () => {
+  const m = { ...panelManifest(), permissions: { net: ['http://localhost:11434'] } };
+  assert.equal(netOriginAllowed(m, 'http://localhost:11434/api/chat'), true);
+  assert.equal(netOriginAllowed(m, 'http://localhost:11434/api/tags'), true);
+  // Port and host are both part of the origin, so neither is interchangeable.
+  assert.equal(netOriginAllowed(m, 'http://localhost:11435/api/chat'), false, 'another port is another origin');
+  assert.equal(netOriginAllowed(m, 'http://127.0.0.1:11434/api/chat'), false, 'a different loopback spelling is a different origin');
+  assert.equal(netOriginAllowed(m, 'http://localhost.evil.test:11434/api/chat'), false);
+  // A stored manifest that predates the current rules must not be trusted to
+  // have been validated by them — the runtime re-checks the scheme itself.
+  const stale = { ...panelManifest(), permissions: { net: ['http://evil.test:80'] } };
+  assert.equal(netOriginAllowed(stale, 'http://evil.test:80/x'), false, 'non-loopback http stays refused at runtime');
+  assert.deepEqual(manifestNetOrigins(stale), [], 'and is dropped when the row is read back');
+});
+
 test('netOriginAllowed compares origins, never prefixes', () => {
   const m = panelManifest();
   assert.equal(netOriginAllowed(m, 'https://api.example.com/v1/messages'), true);
