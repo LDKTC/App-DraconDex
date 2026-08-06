@@ -52,15 +52,37 @@ const REF_CANDIDATES = ['main', 'master'];
 // ---------------------------------------------------------------------------
 // Manifest validation — rejects before anything is written to disk or the DB.
 // ---------------------------------------------------------------------------
-// An entry of `permissions.net`: an https:// ORIGIN and nothing else. Rejecting
-// a path/query/fragment keeps the runtime check a plain `origin ===` compare —
-// a prefix match on a full URL would let `https://api.example.com/safe` be
-// satisfied by `https://api.example.com/safe.evil.com`.
+// Loopback is the one place a plaintext origin is defensible: the bytes never
+// leave the machine, so there is no transport to downgrade — and a local model
+// server (Ollama on 11434 is the case this was added for) has no https to offer.
+// The explicit port is REQUIRED, and is the whole reason this is narrow: a bare
+// `http://localhost` grant would quietly mean port 80, and the point is to name
+// ONE local service, not everything bound to loopback. `new URL()` keeps IPv6
+// hosts bracketed, hence '[::1]'.
+//
+// Still deliberately not allowed: http:// on any non-loopback host. That would
+// be a real downgrade (plaintext over a network) plus an SSRF path into the
+// user's LAN, and no amount of manifest declaring makes it visible to them.
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+function isLoopbackOrigin(u) {
+  return LOOPBACK_HOSTS.has(u.hostname) && u.port !== '';
+}
+
+function netSchemeAllowed(u) {
+  if (u.protocol === 'https:') return true;
+  return u.protocol === 'http:' && isLoopbackOrigin(u);
+}
+
+// An entry of `permissions.net`: an https:// ORIGIN (or a loopback http:// one,
+// see above) and nothing else. Rejecting a path/query/fragment keeps the runtime
+// check a plain `origin ===` compare — a prefix match on a full URL would let
+// `https://api.example.com/safe` be satisfied by
+// `https://api.example.com/safe.evil.com`.
 function normalizeNetOrigin(value) {
   if (typeof value !== 'string' || !value) return null;
   let u;
   try { u = new URL(value); } catch (_) { return null; }
-  if (u.protocol !== 'https:') return null;
+  if (!netSchemeAllowed(u)) return null;
   if (u.username || u.password) return null;
   if (u.search || u.hash) return null;
   if (u.pathname !== '/' && u.pathname !== '') return null;
@@ -107,7 +129,9 @@ function validatePermissions(permissions) {
       return { ok: false, error: `"permissions.net" must be an array of at most ${MAX_NET_ORIGINS} origins` };
     }
     for (const origin of net) {
-      if (!normalizeNetOrigin(origin)) return { ok: false, error: `invalid net origin (https:// origin only): ${origin}` };
+      if (!normalizeNetOrigin(origin)) {
+        return { ok: false, error: `invalid net origin (https:// origin, or http:// on loopback with an explicit port): ${origin}` };
+      }
     }
   }
   if (context != null) {
@@ -202,7 +226,10 @@ function manifestContextKinds(manifest) {
 function netOriginAllowed(manifest, url) {
   let u;
   try { u = new URL(String(url || '')); } catch (_) { return false; }
-  if (u.protocol !== 'https:') return false;
+  // Re-checked here and not just at install: manifest_json is whatever the repo
+  // served back then, so the runtime never trusts it to have been validated by
+  // the rules currently in force.
+  if (!netSchemeAllowed(u)) return false;
   return manifestNetOrigins(manifest).includes(u.origin);
 }
 

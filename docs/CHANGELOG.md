@@ -19,6 +19,39 @@
 
 ---
 
+## 2026-08-06 — permissions.net (v4.4.0): อนุญาต http:// บน loopback ที่ระบุ port
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/db/plugin-manifest.js` (`normalizeNetOrigin`,
+  `netOriginAllowed` เพิ่ม `isLoopbackOrigin`/`netSchemeAllowed`),
+  `test/plugin-url.test.mjs` (2 เทสต์ใหม่: manifest + runtime),
+  `docs/PLUGINS.md` §1.6, §2.4, `docs/SYSTEMS.md` §Plugins,
+  `package.json` (4.3.0 → 4.4.0)
+- อะไรเปลี่ยน:
+  - `permissions.net` เดิมรับเฉพาะ origin `https://` ล้วน ๆ ตอนนี้รับ `http://`
+    ได้เพิ่มหนึ่งกรณี: host เป็น `localhost`/`127.0.0.1`/`[::1]` **และมี port
+    ระบุชัดเจน** เท่านั้น — `http://localhost` (ไม่มี port) ยังไม่ผ่าน เพราะ
+    เท่ากับขอสิทธิ์ port 80 ทั้งพอร์ต ไม่ใช่ service เดียวที่ตั้งใจประกาศ
+  - ตรวจ 2 จุดเหมือนเดิม (install-time ใน `normalizeNetOrigin`, runtime ใน
+    `netOriginAllowed`) เพราะ `netOriginAllowed` re-validate จาก
+    `manifest_json` ทุกครั้ง ไม่เชื่อว่าแถวที่เก็บไว้เคยผ่าน rule ปัจจุบันแล้ว
+  - host อื่นที่ไม่ใช่ loopback ยังถูกปฏิเสธเหมือนเดิมทุกกรณี (ยังคง downgrade
+    เป็น plaintext + เปิดช่อง SSRF เข้า LAN ถ้าอนุญาต) — ข้อยกเว้นนี้แคบมาก
+    โดยตั้งใจ
+  - ปลั๊กอินที่ต้องใช้ข้อยกเว้นนี้ตัวแรกคือ DraconDex-Plugin-Ollama ซึ่งประกาศ
+    `http://localhost:11434` และ `http://127.0.0.1:11434` — Ollama ไม่มี https
+    ให้ใช้เพราะรันบนเครื่องผู้ใช้เอง
+- ทำไม: manifest เดิมปฏิเสธ `http://localhost:11434` ตั้งแต่ตอนติดตั้ง ทำให้
+  ปลั๊กอินที่คุยกับ local model server (Ollama ฯลฯ) ใช้ `permissions.net` ไม่ได้
+  เลยแม้แต่กรณีเดียว ทางเลือกที่เหลือ (หน้าปลั๊กอินยิง `fetch()` เอง) ก็ติด CORS
+  เพราะหน้า `file://` ส่ง `Origin: null` ซึ่งไม่อยู่ใน allowlist ดีฟอลต์ของ
+  Ollama — loopback เป็นกรณีเดียวที่ปลอดภัยพอจะอนุญาต plaintext เพราะ byte
+  ไม่ออกนอกเครื่องเลย
+- Doc ที่อัปเดต: `docs/PLUGINS.md` §1.6 (กติกา manifest), §2.4 (โจทย์เดียวกับ
+  ที่ `pluginApi.net.*` มีอยู่แล้ว — นี่คือการเพิ่มสิทธิ์จริง ไม่ใช่แค่ความสะดวก),
+  `docs/SYSTEMS.md` §Plugins
+
+---
+
 ## 2026-08-06 — Plugin Panel API (v4.3.0): ปลั๊กอินฝังหน้าตัวเองแทน Module Inspector ได้
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/db/plugin-manifest.js` (ฟิลด์ `panels`/`permissions` +
