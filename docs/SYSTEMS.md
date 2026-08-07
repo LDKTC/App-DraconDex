@@ -819,9 +819,31 @@ style)
    throw `Cannot read properties of null (reading 'id')` (ปุ่มใน UI ปัจจุบันส่ง
    `catId` เสมอเลยยังไม่แสดงอาการ) — ควร guard `S.category?.id`
 2. **Auto-translate กินชื่อข้อมูลผู้ใช้** — ดูหัวข้อ i18n ข้างบน
-3. **i18n ตกหล่น** — locale ไทยมีข้อความอังกฤษปนใน Navigator (banner คำอธิบาย
-   ตัวละครโลก, "No novels linked", "No timelines yet on this map.") และ Sage
-   ("N รายการ total")
+   (ข้อ 3 ที่เคยอยู่ตรงนี้ — "i18n ตกหล่น" — แก้แล้วใน v4.4.2 ดูด้านล่าง)
+
+### แก้แล้วในรอบ i18n parity 2026-08-07 (v4.4.2)
+- ~~**i18n ตกหล่นใน Navigator/Sage**~~ → เดิมรายงานว่า locale ไทยมีข้อความ
+  อังกฤษปนใน Navigator (banner คำอธิบายตัวละครโลก, `"No novels linked"`,
+  `"No timelines yet on this map."`) และ Sage (`"N รายการ total"`)
+  ตรวจซ้ำแล้วพบว่าเป็นคนละสาเหตุกัน:
+  - `"No novels linked"` **มีคีย์อยู่แล้ว** และแปลได้ปกติ — ไม่ใช่บั๊ก
+  - `"N รายการ total"` ของ Sage **ไม่มีอยู่ในโค้ดแล้ว** — รายงานเก่าค้าง
+  - ที่พังจริงคือข้อความที่เรนเดอร์เป็น literal แต่ **ไม่มีคีย์ใน
+    `COMMON_UI_TEXT` เลย** จึงไม่ถูกแปลใน *ทุก* ภาษา ไม่ใช่แค่ไทย —
+    `"No timelines yet on this map."` เป็นคนละสตริงกับ `"No timelines yet."`
+    ที่มีอยู่ (dictionary จับแบบ exact-match ไม่ใช่ prefix)
+  - กวาดทั้ง `src/renderer/navigator/` + `sage.js` เจอลักษณะนี้ 15 จุด
+    (board.js 3, chars.js 2, main.js 2, maps.js 5, origcat.js 2, sidebar.js 1)
+    เพิ่มเข้า `COMMON_UI_TEXT` ครบ 18 locale ทั้งหมด
+- ~~**5 locale ไม่มีใน `COMMON_UI_TEXT` เลย**~~ → `it`/`nl`/`pl`/`uk`/`tr`
+  อยู่ใน `LANGUAGE_LABELS` (เลือกได้ใน picker) และมีครบใน `L` แต่ **ไม่มีใน
+  `COMMON_UI_TEXT` แม้แต่ entry เดียว** จาก 400 entry — `pick()`/`tr()` จึงตก
+  กลับไปเป็นอังกฤษเงียบ ๆ ผู้ใช้ 5 ภาษานี้เห็น UI ครึ่งภาษาตัวเอง (จาก `t()`)
+  ครึ่งอังกฤษ (จาก `tr()`) เติมครบทั้ง 400 entry แล้ว
+- **กันไม่ให้หลุดซ้ำ**: `check.mjs` เพิ่ม global check ใหม่
+  "i18n parity (COMMON_UI_TEXT fallback dict)" — entry ไหนขาด locale ใด
+  ขึ้นเป็น **ERROR** (ระดับเดียวกับ `t()` key ที่หาย) เดิม checker ดูแค่ `L`
+  ช่องโหว่นี้จึงมองไม่เห็นมาตลอด
 
 ### แก้แล้วในรอบ UI/UX pass 2026-07-25
 - ~~`toast(msg,'error')` 20 จุดไม่มีกฎ CSS~~ → `toast()` map `'error'→'err'`,

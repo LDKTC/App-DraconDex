@@ -19,6 +19,48 @@
 
 ---
 
+## 2026-08-07 — i18n (v4.4.2): `COMMON_UI_TEXT` ครบ 18 locale + checker บังคับ parity
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/i18n.js` (`COMMON_UI_TEXT` 400 → 415 entry,
+  เติม `it`/`nl`/`pl`/`uk`/`tr` ครบทุก entry),
+  `.claude/skills/dracondex-module-style/check.mjs`
+  (`parseCommonUiText()` + global check ใหม่), `docs/SYSTEMS.md` §11,
+  `docs/FILES.md` (หัวข้อ i18n.js), `package.json` + `package-lock.json`
+  (4.4.1 → 4.4.2)
+- อะไรเปลี่ยน:
+  - **บั๊กหลัก**: `it`/`nl`/`pl`/`uk`/`tr` เลือกได้ใน picker และมีครบใน
+    ตาราง `L` (715 key) แต่ **ไม่มีใน `COMMON_UI_TEXT` เลยแม้แต่ entry เดียว**
+    จาก 400 entry ผลคือ `tr()` และ `translateCommonUiText()` ตกกลับไปเป็น
+    อังกฤษเงียบ ๆ ผู้ใช้ 5 ภาษานี้เห็น UI ครึ่งภาษาตัวเอง (ข้อความที่ผ่าน
+    `t()`) ครึ่งอังกฤษ (ข้อความที่ผ่าน `tr()`) — ยืนยันสด: ก่อนแก้
+    `t('settings')` = "Impostazioni" แต่ `tr('ยกเลิก')` = "Cancel"
+    หลังแก้ = "Annulla" เติมครบแล้ว 400 entry × 5 locale = 2,000 ข้อความ
+  - **เก็บตกจาก SYSTEMS.md §11 ข้อ 3**: กวาด `src/renderer/navigator/` +
+    `sage.js` หาข้อความที่เรนเดอร์เป็น literal แต่ไม่มีคีย์ใน dictionary
+    เจอ 15 จุด (เช่น `"No timelines yet on this map."` ซึ่งเป็นคนละสตริงกับ
+    `"No timelines yet."` ที่มีอยู่ — dictionary จับแบบ exact-match)
+    เพิ่มเป็น entry ใหม่ครบ 18 locale ทั้งหมด ของเดิมสองข้อในรายงานนั้น
+    (`"No novels linked"` และ Sage `"N รายการ total"`) ตรวจแล้วไม่ใช่บั๊ก —
+    อันแรกแปลได้อยู่แล้ว อันหลังไม่มีในโค้ดแล้ว
+  - `'Note'` / `'+ Add'` ที่ `origcat.js` เรนเดอร์เป็นอังกฤษ ใช้ค่าแปลจาก
+    entry คีย์ไทยตัวเดิม (`'หมายเหตุ'`/`'+ เพิ่ม'`) ตรง ๆ ไม่แปลใหม่ซ้อน
+    เพื่อไม่ให้สองชุดค่อย ๆ เพี้ยนออกจากกัน
+  - **กันหลุดซ้ำ**: `check.mjs` เพิ่ม `parseCommonUiText()` + global check
+    "i18n parity (COMMON_UI_TEXT fallback dict)" — locale ที่ขาดขึ้นเป็น
+    **ERROR** ระดับเดียวกับ `t()` key ที่หาย เดิม checker ตรวจแค่ตาราง `L`
+    ช่องโหว่นี้จึงมองไม่เห็นมาตลอด กฎที่ใช้: คีย์ของ entry คือข้อความต้นทาง
+    อยู่แล้ว → locale ของภาษานั้นไม่ต้องมีฟิลด์ (คีย์ไทยไม่ต้องมี `th:`,
+    คีย์อังกฤษไม่ต้องมี `en:`) ที่เหลือต้องครบ
+- ทำไม: ภาษาที่ปล่อยให้เลือกได้ควรแปลจริงทั้งแอป ไม่ใช่ครึ่งเดียว และ
+  ช่องโหว่นี้เงียบสนิท (ไม่ error, ไม่ warning) จนกว่าจะมีคนใช้ภาษานั้นจริง
+  จึงต้องมี checker บังคับ ไม่ใช่แค่เติมข้อมูลรอบเดียวแล้วจบ
+- ตรวจแล้ว: `node --test 'test/*.test.mjs'` 15/15 ผ่าน, check-arch 0 error,
+  style sweep 0 error / 56 warning (เท่าเดิม ไม่มี warning ใหม่),
+  และรันแอปจริงผ่าน `run-dracondex` web-driver — บูตเป็นภาษาอิตาลีทั้งแอป
+  (`"Benvenuto in DraconDex"`, Hub = `"NIDO DEL NEXUS"`), `tr()` คืนค่าถูกทั้ง
+  5 ภาษาใหม่, และ `translateCommonUiText()` แปล DOM node จริงได้ถูกต้อง
+- Doc ที่อัปเดต: docs/SYSTEMS.md §11, docs/FILES.md (i18n.js)
+
 ## 2026-08-07 — CI: build ทั้ง 3 แบบของ Electron แล้วปล่อยเป็น GitHub Releases
 - commit: uncommitted
 - ไฟล์ที่แก้: `.github/workflows/build-electron.yml` (ใหม่), `package.json`

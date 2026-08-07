@@ -102,6 +102,30 @@ function parseLocales(src) {
 const locales = parseLocales(i18nSrc);
 const localeNames = Object.keys(locales);
 
+// --- parse the COMMON_UI_TEXT fallback dict in src/renderer/i18n.js ---
+// Entries are one per line: `'source': { en:'…', ja:'…', … },`. Unlike `L`,
+// the dict key is itself the source string, so the locale it is already
+// written in needs no field — but every *other* shipped locale does, or
+// tr()/translateCommonUiText() silently serve English instead.
+function parseCommonUiText(src) {
+  const start = src.indexOf('const COMMON_UI_TEXT = {');
+  if (start < 0) return null;
+  const entries = [];
+  let depth = 0;
+  for (const line of src.slice(start).split('\n')) {
+    const entry = depth === 1 && line.match(/^\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")\s*:\s*\{/);
+    if (entry) {
+      const tags = new Set();
+      for (const m of stripStrings(line.slice(entry[0].length - 1)).matchAll(/([A-Za-z0-9_]+)\s*:/g)) tags.add(m[1]);
+      entries.push({ key: entry[1].slice(1, -1), locales: tags });
+    }
+    const bare = stripStrings(line);
+    depth += (bare.match(/\{/g) || []).length - (bare.match(/\}/g) || []).length;
+    if (depth <= 0 && entries.length) break; // closed const COMMON_UI_TEXT
+  }
+  return entries;
+}
+
 // --- CSS classes defined in style.css ---
 const cssClasses = new Set();
 for (const m of cssSrc.matchAll(/\.([A-Za-z_][A-Za-z0-9_-]*)/g)) cssClasses.add(m[1]);
@@ -125,6 +149,35 @@ console.log(`=== i18n parity (${localeNames.length} locales: ${localeNames.join(
     if (missing.length) { gaps++; warn(`locale '${name}' missing ${missing.length} key(s) vs en: ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? ', …' : ''}`); }
   }
   if (!gaps) ok(`all locales have every 'en' key (${en.size} keys)`);
+}
+
+// ═══ Global check 2b: COMMON_UI_TEXT covers every locale ═══
+// `L` parity above only covers t('key') lookups. The ~400 strings that modules
+// still render as raw literals go through COMMON_UI_TEXT instead, and a locale
+// missing there degrades to English with no error — invisible without this
+// check (it is how it/nl/pl/uk/tr shipped in the picker but not in this dict).
+console.log('=== i18n parity (COMMON_UI_TEXT fallback dict) ===');
+{
+  const entries = parseCommonUiText(i18nSrc);
+  if (!entries) warn('could not locate `const COMMON_UI_TEXT` in src/renderer/i18n.js');
+  else {
+    const isThai = s => /[฀-๿]/.test(s);
+    const gaps = new Map(); // locale -> [keys]
+    for (const e of entries) {
+      // The key is already the source text, so its own locale is implicit.
+      const self = isThai(e.key) ? 'th' : 'en';
+      for (const name of localeNames) {
+        if (name === self || e.locales.has(name)) continue;
+        if (!gaps.has(name)) gaps.set(name, []);
+        gaps.get(name).push(e.key);
+      }
+    }
+    if (gaps.size) {
+      for (const [name, keys] of [...gaps].sort((a, b) => b[1].length - a[1].length)) {
+        err(`COMMON_UI_TEXT: locale '${name}' missing from ${keys.length}/${entries.length} entries — falls back to English: ${keys.slice(0, 3).map(k => `'${k}'`).join(', ')}${keys.length > 3 ? ', …' : ''}`);
+      }
+    } else ok(`all ${entries.length} COMMON_UI_TEXT entries cover every locale`);
+  }
 }
 
 // ═══ Per-file lint ═══
