@@ -62,15 +62,15 @@ jobs:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
 
       - name: Cache Electron download
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~\AppData\Local\electron\Cache
@@ -153,7 +153,7 @@ jobs:
           ($listing -join "`n") | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dracondex-win-${{ steps.meta.outputs.version }}
           path: dist-release/*

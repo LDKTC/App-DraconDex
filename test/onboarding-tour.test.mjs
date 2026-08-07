@@ -2,9 +2,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+// Windows checkouts have CRLF endings (`.gitattributes` uses `* text=auto`), which
+// breaks source regexes anchored on `\n` — normalize before matching.
+const readSource = (relPath) =>
+  readFileSync(new URL(relPath, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+
 test('first-run Nexus creation offers an inline guide choice without a nested confirmation', () => {
-  const core = readFileSync(new URL('../src/renderer/core/nexus.js', import.meta.url), 'utf8');
-  const css = readFileSync(new URL('../css/components.css', import.meta.url), 'utf8');
+  const core = readSource('../src/renderer/core/nexus.js');
+  const css = readSource('../css/components.css');
   const welcomeCreateNexus = core.match(/async function welcomeCreateNexus\(\) \{([\s\S]*?)\n\}/)?.[1] || '';
 
   assert.doesNotMatch(welcomeCreateNexus, /uiConfirm\(/);
