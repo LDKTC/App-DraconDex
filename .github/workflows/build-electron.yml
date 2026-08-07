@@ -1,0 +1,196 @@
+name: Build Electron (Windows)
+
+# Builds all three Electron build types the repo defines and publishes them as
+# GitHub release assets:
+#   build:installer -> DraconDex-Setup-<version>.exe   (NSIS installer)
+#   build:exe       -> DraconDex-Portable-<version>.exe (single-file portable)
+#   build:portable  -> DraconDex-<version>-win-x64.zip  (portable app folder)
+#
+# Pushing a v* tag publishes a release. A manual run can publish too (draft by
+# default). Pull requests only build + upload workflow artifacts.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (default: v<version from package.json>)'
+        required: false
+        default: ''
+      draft:
+        description: 'Publish as a draft release'
+        type: boolean
+        default: true
+      prerelease:
+        description: 'Mark the release as a pre-release'
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'main.js'
+      - 'preload.js'
+      - 'preload-plugin.js'
+      - 'database.js'
+      - 'index.html'
+      - 'ensure-electron.js'
+      - 'src/**'
+      - 'css/**'
+      - 'vendor/**'
+      - 'Image/**'
+      - 'scripts/**'
+      - '.github/workflows/build-electron.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-electron-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      # No signing certificate is configured; stop electron-builder from
+      # hunting for one (and from prompting) on the runner.
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Cache Electron download
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run regression tests
+        run: node --test "test/*.test.mjs"
+
+      - name: Resolve version and release tag
+        id: meta
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          $tag = '${{ github.event.inputs.tag }}'
+          if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $tag = $env:GITHUB_REF -replace '^refs/tags/', ''
+          }
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v$version" }
+
+          if ($tag.TrimStart('v') -ne $version) {
+            Write-Warning "Tag '$tag' does not match package.json version '$version'."
+          }
+
+          "version=$version"  | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=$tag"          | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "version=$version tag=$tag"
+
+      # Order matters: `build:portable` renames DraconDexPortable/win-unpacked
+      # to DraconDex-<version>, so it has to run after the two targets that
+      # regenerate win-unpacked as an intermediate.
+      - name: Build NSIS installer
+        run: npm run build:installer
+
+      - name: Build single-file portable exe
+        run: npm run build:exe
+
+      - name: Build portable app folder
+        run: npm run build:portable
+
+      - name: Collect release assets
+        id: assets
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.meta.outputs.version }}'
+          $out = 'DraconDexPortable'
+          $dist = 'dist-release'
+          New-Item -ItemType Directory -Force -Path $dist | Out-Null
+
+          $folder = Join-Path $out "DraconDex-$version"
+          if (-not (Test-Path $folder)) {
+            throw "Portable app folder not found: $folder"
+          }
+          $zip = Join-Path $dist "DraconDex-$version-win-x64.zip"
+          if (Get-Command 7z -ErrorAction SilentlyContinue) {
+            7z a -tzip -mx=5 $zip $folder | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "7z failed with exit code $LASTEXITCODE" }
+          } else {
+            Compress-Archive -Path $folder -DestinationPath $zip -CompressionLevel Optimal
+          }
+
+          foreach ($name in @("DraconDex-Setup-$version.exe", "DraconDex-Portable-$version.exe")) {
+            $src = Join-Path $out $name
+            if (-not (Test-Path $src)) { throw "Expected build output not found: $src" }
+            Copy-Item $src -Destination $dist
+          }
+
+          Get-ChildItem $dist -File |
+            ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name } |
+            Out-File -FilePath (Join-Path $dist 'checksums-sha256.txt') -Encoding utf8
+
+          Get-ChildItem $dist -File | ForEach-Object {
+            "{0,-44} {1,8:N1} MB" -f $_.Name, ($_.Length / 1MB)
+          } | Tee-Object -Variable listing
+          ($listing -join "`n") | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dracondex-win-${{ steps.meta.outputs.version }}
+          path: dist-release/*
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check gh's exit codes by hand: `gh release view` is expected to fail
+          # when the release does not exist yet, so native errors must not throw.
+          $PSNativeCommandUseErrorActionPreference = $false
+          $tag = '${{ steps.meta.outputs.tag }}'
+          $version = '${{ steps.meta.outputs.version }}'
+          $files = @(Get-ChildItem 'dist-release' -File | ForEach-Object { $_.FullName })
+
+          gh release view $tag *> $null
+          $exists = ($LASTEXITCODE -eq 0)
+
+          if ($exists) {
+            Write-Host "Release $tag already exists - uploading assets."
+            gh release upload $tag --clobber @files
+          } else {
+            $ghArgs = @('release', 'create', $tag,
+                        '--title', "DraconDex $version",
+                        '--generate-notes')
+            if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+              # A manual run may target a tag that does not exist yet; gh
+              # creates it from the checked-out commit.
+              if ('${{ github.event.inputs.draft }}' -eq 'true') { $ghArgs += '--draft' }
+              if ('${{ github.event.inputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' }
+            } else {
+              $ghArgs += '--verify-tag'
+            }
+            gh @ghArgs @files
+          }
+          if ($LASTEXITCODE -ne 0) { throw "gh release step failed with exit code $LASTEXITCODE" }

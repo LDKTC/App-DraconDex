@@ -98,6 +98,36 @@ npm run build:installer   # NSIS installer (DraconDexPortable/DraconDex-Setup-<v
 - `build:exe` builds the older single-file portable `.exe` instead of the
   `build:portable` folder target.
 
+### Releases
+
+All three build types are produced on Windows by the **"Build Electron
+(Windows)"** GitHub Actions workflow
+(`.github/workflows/build-electron.yml`) and published as GitHub release
+assets:
+
+| Asset | From |
+|---|---|
+| `DraconDex-Setup-<version>.exe` | `build:installer` |
+| `DraconDex-Portable-<version>.exe` | `build:exe` |
+| `DraconDex-<version>-win-x64.zip` | `build:portable` (zipped app folder) |
+| `checksums-sha256.txt` | SHA-256 of the three assets above |
+
+To cut a release, bump `version` in `package.json`, then push a matching
+tag:
+
+```bash
+git tag v4.4.0
+git push origin v4.4.0
+```
+
+The workflow builds, runs the regression tests, and creates the release
+with auto-generated notes. A manual run (Actions tab → **Build Electron
+(Windows)** → *Run workflow*) does the same and defaults to a **draft**
+release; it takes an optional tag (defaults to `v<package.json version>`)
+and a pre-release toggle. Pull requests that touch app or build files only
+build and upload the same assets as a workflow artifact — nothing is
+published.
+
 ## Mobile (Flutter) build
 
 > ฝั่งมือถือยังไม่ครบทุกฟีเจอร์เท่าเวอร์ชัน Desktop — ดูรายละเอียดใน
