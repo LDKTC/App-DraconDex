@@ -143,9 +143,19 @@ jobs:
             Copy-Item $src -Destination $dist
           }
 
-          Get-ChildItem $dist -File |
-            ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name } |
-            Out-File -FilePath (Join-Path $dist 'checksums-sha256.txt') -Encoding utf8
+          # Hash everything before opening the output file. Streaming
+          # Get-ChildItem straight into Out-File makes PowerShell create
+          # checksums-sha256.txt inside $dist while the enumeration of $dist is
+          # still running, so the lazily-yielded checksums file reaches
+          # Get-FileHash while Out-File still holds it open ("used by another
+          # process"). Collecting first also keeps the file out of its own list.
+          $checksumName = 'checksums-sha256.txt'
+          $checksums = Join-Path $dist $checksumName
+          $assets = @(Get-ChildItem $dist -File | Where-Object { $_.Name -ne $checksumName })
+          $lines = @($assets | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          })
+          $lines | Out-File -FilePath $checksums -Encoding utf8
 
           Get-ChildItem $dist -File | ForEach-Object {
             "{0,-44} {1,8:N1} MB" -f $_.Name, ($_.Length / 1MB)
