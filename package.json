@@ -3,6 +3,12 @@
   "version": "4.4.0",
   "description": "Novel data management app",
   "main": "main.js",
+  "license": "MIT",
+  "author": "LDKTC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LDKTC/App-DraconDex.git"
+  },
   "scripts": {
     "start": "node ./start.js",
     "postinstall": "node ./ensure-electron.js",
@@ -34,7 +40,8 @@
       "database.js",
       "package.json",
       "src/**/*",
-      "Image/**/*"
+      "Image/**/*",
+      "vendor/**/*"
     ],
     "electronLanguages": [
       "en-US",

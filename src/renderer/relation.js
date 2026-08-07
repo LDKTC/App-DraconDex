@@ -10,8 +10,12 @@ async function renderForceGraph(graphData, opts={}){
   await renderForceGraphWithD3(graphData, opts);
 }
 
-// D3 loader + renderer. Vendored copy first (app must work offline);
-// CDN only as a fallback for trees missing vendor/.
+// D3 loader + renderer. Vendored copy only — no CDN fallback. This runs in
+// the main renderer, which holds the whole window.api IPC surface, so a
+// remote <script> here would hand a third party that surface; there is also
+// no SRI on an unpkg URL. vendor/ ships via package.json build.files, so a
+// packaged build always has the local file. If this rejects, the install is
+// broken and the caller should surface that rather than reach for the network.
 function ensureD3(){
   if(window.d3) return Promise.resolve();
   if(window.__d3Loading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.d3){ clearInterval(iv); resolve(); } },50); });
@@ -24,7 +28,6 @@ function ensureD3(){
     document.head.appendChild(s);
   });
   return load('vendor/d3.min.js')
-    .catch(()=>load('https://unpkg.com/d3@7/dist/d3.min.js'))
     .finally(()=>{ window.__d3Loading = false; });
 }
 

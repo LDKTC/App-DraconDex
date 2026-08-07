@@ -107,6 +107,12 @@ async function syncGoogleLogin(devUid, devTier) {
   const { url, anonKey, configured } = getSyncConfig();
   if (!configured) return { ok: false, code: 'no_config' };
   const { verifier, challenge } = makePkcePair();
+  // No `state` here, unlike drive.js and plugin.js. GoTrue's /auth/v1/authorize
+  // runs its own state through the Google handshake and redirects to
+  // `redirect_to` with only `?code=`; a custom state param is not echoed back,
+  // so enforcing one would reject every legitimate login. PKCE plus the
+  // ephemeral random loopback port carry the CSRF weight on this flow. If a
+  // future GoTrue passes state through, add it here and to the call below.
   let code;
   try {
     ({ code } = await runOAuthLoopback(

@@ -407,9 +407,12 @@ async function pluginOAuthAuthorize(pluginId, opts) {
   const clientId = String(opts?.clientId || '');
   if (!clientId) throw new Error('clientId is required');
 
-  const { makePkcePair, runOAuthLoopback } = require('./oauth-loopback');
+  const { makePkcePair, makeState, runOAuthLoopback } = require('./oauth-loopback');
   const { verifier, challenge } = makePkcePair();
-  const state = require('crypto').randomBytes(16).toString('hex');
+  // Standard OAuth2 authorization endpoint (the plugin names its own provider,
+  // and the URL is manifest-allowlisted), so `state` round-trips and is
+  // enforced on the callback rather than just handed back to the plugin.
+  const state = makeState();
 
   const { code, redirectUri } = await runOAuthLoopback((redirect) => {
     const u = new URL(authorizeUrl);
@@ -424,7 +427,7 @@ async function pluginOAuthAuthorize(pluginId, opts) {
       if (typeof v === 'string') u.searchParams.set(k, v);
     }
     return u.toString();
-  });
+  }, { state });
 
   return { code, redirectUri, verifier, state };
 }

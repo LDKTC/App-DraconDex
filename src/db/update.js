@@ -15,6 +15,12 @@ const { driveStatus } = require('./drive');
 // This app's own single canonical project — every install reads the SAME
 // doc, unlike sync:url/drive:clientId (per-deployment operator config) —
 // so this is a source constant, not a runtime app_setting.
+// FORKERS: unlike sync:url and drive:clientId — which a user enters in the
+// app UI — this one is a source constant, so a fork MUST edit it to its own
+// Firebase project or the update check silently does nothing forever
+// (fetchLatest() swallows every failure and returns null below). Everything
+// else in this app is configurable without touching source; this is the one
+// exception.
 const FIRESTORE_PROJECT_ID = 'dracondex-app'; // TODO(maintainer): real Firebase project id
 const DOC_PATH = 'public_config/latest_version';
 const DOC_URL = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT_ID}/databases/(default)/documents/${DOC_PATH}`;

@@ -87,8 +87,11 @@ function loadModule(src) {
 // Konva (canvas) loader. Eager and global because four separate lazy modules
 // need it — map.js, relation.js, mod/{locator,wanderer}.js and
 // navigator/board.js — and it used to be copied verbatim into map.js AND
-// relation.js, so whichever loaded last silently won. Vendored copy first
-// (offline app); the CDN is only a fallback.
+// relation.js, so whichever loaded last silently won. Vendored copy only —
+// no CDN fallback, for the same reason as ensureD3() in relation.js: this
+// renderer holds the whole window.api IPC surface, so a remote <script>
+// (unpkg, no SRI) would hand that surface to a third party. vendor/ ships via
+// package.json build.files.
 function ensureKonva(){
   if(window.Konva) return Promise.resolve();
   if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
@@ -101,7 +104,6 @@ function ensureKonva(){
     document.body.appendChild(s);
   });
   return load('vendor/konva.min.js')
-    .catch(()=>load('https://unpkg.com/konva@9/konva.min.js'))
     .finally(()=>{ window.__konvaLoading = false; });
 }
 
