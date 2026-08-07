@@ -550,13 +550,26 @@ hub/kinds.js` (`goToNexusNestHub()`/`atHubHome` clear `importDockPage`/
 ทุกไฟล์เป็น global function (ไม่มี module system) เรียก DB ผ่าน `window.api`
 render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 
-### i18n.js (~1780 บรรทัด) — โหลดก่อนทุกไฟล์
-- ตาราง `L` แปล UI key 18 ภาษา + รายชื่อภาษาใน picker + ตาราง `TX`
-  (dictionary แปลข้อความ hardcode ไทย/อังกฤษ → ภาษาอื่น รวมภาษาสมมุติ `qd`)
+### i18n.js (~2460 บรรทัด) — โหลดก่อนทุกไฟล์
+- ตาราง `L` แปล UI key 18 ภาษา (715 key/locale) + `LANGUAGE_LABELS`
+  (รายชื่อภาษาใน picker) + ตาราง `COMMON_UI_TEXT` (เดิมเอกสารเรียกว่า `TX`)
+  — dictionary แปลข้อความ hardcode ไทย/อังกฤษ → ภาษาอื่น รวมภาษาสมมุติ `qd`
 - v2.8 เพิ่ม ~40 key (nexus/scribe/wiki/explorer/quick-switcher/graph/rename)
   ครบทั้ง 18 ภาษา
-- ไม่มี logic — logic การแปลอยู่ใน core.js (`t()`, `tr()`,
-  `translateCommonUiText()`)
+- **v4.4.2**: `COMMON_UI_TEXT` มี 415 entry และครบ **ทั้ง 18 locale ทุก entry**
+  แล้ว — เดิม 400 entry ไม่มี `it`/`nl`/`pl`/`uk`/`tr` เลยแม้แต่ entry เดียว
+  (ทั้งที่ picker ให้เลือกได้) ทำให้ผู้ใช้ 5 ภาษานั้นเห็นข้อความอังกฤษแทน
+  ส่วนอีก 15 entry ใหม่คือข้อความที่ Navigator เรนเดอร์เป็น literal อังกฤษ
+  แต่ไม่เคยมีคีย์ในตาราง (เช่น `'No timelines yet on this map.'`) จึงไม่ถูกแปล
+  ในทุกภาษา รวมภาษาไทยเอง
+  - คีย์แต่ละ entry คือ "ข้อความต้นทาง" อยู่แล้ว → locale ของภาษานั้น
+    ไม่ต้องมีฟิลด์ (คีย์ไทยไม่ต้องมี `th:`, คีย์อังกฤษไม่ต้องมี `en:`)
+    แต่ locale ที่เหลือต้องมีครบ ไม่งั้น `tr()` เงียบ ๆ ตกกลับไปเป็นอังกฤษ
+  - `check.mjs` บังคับกฎนี้แล้ว (ดู SYSTEMS.md §11) — เพิ่ม entry ใหม่ต้องใส่
+    ครบทุก locale ไม่งั้น checker ขึ้น ERROR
+- ไม่มี logic — logic การแปลอยู่ใน `src/renderer/core/` (`t()`, `tr()` ใน
+  `settings.js`; `translateStaticChrome()`, `translateCommonUiText()` ใน
+  `chrome.js`)
 
 ### markdown.js (130 บรรทัด, v2.8) — โหลดก่อน core.js
 - Markdown parser เขียนเอง ไม่มี dependency ภายนอก: `mdRender(text,{resolveLink})`
