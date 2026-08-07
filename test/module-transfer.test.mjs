@@ -2,13 +2,19 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+// These tests match source text with regexes anchored on `\n`. `.gitattributes`
+// says `* text=auto`, so a Windows checkout (the CI runner) has CRLF endings and
+// those anchors stop matching — read every source through here instead.
+const readSource = (relPath) =>
+  readFileSync(new URL(relPath, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+
 // src/db/sync.js's applySnapshotCore is shared by applySnapshot (whole-nexus
 // wipe-and-rebuild, Token Sync pull) and importModuleSnapshot (module-subtree
 // merge-in, Setting window -> Appdata -> Database). The one thing that must
 // never regress: a module-level import must never wipe the target nexus's
 // existing content — that guard is what tells the two callers apart.
 test('module-subtree import never wipes the nexus (only applySnapshot does)', () => {
-  const src = readFileSync(new URL('../src/db/sync.js', import.meta.url), 'utf8');
+  const src = readSource('../src/db/sync.js');
 
   const core = src.match(/function applySnapshotCore\([\s\S]*?\n\}\n/)?.[0] || '';
   assert.ok(core, 'applySnapshotCore not found');
