@@ -12,9 +12,9 @@
   "scripts": {
     "start": "node ./start.js",
     "postinstall": "node ./ensure-electron.js",
-    "build:portable": "electron-builder --win dir && node scripts/finish-portable.mjs",
-    "build:exe": "electron-builder --win portable",
-    "build:installer": "electron-builder --win nsis"
+    "build:portable": "electron-builder --win dir --publish never && node scripts/finish-portable.mjs",
+    "build:exe": "electron-builder --win portable --publish never",
+    "build:installer": "electron-builder --win nsis --publish never"
   },
   "dependencies": {
     "node-sqlite3-wasm": "^0.8.59"
@@ -65,6 +65,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "artifactName": "DraconDex-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "DraconDex-Portable-${version}.${ext}"
     }
   }
 }

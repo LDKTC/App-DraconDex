@@ -19,6 +19,41 @@
 
 ---
 
+## 2026-08-07 — CI: build ทั้ง 3 แบบของ Electron แล้วปล่อยเป็น GitHub Releases
+- commit: uncommitted
+- ไฟล์ที่แก้: `.github/workflows/build-electron.yml` (ใหม่), `package.json`
+  (สคริปต์ build + `build.portable.artifactName`), `README.md`
+- อะไรเปลี่ยน:
+  - **workflow ใหม่ "Build Electron (Windows)"** รันบน `windows-latest`
+    สร้าง build ครบทั้ง 3 แบบในงานเดียว แล้วอัปโหลดเป็น asset ของ
+    GitHub Release:
+    - `build:installer` → `DraconDex-Setup-<version>.exe`
+    - `build:exe` → `DraconDex-Portable-<version>.exe`
+    - `build:portable` → บีบโฟลเดอร์เป็น `DraconDex-<version>-win-x64.zip`
+    - บวก `checksums-sha256.txt` (SHA-256 ของทั้งสามไฟล์)
+  - **ลำดับ build สำคัญ** — `build:portable` เปลี่ยนชื่อ
+    `DraconDexPortable/win-unpacked` เป็น `DraconDex-<version>` ผ่าน
+    `scripts/finish-portable.mjs` จึงต้องรัน **หลัง** target อื่นที่ยัง
+    สร้าง `win-unpacked` เป็นของกลางทาง ไม่งั้นโฟลเดอร์จะถูกเขียนทับ
+  - **ทริกเกอร์** — push tag `v*` = ปล่อย release จริง (โน้ตอัตโนมัติจาก
+    `--generate-notes`), `workflow_dispatch` = ปล่อยได้เหมือนกันแต่ default
+    เป็น draft และรับ tag/prerelease เป็น input, ส่วน pull request ที่แตะ
+    ไฟล์แอป/บิลด์จะ build + อัปโหลดเป็น workflow artifact เฉย ๆ ไม่ปล่อย
+    release
+  - **`artifactName` ของ target `portable`** ถูกกำหนดเป็น
+    `DraconDex-Portable-${version}.${ext}` (เดิมใช้ default ที่มีช่องว่างใน
+    ชื่อไฟล์ — `DraconDex 4.4.0.exe`) ให้ชื่อ asset สม่ำเสมอกับตัว installer
+  - **สคริปต์ build ทั้งสามตัวใส่ `--publish never`** — กันไม่ให้
+    electron-builder เดาว่าจะ publish เองเมื่อเจอ tag + token บน CI การ
+    ปล่อย release เป็นหน้าที่ของ step `gh release` step เดียวเท่านั้น (และ
+    มีแค่ step นั้นที่ได้ `GH_TOKEN`)
+- ทำไม: เดิมมี workflow เฉพาะฝั่ง Flutter (`build-apk.yml`) ส่วนฝั่ง Electron
+  ต้อง build เองบนเครื่อง Windows ทุกครั้ง ทำให้ไม่มีไฟล์ให้ผู้ใช้ดาวน์โหลด
+  จากหน้า Releases เลย
+- Doc ที่อัปเดต: `README.md` §Building → หัวข้อย่อย "Releases" (ตาราง asset
+  + วิธี tag เพื่อปล่อยเวอร์ชัน); ไม่กระทบ `docs/SYSTEMS.md` / `docs/FILES.md`
+  เพราะไม่ได้แตะโค้ดแอป
+
 ## 2026-08-07 — Security audit หลัง repo เปิด public: ปิดช่อง CDN, บังคับ OAuth state, เพิ่ม LICENSE
 - commit: uncommitted
 - ไฟล์ที่แก้: `package.json` (build.files + `vendor/**/*`, เพิ่ม
