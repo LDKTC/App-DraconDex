@@ -105,6 +105,16 @@ module.exports = {
 };
 
 if (require.main === module) {
+  // Runs as the `postinstall` hook. When this package is installed as a
+  // dependency (`npm i @ldktc/dracondex`) electron is not there to install —
+  // it is a devDependency of this repo, so it is not pulled in transitively.
+  // Same for `npm ci --omit=dev` here. Failing the hook would fail the whole
+  // install, so treat "no electron package at all" as nothing to repair; the
+  // app itself still reports it properly via `npm start` (start.js).
+  if (!fs.existsSync(getElectronPackagePath())) {
+    console.log('Electron is not installed (dev dependency) — skipping the binary check.');
+    process.exit(0);
+  }
   try {
     console.log(ensureElectron());
   } catch (error) {

@@ -128,6 +128,40 @@ and a pre-release toggle. Pull requests that touch app or build files only
 build and upload the same assets as a workflow artifact — nothing is
 published.
 
+### GitHub Packages (npm)
+
+The app source is also published as the npm package
+**`@ldktc/dracondex`** to [GitHub
+Packages](https://github.com/LDKTC/App-DraconDex/packages) by the
+**"Publish package (GitHub Packages)"** workflow
+(`.github/workflows/publish-package.yml`). Publishing a GitHub release runs
+it automatically, so a release carries both the Windows installers above
+and the package; a manual run can publish the current `package.json`
+version on its own, or just pack the tarball to inspect it (*dry run*).
+
+The tarball is the app itself — `main.js`, `preload*.js`, `database.js`,
+`index.html`, `start.js`, plus `src/`, `css/`, `Image/`, `vendor/` and
+`scripts/` (~3 MB). It is **not** a library: there is nothing to `import`,
+and it is meant for consuming the sources programmatically (vendoring,
+plugin tooling, running from source). Most people want the installer from
+[Releases](https://github.com/LDKTC/App-DraconDex/releases) instead.
+
+GitHub Packages requires authentication for npm **even for public
+packages**, so install needs a personal access token with `read:packages`:
+
+```bash
+# ~/.npmrc
+@ldktc:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
+```
+
+```bash
+npm install @ldktc/dracondex
+```
+
+Electron is a *dev* dependency, so it is not pulled in by that install —
+`npm start` from the package needs `npm install` in a full checkout.
+
 ## Mobile (Flutter) build
 
 > ฝั่งมือถือยังไม่ครบทุกฟีเจอร์เท่าเวอร์ชัน Desktop — ดูรายละเอียดใน

@@ -19,6 +19,35 @@
 
 ---
 
+## 2026-08-07 — GitHub Packages: เผยแพร่แพ็กเกจ npm `@ldktc/dracondex`
+- commit: uncommitted
+- ไฟล์ที่แก้: `.github/workflows/publish-package.yml` (ใหม่), `package.json`
+  (`name`, `productName`, `files`, `publishConfig`), `package-lock.json`
+  (ชื่อให้ตรงกัน), `ensure-electron.js` (postinstall), `README.md`
+- อะไรเปลี่ยน:
+  - เพิ่ม workflow **"Publish package (GitHub Packages)"** — ทำงานเองเมื่อมีการ
+    publish GitHub release (และสั่งมือได้ พร้อมโหมด *dry run* ที่ pack อย่างเดียว)
+    ขั้นตอน: `npm ci --ignore-scripts` → รัน regression test → เช็กว่า tag ของ
+    release ตรงกับ `version` (ไม่ตรง = fail) → `npm pack` → `npm publish` ไปที่
+    `https://npm.pkg.github.com` ถ้าเวอร์ชันนั้นถูก publish ไปแล้วจะ **ข้าม**
+    แทนที่จะพังด้วย 409 ตอน re-run
+  - `package.json`: เปลี่ยน `name` เป็น `@ldktc/dracondex` เพราะ GitHub Packages
+    บังคับให้ scope ตรงกับเจ้าของ repo และ npm ไม่รับชื่อที่มีตัวพิมพ์ใหญ่ —
+    พร้อมเพิ่ม `productName: "DraconDex"` ระดับบนสุดไว้ล็อกชื่อแอปฝั่ง Electron
+    ไม่ให้เปลี่ยนตาม `name`, เพิ่ม `files` (tarball เหลือ ~3 MB / 164 ไฟล์ —
+    ไม่มี `flutter_app/`, `docs/`, `test/`, `old_db_data/` ติดไปด้วย) และ
+    `publishConfig.registry`
+  - `ensure-electron.js`: hook `postinstall` เดิม **พังทั้ง install** เมื่อแพ็กเกจ
+    ถูกติดตั้งเป็น dependency (`npm i @ldktc/dracondex`) เพราะ electron เป็น
+    devDependency จึงไม่ถูกดึงมาด้วย แล้วสคริปต์หา `node_modules/electron/install.js`
+    ไม่เจอ → throw + exit 1 ตอนนี้ถ้าไม่มีโฟลเดอร์ `node_modules/electron` เลย
+    จะข้ามการตรวจและ exit 0 (`npm start` ยังรายงานเหมือนเดิมผ่าน `start.js`)
+- ทำไม: repo มีแค่ release asset ฝั่ง Windows ยังไม่มีอะไรใน GitHub Packages —
+  งานนี้ทำให้ publish ได้จริงและผูกกับ release เดิมโดยไม่ต้องทำมือ
+- Doc ที่อัปเดต: `README.md` §Releases → หัวข้อย่อย "GitHub Packages (npm)"
+  (รวมข้อจำกัดว่าแพ็กเกจ npm บน GitHub Packages ต้องใช้ token แม้เป็น public);
+  `docs/FILES.md` ไม่กระทบ (ไม่ได้ครอบคลุมไฟล์ `.github/`)
+
 ## 2026-08-07 — i18n (v4.4.2): `COMMON_UI_TEXT` ครบ 18 locale + checker บังคับ parity
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/i18n.js` (`COMMON_UI_TEXT` 400 → 415 entry,

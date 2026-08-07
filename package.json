@@ -1,5 +1,6 @@
 {
-  "name": "DraconDex",
+  "name": "@ldktc/dracondex",
+  "productName": "DraconDex",
   "version": "4.4.2",
   "description": "Novel data management app",
   "main": "main.js",
@@ -9,6 +10,23 @@
     "type": "git",
     "url": "https://github.com/LDKTC/App-DraconDex.git"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "index.html",
+    "main.js",
+    "preload.js",
+    "preload-plugin.js",
+    "database.js",
+    "start.js",
+    "ensure-electron.js",
+    "css/**/*",
+    "src/**/*",
+    "Image/**/*",
+    "vendor/**/*",
+    "scripts/**/*"
+  ],
   "scripts": {
     "start": "node ./start.js",
     "postinstall": "node ./ensure-electron.js",
