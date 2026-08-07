@@ -15,7 +15,7 @@ const path = require('path');
 const { app } = require('electron');
 const { getAppSetting, setAppSetting } = require('./versions');
 const { exportDatabaseTo, importDatabaseMerge } = require('./import-merge');
-const { makePkcePair, runOAuthLoopback } = require('./oauth-loopback');
+const { makePkcePair, makeState, runOAuthLoopback } = require('./oauth-loopback');
 
 // Build-mode gate: packaged builds talk to the real Google Drive API;
 // unpackaged runs (`npm start`, drivers) use the in-process mock instead
@@ -71,13 +71,19 @@ async function driveConnect() {
   const { clientId, clientSecret, configured } = getDriveConfig();
   if (!configured) return { ok: false, code: 'no_config' };
   const { verifier, challenge } = makePkcePair();
+  // Talking to Google's authorization endpoint directly, which echoes `state`
+  // back on the redirect per RFC 6749 §4.1.2 — so the nonce round-trips and
+  // runOAuthLoopback can enforce it.
+  const state = makeState();
   let code, redirectUri;
   try {
     ({ code, redirectUri } = await runOAuthLoopback(
       (redirectTo) => `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}`
         + `&redirect_uri=${encodeURIComponent(redirectTo)}&response_type=code`
         + `&scope=${encodeURIComponent(DRIVE_SCOPE)}`
-        + `&access_type=offline&prompt=consent&code_challenge=${challenge}&code_challenge_method=S256`,
+        + `&access_type=offline&prompt=consent&code_challenge=${challenge}&code_challenge_method=S256`
+        + `&state=${encodeURIComponent(state)}`,
+      { state },
     ));
   } catch (e) {
     return { ok: false, code: e.message === 'login_timeout' ? 'login_timeout' : 'auth', error: String(e?.message || e) };

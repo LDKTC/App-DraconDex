@@ -19,6 +19,43 @@
 
 ---
 
+## 2026-08-07 — Security audit หลัง repo เปิด public: ปิดช่อง CDN, บังคับ OAuth state, เพิ่ม LICENSE
+- commit: uncommitted
+- ไฟล์ที่แก้: `package.json` (build.files + `vendor/**/*`, เพิ่ม
+  `license`/`author`/`repository`), `LICENSE` (ใหม่, MIT),
+  `src/renderer/relation.js` + `src/renderer/core/views.js` (ตัด CDN fallback),
+  `src/db/oauth-loopback.js` (`makeState`, ตรวจ `state` บน callback),
+  `src/db/drive.js`, `src/db/plugin.js` (ส่ง+บังคับ `state`),
+  `src/db/sync.js` (คอมเมนต์อธิบายว่าทำไมไม่ใส่ `state`),
+  `src/db/update.js` (โน้ตสำหรับคนที่ fork), `.gitignore`,
+  เลิก track `.idea/` และ gitlink กำพร้า `.flutter_sdk/flutter`
+- อะไรเปลี่ยน:
+  - **CDN fallback ถูกตัดออก** — `build.files` ไม่เคยมี `vendor/**` แปลว่าใน
+    build ที่แพ็กแล้ว `vendor/d3.min.js` หาย → `onerror` ยิง → โหลด D3/Konva
+    จาก unpkg โดยไม่มี SRI เข้ามาใน renderer หลักที่ถือ `window.api` ทั้งชุด
+    ตอนนี้ `vendor/**/*` อยู่ใน `build.files` แล้ว และ loader โหลดเฉพาะไฟล์
+    ในเครื่อง
+  - **`state` ถูกตรวจจริง** — เดิม `plugin.js` สร้าง nonce แล้วส่งไป แต่
+    `runOAuthLoopback` อ่านแค่ `code`/`error` ไม่เคยเทียบกลับ ตอนนี้
+    `runOAuthLoopback` รับ `state` แล้ว reject เป็น `state_mismatch`
+    ใส่ให้ `drive.js` (Google echo `state` กลับตาม RFC 6749) และ `plugin.js`
+    **ไม่ใส่ให้ `sync.js`** เพราะ GoTrue `/auth/v1/authorize` ไม่ส่ง custom
+    state กลับ — ใส่แล้ว login จะพังทุกครั้ง (มีคอมเมนต์อธิบายไว้ในไฟล์)
+  - **เพิ่ม LICENSE (MIT)** — ก่อนหน้านี้ไม่มี license เลย แปลว่าตามกฎหมาย
+    ไม่มีใคร fork/redistribute ได้ ทั้งที่ repo เปิด public แล้ว
+  - `.gitignore` เพิ่มกฎ `*.db` / `-wal` / `-shm` / `.env` / คีย์ / `.idea/`
+  - `.flutter_sdk/flutter` เป็น gitlink (mode 160000) ที่ไม่มี `.gitmodules`
+    → clone แล้วได้โฟลเดอร์ว่างและ submodule update พัง; CI ใช้
+    `subosito/flutter-action` อยู่แล้ว ไม่มีอะไรอ้างถึงมัน จึงเอาออก
+- ทำไม: repo เปิด public แล้ว ตรวจทั้ง working tree และ history ทั้ง 63 commit
+  **ไม่พบ secret จริงหลุดเลย** (credential ทุกตัวผู้ใช้กรอกเองตอน runtime เก็บใน
+  `app_setting` ไม่เคยอยู่ใน source) แต่พบปัญหาอื่นตามข้างบน
+- ค้างไว้ (แยก PR): ฐานข้อมูลนิยายจริง `old_db_data/*.db` ยังอยู่ใน history
+  ตั้งแต่ `5ed92c7` ต้อง `git filter-repo` + force-push `main` แยกต่างหาก
+- Doc ที่อัปเดต: docs/CHANGELOG.md (รายการนี้)
+
+---
+
 ## 2026-08-06 — permissions.net (v4.4.0): อนุญาต http:// บน loopback ที่ระบุ port
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/db/plugin-manifest.js` (`normalizeNetOrigin`,
