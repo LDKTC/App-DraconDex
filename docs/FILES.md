@@ -231,7 +231,7 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 | `pickers.js` | 325 | novel picker, color/symbol picker, `hashtagSelector` |
 | `views.js` | 199 | `loadModule`/`loadGroup`/`LAZY_GROUPS`, `ensureKonva`, `switchView`, `renderNexusHome` |
 | `nexus.js` | 199 | vault switcher (3 อันล่าสุด), MRU `loadRecentNexusIds/pushRecentNexus/dropRecentNexus`, picker fallback, CRUD |
-| `welcome.js` | 78 | (v4.6.0) หน้า Welcome ในหน้าต่างของตัวเอง — `renderWelcomeWindow/welcomeOpenNexus/welcomeCreateNexus` |
+| `welcome.js` | 257 | (v4.6.0) หน้า Welcome ในหน้าต่างของตัวเอง — `renderWelcomeWindow/welcomeOpenNexus/welcomeCreateNexus` + (v4.7.0) setup wizard ครั้งแรก `WELCOME_STEPS/renderWelcomeWizard/welcomeWizardGo/welcomeWizardFinish/welcomeSetUi/welcomeStep*Html/welcomeSetWorkspaceStyle/welcomeRefreshLogin/welcomeLoginClick` |
 | `router.js` | 167 | `selectModule()`, Import-DB hub, `openEntityByKey`, status bar |
 | `shortcuts.js` | 125 | คีย์ลัดรวม, `returnToNexus`, sidebar ของ Director |
 
@@ -664,6 +664,12 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   `welcomeCreateNexus` (core/welcome.js) + MRU `loadRecentNexusIds/`
   `pushRecentNexus/dropRecentNexus/recentNexuses` และ `openWelcomeWindow`
   (core/nexus.js) — `closeNexus()` ถูกถอดออกแล้ว
+- **Setup wizard ครั้งแรก (v4.7.0)**: `WELCOME_STEPS` (ตาราง 5 step) +
+  `renderWelcomeWizard/welcomeWizardGo/welcomeWizardFinish/welcomeSetUi`
+  (core/welcome.js) — ขับ `setUiSetting()` ตัวเดียวกับ Setting window
+  จึงไม่มี state ซ้อน; `settingThemeGridCellHtml()` (core/setting-window.js)
+  รับ option `onclick`/`tools` เพิ่ม (default = พฤติกรรมเดิม) ให้ wizard
+  ยืมการ์ดธีมไปใช้ได้
 - **Wiki navigation (v2.8)**: `openEntityByKey(key)` (จุดเดียวที่เปิด entity
   จาก key ทุกที่ — wikilink click/backlinks/quick switcher/graph node),
   `bindWikilinkClicks` (event delegation บน `#main-inner`),

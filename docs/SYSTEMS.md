@@ -124,6 +124,25 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 - **`renderNexusPicker()` เหลือเป็น fallback**: หน้าต่างที่เปิดโดยไม่มี
   `?nexus=` (เช่น web-driver) หรือหลังลบ vault ที่เปิดอยู่ ปุ่มในหน้านี้ชี้ไป
   Welcome window
+- **Setup wizard ครั้งแรก (v4.7.0)**: ถ้า DB ยังไม่มี vault เลย หน้าต่าง
+  Welcome เปิดที่ wizard แทนรายการ vault (`S.welcomeStep` ตั้งใน boot.js —
+  เงื่อนไขเดียวกับ welcome modal เดิม ยังไม่มี first-run flag ที่ persist)
+  5 step อ่านจากตาราง `WELCOME_STEPS` เดียว: **ภาษา → ธีม → Layout →
+  ชื่อ module → บัญชี (ทางเลือก)** แถบซ้ายเป็น progress คลิกย้อน step ได้
+  และมีปุ่มข้ามทั้ง wizard
+  - ทุก step เขียนค่าเดียวกับที่ Setting window เขียน (`setUiSetting()` /
+    `saveUiSettings()`) จึงไม่มี state ซ้อน — เปลี่ยนทีหลังที่ Setting ได้
+  - step Layout **ไม่** เรียก `applyWorkspaceStyleChoice()` (ที่มี `uiConfirm`
+    + `location.reload()`) เพราะหน้าต่าง Welcome ไม่ได้ render chrome ของ
+    drake/wyvern/dragon อยู่แล้ว ค่าไปมีผลตอนหน้าต่างแอพเปิด
+  - หน้าต่าง Welcome ปัก `body.dataset.workspace='drake'` ทับค่าที่
+    `applyWorkspaceStyle()` เพิ่งตั้ง เพราะกฎ wyvern/dragon ใน
+    `css/workspace.css` ซ่อน `#left-panel` ซึ่งในหน้าต่างนี้คือรายการ vault /
+    ขั้นตอน wizard (`S.settings.workspaceStyle` ไม่ถูกแตะ)
+  - step บัญชีใช้ Google Drive OAuth ตัวเดียวกับหน้า Account
+    (`api.drive.connect()/status()`) render โครงก่อนแล้วเติมผลทีหลังแบบ
+    `settingRefreshAccountSection()`; build ที่ยังไม่ได้ใส่ client id/secret
+    (`!st.configured`) แสดง hint แทนปุ่มที่กดแล้วพัง
 - **เริ่มครั้งแรก**: เลือกสร้าง Nexus จาก Welcome แล้วเปิดฟอร์มทันที พร้อม
   checkbox "แสดงทัวร์แนะนำหลังสร้าง Nexus นี้" ที่เลือกไว้ล่วงหน้า; ปิด checkbox
   ได้เพื่อข้าม coach-mark โดยไม่ต้องตอบคำถามแยกใน modal ซ้อน — ทัวร์ไปเริ่มที่

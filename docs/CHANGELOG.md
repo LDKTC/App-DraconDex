@@ -19,6 +19,38 @@
 
 ---
 
+## 2026-08-09 — Setup wizard ครั้งแรกในหน้าต่าง Welcome (ภาษา/ธีม/Layout/ชื่อ module/ล็อกอิน)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/core/welcome.js` (+~180 บรรทัด),
+  `src/renderer/core/boot.js`, `src/renderer/core/state.js`,
+  `src/renderer/core/setting-window.js` (`settingThemeGridCellHtml` รับ option
+  `onclick`/`tools`), `css/welcome.css`, `src/renderer/i18n.js`
+  (`wzTitle`/`wzIntro`/`wzAccountHint` ครบ 18 locale),
+  `.claude/skills/run-dracondex/driver.mjs`
+- อะไรเปลี่ยน:
+  - DB ที่ยังไม่มี vault เลย → หน้าต่าง Welcome เปิดที่ **setup wizard 5 step**
+    (ภาษา → ธีม → Layout → ชื่อ module → บัญชี) แทนรายการ vault เปล่า ๆ
+    แถบซ้ายเป็น progress คลิกย้อน step ได้ + ปุ่มข้ามทั้งชุด
+  - ทุก step ขับ `setUiSetting()`/`saveUiSettings()` ตัวเดียวกับ Setting
+    window จึงไม่มี state ซ้อน และแก้ทีหลังที่ Setting ได้ตามปกติ
+  - นำของเดิมมาใช้ซ้ำเกือบทั้งหมด: `LANGUAGE_LABELS` + `settingLangPreviewHtml`,
+    `getThemePalettes` + `settingThemeGridCellHtml`, `workspaceStylePreviewHtml`,
+    `KIND_LABEL`/`KIND_CLASSIC_KEY`, `api.drive.connect()/status()`
+  - step Layout ไม่เรียก `applyWorkspaceStyleChoice()` (uiConfirm + reload)
+    เพราะหน้าต่าง Welcome ไม่ได้ render chrome ของ workspace style อยู่แล้ว
+  - **บั๊กที่เจอตอนขับแอพจริง**: ตั้ง `body.dataset.workspace` ในหน้าต่าง
+    Welcome ทำให้กฎ wyvern/dragon ใน `css/workspace.css` ซ่อน `#left-panel`
+    ซึ่งคือรายการ vault / ขั้นตอน wizard เอง → หน้าต่างเหลือคอลัมน์เดียว
+    แก้โดยไม่แตะ attribute ตอนเลือก และปัก `drake` ไว้ใน boot branch ของ
+    หน้าต่างนี้ (ค่า setting ที่บันทึกไม่ถูกแตะ หน้าต่างแอพยังเปิดตามที่เลือก)
+  - driver: ready-selector เดิมรอเนื้อใน `#left-panel` ซึ่ง wyvern/dragon ซ่อน
+    ทิ้ง ทำให้ `nextwindow` timeout เมื่อ vault ใช้ layout อื่น — เพิ่ม
+    `.wyvern-breadcrumb` เข้าไปใน `READY_SELECTOR`
+- ทำไม: ค่าที่กำหนดรูปลักษณ์ทั้งแอพถูกซ่อนใน Setting window ผู้ใช้ใหม่จึงได้
+  ค่า default (ไทย + midnight + drake + unique) โดยไม่รู้ว่าเปลี่ยนได้ และ
+  Google Drive ซึ่งเป็นทางเดียวที่มี backup ก็อยู่ลึกอีกชั้น
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Nexus vault, docs/FILES.md (core/welcome.js)
+
 ## 2026-08-09 — Welcome screen เป็นหน้าต่างของตัวเอง + เปิดทุกครั้งที่เปิดแอพ
 - commit: uncommitted
 - ไฟล์ที่แก้: `main.js` (`createWelcomeWindow`, `window:openWelcome`,

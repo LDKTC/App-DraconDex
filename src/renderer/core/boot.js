@@ -34,8 +34,20 @@ async function init() {
   S.isWelcome = new URLSearchParams(location.search).get('welcome') === '1';
   if (S.isWelcome) {
     document.body.classList.add('welcome-mode');
+    // This window has one layout of its own and never renders a workspace
+    // style, but applyWorkspaceStyle() above already stamped the saved one —
+    // and css/workspace.css's wyvern/dragon rules hide #left-panel, which here
+    // is the vault list / wizard steps. Pin the neutral style for this window
+    // only; S.settings.workspaceStyle is untouched, so the app window still
+    // opens in whatever the user picked.
+    document.body.dataset.workspace = 'drake';
     bindWindowChrome();
     translateStaticChrome();
+    // A database with zero vaults means nobody has ever set this install up,
+    // so the Welcome window opens on the setup wizard (language/theme/layout/
+    // module names/sign-in) instead of an empty vault list. Same condition the
+    // old welcome modal used — there is still no persisted first-run flag.
+    S.welcomeStep = S.nexuses.length ? null : 0;
     renderWelcomeWindow();
     window.__splash?.finish();
     return;

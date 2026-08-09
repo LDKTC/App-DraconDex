@@ -46,6 +46,12 @@ for (let i = 0; i < argv.length; i++) {
 }
 const shotsDir = path.join(dataDir, 'shots');
 
+// "The renderer has painted something real." The first three cover Drake (the
+// default chrome) and the Welcome window's own left panel; .wyvern-breadcrumb
+// covers Wyvern and Dragon, which hide #left-panel entirely (css/workspace.css)
+// — without it, driving a vault whose workspaceStyle isn't drake times out here.
+const READY_SELECTOR = '.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body, .wyvern-breadcrumb';
+
 if (fresh && existsSync(dataDir)) rmSync(dataDir, { recursive: true, force: true });
 mkdirSync(shotsDir, { recursive: true });
 
@@ -68,7 +74,7 @@ await win.waitForLoadState('domcontentloaded');
 // Renderer builds the UI at DOMContentLoaded; the vault picker (nexus items or
 // its empty state), module tiles, or a populated Hub (#hub-body — the Nest
 // tree may have real rows, not just the .empty state) are the ready signal.
-await win.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body', { timeout: 15000 });
+await win.waitForSelector(READY_SELECTOR, { timeout: 15000 });
 console.log('[driver] app ready');
 
 let failed = false;
@@ -164,7 +170,7 @@ for (const raw of commands) {
         const other = app.windows().find(w => w !== prev && !w.isClosed());
         win = other || await app.waitForEvent('window', { timeout: 15000 });
         await win.waitForLoadState('domcontentloaded');
-        await win.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body', { timeout: 15000 });
+        await win.waitForSelector(READY_SELECTOR, { timeout: 15000 });
         console.log(`[nextwindow] now driving ${await win.title()}`);
         break;
       }

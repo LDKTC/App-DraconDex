@@ -256,6 +256,12 @@ const S = {
   // but not yet committed via "Apply & Restart" (core/workspace-style.js).
   // Session-only UI state, not the persisted S.settings.workspaceStyle.
   settingPendingWorkspace:null,
+  // First-run setup wizard in the Welcome window (core/welcome.js): index into
+  // WELCOME_STEPS, or null for "not in the wizard, show the vault list".
+  // Session-only by design — there is no first-run flag anywhere in this app;
+  // boot.js starts the wizard whenever the DB holds zero vaults, the same
+  // condition the old welcome modal used.
+  welcomeStep:null,
   // Plan part2 §2: read-only "Import DB" legacy view — reuses the existing
   // (normally hidden) Director/Navigator/Hero/Writer panels via
   // selectModule(), gated read-only by installImportDbGuard() below.
