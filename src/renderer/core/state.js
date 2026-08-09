@@ -68,6 +68,15 @@ const LEFT_PANEL_WIDTH_KEY = 'novel-manager-left-panel-width';
 const INSPECTOR_WIDTH_KEY = 'novel-manager-inspector-width';
 const PAGE_VIEW_WIDTH_KEY = 'novel-manager-page-view-width';
 const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
+// Recently-opened vaults, most recent first (v4.6.0). The nexus table has no
+// recency column — update_at only moves on an explicit name/memo/color edit —
+// so the MRU lives here, like NEXUS_ACTIVE_KEY, and is shared across windows
+// (same origin). Feeds the Welcome window's "recent" cards and the vault-head
+// switcher's top-3. Helpers: loadRecentNexusIds/pushRecentNexus in nexus.js.
+const NEXUS_RECENT_KEY = 'novel-manager-recent-nexus';
+// Set by the Welcome window right before it hands off to a new app window, so
+// the onboarding tour runs there instead of in the window that's closing.
+const NEXUS_PENDING_GUIDE_KEY = 'novel-manager-pending-guide';
 const HUB_OPEN_KEY = 'novel-manager-hub-open';
 const HUB_SECTION_HEIGHTS_KEY = 'novel-manager-hub-section-heights';
 

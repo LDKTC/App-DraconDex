@@ -1,8 +1,51 @@
 // Nexus (vault) lifecycle: the workspace switcher dropdown, the picker grid,
-// open/close/reload, the first-run welcome modal and create/edit/delete.
-// Workspace switcher — dropdown of every Nexus, opened above the vault-head
-// name pinned at the bottom of the left panel. Picking one opens it in a new
-// window rather than switching in-place (that's still the ⇄ button).
+// open/close/reload, the recent-vault MRU and create/edit/delete. The Welcome
+// screen itself lives in core/welcome.js (its own window since v4.6.0).
+
+// ═══ RECENT VAULTS (MRU) ═══════════════════════════════
+// Backed by NEXUS_RECENT_KEY (state.js) — see the note there for why recency
+// isn't a DB column. Ids only; names/colors are always read back from
+// S.nexuses so a renamed or deleted vault can never go stale here.
+function loadRecentNexusIds() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(NEXUS_RECENT_KEY) || '[]');
+    return Array.isArray(raw) ? raw.filter(Number.isInteger) : [];
+  } catch (e) { return []; }
+}
+
+function pushRecentNexus(id) {
+  if (!Number.isInteger(id)) return;
+  const next = [id, ...loadRecentNexusIds().filter(v => v !== id)].slice(0, 10);
+  localStorage.setItem(NEXUS_RECENT_KEY, JSON.stringify(next));
+}
+
+function dropRecentNexus(id) {
+  localStorage.setItem(NEXUS_RECENT_KEY, JSON.stringify(loadRecentNexusIds().filter(v => v !== id)));
+}
+
+// The N most-recently-opened vaults as real rows from S.nexuses, current one
+// excluded. Falls back to S.nexuses' own (alphabetical) order to fill the
+// list when the MRU is short — a fresh install has no history at all.
+function recentNexuses(limit, excludeId = S.nexus?.id) {
+  const byId = new Map(S.nexuses.map(n => [n.id, n]));
+  const out = [];
+  for (const id of loadRecentNexusIds()) {
+    if (id === excludeId || !byId.has(id)) continue;
+    out.push(byId.get(id));
+    if (out.length >= limit) return out;
+  }
+  for (const n of S.nexuses) {
+    if (n.id === excludeId || out.some(v => v.id === n.id)) continue;
+    out.push(n);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+// Workspace switcher — dropdown opened above the vault-head name pinned at the
+// bottom of the left panel. Shows only the 3 most recent vaults (v4.6.0);
+// picking one opens it in a new window rather than switching in-place. The
+// last row leads to the Welcome window, which is now the full vault list.
 function toggleNexusSwitcher(e) {
   e.stopPropagation();
   if (document.querySelector('.nexus-switcher-popup')) { closeAllPopups(); return; }
@@ -10,37 +53,49 @@ function toggleNexusSwitcher(e) {
   const anchor = e.currentTarget;
   const pop = document.createElement('div');
   pop.className = 'kind-popup nexus-switcher-popup';
-  pop.innerHTML = S.nexuses.map(n => `
-    <div class="nexus-switcher-item${n.id === S.nexus.id ? ' active' : ''}" onclick="openNexusWindow(${n.id})">
+  pop.innerHTML = recentNexuses(3).map(n => `
+    <div class="nexus-switcher-item" onclick="openNexusWindow(${n.id})">
       <span class="nexus-vault-dot" style="${n.color_code ? `background:${x(n.color_code)}` : ''}"></span>${x(n.name)}
-    </div>`).join('');
+    </div>`).join('') + `
+    <div class="nexus-switcher-item nexus-switcher-more" onclick="openWelcomeWindow()">${t('wmChangeNexus')}</div>`;
   document.body.appendChild(pop);
   pop.addEventListener('click', ev => ev.stopPropagation());
   positionPopupNear(pop, anchor.getBoundingClientRect());
 }
 
+// Every "let me pick a different vault" entry point funnels here: the switcher
+// row above, the vault-head ⇄ button (views.js) and the picker fallback below.
+function openWelcomeWindow() {
+  closeAllPopups();
+  api.window.openWelcome();
+}
+
 async function openNexusWindow(nexusId) {
   closeAllPopups();
   if (nexusId === S.nexus?.id) return;
+  pushRecentNexus(nexusId);
   await api.window.openNexus(nexusId);
 }
 
+// Fallback screen for an app window with no vault open. Since v4.6.0 that is
+// no longer the normal way in — the Welcome window is — so this is only
+// reached after deleting the vault the window had open, or when index.html is
+// loaded with no ?nexus= at all (the web-driver harness does exactly that).
+// Both "pick a different vault" buttons therefore hand off to the Welcome
+// window instead of duplicating its job here.
 function renderNexusPicker() {
   leaveBuilderGrid();
-  // First-run onboarding: no Nexus exists at all. The init() gate opens the Welcome
-  // modal on top of this screen; if the user picks "create later" they land here, so
-  // the primary button reopens the same Welcome modal for a consistent entry point.
   if (!S.nexuses.length) {
     q('#left-panel-inner').innerHTML = `
       <div class="ph"><h4>${t('nexus')}</h4>
-        <button class="btn btn-p btn-sm" onclick="openWelcomeModal()">+ ${t('nexusNew')}</button>
+        <button class="btn btn-p btn-sm" onclick="openWelcomeWindow()">+ ${t('nexusNew')}</button>
       </div>`;
     q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px">
       <div class="ei"><img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
       <h3>${t('nexusWelcomeTitle')}</h3>
       <p>${t('nexusEmpty')}</p>
       <div style="display:flex;flex-direction:column;gap:8px;align-items:center;margin-top:18px">
-        <button class="btn btn-p" style="min-width:180px" onclick="openWelcomeModal()">+ ${t('nexusNew')}</button>
+        <button class="btn btn-p" style="min-width:180px" onclick="openWelcomeWindow()">+ ${t('nexusNew')}</button>
         <button class="btn btn-s" style="min-width:180px" onclick="importDatabaseFile()">${t('importDb')}</button>
       </div>
     </div>`;
@@ -93,6 +148,7 @@ async function selectNexus(id) {
   S.nexus = S.nexuses.find(n => n.id === id) || null;
   if (!S.nexus) return;
   localStorage.setItem(NEXUS_ACTIVE_KEY, String(id));
+  pushRecentNexus(id);
   clearWorkspaceTabs();
   // Same three-call wave as boot (Plan part2 #2.5): seeding the Nest items
   // here is what stops the first render firing one lazy fetch + one full
@@ -109,37 +165,10 @@ async function selectNexus(id) {
   updateStatusBar({ item: null, words: null, saveState: null });
 }
 
-function closeNexus() {
-  S.nexus = null;
-  localStorage.removeItem(NEXUS_ACTIVE_KEY);
-  clearWorkspaceTabs();
-  renderNexusHome();
-  renderModuleRail();
-  updateStatusBar({ item: null, words: null, saveState: null });
-}
-
-// First-run Welcome modal: a required-choice screen shown while no Nexus exists.
-// Offers create / import / "create later" (the low-emphasis skip). The ✕ is hidden so
-// the choice is explicit; "create later" just closes it and the picker hero stays.
-function openWelcomeModal() {
-  openModal(t('wmTitle'), `
-    <div style="text-align:center">
-      <div class="ei" style="margin:0 auto 6px;width:56px"><img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:56px;width:56px;opacity:.5"></div>
-      <p style="color:var(--t2);margin:0 0 18px">${t('wmText')}</p>
-      <div style="display:flex;flex-direction:column;gap:8px;align-items:center">
-        <button class="btn btn-p" style="min-width:200px" onclick="welcomeCreateNexus()">${t('wmCreateNew')}</button>
-        <button class="btn btn-s" style="min-width:200px" onclick="closeModal();importDatabaseFile()">${t('wmImport')}</button>
-        <button class="btn btn-g btn-sm" style="margin-top:6px;color:var(--t3)" onclick="closeModal()">${t('wmLater')}</button>
-      </div>
-    </div>`);
-  const closeBtn = q('#modal-close'); if(closeBtn) closeBtn.style.display='none';
-}
-
-// "Create new Nexus" from the Welcome modal opens the form with an optional tour.
-// createNexusSubmit reads the checkbox after the vault is created.
-async function welcomeCreateNexus() {
-  openNexusModal(null, { showGuideChoice: true });
-}
+// closeNexus() lived here until v4.6.0: it dropped the window to the in-hub
+// picker, which was how you changed vault. The vault-head ⇄ button and the
+// switcher's last row now open the Welcome window instead and leave this
+// window on its vault, so nothing called it any more.
 
 async function openNexusModal(id = null, { showGuideChoice = false } = {}) {
   await reloadNexuses();
@@ -166,6 +195,15 @@ async function createNexusSubmit() {
     closeModal();
     await reloadNexuses();
     toast(t('nexusCreated'), 'ok');
+    // Created from the Welcome window: this window is about to close, so hand
+    // the new vault to a fresh app window and let the tour start over there
+    // (boot.js picks the flag up) instead of running it in a dying renderer.
+    if (S.isWelcome) {
+      if (S._guideAfterCreate) localStorage.setItem(NEXUS_PENDING_GUIDE_KEY, String(newId));
+      S._guideAfterCreate = false;
+      await welcomeOpenNexus(newId);
+      return;
+    }
     await selectNexus(newId);
     // Users who opted in get the coach-marks tour once the vault home is rendered.
     if (S._guideAfterCreate) {
@@ -193,6 +231,7 @@ async function delNexus(id) {
   if (r?.blocked) { toast(t('nexusDeleteBlocked'), 'error'); return; }
   closeModal();
   if (S.nexus?.id === id) { S.nexus = null; localStorage.removeItem(NEXUS_ACTIVE_KEY); clearWorkspaceTabs(); }
+  dropRecentNexus(id);
   await reloadNexuses();
   toast(t('deleted'), 'ok');
   renderNexusHome();

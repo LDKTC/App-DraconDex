@@ -26,15 +26,32 @@ async function init() {
   // Longest single stall of the boot: that first await is what triggers
   // getDB() → open the SQLite file + run initDB() migrations in main.
   window.__splash?.set(80);
-  // A window opened via the workspace switcher (toggleNexusSwitcher →
-  // openNexusWindow) boots straight into a specific Nexus via ?nexus=<id> —
-  // takes priority over the saved active Nexus, and deliberately isn't
-  // written back to localStorage since that key is shared across windows
-  // (same-origin) and writing it here would silently change what the
-  // *other* window restores to on its next reload.
+  // The Welcome window (main.js createWelcomeWindow, ?welcome=1) shares this
+  // page but not this boot: it has no vault, so everything below — wave 2,
+  // the module rail, the builder grid, nav/search/backup wiring — has nothing
+  // to act on. Bail out here with just the chrome it does use (window buttons
+  // + static labels), which is also what keeps it opening in ~one IPC wave.
+  S.isWelcome = new URLSearchParams(location.search).get('welcome') === '1';
+  if (S.isWelcome) {
+    document.body.classList.add('welcome-mode');
+    bindWindowChrome();
+    translateStaticChrome();
+    renderWelcomeWindow();
+    window.__splash?.finish();
+    return;
+  }
+  // ?nexus=<id> is the ONLY way a window gets a vault (v4.6.0): the Welcome
+  // window opens every app window and always passes one, whether it came from
+  // its own list, the vault-head switcher (openNexusWindow) or a fresh
+  // create. The old fallback to NEXUS_ACTIVE_KEY is deliberately gone — the
+  // app no longer reopens whatever vault happened to be last, so launching it
+  // always lands on the Welcome screen. That key is still written on select,
+  // and it stays out of the bootstrap path here for the same reason it always
+  // did: it's shared across same-origin windows, so writing it from this
+  // window would change what another one sees.
   const bootstrapNexusId = Number(new URLSearchParams(location.search).get('nexus')) || null;
-  const savedNexusId = bootstrapNexusId || Number(localStorage.getItem(NEXUS_ACTIVE_KEY));
-  S.nexus        = S.nexuses.find(n => n.id === savedNexusId) || null;
+  S.nexus        = S.nexuses.find(n => n.id === bootstrapNexusId) || null;
+  if (S.nexus) pushRecentNexus(S.nexus.id);
   // getNestItems rides along in the same wave (Plan part2 #2.5) — without it
   // the first Nest render would fall back to one lazy list fetch (and one
   // full re-render) per content module, which is the boot path that storm
@@ -93,10 +110,16 @@ async function init() {
     const meta = builderTabMeta(popupTabKey);
     if (meta) document.title = meta.name;
   }
-  // First-run gate: with zero Nexus, open the Welcome modal on startup (over the
-  // picker hero). "Create later" only closes it, so — since init() runs every launch
-  // and no flag is persisted — it naturally reshows until a Nexus exists.
-  if (!isPopup && !S.nexuses.length) openWelcomeModal();
+  // Onboarding tour handoff (v4.6.0): the vault was created in the Welcome
+  // window, which closed itself before the tour could run, so it left the new
+  // vault's id behind for whichever window opened it. Clear the flag first —
+  // it must fire exactly once even if the tour script fails to load.
+  if (!isPopup && S.nexus && localStorage.getItem(NEXUS_PENDING_GUIDE_KEY) === String(S.nexus.id)) {
+    localStorage.removeItem(NEXUS_PENDING_GUIDE_KEY);
+    loadModule('src/renderer/guide.js').then(() => {
+      if (typeof startNexusGuide === 'function') startNexusGuide();
+    }).catch(() => {});
+  }
   bindNav();
   bindWikilinkClicks();
   bindGlobalShortcuts();

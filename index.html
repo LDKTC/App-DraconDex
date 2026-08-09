@@ -22,6 +22,10 @@
   <link rel="stylesheet" href="css/kinds.css">
   <link rel="stylesheet" href="css/builder.css">
   <link rel="stylesheet" href="css/workspace.css">
+  <!-- Last on purpose: welcome-mode strips the app chrome down to a bare
+       two-column picker, so its hide rules must win over every layout file
+       above without needing !important. -->
+  <link rel="stylesheet" href="css/welcome.css">
 </head>
 <body>
 <div id="splash">
@@ -336,6 +340,7 @@
   <script src="src/renderer/core/pickers.js"></script>
   <script src="src/renderer/core/views.js"></script>
   <script src="src/renderer/core/nexus.js"></script>
+  <script src="src/renderer/core/welcome.js"></script>
   <script src="src/renderer/core/router.js"></script>
   <script src="src/renderer/core/shortcuts.js"></script>
   <script>__splash.set(35)</script>

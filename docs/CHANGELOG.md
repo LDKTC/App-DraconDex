@@ -19,6 +19,38 @@
 
 ---
 
+## 2026-08-09 — Welcome screen เป็นหน้าต่างของตัวเอง + เปิดทุกครั้งที่เปิดแอพ
+- commit: uncommitted
+- ไฟล์ที่แก้: `main.js` (`createWelcomeWindow`, `window:openWelcome`,
+  `window:openNexusReplace`), `preload.js`, `index.html`,
+  `src/renderer/core/welcome.js` (ใหม่), `css/welcome.css` (ใหม่),
+  `src/renderer/core/nexus.js`, `src/renderer/core/boot.js`,
+  `src/renderer/core/views.js`, `src/renderer/core/state.js`,
+  `src/renderer/guide.js`, `src/renderer/i18n.js` (`wmRecent`/`wmChangeNexus`/
+  `wmOpenNexus` ครบ 18 locale), `css/nav-hub.css`,
+  `test/onboarding-tour.test.mjs`, `.claude/skills/run-dracondex/*`
+- อะไรเปลี่ยน:
+  - Welcome ไม่ใช่ modal ทับ picker อีกแล้ว แต่เป็น **หน้าต่าง Electron แยก**
+    (`index.html?welcome=1`, `body.welcome-mode`) ที่ `app.whenReady` เปิดแทน
+    หน้าต่างแอพ — ซ้ายเป็นรายการ Nexus ทั้งหมด ขวาเป็นการ์ด "ล่าสุด" 3 อัน
+    พร้อมปุ่มสร้าง/นำเข้า
+  - เลิก restore vault ที่ค้างไว้ตอน boot — `?nexus=<id>` เป็นทางเดียวที่
+    หน้าต่างแอพจะได้ vault ทำให้เปิดแอพทุกครั้งเจอ Welcome เสมอ
+  - dropdown บนชื่อ vault โชว์แค่ **3 อันล่าสุด** (จาก MRU ใน localStorage
+    `NEXUS_RECENT_KEY`) แถวสุดท้าย "เปลี่ยน Nexus…" พาไปหน้าต่าง Welcome
+    เหมือนปุ่ม ⇄ — `closeNexus()` ที่เคยพากลับไป picker ในhub ถูกถอดออก
+  - ทัวร์แนะนำหลังสร้าง Nexus ย้ายไปเริ่มที่หน้าต่างใหม่ผ่าน
+    `NEXUS_PENDING_GUIDE_KEY` (หน้าต่าง Welcome ปิดตัวเองก่อนทัวร์จะทันวิ่ง)
+  - driver ได้คำสั่ง `nextwindow` และ web-driver ได้ `--query` เพราะ
+    `app.firstWindow()` ตอนนี้คือหน้าต่าง Welcome ไม่ใช่หน้าต่างแอพ
+- ทำไม: เดิม Welcome เป็น first-run gate โดยผลข้างเคียง (เงื่อนไขเดียวคือ
+  `!S.nexuses.length`) ผู้ใช้ที่มี vault แล้วจึงไม่มีจุดเริ่มต้นสำหรับเลือก/
+  สลับ vault และ picker ในhub ก็ซ้ำซ้อนกับ Welcome; แยกเป็นหน้าต่างเดียวจบ
+  ทำให้มีทางเข้าเดียวและ dropdown ในแอพสั้นลงเหลือแค่ของที่ใช้จริง
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Nexus vault + §UI/UX pass,
+  docs/FILES.md (core/welcome.js, core/nexus.js),
+  .claude/skills/run-dracondex/SKILL.md
+
 ## 2026-08-09 — ปิด Cloud Sync (Supabase) เหลือสำรองข้อมูลผ่าน Google Drive OAuth อย่างเดียว
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/core/state.js` (`CLOUD_SYNC_ENABLED` ใหม่),

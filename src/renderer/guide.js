@@ -1,7 +1,10 @@
 'use strict';
 // ═══ FIRST-RUN COACH-MARKS GUIDE ═════════════════════════════════════════
-// Lazy-loaded (loadModule) and started by createNexusSubmit() for a first-time
-// user right after their first Nexus is created — so the real vault-home UI
+// Lazy-loaded (loadModule) and started for a first-time user right after their
+// first Nexus is created — by createNexusSubmit() when the vault was created
+// from inside an app window, or by init() (boot.js) picking up
+// NEXUS_PENDING_GUIDE_KEY when it was created from the Welcome window, whose
+// renderer closes before the tour could run — so the real vault-home UI
 // (module rail, hub sections, backup buttons, switch control) already exists to
 // point at. A dimmed spotlight highlights each target while a popover explains
 // it; Back/Next/Skip drive the tour, Esc/←/→ on the keyboard. Steps whose target
@@ -13,7 +16,7 @@ const GUIDE_STEPS = [
   { sel: '.acc-head[onclick*="nest"]',       title: 'guideNestTitle',   text: 'guideNestText' },
   { sel: '.acc-head[onclick*="sage"]',       title: 'guideSageTitle',   text: 'guideSageText' },
   { sel: '#btn-import-db',                    title: 'guideBackupTitle', text: 'guideBackupText' },
-  { sel: '.nexus-vault-head button[onclick="closeNexus()"]', title: 'guideSwitchTitle', text: 'guideSwitchText' },
+  { sel: '.nexus-vault-head button[onclick="openWelcomeWindow()"]', title: 'guideSwitchTitle', text: 'guideSwitchText' },
 ];
 
 let _gSteps = [];

@@ -9,8 +9,12 @@ const readSource = (relPath) =>
 
 test('first-run Nexus creation offers an inline guide choice without a nested confirmation', () => {
   const core = readSource('../src/renderer/core/nexus.js');
+  // welcomeCreateNexus moved to the Welcome screen's own file (v4.6.0) when
+  // the welcome modal became its own window; the create FORM it opens, and
+  // the tour checkbox in it, still live with the rest of the vault CRUD.
+  const welcome = readSource('../src/renderer/core/welcome.js');
   const css = readSource('../css/components.css');
-  const welcomeCreateNexus = core.match(/async function welcomeCreateNexus\(\) \{([\s\S]*?)\n\}/)?.[1] || '';
+  const welcomeCreateNexus = welcome.match(/async function welcomeCreateNexus\(\) \{([\s\S]*?)\n\}/)?.[1] || '';
 
   assert.doesNotMatch(welcomeCreateNexus, /uiConfirm\(/);
   assert.match(core, /id="nx-guide"/);

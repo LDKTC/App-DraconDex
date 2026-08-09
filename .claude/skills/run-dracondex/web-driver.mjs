@@ -22,7 +22,15 @@ const argv = process.argv.slice(2);
 const fresh = argv.includes('--fresh');
 const ddIdx = argv.indexOf('--data-dir');
 const dataDir = ddIdx !== -1 ? path.resolve(argv[ddIdx + 1]) : path.join(root, 'tmp-driver-data');
-const commands = argv.filter((a, i) => a !== '--fresh' && a !== '--data-dir' && (ddIdx === -1 || i !== ddIdx + 1));
+// Query string appended to index.html. There is no main process here to open
+// windows, so the modes it would normally pick (welcome=1, nexus=<id>,
+// popup=1, workspace=<style>) have to be requested by hand — e.g.
+// --query welcome=1 to drive the Welcome screen.
+const qIdx = argv.indexOf('--query');
+const query = qIdx !== -1 ? argv[qIdx + 1] : '';
+const flagArgIdxs = new Set([ddIdx, qIdx].filter(i => i !== -1).map(i => i + 1));
+const commands = argv.filter((a, i) =>
+  a !== '--fresh' && a !== '--data-dir' && a !== '--query' && !flagArgIdxs.has(i));
 
 if (fresh) fs.rmSync(dataDir, { recursive: true, force: true });
 fs.mkdirSync(path.join(dataDir, 'shots'), { recursive: true });
@@ -99,7 +107,7 @@ await page.addInitScript(`
   })();
 `);
 
-await page.goto('file://' + path.join(root, 'index.html'));
+await page.goto('file://' + path.join(root, 'index.html') + (query ? `?${query}` : ''));
 await page.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body', { timeout: 15000 });
 console.log('[web-driver] app ready');
 

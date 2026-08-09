@@ -230,7 +230,8 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 | `nav.js` | 311 | `MODULE_SUBNAV`, `updateTopNavButton`, tab strip (project/module/entity) |
 | `pickers.js` | 325 | novel picker, color/symbol picker, `hashtagSelector` |
 | `views.js` | 199 | `loadModule`/`loadGroup`/`LAZY_GROUPS`, `ensureKonva`, `switchView`, `renderNexusHome` |
-| `nexus.js` | 196 | vault switcher/picker/CRUD + welcome modal |
+| `nexus.js` | 199 | vault switcher (3 อันล่าสุด), MRU `loadRecentNexusIds/pushRecentNexus/dropRecentNexus`, picker fallback, CRUD |
+| `welcome.js` | 78 | (v4.6.0) หน้า Welcome ในหน้าต่างของตัวเอง — `renderWelcomeWindow/welcomeOpenNexus/welcomeCreateNexus` |
 | `router.js` | 167 | `selectModule()`, Import-DB hub, `openEntityByKey`, status bar |
 | `shortcuts.js` | 125 | คีย์ลัดรวม, `returnToNexus`, sidebar ของ Director |
 
@@ -656,9 +657,13 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 - **เมนูตั้งค่า**: `renderSettingsMenu/setUiSetting` (ธีม+swatch, ภาษา,
   สไลเดอร์ขนาด), `exportDatabaseFile/importDatabaseFile`
 - **Nexus vault (v2.8)**: `renderNexusHome()` (2 ระดับ — picker/การ์ด 7 โมดูล),
-  `renderNexusPicker/welcomeCreateNexus/openNexusModal/createNexusSubmit/saveNexus/delNexus`
+  `renderNexusPicker/openNexusModal/createNexusSubmit/saveNexus/delNexus`
   (ฟอร์มเริ่มครั้งแรกมี checkbox เลือก coach-mark),
-  `selectNexus/closeNexus/clearWorkspaceTabs`, `reloadSidebar/renderSidebar`
+  `selectNexus/clearWorkspaceTabs`, `reloadSidebar/renderSidebar`
+- **Welcome window (v4.6.0)**: `renderWelcomeWindow/welcomeOpenNexus/`
+  `welcomeCreateNexus` (core/welcome.js) + MRU `loadRecentNexusIds/`
+  `pushRecentNexus/dropRecentNexus/recentNexuses` และ `openWelcomeWindow`
+  (core/nexus.js) — `closeNexus()` ถูกถอดออกแล้ว
 - **Wiki navigation (v2.8)**: `openEntityByKey(key)` (จุดเดียวที่เปิด entity
   จาก key ทุกที่ — wikilink click/backlinks/quick switcher/graph node),
   `bindWikilinkClicks` (event delegation บน `#main-inner`),

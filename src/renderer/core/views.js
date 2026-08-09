@@ -49,20 +49,26 @@ async function importDatabaseFile(){
     if(!await uiConfirm(t('importDbConfirm'), { okText: t('apply'), cancelText: t('cancel'), danger:false })) return;
     const res = await api.db.importMergeFile(picked.filePath);
     if(res?.canceled) return;
-    await reloadSidebar();
-    // Refresh the Nexus list so vaults brought in by the merge are visible. In the
-    // no-Nexus onboarding case S.view is 'nexus', so the switchView below routes to
-    // the Nexus picker (now non-empty) for the user to pick which vault to open.
+    // Refresh the Nexus list so vaults brought in by the merge are visible.
+    // The Welcome window has no sidebar and no view to switch — its whole job
+    // is that vault list, so it just re-renders itself with the new entries.
+    if(!S.isWelcome) await reloadSidebar();
     await reloadNexuses();
     S.colors = await api.color.getAll();
     S.recentColors = await api.color.getRecent();
-    if(S.project?.id) S.project = await api.project.get(S.project.id) || null;
-    switchView(S.view || 'projects');
+    if(S.isWelcome) renderWelcomeWindow();
+    else {
+      if(S.project?.id) S.project = await api.project.get(S.project.id) || null;
+      switchView(S.view || 'projects');
+    }
     toast(t('importDbDone'),'ok');
     // Plan part2 §2: a merged file may carry un-migrated legacy-shaped data
     // (a v1/v2 file, or notes for a nexus that predates v3) — offer the
     // Nexus Nest / Import DB choice instead of silently leaving it in its
-    // legacy tables with no way to act on it.
+    // legacy tables with no way to act on it. That choice acts on an OPEN
+    // vault, which the Welcome window doesn't have; there the user opens the
+    // imported vault first and gets the same prompt on the next import.
+    if (S.isWelcome) return;
     const sm = res.summary || {};
     const hasLegacy = (sm.projects||0) + (sm.world_projects||0) + (sm.game_projects||0)
       + (sm.write_projects||0) + (sm.notes||0) > 0;
@@ -156,6 +162,10 @@ function renderNexusHome() {
   // goes through this one chokepoint, so the workspace-style swap lives
   // here instead of at every call site. Drake (default/unset) falls
   // straight through, unchanged.
+  // Same chokepoint reasoning for the Welcome window (v4.6.0): saveNexus,
+  // delNexus and importDatabaseFile all end in a renderNexusHome(), and in
+  // that window "home" is the Welcome screen, never the hub or the picker.
+  if (S.isWelcome) return renderWelcomeWindow();
   if (S.settings.workspaceStyle === 'wyvern' && typeof renderWyvernHome === 'function') return renderWyvernHome();
   if (S.settings.workspaceStyle === 'dragon' && typeof renderDragonHome === 'function') return renderDragonHome();
   S.view = 'nexus';
@@ -175,7 +185,7 @@ function renderNexusHome() {
     <div class="ph nexus-vault-head">
       <h4 class="nexus-vault-name" onclick="toggleNexusSwitcher(event)" title="${t('nexusSwitch')}"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
       ${CLOUD_SYNC_ENABLED ? `<button class="btn btn-s btn-sm" onclick="openSyncModal()" title="${t('syncTitle')}">☁</button>` : ''}
-      <button class="btn btn-s btn-sm" onclick="closeNexus()" title="${t('nexusSwitch')}">⇄</button>
+      <button class="btn btn-s btn-sm" onclick="openWelcomeWindow()" title="${t('nexusSwitch')}">⇄</button>
     </div>`;
   // The whole main area is the builder pane grid (Phase 19) — the focused
   // pane shows the current page (built from the S.* page mirrors below),

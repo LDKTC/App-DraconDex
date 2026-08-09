@@ -96,6 +96,40 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
   win.loadFile('index.html', params.toString() ? { search: params.toString() } : undefined);
 }
 
+// Welcome window (v4.6.0) — the app's single entry point. Boot no longer
+// restores the last vault (see boot.js), so every launch opens THIS window
+// instead of the app shell, and a Nexus is only ever opened by picking one
+// here (or from the vault-head switcher's "change Nexus" row, which reopens
+// this window). It loads the same index.html with ?welcome=1 rather than a
+// second HTML entry point: the renderer's modal/colorPicker/toast/i18n/theme
+// bootstrap all live there, and a separate page would have to duplicate the
+// lot. boot.js's S.isWelcome branch keeps it from booting the whole app.
+// Only ever one — a second call focuses the existing window.
+const welcomeWindowIds = new Set();
+
+function createWelcomeWindow() {
+  for (const id of welcomeWindowIds) {
+    const open = BrowserWindow.fromId(id);
+    if (open && !open.isDestroyed()) { if (open.isMinimized()) open.restore(); open.focus(); return; }
+  }
+  const win = new BrowserWindow({
+    width: 940, height: 620,
+    minWidth: 820, minHeight: 560,
+    backgroundColor: '#050506',
+    frame: false,
+    autoHideMenuBar: true,
+    icon: path.join(__dirname, 'Image', 'DraconDex_Icon.ico'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  welcomeWindowIds.add(win.id);
+  win.on('closed', () => welcomeWindowIds.delete(win.id));
+  win.loadFile('index.html', { search: 'welcome=1' });
+}
+
 // Plugins (v4.0.0 as "Github extensions", renamed v4.2.0): one dedicated
 // BrowserWindow per running plugin, tracked winId -> plugin row id so
 // pluginapi:table:* handlers below can resolve "which plugin is this" from the
@@ -218,7 +252,7 @@ app.whenReady().then(() => {
   // On-disk half of the v4.2.0 extensions -> plugins rename (the DB half is
   // migratePluginV42 in src/db/schema/migrations.js). Idempotent and silent.
   db.migratePluginDir();
-  createWindow();
+  createWelcomeWindow();
 });
 
 // Imported files are NOT copied into the data dir — import_file.file_path is
@@ -254,7 +288,7 @@ function registerDisplayImageProtocol() {
   });
 }
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWelcomeWindow(); });
 
 const h = (ch, fn) => ipcMain.handle(ch, async (_, ...a) => {
   try {
@@ -1070,6 +1104,20 @@ h('window:close', () => {
 // and data dir as the first window, so the single-instance lock above
 // (which only guards against a second OS process) doesn't apply here.
 h('window:openNexus', (nexusId) => { createWindow(nexusId); });
+// The Welcome window (v4.6.0), reopened on demand: the vault-head switcher's
+// last row and the ⇄ button both route here instead of dropping the current
+// window back to the in-hub Nexus picker.
+h('window:openWelcome', () => { createWelcomeWindow(); });
+// Welcome -> app handoff: open the vault in a fresh window, then close the
+// window that asked (the Welcome one). Needs the raw ipcMain event to know
+// WHICH window called — same reason as window:getId below, and the `h()`
+// wrapper discards it. Order matters: the new window exists before the old
+// one closes, so window-all-closed never sees zero windows and quits.
+ipcMain.handle('window:openNexusReplace', (event, nexusId) => {
+  createWindow(nexusId);
+  const caller = BrowserWindow.fromWebContents(event.sender);
+  if (caller && !caller.isDestroyed()) caller.close();
+});
 // Same pattern as window:openNexus, but bootstraps a specific Builder tab
 // into a leaner popup window instead of the full app shell — see core.js's
 // init() `popup=1` branch and style.css's `.popup-mode` rules.

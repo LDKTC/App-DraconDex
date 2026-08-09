@@ -99,14 +99,36 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 ผู้ใช้สร้าง Nexus ได้หลายอัน แต่ละอันรวม project ของทุกโมดูล
 (Director/Navigator/Hero/Writer) + โน้ต Scribe ไว้ด้วยกัน
 
-- **หน้า home เป็น 2 ระดับ** (`renderNexusHome()` ใน core.js):
-  - ยังไม่เปิด vault → vault picker (`renderNexusPicker`) — การ์ดรายชื่อ Nexus
-    พร้อมสีและจำนวน project, ปุ่มสร้าง/แก้ไข/ลบผ่าน modal (`openNexusModal`)
-  - เปิด vault แล้ว → การ์ด 7 โมดูล (รวม Scribe) ใต้ header ชื่อ vault
-    พร้อมปุ่มสลับ vault (`closeNexus`)
-- **เริ่มครั้งแรก**: เลือกสร้าง Nexus จาก welcome แล้วเปิดฟอร์มทันที พร้อม
+- **Welcome window เป็นทางเข้าเดียว (v4.6.0)** — เดิมเป็น modal 480px ที่เด้ง
+  ทับ picker เฉพาะตอนยังไม่มี Nexus เลย ตอนนี้เป็น **หน้าต่าง Electron แยก**
+  (`createWelcomeWindow` ใน main.js → `index.html?welcome=1`,
+  `body.welcome-mode`) ที่เปิด **ทุกครั้งที่เปิดแอพ**:
+  - `init()` ไม่ restore vault ที่ค้างไว้อีกแล้ว — `?nexus=<id>` เป็นทางเดียว
+    ที่หน้าต่างแอพจะได้ vault; เปิดแอพเมื่อไหร่ก็เจอ Welcome เสมอ
+  - ซ้าย = รายการ Nexus ทั้งหมด (เรียงล่าสุดก่อน) ขวา = โลโก้ + การ์ด
+    "ล่าสุด" สูงสุด 3 อัน + ปุ่มสร้าง/นำเข้า (`renderWelcomeWindow`,
+    core/welcome.js)
+  - เลือก vault → `window:openNexusReplace` เปิดหน้าต่างแอพใหม่แล้วปิด
+    หน้าต่าง Welcome (สร้างก่อนปิด ไม่งั้น `window-all-closed` จะสั่ง quit)
+  - `renderNexusHome()` มี guard `S.isWelcome` ที่หัวฟังก์ชัน — `saveNexus`/
+    `delNexus`/`importDatabaseFile` ในหน้าต่างนี้จึง re-render Welcome ไม่ใช่ hub
+- **สลับ vault จากในแอพ**: คลิกชื่อ vault ที่ `#left-panel-foot` เปิด dropdown
+  ที่โชว์ **แค่ 3 อันล่าสุด** (`recentNexuses(3)` — เปิดหน้าต่างใหม่เหมือนเดิม)
+  แถวสุดท้ายคือ "เปลี่ยน Nexus…" ที่พาไปหน้าต่าง Welcome; ปุ่ม ⇄ ข้าง ๆ ก็เปิด
+  Welcome เช่นกัน (เดิมเรียก `closeNexus()` ซึ่งถูกถอดออกแล้ว)
+- **MRU ของ vault**: ไม่มีคอลัมน์ recency ใน DB (`update_at` ขยับเฉพาะตอนแก้
+  ชื่อ/สี) จึงเก็บที่ `NEXUS_RECENT_KEY` ใน localStorage (แชร์ข้ามหน้าต่าง
+  same-origin) — เขียนตอน `selectNexus`, ตอน boot ด้วย `?nexus=`, และก่อนส่งต่อ
+  หน้าต่าง; `delNexus` ตัด id ที่ลบทิ้งออก; รายการที่ MRU ยังไม่ครบเติมต่อด้วย
+  ลำดับตัวอักษรจาก `getNexuses()`
+- **`renderNexusPicker()` เหลือเป็น fallback**: หน้าต่างที่เปิดโดยไม่มี
+  `?nexus=` (เช่น web-driver) หรือหลังลบ vault ที่เปิดอยู่ ปุ่มในหน้านี้ชี้ไป
+  Welcome window
+- **เริ่มครั้งแรก**: เลือกสร้าง Nexus จาก Welcome แล้วเปิดฟอร์มทันที พร้อม
   checkbox "แสดงทัวร์แนะนำหลังสร้าง Nexus นี้" ที่เลือกไว้ล่วงหน้า; ปิด checkbox
-  ได้เพื่อข้าม coach-mark โดยไม่ต้องตอบคำถามแยกใน modal ซ้อน
+  ได้เพื่อข้าม coach-mark โดยไม่ต้องตอบคำถามแยกใน modal ซ้อน — ทัวร์ไปเริ่มที่
+  **หน้าต่างใหม่** ผ่าน `NEXUS_PENDING_GUIDE_KEY` เพราะ renderer ที่สร้าง vault
+  กำลังจะปิดตัวเอง
 - **ข้อมูลถูก scope ตาม vault**: `project`, `world_project`, `game_project`,
   `write_project` มีคอลัมน์ `nexus_ref`; ฟังก์ชัน list/create และ `searchAll`
   รับพารามิเตอร์ `nexusId` — เปิดคนละ vault เห็นคนละชุดข้อมูล
@@ -875,8 +897,9 @@ style)
   `'success'→'ok'` ให้แล้วในตัวฟังก์ชัน (เดิมข้อความ error เป็นสีเทากลาง ๆ
   แยกจาก success ไม่ออก)
 - ~~modal หลักไม่มี Escape~~ → `bindModalEscape()` ปิดได้แล้ว โดยกันไว้ไม่ให้
-  ปิดทับ `#confirm-overlay`/`#qs-overlay`/`#guide-overlay` และไม่ปิด welcome modal
-  (ที่ซ่อนปุ่ม ✕ ไว้เพราะบังคับให้เลือก)
+  ปิดทับ `#confirm-overlay`/`#qs-overlay`/`#guide-overlay` และไม่ปิด modal ที่
+  ซ่อนปุ่ม ✕ ไว้เพราะบังคับให้เลือก (เดิมคือ welcome modal ซึ่ง v4.6.0 ย้ายไป
+  เป็นหน้าต่างของตัวเองแล้ว — guard ยังอยู่เผื่อ modal อื่นใช้รูปแบบเดียวกัน)
 - ~~`uiConfirm` ไม่ `stopPropagation()`~~ → เดิมกด Escape ครั้งเดียวปิด **ทั้ง**
   confirm และ modal ที่อยู่ข้างล่าง เพราะ `finish()` ลบ overlay ทันที
   ทำให้ guard ของ `bindModalEscape` มองไม่เห็นแล้ว (guide.js/quickswitch.js

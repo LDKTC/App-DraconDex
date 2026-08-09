@@ -74,6 +74,7 @@ Commands (each one argv entry, quoted):
 | `fill <sel> :: <text>` | set input value (note the ` :: ` separator) |
 | `upload <sel> :: <filepath>` | real file-input upload via `setInputFiles` (fires a genuine `change` event, exercises `FileReader` handlers end-to-end) |
 | `type <text>` / `press <key>` | keyboard input |
+| `nextwindow` | follow a window handoff — point later commands at the newly opened window (see "The app opens on the Welcome window" below) |
 | `waitfor <selector>` / `wait <ms>` | wait for element / sleep |
 | `text <sel>` / `count <sel>` | print innerText / match count |
 | `eval <js>` | run in renderer, print JSON (promises awaited) |
@@ -122,6 +123,30 @@ robust click targets. Modal input ids are short (`#pn` project name, `#fn`
 folder name, `#cn` category, `#on` object — see `src/renderer/modals.js`).
 All UI handler functions are globals, so `eval openProjectModal()` also works.
 
+## The app opens on the Welcome window
+
+Since v4.6.0 `main.js` opens a **Welcome window** (`index.html?welcome=1`,
+`body.welcome-mode`) on launch, not the app shell — and boot no longer reopens
+the last vault. So the driver's first window is the Welcome screen: a vault
+list in the left panel and a hero with recent vaults on the right. Picking one
+opens a *second* window (`?nexus=<id>`) and closes the Welcome one, so anything
+past that point needs `nextwindow`:
+
+```bash
+node .claude/skills/run-dracondex/driver.mjs --fresh \
+  "click .welcome-actions .btn-p" "wait 400" \
+  "fill #nx-name :: Test Vault" "click .mfoot .btn-p" "wait 1500" \
+  "nextwindow" "ss 01-vault-open"
+```
+
+`nextwindow` also follows the windows opened by the vault-head switcher
+(3 most recent vaults) and its "เปลี่ยน Nexus…" row / the ⇄ button, which both
+reopen the Welcome window.
+
+`web-driver.mjs` has no main process to open windows, so it loads `index.html`
+bare — the no-vault picker fallback. Use `--query welcome=1` (or
+`--query nexus=<id>`) there to reach the mode you want.
+
 ## Gotchas
 
 - **Default locale is Thai.** Don't use English `text=` selectors for buttons;
@@ -138,9 +163,10 @@ All UI handler functions are globals, so `eval openProjectModal()` also works.
   simultaneous driver runs on the *same* scratch dir make the second instance
   quit silently — the driver then times out at `firstWindow`/`.module-item`
   wait (~15 s). Run driver invocations sequentially.
-- **App-ready signal**: driver waits for `.module-item` (nexus tiles), which
-  only exist after the renderer boots. If you change the boot view, update
-  that wait in `driver.mjs`.
+- **App-ready signal**: driver waits for `.module-item` / `#left-panel-inner
+  .ph` / `#hub-body`, which only exist after the renderer boots — on the
+  Welcome window that's the vault list header. If you change the boot view,
+  update that wait in `driver.mjs` (it is used by `nextwindow` too).
 - After `createProject()` the project opens as a title-bar tab and a toast
   (`สร้างโปรเจกต์แล้ว`) appears bottom-right; sidebar `.li` items belong to the
   *previous* Director view, so assert via `eval window.api.project.getAll(null)`
