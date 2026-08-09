@@ -46,6 +46,14 @@ for (let i = 0; i < argv.length; i++) {
 }
 const shotsDir = path.join(dataDir, 'shots');
 
+// "The renderer has painted something real." The first three cover Drake (the
+// default chrome) and the Welcome window's own left panel; .wyvern-breadcrumb
+// covers Wyvern and Dragon, which hide #left-panel entirely (css/workspace.css)
+// — without it, driving a vault whose workspaceStyle isn't drake times out here.
+// .welcome-wizard is the first-run setup wizard, which also runs with no left
+// panel at all.
+const READY_SELECTOR = '.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body, .wyvern-breadcrumb, .welcome-wizard';
+
 if (fresh && existsSync(dataDir)) rmSync(dataDir, { recursive: true, force: true });
 mkdirSync(shotsDir, { recursive: true });
 
@@ -59,12 +67,16 @@ const app = await electron.launch({
   cwd: root,
   env,
 });
-const win = await app.firstWindow();
+// firstWindow() is the WELCOME window (v4.6.0): main.js opens that, not the
+// app shell, and picking a vault there opens a second window and closes this
+// one. So `win` is reassignable and the `nextwindow` command below follows the
+// handoff — anything past "pick a vault" needs it.
+let win = await app.firstWindow();
 await win.waitForLoadState('domcontentloaded');
 // Renderer builds the UI at DOMContentLoaded; the vault picker (nexus items or
 // its empty state), module tiles, or a populated Hub (#hub-body — the Nest
 // tree may have real rows, not just the .empty state) are the ready signal.
-await win.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body', { timeout: 15000 });
+await win.waitForSelector(READY_SELECTOR, { timeout: 15000 });
 console.log('[driver] app ready');
 
 let failed = false;
@@ -151,6 +163,19 @@ for (const raw of commands) {
         await win.keyboard.press(rest);
         console.log(`[press] ${rest}`);
         break;
+      case 'nextwindow': {
+        // Point every later command at the app window that just opened (from
+        // the Welcome screen, the vault-head switcher, or a popped-out tab).
+        // Takes an already-open other window if there is one, otherwise waits
+        // for the next 'window' event.
+        const prev = win;
+        const other = app.windows().find(w => w !== prev && !w.isClosed());
+        win = other || await app.waitForEvent('window', { timeout: 15000 });
+        await win.waitForLoadState('domcontentloaded');
+        await win.waitForSelector(READY_SELECTOR, { timeout: 15000 });
+        console.log(`[nextwindow] now driving ${await win.title()}`);
+        break;
+      }
       case 'waitfor':
         await win.waitForSelector(rest, { timeout: 10000 });
         console.log(`[waitfor] ${rest} visible`);

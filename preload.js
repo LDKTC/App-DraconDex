@@ -585,6 +585,8 @@ contextBridge.exposeInMainWorld('api', {
     toggleMaximize: () => inv('window:toggleMaximize'),
     close:          () => inv('window:close'),
     openNexus:      (nexusId) => inv('window:openNexus', nexusId),
+    openWelcome:    () => inv('window:openWelcome'),
+    openNexusReplace: (nexusId) => inv('window:openNexusReplace', nexusId),
     openBuilderTab: (nexusId, tabKey) => inv('window:openBuilderTab', nexusId, tabKey),
     getId:          () => inv('window:getId'),
     moveTabToMain:  (nexusId, tabKey) => inv('window:moveTabToMain', nexusId, tabKey),

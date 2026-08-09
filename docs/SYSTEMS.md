@@ -99,14 +99,73 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 ผู้ใช้สร้าง Nexus ได้หลายอัน แต่ละอันรวม project ของทุกโมดูล
 (Director/Navigator/Hero/Writer) + โน้ต Scribe ไว้ด้วยกัน
 
-- **หน้า home เป็น 2 ระดับ** (`renderNexusHome()` ใน core.js):
-  - ยังไม่เปิด vault → vault picker (`renderNexusPicker`) — การ์ดรายชื่อ Nexus
-    พร้อมสีและจำนวน project, ปุ่มสร้าง/แก้ไข/ลบผ่าน modal (`openNexusModal`)
-  - เปิด vault แล้ว → การ์ด 7 โมดูล (รวม Scribe) ใต้ header ชื่อ vault
-    พร้อมปุ่มสลับ vault (`closeNexus`)
-- **เริ่มครั้งแรก**: เลือกสร้าง Nexus จาก welcome แล้วเปิดฟอร์มทันที พร้อม
+- **Welcome window เป็นทางเข้าเดียว (v4.6.0)** — เดิมเป็น modal 480px ที่เด้ง
+  ทับ picker เฉพาะตอนยังไม่มี Nexus เลย ตอนนี้เป็น **หน้าต่าง Electron แยก**
+  (`createWelcomeWindow` ใน main.js → `index.html?welcome=1`,
+  `body.welcome-mode`) ที่เปิด **ทุกครั้งที่เปิดแอพ**:
+  - `init()` ไม่ restore vault ที่ค้างไว้อีกแล้ว — `?nexus=<id>` เป็นทางเดียว
+    ที่หน้าต่างแอพจะได้ vault; เปิดแอพเมื่อไหร่ก็เจอ Welcome เสมอ
+  - ซ้าย = รายการ Nexus ทั้งหมด (เรียงล่าสุดก่อน) ขวา = โลโก้ + การ์ด
+    "ล่าสุด" สูงสุด 3 อัน + ปุ่มสร้าง/นำเข้า (`renderWelcomeWindow`,
+    core/welcome.js)
+  - เลือก vault → `window:openNexusReplace` เปิดหน้าต่างแอพใหม่แล้วปิด
+    หน้าต่าง Welcome (สร้างก่อนปิด ไม่งั้น `window-all-closed` จะสั่ง quit)
+  - `renderNexusHome()` มี guard `S.isWelcome` ที่หัวฟังก์ชัน — `saveNexus`/
+    `delNexus`/`importDatabaseFile` ในหน้าต่างนี้จึง re-render Welcome ไม่ใช่ hub
+- **สลับ vault จากในแอพ**: คลิกชื่อ vault ที่ `#left-panel-foot` เปิด dropdown
+  ที่โชว์ **แค่ 3 อันล่าสุด** (`recentNexuses(3)` — เปิดหน้าต่างใหม่เหมือนเดิม)
+  แถวสุดท้ายคือ "เปลี่ยน Nexus…" ที่พาไปหน้าต่าง Welcome; ปุ่ม ⇄ ข้าง ๆ ก็เปิด
+  Welcome เช่นกัน (เดิมเรียก `closeNexus()` ซึ่งถูกถอดออกแล้ว)
+- **MRU ของ vault**: ไม่มีคอลัมน์ recency ใน DB (`update_at` ขยับเฉพาะตอนแก้
+  ชื่อ/สี) จึงเก็บที่ `NEXUS_RECENT_KEY` ใน localStorage (แชร์ข้ามหน้าต่าง
+  same-origin) — เขียนตอน `selectNexus`, ตอน boot ด้วย `?nexus=`, และก่อนส่งต่อ
+  หน้าต่าง; `delNexus` ตัด id ที่ลบทิ้งออก; รายการที่ MRU ยังไม่ครบเติมต่อด้วย
+  ลำดับตัวอักษรจาก `getNexuses()`
+- **`renderNexusPicker()` เหลือเป็น fallback**: หน้าต่างที่เปิดโดยไม่มี
+  `?nexus=` (เช่น web-driver) หรือหลังลบ vault ที่เปิดอยู่ ปุ่มในหน้านี้ชี้ไป
+  Welcome window
+- **Setup wizard ครั้งแรก (v4.7.0)**: ถ้า DB ยังไม่มี vault เลย หน้าต่าง
+  Welcome เปิดที่ wizard แทนรายการ vault (`S.welcomeStep` ตั้งใน boot.js —
+  เงื่อนไขเดียวกับ welcome modal เดิม ยังไม่มี first-run flag ที่ persist)
+  5 step อ่านจากตาราง `WELCOME_STEPS` เดียว: **ภาษา → ธีม → Layout →
+  ชื่อ module → บัญชี (ทางเลือก)**
+  - **ไม่มี left panel** (`body.welcome-wizard-mode` ซ่อน `#left-panel`) —
+    ทุกอย่างเป็นคอลัมน์เดียวจัดกึ่งกลาง ความคืบหน้าเป็นจุดใต้หัวข้อ คลิกย้อน
+    step ได้; `renderWelcomeWindow()` เป็นที่เดียวที่สลับคลาสนี้ ทั้งขาเข้าและ
+    ขาออก ไม่งั้นออกจาก wizard แล้วหน้าเลือก vault จะไม่มี panel
+  - **ปุ่มข้ามรายขั้น** (`skippable` ในตาราง): ธีม / Layout / บัญชี ข้ามได้
+    (ไปขั้นถัดไป ใช้ค่า default ที่ `loadUiSettings()` ให้มาอยู่แล้ว) ส่วนภาษา
+    กับชื่อ module ไม่มีปุ่มนี้ เพราะสองอันนั้นตัดสินว่าทุก label ในแอพอ่านว่า
+    อะไร
+  - ทุก step มีบรรทัดเตือน (`wzIntro`) ว่าแก้ทีหลังได้ที่ Setting
+  - step **ชื่อ module** เป็นสองลิสต์เทียบกัน ครบทั้ง 15 kind สูง 5 แถว
+    เลื่อนฝั่งไหนอีกฝั่งเลื่อนตาม (`welcomeSyncNameScroll` — เทียบ `scrollTop`
+    ก่อนเขียน รอบที่ event ย้อนกลับมาจะเห็นค่าเท่ากันแล้วจบเอง ไม่ต้องมี flag)
+    ทั้งสองคอลัมน์ไล่จาก `Object.keys(KIND_CLASSIC_KEY)` ชุดเดียว แถวจึงหลุด
+    ตรงกันไม่ได้
+  - step **ธีม** ใช้การ์ด mockup ตัวเดียวกับ Setting window ในกล่องสูง 3 แถว
+    (ย่อ `.ctm-preview.mini` เหลือ 56px เฉพาะใน wizard ให้พอดีหน้าต่างเล็ก)
+  - step **Layout** ติดป้าย `wzRecommended` ที่ Wyvern
+  - ทุก step เขียนค่าเดียวกับที่ Setting window เขียน (`setUiSetting()` /
+    `saveUiSettings()`) จึงไม่มี state ซ้อน — เปลี่ยนทีหลังที่ Setting ได้
+  - step Layout **ไม่** เรียก `applyWorkspaceStyleChoice()` (ที่มี `uiConfirm`
+    + `location.reload()`) เพราะหน้าต่าง Welcome ไม่ได้ render chrome ของ
+    drake/wyvern/dragon อยู่แล้ว ค่าไปมีผลตอนหน้าต่างแอพเปิด
+  - หน้าต่าง Welcome ปัก `body.dataset.workspace='drake'` ทับค่าที่
+    `applyWorkspaceStyle()` เพิ่งตั้ง เพราะกฎ wyvern/dragon ใน
+    `css/workspace.css` ซ่อน `#left-panel` ซึ่งในหน้าต่างนี้คือรายการ vault
+    (`S.settings.workspaceStyle` ไม่ถูกแตะ)
+  - หน้าต่างนี้เปิดที่ **760×560** (~ครึ่งหนึ่งของหน้าต่างแอพ 1280×800) —
+    ทุกลิสต์ใน wizard จึงถูกจำกัดความสูงเป็นจำนวนแถว ไม่ใช่ px ลอย ๆ
+  - step บัญชีใช้ Google Drive OAuth ตัวเดียวกับหน้า Account
+    (`api.drive.connect()/status()`) render โครงก่อนแล้วเติมผลทีหลังแบบ
+    `settingRefreshAccountSection()`; build ที่ยังไม่ได้ใส่ client id/secret
+    (`!st.configured`) แสดง hint แทนปุ่มที่กดแล้วพัง
+- **เริ่มครั้งแรก**: เลือกสร้าง Nexus จาก Welcome แล้วเปิดฟอร์มทันที พร้อม
   checkbox "แสดงทัวร์แนะนำหลังสร้าง Nexus นี้" ที่เลือกไว้ล่วงหน้า; ปิด checkbox
-  ได้เพื่อข้าม coach-mark โดยไม่ต้องตอบคำถามแยกใน modal ซ้อน
+  ได้เพื่อข้าม coach-mark โดยไม่ต้องตอบคำถามแยกใน modal ซ้อน — ทัวร์ไปเริ่มที่
+  **หน้าต่างใหม่** ผ่าน `NEXUS_PENDING_GUIDE_KEY` เพราะ renderer ที่สร้าง vault
+  กำลังจะปิดตัวเอง
 - **ข้อมูลถูก scope ตาม vault**: `project`, `world_project`, `game_project`,
   `write_project` มีคอลัมน์ `nexus_ref`; ฟังก์ชัน list/create และ `searchAll`
   รับพารามิเตอร์ `nexusId` — เปิดคนละ vault เห็นคนละชุดข้อมูล
@@ -875,8 +934,9 @@ style)
   `'success'→'ok'` ให้แล้วในตัวฟังก์ชัน (เดิมข้อความ error เป็นสีเทากลาง ๆ
   แยกจาก success ไม่ออก)
 - ~~modal หลักไม่มี Escape~~ → `bindModalEscape()` ปิดได้แล้ว โดยกันไว้ไม่ให้
-  ปิดทับ `#confirm-overlay`/`#qs-overlay`/`#guide-overlay` และไม่ปิด welcome modal
-  (ที่ซ่อนปุ่ม ✕ ไว้เพราะบังคับให้เลือก)
+  ปิดทับ `#confirm-overlay`/`#qs-overlay`/`#guide-overlay` และไม่ปิด modal ที่
+  ซ่อนปุ่ม ✕ ไว้เพราะบังคับให้เลือก (เดิมคือ welcome modal ซึ่ง v4.6.0 ย้ายไป
+  เป็นหน้าต่างของตัวเองแล้ว — guard ยังอยู่เผื่อ modal อื่นใช้รูปแบบเดียวกัน)
 - ~~`uiConfirm` ไม่ `stopPropagation()`~~ → เดิมกด Escape ครั้งเดียวปิด **ทั้ง**
   confirm และ modal ที่อยู่ข้างล่าง เพราะ `finish()` ลบ overlay ทันที
   ทำให้ guard ของ `bindModalEscape` มองไม่เห็นแล้ว (guide.js/quickswitch.js

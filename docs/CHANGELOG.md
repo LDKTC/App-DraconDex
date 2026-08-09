@@ -19,6 +19,100 @@
 
 ---
 
+## 2026-08-09 — Newcomer customize: ตัด left panel, ย่อหน้าต่าง, ลิสต์ชื่อ module เทียบซ้าย-ขวา
+- commit: uncommitted
+- ไฟล์ที่แก้: `main.js` (ขนาดหน้าต่าง Welcome), `src/renderer/core/welcome.js`,
+  `css/welcome.css`, `src/renderer/i18n.js` (`wzRecommended` ครบ 18 locale),
+  `.claude/skills/run-dracondex/driver.mjs`
+- อะไรเปลี่ยน:
+  - หน้าต่าง Welcome/wizard ย่อจาก `940×620` เหลือ **`760×560`** (~ครึ่งหนึ่ง
+    ของหน้าต่างแอพ `1280×800`), min เหลือ `640×480`; left panel ของหน้าเลือก
+    vault แคบลงเป็น 220px ให้ได้สัดส่วน
+  - wizard **ไม่มี left panel** อีกแล้ว (`body.welcome-wizard-mode`) —
+    เป็นคอลัมน์เดียวจัดกึ่งกลาง ความคืบหน้าเป็นจุดใต้หัวข้อ คลิกย้อน step ได้
+  - **ปุ่มข้ามรายขั้น**: ธีม / Layout / บัญชี ข้ามได้ (ใช้ค่า default ต่อ)
+    ภาษากับชื่อ module ไม่มี เพราะตัดสินว่าทุก label ในแอพอ่านว่าอะไร
+  - step **ชื่อ module** เปลี่ยนจากชิป 4 ตัว เป็น **สองลิสต์เทียบกัน ครบ 15
+    kind สูง 5 แถว เลื่อนพร้อมกันสองฝั่ง** (`welcomeSyncNameScroll` เทียบ
+    `scrollTop` ก่อนเขียน — รอบที่ event ย้อนกลับมาเห็นค่าเท่ากันแล้วจบเอง
+    ไม่ต้องมี flag ที่ต้องรอ reset ข้าม frame) สองคอลัมน์ไล่จาก
+    `Object.keys(KIND_CLASSIC_KEY)` ชุดเดียว แถวจึงหลุดตรงกันไม่ได้
+  - step **ธีม** ครอบด้วยกล่องสูง 3 แถว (ย่อ `.ctm-preview.mini` เหลือ 56px
+    เฉพาะใน wizard — ที่ 80px เดิม 3 แถวไม่พอดีหน้าต่างใหม่) ยังเลื่อนเห็นครบ 32
+  - step **Layout** ติดป้าย "แนะนำ" ที่ Wyvern
+  - ทุก step มีบรรทัดเตือนว่าแก้ทีหลังได้ที่ Setting (`.welcome-wizard-note`)
+  - driver: `READY_SELECTOR` เพิ่ม `.welcome-wizard` — wizard ไม่เขียนอะไรลง
+    `#left-panel-inner` แล้ว ตัวรอเดิมจึง timeout
+- ทำไม: wizard รอบแรกยืมโครงสองคอลัมน์ของหน้า Welcome มาใช้ ทำให้ step list
+  กินพื้นที่และดึงสายตาออกจากตัวเลือกจริง, หน้าต่างใหญ่เกินความจำเป็น, step ธีม
+  ยาว 32 การ์ดต้องเลื่อนเยอะ, step ชื่อ module โชว์แค่ 4 kind เทียบไม่ครบ และ
+  ทุก step บังคับให้กด "ถัดไป" อย่างเดียว ไม่มีทางบอกว่า "ไม่เลือก ใช้ default"
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Setup wizard, docs/FILES.md (core/welcome.js)
+
+## 2026-08-09 — Setup wizard ครั้งแรกในหน้าต่าง Welcome (ภาษา/ธีม/Layout/ชื่อ module/ล็อกอิน)
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/core/welcome.js` (+~180 บรรทัด),
+  `src/renderer/core/boot.js`, `src/renderer/core/state.js`,
+  `src/renderer/core/setting-window.js` (`settingThemeGridCellHtml` รับ option
+  `onclick`/`tools`), `css/welcome.css`, `src/renderer/i18n.js`
+  (`wzTitle`/`wzIntro`/`wzAccountHint` ครบ 18 locale),
+  `.claude/skills/run-dracondex/driver.mjs`
+- อะไรเปลี่ยน:
+  - DB ที่ยังไม่มี vault เลย → หน้าต่าง Welcome เปิดที่ **setup wizard 5 step**
+    (ภาษา → ธีม → Layout → ชื่อ module → บัญชี) แทนรายการ vault เปล่า ๆ
+    แถบซ้ายเป็น progress คลิกย้อน step ได้ + ปุ่มข้ามทั้งชุด
+  - ทุก step ขับ `setUiSetting()`/`saveUiSettings()` ตัวเดียวกับ Setting
+    window จึงไม่มี state ซ้อน และแก้ทีหลังที่ Setting ได้ตามปกติ
+  - นำของเดิมมาใช้ซ้ำเกือบทั้งหมด: `LANGUAGE_LABELS` + `settingLangPreviewHtml`,
+    `getThemePalettes` + `settingThemeGridCellHtml`, `workspaceStylePreviewHtml`,
+    `KIND_LABEL`/`KIND_CLASSIC_KEY`, `api.drive.connect()/status()`
+  - step Layout ไม่เรียก `applyWorkspaceStyleChoice()` (uiConfirm + reload)
+    เพราะหน้าต่าง Welcome ไม่ได้ render chrome ของ workspace style อยู่แล้ว
+  - **บั๊กที่เจอตอนขับแอพจริง**: ตั้ง `body.dataset.workspace` ในหน้าต่าง
+    Welcome ทำให้กฎ wyvern/dragon ใน `css/workspace.css` ซ่อน `#left-panel`
+    ซึ่งคือรายการ vault / ขั้นตอน wizard เอง → หน้าต่างเหลือคอลัมน์เดียว
+    แก้โดยไม่แตะ attribute ตอนเลือก และปัก `drake` ไว้ใน boot branch ของ
+    หน้าต่างนี้ (ค่า setting ที่บันทึกไม่ถูกแตะ หน้าต่างแอพยังเปิดตามที่เลือก)
+  - driver: ready-selector เดิมรอเนื้อใน `#left-panel` ซึ่ง wyvern/dragon ซ่อน
+    ทิ้ง ทำให้ `nextwindow` timeout เมื่อ vault ใช้ layout อื่น — เพิ่ม
+    `.wyvern-breadcrumb` เข้าไปใน `READY_SELECTOR`
+- ทำไม: ค่าที่กำหนดรูปลักษณ์ทั้งแอพถูกซ่อนใน Setting window ผู้ใช้ใหม่จึงได้
+  ค่า default (ไทย + midnight + drake + unique) โดยไม่รู้ว่าเปลี่ยนได้ และ
+  Google Drive ซึ่งเป็นทางเดียวที่มี backup ก็อยู่ลึกอีกชั้น
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Nexus vault, docs/FILES.md (core/welcome.js)
+
+## 2026-08-09 — Welcome screen เป็นหน้าต่างของตัวเอง + เปิดทุกครั้งที่เปิดแอพ
+- commit: uncommitted
+- ไฟล์ที่แก้: `main.js` (`createWelcomeWindow`, `window:openWelcome`,
+  `window:openNexusReplace`), `preload.js`, `index.html`,
+  `src/renderer/core/welcome.js` (ใหม่), `css/welcome.css` (ใหม่),
+  `src/renderer/core/nexus.js`, `src/renderer/core/boot.js`,
+  `src/renderer/core/views.js`, `src/renderer/core/state.js`,
+  `src/renderer/guide.js`, `src/renderer/i18n.js` (`wmRecent`/`wmChangeNexus`/
+  `wmOpenNexus` ครบ 18 locale), `css/nav-hub.css`,
+  `test/onboarding-tour.test.mjs`, `.claude/skills/run-dracondex/*`
+- อะไรเปลี่ยน:
+  - Welcome ไม่ใช่ modal ทับ picker อีกแล้ว แต่เป็น **หน้าต่าง Electron แยก**
+    (`index.html?welcome=1`, `body.welcome-mode`) ที่ `app.whenReady` เปิดแทน
+    หน้าต่างแอพ — ซ้ายเป็นรายการ Nexus ทั้งหมด ขวาเป็นการ์ด "ล่าสุด" 3 อัน
+    พร้อมปุ่มสร้าง/นำเข้า
+  - เลิก restore vault ที่ค้างไว้ตอน boot — `?nexus=<id>` เป็นทางเดียวที่
+    หน้าต่างแอพจะได้ vault ทำให้เปิดแอพทุกครั้งเจอ Welcome เสมอ
+  - dropdown บนชื่อ vault โชว์แค่ **3 อันล่าสุด** (จาก MRU ใน localStorage
+    `NEXUS_RECENT_KEY`) แถวสุดท้าย "เปลี่ยน Nexus…" พาไปหน้าต่าง Welcome
+    เหมือนปุ่ม ⇄ — `closeNexus()` ที่เคยพากลับไป picker ในhub ถูกถอดออก
+  - ทัวร์แนะนำหลังสร้าง Nexus ย้ายไปเริ่มที่หน้าต่างใหม่ผ่าน
+    `NEXUS_PENDING_GUIDE_KEY` (หน้าต่าง Welcome ปิดตัวเองก่อนทัวร์จะทันวิ่ง)
+  - driver ได้คำสั่ง `nextwindow` และ web-driver ได้ `--query` เพราะ
+    `app.firstWindow()` ตอนนี้คือหน้าต่าง Welcome ไม่ใช่หน้าต่างแอพ
+- ทำไม: เดิม Welcome เป็น first-run gate โดยผลข้างเคียง (เงื่อนไขเดียวคือ
+  `!S.nexuses.length`) ผู้ใช้ที่มี vault แล้วจึงไม่มีจุดเริ่มต้นสำหรับเลือก/
+  สลับ vault และ picker ในhub ก็ซ้ำซ้อนกับ Welcome; แยกเป็นหน้าต่างเดียวจบ
+  ทำให้มีทางเข้าเดียวและ dropdown ในแอพสั้นลงเหลือแค่ของที่ใช้จริง
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Nexus vault + §UI/UX pass,
+  docs/FILES.md (core/welcome.js, core/nexus.js),
+  .claude/skills/run-dracondex/SKILL.md
+
 ## 2026-08-09 — ปิด Cloud Sync (Supabase) เหลือสำรองข้อมูลผ่าน Google Drive OAuth อย่างเดียว
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/core/state.js` (`CLOUD_SYNC_ENABLED` ใหม่),

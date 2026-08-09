@@ -106,6 +106,10 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../Image/DraconDex_WhiteO
 .nexus-switcher-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rs);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nexus-switcher-item:hover{background:var(--hover)}
 .nexus-switcher-item.active{color:var(--accent)}
+/* Last row of the dropdown (v4.6.0): the list stops at 3 recent vaults, and
+   this is the way to the full list — the Welcome window. */
+.nexus-switcher-more{border-top:1px solid var(--border);margin-top:6px;padding-top:9px;color:var(--t2)}
+.nexus-switcher-more:hover{color:var(--t1)}
 .nexus-item .btn-icon{opacity:0;border:none;background:none;color:var(--t3);cursor:pointer;padding:2px;border-radius:var(--rs);display:flex;align-items:center}
 .nexus-item:hover .btn-icon{opacity:1}
 .nexus-item .btn-icon:hover{color:var(--t1);background:var(--hover)}

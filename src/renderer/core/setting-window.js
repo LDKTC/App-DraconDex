@@ -73,9 +73,13 @@ function settingWindowBodyHtml(){
 }
 
 // ═══ Workspace → Theme (moved from settings.js's old Preferences panel) ══
-function settingThemeGridCellHtml(key, name, vars, {active, isCustom} = {}){
+// `onclick` and `tools` both default to the Setting window's own behavior, so
+// every existing call site is unchanged. The first-run wizard (core/welcome.js)
+// overrides both: it needs its own handler to re-render the wizard after the
+// theme applies, and the duplicate/edit tools have no place in a setup step.
+function settingThemeGridCellHtml(key, name, vars, {active, isCustom, onclick, tools = true} = {}){
   const rawId = isCustom ? key.split(':')[1] : null;
-  return `<div class="prefs-theme-cell${active?' active':''}" onclick="setUiSetting('theme','${key}')">
+  return `<div class="prefs-theme-cell${active?' active':''}" onclick="${onclick || `setUiSetting('theme','${key}')`}">
     <div class="ctm-preview mini" style="background:${x(vars['--bg'])};border-color:${x(vars['--border'])}">
       <div class="ctm-pv-side" style="background:${x(vars['--surface'])}">
         <i class="ctm-pv-acc" style="background:${x(vars['--accent'])}"></i>
@@ -89,11 +93,11 @@ function settingThemeGridCellHtml(key, name, vars, {active, isCustom} = {}){
       </div>
     </div>
     <div class="prefs-theme-name" data-no-i18n>${x(name)}</div>
-    <div class="prefs-theme-tools">
+    ${tools ? `<div class="prefs-theme-tools">
       <span onclick="event.stopPropagation();duplicateTheme('${key}')" title="${t('duplicate')}">⧉</span>
       ${isCustom ? `<span onclick="event.stopPropagation();openCustomThemeModal('${rawId}')" title="${t('edit')}">✎</span>
                     <span onclick="event.stopPropagation();deleteCustomTheme('${rawId}')" title="${t('delete')}">×</span>` : ''}
-    </div>
+    </div>` : ''}
     ${active ? '<span class="prefs-theme-check">✓</span>' : ''}
   </div>`;
 }
