@@ -113,8 +113,11 @@ function createWelcomeWindow() {
     if (open && !open.isDestroyed()) { if (open.isMinimized()) open.restore(); open.focus(); return; }
   }
   const win = new BrowserWindow({
-    width: 940, height: 620,
-    minWidth: 820, minHeight: 560,
+    // Roughly half the app window's 1280x800 (createWindow above): this window
+    // only ever shows a vault list or one setup step, and at the old 940x620 it
+    // read as a second app window rather than a picker.
+    width: 760, height: 560,
+    minWidth: 640, minHeight: 480,
     backgroundColor: '#050506',
     frame: false,
     autoHideMenuBar: true,

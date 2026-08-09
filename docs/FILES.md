@@ -231,7 +231,7 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 | `pickers.js` | 325 | novel picker, color/symbol picker, `hashtagSelector` |
 | `views.js` | 199 | `loadModule`/`loadGroup`/`LAZY_GROUPS`, `ensureKonva`, `switchView`, `renderNexusHome` |
 | `nexus.js` | 199 | vault switcher (3 อันล่าสุด), MRU `loadRecentNexusIds/pushRecentNexus/dropRecentNexus`, picker fallback, CRUD |
-| `welcome.js` | 257 | (v4.6.0) หน้า Welcome ในหน้าต่างของตัวเอง — `renderWelcomeWindow/welcomeOpenNexus/welcomeCreateNexus` + (v4.7.0) setup wizard ครั้งแรก `WELCOME_STEPS/renderWelcomeWizard/welcomeWizardGo/welcomeWizardFinish/welcomeSetUi/welcomeStep*Html/welcomeSetWorkspaceStyle/welcomeRefreshLogin/welcomeLoginClick` |
+| `welcome.js` | 281 | (v4.6.0) หน้า Welcome ในหน้าต่างของตัวเอง — `renderWelcomeWindow/welcomeOpenNexus/welcomeCreateNexus` + (v4.7.0) setup wizard ครั้งแรก `WELCOME_STEPS/renderWelcomeWizard/welcomeWizardGo/welcomeWizardFinish/welcomeSetUi/welcomeStep*Html/welcomeSetWorkspaceStyle/welcomeSyncNameScroll/welcomeRefreshLogin/welcomeLoginClick` |
 | `router.js` | 167 | `selectModule()`, Import-DB hub, `openEntityByKey`, status bar |
 | `shortcuts.js` | 125 | คีย์ลัดรวม, `returnToNexus`, sidebar ของ Director |
 

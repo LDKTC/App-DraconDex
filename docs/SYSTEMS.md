@@ -128,8 +128,24 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
   Welcome เปิดที่ wizard แทนรายการ vault (`S.welcomeStep` ตั้งใน boot.js —
   เงื่อนไขเดียวกับ welcome modal เดิม ยังไม่มี first-run flag ที่ persist)
   5 step อ่านจากตาราง `WELCOME_STEPS` เดียว: **ภาษา → ธีม → Layout →
-  ชื่อ module → บัญชี (ทางเลือก)** แถบซ้ายเป็น progress คลิกย้อน step ได้
-  และมีปุ่มข้ามทั้ง wizard
+  ชื่อ module → บัญชี (ทางเลือก)**
+  - **ไม่มี left panel** (`body.welcome-wizard-mode` ซ่อน `#left-panel`) —
+    ทุกอย่างเป็นคอลัมน์เดียวจัดกึ่งกลาง ความคืบหน้าเป็นจุดใต้หัวข้อ คลิกย้อน
+    step ได้; `renderWelcomeWindow()` เป็นที่เดียวที่สลับคลาสนี้ ทั้งขาเข้าและ
+    ขาออก ไม่งั้นออกจาก wizard แล้วหน้าเลือก vault จะไม่มี panel
+  - **ปุ่มข้ามรายขั้น** (`skippable` ในตาราง): ธีม / Layout / บัญชี ข้ามได้
+    (ไปขั้นถัดไป ใช้ค่า default ที่ `loadUiSettings()` ให้มาอยู่แล้ว) ส่วนภาษา
+    กับชื่อ module ไม่มีปุ่มนี้ เพราะสองอันนั้นตัดสินว่าทุก label ในแอพอ่านว่า
+    อะไร
+  - ทุก step มีบรรทัดเตือน (`wzIntro`) ว่าแก้ทีหลังได้ที่ Setting
+  - step **ชื่อ module** เป็นสองลิสต์เทียบกัน ครบทั้ง 15 kind สูง 5 แถว
+    เลื่อนฝั่งไหนอีกฝั่งเลื่อนตาม (`welcomeSyncNameScroll` — เทียบ `scrollTop`
+    ก่อนเขียน รอบที่ event ย้อนกลับมาจะเห็นค่าเท่ากันแล้วจบเอง ไม่ต้องมี flag)
+    ทั้งสองคอลัมน์ไล่จาก `Object.keys(KIND_CLASSIC_KEY)` ชุดเดียว แถวจึงหลุด
+    ตรงกันไม่ได้
+  - step **ธีม** ใช้การ์ด mockup ตัวเดียวกับ Setting window ในกล่องสูง 3 แถว
+    (ย่อ `.ctm-preview.mini` เหลือ 56px เฉพาะใน wizard ให้พอดีหน้าต่างเล็ก)
+  - step **Layout** ติดป้าย `wzRecommended` ที่ Wyvern
   - ทุก step เขียนค่าเดียวกับที่ Setting window เขียน (`setUiSetting()` /
     `saveUiSettings()`) จึงไม่มี state ซ้อน — เปลี่ยนทีหลังที่ Setting ได้
   - step Layout **ไม่** เรียก `applyWorkspaceStyleChoice()` (ที่มี `uiConfirm`
@@ -137,8 +153,10 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
     drake/wyvern/dragon อยู่แล้ว ค่าไปมีผลตอนหน้าต่างแอพเปิด
   - หน้าต่าง Welcome ปัก `body.dataset.workspace='drake'` ทับค่าที่
     `applyWorkspaceStyle()` เพิ่งตั้ง เพราะกฎ wyvern/dragon ใน
-    `css/workspace.css` ซ่อน `#left-panel` ซึ่งในหน้าต่างนี้คือรายการ vault /
-    ขั้นตอน wizard (`S.settings.workspaceStyle` ไม่ถูกแตะ)
+    `css/workspace.css` ซ่อน `#left-panel` ซึ่งในหน้าต่างนี้คือรายการ vault
+    (`S.settings.workspaceStyle` ไม่ถูกแตะ)
+  - หน้าต่างนี้เปิดที่ **760×560** (~ครึ่งหนึ่งของหน้าต่างแอพ 1280×800) —
+    ทุกลิสต์ใน wizard จึงถูกจำกัดความสูงเป็นจำนวนแถว ไม่ใช่ px ลอย ๆ
   - step บัญชีใช้ Google Drive OAuth ตัวเดียวกับหน้า Account
     (`api.drive.connect()/status()`) render โครงก่อนแล้วเติมผลทีหลังแบบ
     `settingRefreshAccountSection()`; build ที่ยังไม่ได้ใส่ client id/secret

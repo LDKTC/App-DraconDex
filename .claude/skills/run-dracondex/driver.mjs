@@ -50,7 +50,9 @@ const shotsDir = path.join(dataDir, 'shots');
 // default chrome) and the Welcome window's own left panel; .wyvern-breadcrumb
 // covers Wyvern and Dragon, which hide #left-panel entirely (css/workspace.css)
 // — without it, driving a vault whose workspaceStyle isn't drake times out here.
-const READY_SELECTOR = '.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body, .wyvern-breadcrumb';
+// .welcome-wizard is the first-run setup wizard, which also runs with no left
+// panel at all.
+const READY_SELECTOR = '.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body, .wyvern-breadcrumb, .welcome-wizard';
 
 if (fresh && existsSync(dataDir)) rmSync(dataDir, { recursive: true, force: true });
 mkdirSync(shotsDir, { recursive: true });

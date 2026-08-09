@@ -19,6 +19,36 @@
 
 ---
 
+## 2026-08-09 — Newcomer customize: ตัด left panel, ย่อหน้าต่าง, ลิสต์ชื่อ module เทียบซ้าย-ขวา
+- commit: uncommitted
+- ไฟล์ที่แก้: `main.js` (ขนาดหน้าต่าง Welcome), `src/renderer/core/welcome.js`,
+  `css/welcome.css`, `src/renderer/i18n.js` (`wzRecommended` ครบ 18 locale),
+  `.claude/skills/run-dracondex/driver.mjs`
+- อะไรเปลี่ยน:
+  - หน้าต่าง Welcome/wizard ย่อจาก `940×620` เหลือ **`760×560`** (~ครึ่งหนึ่ง
+    ของหน้าต่างแอพ `1280×800`), min เหลือ `640×480`; left panel ของหน้าเลือก
+    vault แคบลงเป็น 220px ให้ได้สัดส่วน
+  - wizard **ไม่มี left panel** อีกแล้ว (`body.welcome-wizard-mode`) —
+    เป็นคอลัมน์เดียวจัดกึ่งกลาง ความคืบหน้าเป็นจุดใต้หัวข้อ คลิกย้อน step ได้
+  - **ปุ่มข้ามรายขั้น**: ธีม / Layout / บัญชี ข้ามได้ (ใช้ค่า default ต่อ)
+    ภาษากับชื่อ module ไม่มี เพราะตัดสินว่าทุก label ในแอพอ่านว่าอะไร
+  - step **ชื่อ module** เปลี่ยนจากชิป 4 ตัว เป็น **สองลิสต์เทียบกัน ครบ 15
+    kind สูง 5 แถว เลื่อนพร้อมกันสองฝั่ง** (`welcomeSyncNameScroll` เทียบ
+    `scrollTop` ก่อนเขียน — รอบที่ event ย้อนกลับมาเห็นค่าเท่ากันแล้วจบเอง
+    ไม่ต้องมี flag ที่ต้องรอ reset ข้าม frame) สองคอลัมน์ไล่จาก
+    `Object.keys(KIND_CLASSIC_KEY)` ชุดเดียว แถวจึงหลุดตรงกันไม่ได้
+  - step **ธีม** ครอบด้วยกล่องสูง 3 แถว (ย่อ `.ctm-preview.mini` เหลือ 56px
+    เฉพาะใน wizard — ที่ 80px เดิม 3 แถวไม่พอดีหน้าต่างใหม่) ยังเลื่อนเห็นครบ 32
+  - step **Layout** ติดป้าย "แนะนำ" ที่ Wyvern
+  - ทุก step มีบรรทัดเตือนว่าแก้ทีหลังได้ที่ Setting (`.welcome-wizard-note`)
+  - driver: `READY_SELECTOR` เพิ่ม `.welcome-wizard` — wizard ไม่เขียนอะไรลง
+    `#left-panel-inner` แล้ว ตัวรอเดิมจึง timeout
+- ทำไม: wizard รอบแรกยืมโครงสองคอลัมน์ของหน้า Welcome มาใช้ ทำให้ step list
+  กินพื้นที่และดึงสายตาออกจากตัวเลือกจริง, หน้าต่างใหญ่เกินความจำเป็น, step ธีม
+  ยาว 32 การ์ดต้องเลื่อนเยอะ, step ชื่อ module โชว์แค่ 4 kind เทียบไม่ครบ และ
+  ทุก step บังคับให้กด "ถัดไป" อย่างเดียว ไม่มีทางบอกว่า "ไม่เลือก ใช้ default"
+- Doc ที่อัปเดต: docs/SYSTEMS.md §Setup wizard, docs/FILES.md (core/welcome.js)
+
 ## 2026-08-09 — Setup wizard ครั้งแรกในหน้าต่าง Welcome (ภาษา/ธีม/Layout/ชื่อ module/ล็อกอิน)
 - commit: uncommitted
 - ไฟล์ที่แก้: `src/renderer/core/welcome.js` (+~180 บรรทัด),

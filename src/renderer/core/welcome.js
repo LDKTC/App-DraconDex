@@ -16,6 +16,10 @@
 // at the bottom of this file.
 
 function renderWelcomeWindow() {
+  // One switch for both directions: the wizard runs without a left panel, the
+  // vault list needs it back. Toggling here rather than inside the two render
+  // functions is what stops "finish the wizard" leaving the panel hidden.
+  document.body.classList.toggle('welcome-wizard-mode', S.welcomeStep != null);
   if (S.welcomeStep != null) return renderWelcomeWizard();
   const recent = recentNexuses(3, null);
   const hasVaults = S.nexuses.length > 0;
@@ -85,39 +89,44 @@ async function welcomeCreateNexus() {
 // parallel state: whatever is picked here can be changed there later, and
 // vice versa.
 //
-// Step bodies are pure `() => html` and are read from this one table by both
-// the sidebar and the main pane, so adding a step means adding a row here.
+// Step bodies are pure `() => html` and are read from this one table, so adding
+// a step means adding a row here. `skippable` marks the steps a newcomer can
+// wave past and live with the default: language and module naming are the two
+// that decide what every label in the app reads like, so they always ask.
 const WELCOME_STEPS = [
   { key:'lang',    labelKey:'language',                  body:welcomeStepLangHtml },
-  { key:'theme',   labelKey:'theme',                     body:welcomeStepThemeHtml },
-  { key:'layout',  labelKey:'settingPageWorkspaceStyle', body:welcomeStepLayoutHtml },
+  { key:'theme',   labelKey:'theme',                     body:welcomeStepThemeHtml,   skippable:true },
+  { key:'layout',  labelKey:'settingPageWorkspaceStyle', body:welcomeStepLayoutHtml,  skippable:true },
   { key:'names',   labelKey:'moduleNameMode',            body:welcomeStepNamesHtml },
-  { key:'account', labelKey:'settingPageAccount',        body:welcomeStepAccountHtml },
+  { key:'account', labelKey:'settingPageAccount',        body:welcomeStepAccountHtml, skippable:true },
 ];
 
+// No left panel here (body.welcome-wizard-mode hides it): a five-item step list
+// down the side drew the eye away from the one choice each step is asking for.
+// Progress is a row of dots under the heading instead, and everything is one
+// centered column.
 function renderWelcomeWizard() {
   const idx = Math.max(0, Math.min(WELCOME_STEPS.length - 1, S.welcomeStep));
   const step = WELCOME_STEPS[idx];
   const last = idx === WELCOME_STEPS.length - 1;
-  q('#left-panel-inner').innerHTML = `
-    <div class="ph"><h4>${t('wzTitle')}</h4></div>
-    ${WELCOME_STEPS.map((s, i) => `
-      <div class="welcome-step-item${i === idx ? ' active' : ''}${i < idx ? ' done' : ''}" onclick="welcomeWizardGo(${i})">
-        <span class="welcome-step-num" data-no-i18n>${i < idx ? '✓' : i + 1}</span>
-        <span class="module-name">${t(s.labelKey)}</span>
-      </div>`).join('')}
-    <button class="btn btn-g btn-sm welcome-step-skip" onclick="welcomeWizardFinish()">${t('guideSkip')}</button>`;
+  const next = last ? 'welcomeWizardFinish()' : `welcomeWizardGo(${idx + 1})`;
+  q('#left-panel-inner').innerHTML = '';
   q('#left-panel-foot').innerHTML = '';
   q('#main-inner').innerHTML = `
     <div class="welcome-wizard">
       <div class="welcome-wizard-head">
         <h2 class="welcome-title">${t(step.labelKey)}</h2>
-        <p class="welcome-text">${t('wzIntro')}</p>
+        <div class="welcome-wizard-note">${t('wzIntro')}</div>
+        <div class="welcome-wizard-dots">
+          ${WELCOME_STEPS.map((s, i) => `
+            <span class="welcome-dot${i === idx ? ' active' : ''}${i < idx ? ' done' : ''}" onclick="welcomeWizardGo(${i})" title="${t(s.labelKey)}"></span>`).join('')}
+        </div>
       </div>
       <div class="welcome-wizard-body">${step.body()}</div>
       <div class="welcome-wizard-foot">
         ${idx ? `<button class="btn btn-s" onclick="welcomeWizardGo(${idx - 1})">${t('guideBack')}</button>` : ''}
-        <button class="btn btn-p" onclick="${last ? 'welcomeWizardFinish()' : `welcomeWizardGo(${idx + 1})`}">${last ? t('guideDone') : t('guideNext')}</button>
+        ${step.skippable ? `<button class="btn btn-g" onclick="${next}">${t('guideSkip')}</button>` : ''}
+        <button class="btn btn-p" onclick="${next}">${last ? t('guideDone') : t('guideNext')}</button>
       </div>
     </div>`;
   // Drive status is a real IPC (and, when connected, a network) round-trip, so
@@ -159,6 +168,9 @@ function welcomeStepLangHtml() {
 }
 
 // ── Step 2: theme ──
+// The Setting window's own card mockup, unchanged, in a box three rows tall —
+// all 32 themes are still reachable by scrolling, but the step stays the same
+// height as every other one instead of running several screens long.
 function welcomeStepThemeHtml() {
   const palettes = getThemePalettes();
   const cells = UI_THEME_OPTIONS.map(key => settingThemeGridCellHtml(key, t(key), palettes[key] || {}, {
@@ -166,15 +178,19 @@ function welcomeStepThemeHtml() {
     tools: false,
     onclick: `welcomeSetUi('theme','${key}')`,
   })).join('');
-  return `<div class="prefs-theme-grid">${cells}</div>`;
+  return `<div class="welcome-theme-scroll"><div class="prefs-theme-grid">${cells}</div></div>`;
 }
 
 // ── Step 3: layout (workspace style) ──
+// Wyvern is flagged as the recommendation: it is the simplest of the three and
+// the one a newcomer is least likely to get lost in.
+const WELCOME_RECOMMENDED_STYLE = 'wyvern';
 function welcomeStepLayoutHtml() {
   const cells = WORKSPACE_STYLE_OPTIONS.map(style => {
     const active = S.settings.workspaceStyle === style;
     const label = style.charAt(0).toUpperCase() + style.slice(1);
     return `<div class="prefs-theme-cell${active ? ' active' : ''}" onclick="welcomeSetWorkspaceStyle('${style}')">
+      ${style === WELCOME_RECOMMENDED_STYLE ? `<span class="welcome-reco">${t('wzRecommended')}</span>` : ''}
       ${workspaceStylePreviewHtml(style)}
       <div class="prefs-theme-name" data-no-i18n>${label}</div>
       <div class="settings-hint">${t(WORKSPACE_STYLE_DESC_KEY[style])}</div>
@@ -202,26 +218,35 @@ function welcomeSetWorkspaceStyle(style) {
 }
 
 // ── Step 4: module names (nameMode) ──
-// Four kinds are enough to make the two vocabularies obvious side by side.
-const WELCOME_NAME_PREVIEW_KINDS = ['collector', 'manager', 'classifier', 'chronicler'];
+// Two lists side by side, every kind in both, so the choice is read as a
+// straight comparison rather than a sample. KIND_CLASSIC_KEY's own key order is
+// the single source for both columns — one list means the rows cannot drift
+// out of alignment the way two hand-written lists would.
 function welcomeStepNamesHtml() {
+  const kinds = Object.keys(KIND_CLASSIC_KEY);
   const uniqueName = k => (typeof KIND_LABEL !== 'undefined' && KIND_LABEL[k]) || k;
-  const modes = [
-    { mode: 'unique',  label: 'Unique',  names: WELCOME_NAME_PREVIEW_KINDS.map(uniqueName) },
-    { mode: 'classic', label: 'Classic', names: WELCOME_NAME_PREVIEW_KINDS.map(k => t(KIND_CLASSIC_KEY[k])) },
-  ];
-  const cells = modes.map(m => {
-    const active = (S.settings.nameMode === 'classic') === (m.mode === 'classic');
-    return `<div class="prefs-theme-cell${active ? ' active' : ''}" onclick="welcomeSetUi('nameMode','${m.mode}')">
-      <div class="welcome-namemode-preview">
-        ${m.names.map(n => `<span class="welcome-namemode-chip">${x(n)}</span>`).join('')}
+  const classic = S.settings.nameMode === 'classic';
+  const box = (mode, id, label, nameOf) => `
+    <div class="welcome-name-box${(mode === 'classic') === classic ? ' active' : ''}" onclick="welcomeSetUi('nameMode','${mode}')">
+      <div class="welcome-name-head" data-no-i18n>${label}${(mode === 'classic') === classic ? ' ✓' : ''}</div>
+      <div class="welcome-name-list" id="${id}" onscroll="welcomeSyncNameScroll(this)">
+        ${kinds.map(k => `<div class="welcome-name-row" data-no-i18n>${x(nameOf(k))}</div>`).join('')}
       </div>
-      <div class="prefs-theme-name" data-no-i18n>${m.label}</div>
-      ${active ? '<span class="prefs-theme-check">✓</span>' : ''}
     </div>`;
-  }).join('');
-  return `<div class="prefs-theme-grid">${cells}</div>
+  return `<div class="welcome-name-cols">
+      ${box('unique', 'wz-names-unique', 'Unique', uniqueName)}
+      ${box('classic', 'wz-names-classic', 'Classic', k => t(KIND_CLASSIC_KEY[k]))}
+    </div>
     <div class="settings-hint" style="margin-top:10px">${t('moduleNameModeHint')}</div>`;
+}
+
+// Keep the two lists on the same row while either one scrolls. Comparing
+// before writing is what ends the loop: assigning scrollTop fires this handler
+// again on the other element, and that second pass finds the values already
+// equal and stops — no guard flag waiting to be cleared on a later frame.
+function welcomeSyncNameScroll(el) {
+  const other = q(el.id === 'wz-names-unique' ? '#wz-names-classic' : '#wz-names-unique');
+  if (other && other.scrollTop !== el.scrollTop) other.scrollTop = el.scrollTop;
 }
 
 // ── Step 5: sign in (optional) ──
