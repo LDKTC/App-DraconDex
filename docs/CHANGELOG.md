@@ -19,6 +19,49 @@
 
 ---
 
+## 2026-08-09 — ปิด Cloud Sync (Supabase) เหลือสำรองข้อมูลผ่าน Google Drive OAuth อย่างเดียว
+- commit: uncommitted
+- ไฟล์ที่แก้: `src/renderer/core/state.js` (`CLOUD_SYNC_ENABLED` ใหม่),
+  `src/renderer/core/views.js`, `src/renderer/core/setting-window.js`,
+  `src/renderer/core/account.js`, `src/renderer/drive.js`,
+  `src/renderer/i18n.js` (คีย์ `driveDevServer` ครบ 18 locale),
+  `README.md`, `supabase/README.md` (ใหม่), `docs/SYNC.md`, `docs/DRIVE.md`,
+  `docs/SYSTEMS.md`, `docs/FILES.md`
+- อะไรเปลี่ยน:
+  - เพิ่มค่าคงที่ `CLOUD_SYNC_ENABLED = false` ใน `state.js` (ไฟล์แรกที่
+    `index.html` โหลด) เป็นสวิตช์จุดเดียวของฟีเจอร์ Cloud Sync
+  - ตัดทางเข้า UI 2 จุดที่เรียก Cloud Sync: ปุ่ม ☁ ใน vault-head
+    (`views.js`) และหน้า Setting → App-data → Token Sync (ถอด `'tokensync'`
+    ออกจาก `SETTING_GROUPS.appdata` ใน `setting-window.js`) — กลุ่ม App-data
+    เหลือ 2 หน้า (ฐานข้อมูล, สำรองข้อมูล)
+  - หน้า Setting → User → Account ย้ายจากการอ่าน login ของ Supabase
+    (`api.sync.authStatus/status` + badge tier free/pro) มาอ่าน
+    `api.drive.status()` แทน — 3 สถานะ: ยังไม่ตั้ง client id/secret →
+    ลิงก์ไปหน้า BackupData, ตั้งแล้วยังไม่เชื่อมต่อ → ปุ่มเชื่อมต่อ Google
+    Drive, เชื่อมต่อแล้ว → อีเมล + ปุ่มยกเลิกการเชื่อมต่อ; `quickAccountExtra`
+    ในเมนูตั้งค่าด่วนก็ตามไปด้วย
+  - ป้าย dev-mode ในหน้า BackupData เปลี่ยนจากคีย์ `syncDevServer`
+    ("ไม่ต้องมี Supabase" — ข้อความของ sync-devserver) มาใช้คีย์ใหม่
+    `driveDevServer` ที่พูดถึง mock Drive server ตรงตัว
+  - **ไม่มีการลบโค้ด**: `src/db/sync.js`, `src/db/sync-devserver.js`,
+    `src/renderer/sync.js`, IPC `sync:*`, `api.sync` และ migration ทั้ง 2
+    ไฟล์ยังอยู่ครบและยังลงทะเบียนตามเดิม (ตรวจแล้วด้วย driver:
+    `typeof window.api.sync.push === 'function'` และ `SETTING_PAGE_RENDERERS`
+    ยังมี `appdata.tokensync`)
+- ทำไม: repo เปิดเป็น open source แล้ว การบังคับให้ผู้ใช้/ผู้ fork ทุกคนต้อง
+  ตั้ง Supabase project เอง (รัน migration 2 ไฟล์ + ตั้ง Google provider +
+  กรอก URL/anon key) เป็นกำแพงที่ไม่คุ้ม ในเมื่อ Google Drive Backup ทำงานได้
+  ครบและคุยกับ Google ตรง ๆ ไม่ต้องพึ่งเซิร์ฟเวอร์ของใคร เลือก "ซ่อน" แทน
+  "ลบ" เพราะเปิดกลับได้ด้วยการแก้ค่าเดียว และเพราะ `src/db/sync.js` ยังเป็น
+  ที่อยู่ของ snapshot engine ที่การส่งออก/นำเข้าไฟล์ Nexus/module
+  (`src/db/db-transfer.js`, ระบบออฟไลน์) เรียกใช้อยู่จริง
+- Doc ที่อัปเดต: `docs/SYNC.md` (หัวเอกสาร — สถานะปิดใช้ + วิธีเปิดกลับ +
+  คำเตือนเรื่อง snapshot engine), `docs/DRIVE.md` (หัวเอกสาร + §2.1),
+  `docs/SYSTEMS.md` §Cloud Sync / §Firebase Version Notice / §Setting window
+  (Account, TokenSync), `docs/FILES.md` §Cloud Sync (+ ตารางไฟล์ที่แตะรอบนี้,
+  แถว `core/account.js`, แถว `supabase/README.md`), `README.md` §Features,
+  `supabase/README.md` (ใหม่)
+
 ## 2026-08-07 — GitHub Packages: เผยแพร่แพ็กเกจ npm `@ldktc/dracondex`
 - commit: uncommitted
 - ไฟล์ที่แก้: `.github/workflows/publish-package.yml` (ใหม่), `package.json`

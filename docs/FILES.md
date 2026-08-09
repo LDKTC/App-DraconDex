@@ -331,7 +331,18 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 
 `vendor/` เพิ่ม konva/d3 เดิมยังใช้ร่วม (ไม่มีไฟล์ vendor ใหม่ในรอบนี้)
 
-## Cloud Sync (Supabase) — ไฟล์ใหม่ (2026-07-17), เปลี่ยนเป็น Token Sync (2026-07-30)
+## Cloud Sync (Supabase) — ไฟล์ใหม่ (2026-07-17), เปลี่ยนเป็น Token Sync (2026-07-30), ⛔ ปิดใช้ (2026-08-09, v4.5.0)
+
+> **ปิดใช้แต่ไม่ลบ** — ไฟล์ทุกไฟล์ในตารางนี้ยังอยู่ครบและยังถูกโหลด/ลงทะเบียน
+> ตามเดิม (script tag, IPC, preload) สิ่งที่ตัดไปคือทางเข้า UI 2 จุดผ่านค่า
+> `CLOUD_SYNC_ENABLED` ใน `src/renderer/core/state.js` เท่านั้น
+>
+> ⚠️ **`src/db/sync.js` ไม่ใช่ไฟล์ที่ตายแล้ว** — snapshot engine ในนั้น
+> (`serializeVault` / `applySnapshotCore` / `applySnapshot` /
+> `importModuleSnapshot` / `collectModuleSubtreeIds`) ถูกเรียกโดย
+> `src/db/db-transfer.js` (ส่งออก/นำเข้าไฟล์ Nexus และ module ในหน้า Setting →
+> App-data → Database) ซึ่งเป็นระบบออฟไลน์ล้วน และ `test/module-transfer.test.mjs`
+> ก็ผูกกับซอร์สไฟล์นี้ตรง ๆ — ห้ามลบทิ้งเวลาเก็บกวาดโค้ด Supabase
 
 ซิงก์ Nexus vault ขึ้น Supabase แบบ snapshot + โทเคน 16 หลักต่อการ push
 (`1234-5678-9012-3456`, สร้างใหม่ทุกครั้ง) + login Google (Supabase Auth) +
@@ -344,7 +355,8 @@ quota ตาม tier บัญชี — ดูรายละเอียดพ
 | `src/db/sync-devserver.js` | ~230 | เซิร์ฟเวอร์ซิงก์จำลองสำหรับ build dev (`!app.isPackaged`): HTTP in-process บน loopback, endpoint/กติกา auth/tier-quota/expiry/lockout เหมือน migration ใหม่ทุกอย่าง, bearer token รูปแบบ `<uid>:<tier>` (login จำลองฝั่ง `sync.js` ไม่ผ่าน `/auth/*` จริง), เก็บ state เป็น `dev-sync-server.json` ข้าง novel-manager.db; `ensureDevSyncServer()` เริ่ม lazy ครั้งเดียวต่อโปรเซส |
 | `supabase/migrations/20260717000000_dracondex_sync_prototype.sql` | ~200 | migration เดิม (ตาราง/ฟังก์ชันคีย์ถาวรถูก `drop` ทิ้งทั้งหมดโดย migration ถัดไป — คงไฟล์นี้ไว้เพราะเคย apply แล้ว ห้ามแก้ไข) |
 | `supabase/migrations/20260730000000_dracondex_token_sync.sql` | ~250 | Token Sync จริง: ตาราง `sync_account(owner_id, tier)`, คอลัมน์ใหม่บน `sync_vault` (`owner_id`/`token_hash`/`password_hash`/`expires_at`/`pull_fail_count`/`pull_locked_until`, ไม่ unique ต่อ owner อีกต่อไป — หลายแถวต่อบัญชีได้ตาม quota), RPC SECURITY DEFINER 5 ตัว (`token_sync_push/status/delete/pull_own/pull_by_token`), helper `_sync_tier/_sync_max_bytes/_sync_max_slots` (free 1 ช่อง/10MB, pro 3 ช่อง/20MB) |
-| `docs/SYNC.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ |
+| `docs/SYNC.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ (หัวเอกสารระบุสถานะปิดใช้ + วิธีเปิดกลับ) |
+| `supabase/README.md` | ~35 | **ใหม่ 2026-08-09** — ป้ายบอกว่าโฟลเดอร์นี้เป็นของฟีเจอร์ที่ปิดอยู่, ทำไมยังเก็บไว้, ขั้นตอนเปิดกลับ, และย้ำว่าห้ามแก้ไฟล์ `.sql` ที่ apply ไปแล้ว |
 
 ไฟล์เดิมที่แตะ: `main.js` (`sync:*` handler เปลี่ยนชุด — เพิ่ม
 `googleLogin/googleLogout/authStatus/pullByToken/deleteUpload`, ตัด
@@ -352,6 +364,20 @@ quota ตาม tier บัญชี — ดูรายละเอียดพ
 `css/builder.css` (เพิ่ม `.sync-upload-row`/`.sync-upload-actions`/
 `.sync-tag-chip`), `src/renderer/i18n.js` (คีย์ `sync*` ชุดใหม่ครบ 18 locale
 แทนที่ชุดคีย์ระบบคีย์ถาวรเดิม)
+
+### ไฟล์ที่แตะตอนปิดฟีเจอร์ (2026-08-09, v4.5.0)
+
+ไม่มีไฟล์ไหนถูกลบ และไฟล์ในตารางด้านบน (`sync.js`/`sync-devserver.js`/
+`renderer/sync.js`/migration) ไม่ถูกแก้แม้แต่บรรทัดเดียว:
+
+| ไฟล์ | สิ่งที่แก้ |
+|---|---|
+| `src/renderer/core/state.js` | เพิ่มค่าคงที่ `CLOUD_SYNC_ENABLED = false` (สวิตช์จุดเดียวของทั้งฟีเจอร์ พร้อมคอมเมนต์อธิบายเหตุผล + คำเตือนว่า `src/db/sync.js` ยังทำงานอยู่) |
+| `src/renderer/core/views.js` | ปุ่ม ☁ (`openSyncModal()`) ใน vault-head ของแผงซ้าย ห่อด้วย `${CLOUD_SYNC_ENABLED ? … : ''}` |
+| `src/renderer/core/setting-window.js` | `SETTING_GROUPS.appdata` เป็น `CLOUD_SYNC_ENABLED ? ['tokensync','database','backup'] : ['database','backup']` — `SETTING_PAGE_LABEL_KEY.tokensync` และ `registerSettingPage()` ฝั่ง `sync.js` คงไว้ |
+| `src/renderer/core/account.js` | หน้า Account ย้ายไปผูกกับ Google Drive (ดูแถวของไฟล์นี้ในหัวข้อ Setting window) |
+| `src/renderer/drive.js` | ป้าย dev-mode ทั้ง 2 จุดเปลี่ยนจากคีย์ `syncDevServer` ("ไม่ต้องมี Supabase" — เขียนไว้สำหรับ sync-devserver) มาใช้คีย์ใหม่ `driveDevServer` ที่พูดถึง mock Drive server ตรงตัว |
+| `src/renderer/i18n.js` | คีย์ใหม่ `driveDevServer` ครบ 18 locale (`syncDevServer` เดิมคงไว้ — `renderer/sync.js` ยังใช้อยู่) |
 
 ## Google Drive Backup — ไฟล์ใหม่ (2026-07-30)
 
@@ -455,7 +481,7 @@ Quick Setting popup ถูกตัดให้เหลือแค่ 4 อย
 | `src/renderer/core/settings.js` | ~300 | (เปลี่ยน) `renderSettingsMenu()` ตัดเหลือ 4 อย่าง (ภาษา/name-mode/UI size/ปุ่มเปิด Setting window) + `quickThemeExtraHtml()`/`uiSizeOnlySliderHtml()` ใหม่; เก็บ `t/tr`, `setUiSetting()` (จุดเดียวที่ mutate `S.settings`), slider helper, theme-palette cache, `SHORTCUT_HELP`/`openShortcutsModal`/`replayGuideTour`/`setVersionLimit` (ย้ายไปแสดงใน Text&Size's Advanced reveal แทน) ไว้เหมือนเดิมเพราะ Setting window เรียกใช้ร่วม; ลบ `PREFS_SECTIONS`/`openPreferencesPanel`/`prefsBodyHtml`/theme-grid/language-preview/ui-size-advanced ทั้งหมด (ย้ายไป `setting-window.js`) |
 | `src/renderer/core/setting-window.js` | ~200 | ใหม่ — เชลล์ของ Setting window: `SETTING_GROUPS`/`registerSettingPage(group,page,fn)`/`openSettingWindow()`/`selectSettingPage()`/`renderSettingWindow()` (แทนที่ `PREFS_SECTIONS`/`selectPrefsSection`/`renderPreferencesPanel` เดิม), หน้า Workspace→Theme (ย้ายจาก `prefsThemeSectionHtml`) และ Workspace→Text&Size (รวมภาษา+ขนาด UI+ขนาดตัวอักษร, `applyAreaScales()`/`setAreaScale()` — override `--fsc` เฉพาะ container ของแต่ละพื้นที่) |
 | `src/renderer/core/tool-toggle.js` | ~85 | ใหม่ — หน้า Workspace→Tool toggle + gating จริง: `applyNavToggles()` (ซ่อน/โชว์ 4 ปุ่ม nav sidebar ผ่าน class `.tool-toggle-hidden`), `toggleNavSetting/toggleStatusSetting/toggleQuickExtra` (mutate `S.settings.{navToggles,statusToggles,quickExtras}`) |
-| `src/renderer/core/account.js` | ~140 | ใหม่ — หน้า User→Account (อ่าน `api.sync.authStatus/status` ตรงๆ ไม่มี backend ใหม่) และ User→User profile (layout slot manager เรียก `api.drive.*LayoutSlot*` ใหม่) |
+| `src/renderer/core/account.js` | ~140 | ใหม่ — หน้า User→Account และ User→User profile (layout slot manager เรียก `api.drive.*LayoutSlot*` ใหม่). **แก้ 2026-08-09 (v4.5.0)**: หน้า Account เปลี่ยนจากอ่าน `api.sync.authStatus/status` (Supabase + badge tier) มาอ่าน `api.drive.status()` อย่างเดียว — 3 สถานะ (ยังไม่ตั้ง client id/secret → ลิงก์ไปหน้า BackupData, ตั้งแล้วยังไม่เชื่อมต่อ → ปุ่ม `api.drive.connect()`, เชื่อมต่อแล้ว → อีเมล + `api.drive.disconnect()`), ตัด `SETTING_TIER_COPY` ทิ้ง; `settingRefreshQuickAccountBlock()` ย้ายมาใช้ `api.drive.status()` เช่นกัน |
 | `src/renderer/core/db-transfer.js` | ~110 | ใหม่ — หน้า Appdata→Database: list Nexus (`api.nexus.getAll`), module tree ต่อ Nexus แบบ expand (`api.module.getTree`), ปุ่ม export/import ทั้งระดับ Nexus และระดับ module เดี่ยว เรียก `api.db.export/importNexusFile`/`export/importModuleFile` ใหม่ — onclick ทุกจุดส่งแค่ id ไม่ฝัง name (กัน quote-escaping กรณีชื่อมี `'`) |
 | `src/db/db-transfer.js` | ~40 | ใหม่ — ห่อ `serializeVault`/`applySnapshot`/`collectModuleSubtreeIds`/`importModuleSnapshot` (จาก `src/db/sync.js`) ด้วย file I/O: `exportNexusFile`/`importNexusFile`/`exportModuleFile`/`importModuleFile` |
 | `test/module-transfer.test.mjs` | ~35 | ใหม่ — source-inspection test (แพทเทิร์นเดียวกับ `onboarding-tour.test.mjs` เพราะ `getDB()` ต้องการ Electron `app` จริง รันใน `node --test` ตรงๆ ไม่ได้) ยืนยันว่า `importModuleSnapshot` ไม่มีทาง wipe nexus ปลายทาง |

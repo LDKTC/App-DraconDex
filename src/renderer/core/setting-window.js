@@ -6,10 +6,15 @@
 // Preferences panel used for Backup/Extension) via registerSettingPage() —
 // this file only owns the shell plus the Workspace → Theme/Text&Size pages
 // that used to live in settings.js's Preferences panel code.
+// 'tokensync' is listed only when CLOUD_SYNC_ENABLED (state.js) is true. The
+// page itself is still registered by src/renderer/sync.js exactly as before —
+// leaving it out of this list is what makes it unreachable, and
+// openSettingWindow() already falls back to the group's first page if
+// S.settingPage is a stale id.
 const SETTING_GROUPS = {
   workspace: ['theme', 'textsize', 'tooltoggle', 'style'],
   user: ['account', 'profile'],
-  appdata: ['tokensync', 'database', 'backup'],
+  appdata: CLOUD_SYNC_ENABLED ? ['tokensync', 'database', 'backup'] : ['database', 'backup'],
   plugin: ['plugin', 'pluginsettings'],
 };
 const SETTING_GROUP_LABEL_KEY = {

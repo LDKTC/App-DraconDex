@@ -1,41 +1,41 @@
 'use strict';
 // Setting window → User → Account / User profile (Plan.md part1 #Setting).
-// Account reads the Cloud Sync login (src/renderer/sync.js's api.sync.*) —
-// deliberately does NOT introduce a new unified account concept: Sync and
-// Drive are independent Google logins by design (see docs/DRIVE.md), so this
-// page shows Sync's login/tier (the thing that actually HAS a tier) and
-// links to the existing Backup page for Drive's own connect flow instead of
-// duplicating an OAuth button here. User profile manages named layout
-// slots in Drive appdata (src/db/drive.js's driveListLayoutSlots and
-// friends) — that needs a connected Drive, so it also links to Backup when
-// not yet connected, rather than inventing a second Drive login button.
-
-const SETTING_TIER_COPY = {
-  free: { labelKey: 'settingAccountTierFree', benefitsKey: 'settingAccountBenefitsFree' },
-  pro: { labelKey: 'settingAccountTierPro', benefitsKey: 'settingAccountBenefitsPro' },
-};
+// Account reads the Google Drive Backup login (src/db/drive.js's api.drive.*).
+// It used to read Cloud Sync's Supabase login instead, back when the app had
+// two independent Google logins; Cloud Sync is switched off since v4.5.0
+// (see CLOUD_SYNC_ENABLED in state.js and docs/SYNC.md), so Drive is now the
+// app's ONE Google account and this page is simply where you see and manage
+// it. The client id/secret form still lives only on the Backup page — this
+// page links there rather than duplicating it. User profile manages named
+// layout slots in Drive appdata (src/db/drive.js's driveListLayoutSlots and
+// friends) — same Drive connection, so it links to Backup the same way when
+// not yet connected.
 
 function settingAccountPageHtml(){
   settingRefreshAccountSection();
   return `<div class="settings-label">${t('settingPageAccount')}</div><div id="setting-account-body">${t('syncWorking')}</div>`;
 }
 async function settingRefreshAccountSection(){
-  const [auth, status] = await Promise.all([api.sync.authStatus(), api.sync.status(null)]);
+  const st = await api.drive.status();
   const el = q('#setting-account-body');
   if (!el) return; // window closed or switched page before this resolved
-  el.innerHTML = settingAccountBodyHtml(auth, status);
+  el.innerHTML = settingAccountBodyHtml(st);
 }
-function settingAccountBodyHtml(auth, status){
-  if (!auth.loggedIn) {
+function settingAccountBodyHtml(st){
+  // Not configured yet (no client id/secret) — the form for that lives on the
+  // Backup page, so send the user there instead of a second copy of it here.
+  if (!st.configured) {
+    return `
+      <div class="modal-hint">${I.info}<span>${t('driveNotConnected')}</span></div>
+      <button class="btn btn-s" onclick="selectSettingPage('appdata','backup')">${t('prefs_backup')} →</button>`;
+  }
+  if (!st.connected) {
     return `
       <div class="modal-hint">${I.info}<span>${t('settingAccountNotLoggedIn')}</span></div>
-      <button class="btn btn-p" id="setting-account-login-btn" onclick="settingAccountLoginClick()">☁ ${t('syncLoginGoogle')}</button>`;
+      <button class="btn btn-p" id="setting-account-login-btn" onclick="settingAccountLoginClick()">☁ ${t('driveConnect')}</button>`;
   }
-  const tierCopy = SETTING_TIER_COPY[status?.tier] || SETTING_TIER_COPY.free;
   return `
-    <div class="sync-status-row"><span>${t('settingAccountLoggedInAs')}</span><b>${x(auth.email || '')}</b></div>
-    <div class="sync-status-row"><span>${t('settingAccountTierLabel')}</span><b>${t(tierCopy.labelKey)}</b></div>
-    <div class="modal-hint">${I.info}<span>${t(tierCopy.benefitsKey)}</span></div>
+    <div class="sync-status-row"><span>${t('settingAccountLoggedInAs')}</span><b>${x(st.email || '')}</b></div>
     <div class="mfoot">
       <button class="btn btn-d" onclick="settingAccountLogoutClick()">${t('driveDisconnect')}</button>
     </div>
@@ -44,16 +44,16 @@ function settingAccountBodyHtml(auth, status){
 }
 async function settingAccountLoginClick(){
   syncBtnBusy('#setting-account-login-btn', true);
-  const r = await api.sync.googleLogin();
+  const r = await api.drive.connect();
   syncBtnBusy('#setting-account-login-btn', false);
-  if (!r.ok) return toast(t('driveErrAuth'), 'error');
+  if (!r.ok) return driveErrToast(r);
   toast(t('driveConnected'), 'ok');
   settingRefreshAccountSection();
   renderSettingsMenu();
 }
 async function settingAccountLogoutClick(){
   if (!(await uiConfirm(t('driveDisconnectConfirm')))) return;
-  await api.sync.googleLogout();
+  await api.drive.disconnect();
   settingRefreshAccountSection();
   renderSettingsMenu();
 }
@@ -66,11 +66,11 @@ function quickAccountExtraHtml(){
     <div id="quick-account-body">${t('syncWorking')}</div></div>`;
 }
 async function settingRefreshQuickAccountBlock(){
-  const auth = await api.sync.authStatus();
+  const st = await api.drive.status();
   const el = q('#quick-account-body');
   if (!el) return;
-  el.innerHTML = auth.loggedIn
-    ? `<div class="sync-hint" data-no-i18n>${x(auth.email || '')}</div>`
+  el.innerHTML = st.connected
+    ? `<div class="sync-hint" data-no-i18n>${x(st.email || '')}</div>`
     : `<div class="sync-hint">${t('settingAccountNotLoggedIn')}</div>`;
 }
 
