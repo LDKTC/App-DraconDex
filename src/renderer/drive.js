@@ -75,13 +75,13 @@ function driveBackupBodyHtml(st, cfg, log) {
 
   if (!st.connected) {
     return `
-      ${st.dev ? `<div class="modal-hint">${I.info}<span>${t('syncDevServer')}</span></div>` : ''}
+      ${st.dev ? `<div class="modal-hint">${I.info}<span>${t('driveDevServer')}</span></div>` : ''}
       <div class="modal-hint">${I.info}<span>${t('driveNotConnected')}</span></div>
       <button class="btn btn-p" id="drive-connect-btn" onclick="driveConnectNow()">☁ ${t('driveConnect')}</button>`;
   }
 
   return `
-    ${st.dev ? `<div class="modal-hint">${I.info}<span>${t('syncDevServer')}</span></div>` : ''}
+    ${st.dev ? `<div class="modal-hint">${I.info}<span>${t('driveDevServer')}</span></div>` : ''}
     <div class="sync-status-row"><span>${t('driveConnected')}</span><b>${x(st.email || '')}</b></div>
     ${driveStorageBarHtml(st.storage)}
     <div class="sync-status-row"><span>${t('driveLastBackup')}</span><b>${driveFmtTime(st.lastBackupAt)}</b></div>

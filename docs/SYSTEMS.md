@@ -492,11 +492,23 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   `IMPORT_DB_READONLY_NS` (preload.js) เพราะ folder CRUD ของ Director ไม่เคย
   ถูกบล็อกตอน read-only mode มาก่อน
 
-### Cloud Sync — Supabase Token Sync (2026-07-30, แทนที่ prototype เดิม)
+### Cloud Sync — Supabase Token Sync (2026-07-30, แทนที่ prototype เดิม) — ⛔ ปิดใช้ตั้งแต่ v4.5.0
+
+> **ปิดใช้งานตั้งแต่ v4.5.0 (2026-08-09)** — repo เป็น open source แล้ว จึงไม่
+> บังคับให้ใครต้องตั้ง Supabase project เอง ฟีเจอร์คลาวด์เหลือทางเดียวคือ
+> Google Drive Backup (หัวข้อถัดไป) **โค้ดไม่ถูกลบ** — ตัดแค่ทางเข้า UI 2 จุด
+> (ปุ่ม ☁ ใน `views.js`, หน้า Setting → App-data → Token Sync ใน
+> `SETTING_GROUPS` ของ `setting-window.js`) ผ่านค่า `CLOUD_SYNC_ENABLED` ใน
+> `src/renderer/core/state.js` เปลี่ยนเป็น `true` = ได้ทุกอย่างด้านล่างกลับมา
+> ครบ ดู [SYNC.md](SYNC.md)
+>
+> **แต่ `src/db/sync.js` ยังทำงานอยู่** — snapshot engine ในไฟล์นั้นคือกลไก
+> ของ Setting → App-data → Database (ดูหัวข้อ Setting window ด้านล่าง) ซึ่ง
+> เป็นระบบออฟไลน์ ไม่เกี่ยวกับ Supabase
 
 ซิงก์ Nexus vault ขึ้นคลาวด์แบบ **snapshot ทั้ง vault, last-write-wins** —
 เอกสารเต็ม (วิธีใช้ + หลักการทำงาน + ข้อจำกัด) อยู่ที่ [SYNC.md](SYNC.md)
-สรุปพฤติกรรม:
+สรุปพฤติกรรม (เมื่อเปิดใช้):
 
 - เข้าจากปุ่ม **☁** ใน vault-head (ข้าง ⇄) → หน้าต่างเดียวหลายสถานะ: ยังไม่ตั้ง
   ค่าเซิร์ฟเวอร์ → ตั้งค่าแล้วแต่ยัง**ไม่ login** (ต้อง login Google ก่อนถึงจะ
@@ -575,7 +587,11 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   (`public_config/latest_version` — version/notes/url) ผ่าน REST ตรงๆ
   ไม่มี firebase SDK, ไม่ต้องใช้ credential (rule เป็น public-read)
 - แสดงเฉพาะผู้ใช้ที่ login เข้า Cloud Sync (Supabase) **หรือ** Google Drive
-  Backup อย่างใดอย่างหนึ่ง (ยังไม่มีระบบบัญชีรวมศูนย์)
+  Backup อย่างใดอย่างหนึ่ง (ยังไม่มีระบบบัญชีรวมศูนย์) — ตั้งแต่ v4.5.0 ที่
+  Cloud Sync ถูกปิด เงื่อนไขนี้เหลือ Drive อย่างเดียวโดยปริยาย: `checkForUpdate()`
+  ยังเรียก `syncAuthStatus()` ตามเดิม แต่เมื่อไม่มีทาง login Supabase แล้ว
+  ฟังก์ชันนั้นคืน `loggedIn:false` ทันที (สาขา `!configured`) จึงไม่ต้องแก้
+  `src/db/update.js` และไม่พังถ้าเปิด `CLOUD_SYNC_ENABLED` กลับ
 - `checkForUpdate()` ไม่ throw เด็ดขาด — เน็ตล่ม/ยังไม่ตั้งโปรเจกต์ Firebase
   จะไม่มี error toast ทุกครั้งที่เปิดแอป
 - กด "ดาวน์โหลด" แค่เปิดเบราว์เซอร์ไปหน้าดาวน์โหลด ไม่ติดตั้งอัตโนมัติ; กด
@@ -692,17 +708,26 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   hidden`), รายการใน status bar (ชื่อ vault/breadcrumb/word count/save state
   — เปิดเป็น default) ทั้งหมดเก็บใน `S.settings.{quickExtras,navToggles,
   statusToggles}` (localStorage, เทียบชั้นเดียวกับ theme/nameMode)
-- **Account** อ่านสถานะ login ของ Cloud Sync (Supabase) ตรงๆ ไม่สร้างระบบ
-  บัญชีรวมศูนย์ใหม่ — badge ระดับบัญชีอ่านจาก `sync_account.tier` จริง (มีแค่
-  free/pro ในฐานข้อมูล ยังไม่มี "Team-Subscriber" ตามที่ Plan.md เขียนไว้ —
-  ข้อความส่วนนั้นคือเป้าหมายอนาคต ไม่ใช่ของที่มีจริงตอนนี้)
+- **Account** (แก้ v4.5.0) อ่านสถานะการเชื่อมต่อ **Google Drive**
+  (`api.drive.status()`) ตรง ๆ ไม่สร้างระบบบัญชีรวมศูนย์ใหม่ — 3 สถานะ:
+  ยังไม่ตั้งค่า client id/secret → ลิงก์ไปหน้า BackupData (ฟอร์มอยู่ที่นั่น
+  ที่เดียว ไม่ทำซ้ำ), ตั้งค่าแล้วแต่ยังไม่เชื่อมต่อ → ปุ่มเชื่อมต่อ Google
+  Drive, เชื่อมต่อแล้ว → อีเมล + ปุ่มยกเลิกการเชื่อมต่อ + ลิงก์ไป BackupData
+  เดิมหน้านี้อ่าน login ของ Cloud Sync (Supabase) และโชว์ badge ระดับบัญชีจาก
+  `sync_account.tier` — พอ Cloud Sync ถูกปิด Drive ก็กลายเป็นบัญชี Google
+  เดียวของแอป ส่วน tier หายไปด้วยเพราะมันเป็นของฝั่ง Supabase ล้วน (คีย์
+  `settingAccountTier*`/`settingAccountBenefits*` ยังคงอยู่ใน `i18n.js`
+  ครบ 18 locale เผื่อเปิดกลับ แค่ไม่มีใครเรียกใช้)
 - **User profile** — layout slot ตั้งชื่อได้ไม่จำกัดจำนวน เก็บใน Google Drive
   appdata คนละไฟล์กับ auto-backup เดิม (`dracondex-layout-slots.json` แยกจาก
   `dracondex-layout-profile.json`) เพื่อไม่ให้ auto-backup รายชั่วโมงเขียนทับ
   รายการ slot ที่ผู้ใช้ตั้งชื่อไว้
-- **TokenSync** ในนี้เป็นแค่ทางลัด (แสดงชื่อ Nexus ที่เปิดอยู่ + ปุ่มเปิด
-  modal เดิมของ Cloud Sync) ไม่ได้ย้าย logic ทั้งหมดมาไว้ในหน้านี้ เพราะ Token
-  Sync ผูกกับ `S.nexus.id` แต่ Setting window ไม่ผูกกับ nexus ที่เปิดอยู่
+- **TokenSync** — ⛔ **ไม่ถูกลิสต์ใน nav แล้วตั้งแต่ v4.5.0** (`CLOUD_SYNC_ENABLED
+  = false`) ตัวหน้ายัง `registerSettingPage('appdata','tokensync', …)` ไว้ใน
+  `src/renderer/sync.js` เหมือนเดิม แค่ไม่มีทางเข้า เนื้อหาเดิมของหน้านี้เป็น
+  แค่ทางลัด (แสดงชื่อ Nexus ที่เปิดอยู่ + ปุ่มเปิด modal เดิมของ Cloud Sync)
+  ไม่ได้ย้าย logic ทั้งหมดมาไว้ในหน้านี้ เพราะ Token Sync ผูกกับ `S.nexus.id`
+  แต่ Setting window ไม่ผูกกับ nexus ที่เปิดอยู่
 - **Database** — list Nexus ทั้งหมด, export/import ได้ทั้งระดับ Nexus และ
   ระดับ module เดี่ยว (subtree) ใช้ snapshot format เดียวกับ Token Sync
   (`serializeVault`/`applySnapshot` ใน `src/db/sync.js`, ขยาย

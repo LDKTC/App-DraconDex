@@ -1,10 +1,41 @@
 # Cloud Sync (Supabase) — Token Sync
 
-> สถานะ: **token sync** — แทนที่ระบบคีย์ถาวรเดิม (access-key prototype, v3.8.0)
-> ด้วยระบบโทเคน 16 หลักที่สร้างใหม่ทุกครั้งที่ push, ต้อง login Google,
-> และมี quota ตาม tier บัญชี — เพิ่มเข้ามาในเวอร์ชัน 4.0.0 (2026-07-30)
+> ## ⛔ สถานะ: **ปิดใช้งานตั้งแต่ v4.5.0 (2026-08-09) — ไม่มีทางเข้าใน UI**
+>
+> repo เปิดเป็น open source แล้ว การบังคับให้ผู้ใช้/ผู้ fork ทุกคนต้องไปตั้ง
+> Supabase project ของตัวเองก่อน (รัน migration 2 ไฟล์ + ตั้ง Google provider +
+> กรอก Project URL/anon key) เป็นกำแพงที่ไม่คุ้ม ในเมื่อ **Google Drive Backup**
+> ([DRIVE.md](DRIVE.md)) ครอบคลุมงานสำรอง/กู้คืนข้อมูลได้อยู่แล้ว โดยคุยกับ
+> Google ตรง ๆ ไม่ต้องพึ่งเซิร์ฟเวอร์ของใครเลย — ฟีเจอร์คลาวด์ของแอปนี้จึง
+> **เหลือทางเดียวคือ Google Drive** ไปก่อน
+>
+> **ไม่มีการลบโค้ดใด ๆ** — `src/renderer/sync.js`, `src/db/sync.js`,
+> `src/db/sync-devserver.js`, IPC `sync:*` ใน `main.js`, `api.sync` ใน
+> `preload.js` และ migration ทั้ง 2 ไฟล์ยังอยู่ครบและยังลงทะเบียนตามเดิม
+> สิ่งที่ตัดไปคือ **ทางเข้า UI 2 จุด** เท่านั้น:
+>
+> - ปุ่ม ☁ ที่มุมล่างของแผงซ้าย (`src/renderer/core/views.js`)
+> - หน้า **การตั้งค่า → App-data → Token Sync** (`SETTING_GROUPS.appdata`
+>   ใน `src/renderer/core/setting-window.js` — ตัวหน้ายัง
+>   `registerSettingPage()` ไว้เหมือนเดิม แค่ไม่ถูกลิสต์ใน nav)
+>
+> ทั้งสองจุดคุมด้วยค่าเดียวคือ **`CLOUD_SYNC_ENABLED`** ใน
+> `src/renderer/core/state.js` — **เปิดฟีเจอร์กลับ = เปลี่ยนค่านั้นเป็น `true`**
+> แล้วทำตาม §1.1–1.2 ตามปกติ เนื้อหาที่เหลือของเอกสารนี้ยังถูกต้องทั้งหมด
+>
+> ⚠️ **`src/db/sync.js` ยังทำงานอยู่จริงแม้ปิดฟีเจอร์นี้** — snapshot engine
+> ในไฟล์นั้น (`serializeVault` / `applySnapshot` / `importModuleSnapshot` /
+> `collectModuleSubtreeIds`) คือกลไกเบื้องหลังของ **การตั้งค่า → App-data →
+> ฐานข้อมูล** (ส่งออก/นำเข้าไฟล์ Nexus และ module, `src/db/db-transfer.js`)
+> ซึ่งเป็นระบบออฟไลน์ล้วน ไม่เกี่ยวกับ Supabase — อย่าลบไฟล์นี้ทิ้งเวลาเก็บกวาด
+>
+> สถานะเดิมก่อนถูกปิด: **token sync** — แทนที่ระบบคีย์ถาวรเดิม (access-key
+> prototype, v3.8.0) ด้วยระบบโทเคน 16 หลักที่สร้างใหม่ทุกครั้งที่ push, ต้อง
+> login Google, และมี quota ตาม tier บัญชี — เพิ่มเข้ามาในเวอร์ชัน 4.0.0
+> (2026-07-30)
 
 เอกสารนี้มี 2 ส่วน: **วิธีใช้งาน** สำหรับผู้ใช้ และ **หลักการทำงาน** สำหรับผู้พัฒนา
+(ทั้งสองส่วนอธิบายพฤติกรรมเมื่อ `CLOUD_SYNC_ENABLED = true`)
 
 ### โหมดตามชนิด build
 

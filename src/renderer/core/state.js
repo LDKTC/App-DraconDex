@@ -104,6 +104,26 @@ function autoUiSizeFromScreen(){
 // The 10 palette tokens a custom theme overrides (mockup 27).
 const CUSTOM_THEME_TOKENS = ['--bg','--surface','--raised','--hover','--border','--t1','--t2','--t3','--accent','--accentH'];
 
+// Cloud Sync (Supabase Token Sync) is switched off since v4.5.0. The repo is
+// open source now, and making every user or forker stand up their own
+// Supabase project first (run two migrations, configure the Google provider,
+// paste a URL + anon key) is a barrier for a feature Google Drive Backup
+// (docs/DRIVE.md) already covers with nobody's server involved — so Drive is
+// this app's only cloud path for now.
+//
+// Nothing was deleted: src/renderer/sync.js, src/db/sync.js,
+// src/db/sync-devserver.js, the 'sync:*' IPC handlers and api.sync are all
+// still registered and working. This flag only gates the two UI entry points
+// (the ☁ button in views.js and the Setting -> App-data -> Token Sync page in
+// setting-window.js). Flip it to true to bring the feature back — see
+// docs/SYNC.md.
+//
+// Note that src/db/sync.js keeps running either way: its snapshot engine
+// (serializeVault / applySnapshot / importModuleSnapshot) is what powers
+// Setting -> App-data -> Database, the purely offline Nexus/module file
+// export-import in src/db/db-transfer.js. Nothing about that touches Supabase.
+const CLOUD_SYNC_ENABLED = false;
+
 function loadUiSettings(){
   let saved = {};
   try{ saved = JSON.parse(localStorage.getItem(UI_SETTINGS_KEY) || '{}'); }

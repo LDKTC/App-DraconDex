@@ -54,6 +54,16 @@ independently and is currently **behind** the desktop app in features.
 - **Theming** and a fully localized UI across 18 languages.
 - **Portable by design** — the portable build keeps your data next to the
   executable, so a whole project folder travels on a flash drive.
+- **Backups you own.** Everything works fully offline: export/import the
+  whole database, a single Nexus, or one module subtree as a file. The only
+  cloud path is **Google Drive backup** over OAuth with the `drive.appdata`
+  scope — a hidden per-app folder, so DraconDex can never see the rest of
+  your Drive. You supply your own Google OAuth client; there is no DraconDex
+  server in the loop. See [docs/DRIVE.md](docs/DRIVE.md).
+  <br>A second cloud feature (Supabase "Cloud Sync") exists in the source
+  but is **switched off** — it required every user to stand up their own
+  Supabase project, which is a poor fit now that the app is open source. See
+  [docs/SYNC.md](docs/SYNC.md) if you want to turn it back on.
 
 ## Tech stack
 
