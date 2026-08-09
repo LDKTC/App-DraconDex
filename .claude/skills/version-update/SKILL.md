@@ -1,6 +1,6 @@
 ---
 name: version-update
-description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default), and a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part checkpoint flow that also commits + pushes — either when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open, or (far more common day to day) when explicitly asked for a checkpoint mid-way through a still-unfinished Part N, in which case X.Y.Z stays at the last version that actually finished and only a per-part round counter -N advances (re-derived each time from prior "Part N:"-tagged commits, never just incremented blindly). Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
+description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default). Settles the y-vs-z "module or fix" call with an explicit test: a genuinely standalone new function/feature is a module (y) at any size, while merely editing an existing module or its data, or adding something that doesn't reach the app's behavior, is a fix (z) at any size — and anything that just extends what's already there is measured, staying a fix at or under 500 changed lines of app source and only becoming a candidate module past that. Uses a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part checkpoint flow that also commits + pushes — either when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open, or (far more common day to day) when explicitly asked for a checkpoint mid-way through a still-unfinished Part N, in which case X.Y.Z stays at the last version that actually finished and only a per-part round counter -N advances (re-derived each time from prior "Part N:"-tagged commits, never just incremented blindly). Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
 ---
 
 # version-update — bump package.json's version per DraconDex's x.y.z-n scheme
@@ -84,7 +84,10 @@ This skill has **two flows**, and picking the right one matters:
    actual diff, a repo change doesn't have to route through these files.
 
 6. **Classify scope**: MAJOR / MINOR / PATCH — see the decision table
-   below. Default to PATCH when genuinely unsure.
+   below, and for the MINOR-vs-PATCH call specifically run the
+   "module or fix" test in the section right after that table (new
+   standalone feature vs extension of something existing, then the
+   500-changed-line threshold). Default to PATCH when genuinely unsure.
 
 7. **Classify finished vs in-progress.** If it's not obvious from the diff
    or the Plan.md/procress.md signal, ask the user directly rather than
@@ -324,6 +327,73 @@ actual `package.json` version.
 | Adds or removes a whole module (own renderer + db + IPC + preload) or a major existing function | **Minor** |
 | Anything else — bug fix, CSS tweak, i18n key fix, small refactor, doc sync | **Patch** — the default when unsure |
 
+## Module or fix — the MINOR-vs-PATCH test
+
+The two middle rows above are the ones that get misread, so decide between
+them with this test rather than by gut feel or by how the commit message
+happens to be phrased. Work the steps **in order** — the first step that
+lands decides, and step 2 only ever runs if step 1 sends it there.
+
+### Step 1 — what does the diff *create*?
+
+Ask what capability exists after the change that didn't exist before, not
+how much code moved:
+
+- **Only edits an existing module, or only edits data/content** — seed rows,
+  i18n strings, theme values, copy, config, an existing renderer's markup —
+  and creates no new function or feature → **Patch.** Stop here. The line
+  count in step 2 never rescues this case: a 900-line rewrite of an existing
+  module that ships no new capability is still a Patch.
+- **Adds something new that doesn't actually affect the app** — an internal
+  helper nothing user-facing calls yet, a dev-only script, a flag nothing
+  reads, a test-only fixture → **Patch** as well. "New" isn't enough on its
+  own; it has to reach the app's behavior.
+- **Adds a standalone function/feature** — a user can reach and use it
+  without going through some existing feature, and it isn't built as an
+  option/branch/setting *of* something already there → **Minor.** This is
+  the "module" case the scope table's Minor row means. Size is irrelevant
+  here in the other direction too: a compact, genuinely standalone feature
+  is Minor even if it's only 80 lines.
+- **Adds a function/feature that only builds on what's already there** — a
+  new option on an existing panel, another column on an existing table, more
+  cases in an existing renderer, a deeper version of an existing flow → this
+  is an *extension*, so go to **step 2**.
+
+### Step 2 — measure the extension (the 500-line threshold)
+
+Only for the extension case. Count changed lines — insertions **plus**
+deletions — of real app source across the whole accumulated diff since the
+anchor (the same diff Flow A step 3 gathered), plus any uncommitted work:
+
+```bash
+paths='src main.js preload.js database.js index.html css scripts test flutter_app'
+git diff --shortstat <anchor>..HEAD -- $paths
+git diff --shortstat -- $paths            # unstaged
+git diff --shortstat --staged -- $paths   # staged
+```
+
+Excluded from the count, deliberately: `package.json`, `package-lock.json`,
+`docs/`, `Plan.md`, `procress.md`, `.claude/`, and `vendor/` — bookkeeping,
+documentation, and vendored third-party code aren't the change's own weight,
+and `package-lock.json` alone would swamp the number.
+
+- **≤ 500 changed lines → Patch.** An extension this size is a fix/tweak
+  regardless of how it's described. This is the common outcome.
+- **> 500 changed lines → *candidate* Minor, not an automatic one.** Take
+  the whole accumulated diff back to step 1's question: does this much
+  extension add up to something a user would call a new capability? If yes,
+  **Minor**. If it's still visibly the same feature, just bigger — a large
+  refactor, a mechanical sweep across all 18 locales, a CSS restyle, a file
+  split — stay at **Patch** and say why in the report. If it's genuinely
+  50/50 after that, ask the user instead of deciding silently.
+
+Measure across the **whole** cycle, not just this round: in an in-flight
+`-N` series each round can be under 500 while the accumulated diff crosses
+it, which is exactly what Flow A step 8's escalation check exists to catch.
+Flow B's unfinished-part variant is the one place this test doesn't run at
+all — that variant deliberately skips scope classification and only moves
+the round counter.
+
 ## Decision table — transitions
 
 | Current state | This change is... | New version |
@@ -385,6 +455,22 @@ Worked examples:
 - Mixed/dirty diffs spanning clearly unrelated systems: surface that to the
   user and ask what should count toward this bump, rather than silently
   picking the loudest change.
+- **The 500-line threshold only applies to extensions.** It's step 2 of the
+  module-or-fix test, reachable only from step 1's "builds on what's already
+  there" branch. Never run the line count first and classify off it: a huge
+  diff that creates nothing new is a Patch, and a small diff that adds a
+  standalone feature is a Minor. Size settles ambiguous extensions, it
+  doesn't outrank what the change actually creates.
+- **Crossing 500 lines makes Minor a candidate, not a verdict.** Re-check
+  the whole accumulated diff for a genuinely new capability before bumping
+  `y`; big refactors, 18-locale i18n sweeps, CSS restyles, and file splits
+  routinely blow past 500 lines while shipping nothing new — those stay
+  Patch, with the reason stated in the report.
+- Count changed lines as insertions + deletions of app source only, over the
+  whole cycle since the anchor (including uncommitted work) — excluding
+  `package-lock.json`, `docs/`, `Plan.md`, `procress.md`, `.claude/`, and
+  `vendor/`. Counting a lockfile or a doc sync into the threshold is the
+  easiest way to accidentally promote a Patch to a Minor.
 - Malformed/unparseable current version field, or nothing changed since the
   anchor: stop and say so — don't guess, don't bump on an empty diff.
 - `Plan.md`/`procress.md` are a hint for finished/in-progress in Flow A, not
