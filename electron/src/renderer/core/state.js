@@ -65,6 +65,7 @@ const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
 const INSPECTOR_COLLAPSED_KEY = 'novel-manager-inspector-collapsed';
 const LEFT_PANEL_WIDTH_KEY = 'novel-manager-left-panel-width';
+const NAV_RAIL_WIDTH_KEY = 'novel-manager-nav-rail-width';
 const INSPECTOR_WIDTH_KEY = 'novel-manager-inspector-width';
 const PAGE_VIEW_WIDTH_KEY = 'novel-manager-page-view-width';
 const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
@@ -209,6 +210,7 @@ const S = {
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
   inspectorCollapsed:localStorage.getItem(INSPECTOR_COLLAPSED_KEY) === '1',
   leftPanelWidth:Number(localStorage.getItem(LEFT_PANEL_WIDTH_KEY)) || 264,
+  navRailWidth:Number(localStorage.getItem(NAV_RAIL_WIDTH_KEY)) || 42,
   inspectorWidth:Number(localStorage.getItem(INSPECTOR_WIDTH_KEY)) || 290,
   pageViewWidth:Number(localStorage.getItem(PAGE_VIEW_WIDTH_KEY)) || null, // Plan part1 #2: null = fill pane (default)
   // Navigator module state

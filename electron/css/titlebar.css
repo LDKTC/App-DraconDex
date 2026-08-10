@@ -23,10 +23,20 @@
 #title-left-zone{
 	width:calc(var(--nav) + var(--sidebar));flex-shrink:0;
 	display:flex;align-items:center;overflow:hidden;height:100%;
+	position:relative;
 }
 /* +1px: #left-panel keeps its 1px border-right (just transparent) even at
    width:0 when collapsed, so #main-area's real left edge is nav width + 1px. */
 #title-tab-bar.left-panel-collapsed #title-left-zone{width:calc(var(--nav) + 1px)}
+/* Plan part1 #1: at 43px the zone is already narrower than the 44px brand
+   logo, which used to just clip #hub-toggle-btn out of the visible box.
+   Instead, slide the toggle button into the logo's own slot so it stays
+   visible/clickable — visually "replacing" the icon instead of vanishing. */
+#title-tab-bar.left-panel-collapsed .tab-brand{opacity:0;pointer-events:none}
+#title-tab-bar.left-panel-collapsed #titlebar-vault{display:none}
+#title-tab-bar.left-panel-collapsed #hub-toggle-btn{
+	position:absolute;left:0;top:0;margin:0;width:44px;height:38px;
+}
 .tab-brand{
 	width:44px;height:38px;display:flex;align-items:center;justify-content:center;
 	color:var(--t2);flex-shrink:0;
