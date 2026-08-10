@@ -244,8 +244,12 @@ function welcomeStepNamesHtml() {
 // before writing is what ends the loop: assigning scrollTop fires this handler
 // again on the other element, and that second pass finds the values already
 // equal and stops — no guard flag waiting to be cleared on a later frame.
+// Finds its sibling by DOM position (not hardcoded ids) so the same handler
+// works for both the wizard's picker and the Setting window's read-only
+// compare list (nameModeCompareListHtml, core/settings.js).
 function welcomeSyncNameScroll(el) {
-  const other = q(el.id === 'wz-names-unique' ? '#wz-names-classic' : '#wz-names-unique');
+  const cols = el.closest('.welcome-name-cols');
+  const other = cols && [...cols.querySelectorAll('.welcome-name-list')].find(n => n !== el);
   if (other && other.scrollTop !== el.scrollTop) other.scrollTop = el.scrollTop;
 }
 

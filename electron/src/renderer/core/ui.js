@@ -267,6 +267,31 @@ document.addEventListener('mouseup', () => {
   localStorage.setItem(LEFT_PANEL_WIDTH_KEY, String(S.leftPanelWidth));
 });
 
+// Plan part1 #2: resizable nav rail, same drag pattern as startLeftPanelResize
+// above driving --nav instead of --sidebar. Clamp floor (34px) keeps the
+// fixed 20px .nav-btn .icon SVGs from clipping; ceiling (80px) is a sane cap.
+function applyNavRailWidth() {
+  document.documentElement.style.setProperty('--nav', S.navRailWidth + 'px');
+}
+let navRailResizeState = null;
+function startNavRailResize(ev) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  navRailResizeState = { startX: ev.clientX, startWidth: q('#nav-sidebar').getBoundingClientRect().width };
+  q('#nav-sidebar-resize')?.classList.add('is-resizing');
+}
+document.addEventListener('mousemove', (ev) => {
+  if (!navRailResizeState) return;
+  S.navRailWidth = Math.max(34, Math.min(80, navRailResizeState.startWidth + (ev.clientX - navRailResizeState.startX)));
+  applyNavRailWidth();
+});
+document.addEventListener('mouseup', () => {
+  if (!navRailResizeState) return;
+  navRailResizeState = null;
+  q('#nav-sidebar-resize')?.classList.remove('is-resizing');
+  localStorage.setItem(NAV_RAIL_WIDTH_KEY, String(S.navRailWidth));
+});
+
 // Plan part1 #2: resizable page view for Hub pages that have no other
 // resize lever (Sage Hut / Import Dock file preview / Kind Browser) — same
 // mousedown/document-mousemove/document-mouseup + localStorage-persist

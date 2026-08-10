@@ -614,6 +614,7 @@ h('update:openDownload', (url) => db.openUpdateDownload(url));
 // `preview` and `install` each take the pasted repo URL and nothing else —
 // install re-resolves it from scratch rather than trusting the preview.
 h('plugin:list',      ()    => db.pluginList());
+h('plugin:listOrgRepos', () => db.pluginListOrgRepos());
 h('plugin:preview',   (url) => db.pluginPreview(url));
 h('plugin:install',   (url) => db.pluginInstall(url));
 h('plugin:uninstall', (id) => {

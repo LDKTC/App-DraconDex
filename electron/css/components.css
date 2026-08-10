@@ -17,6 +17,12 @@
 .btn-g{background:transparent;color:var(--t2)}
 .btn-g:hover{background:var(--hover);color:var(--t1)}
 .btn-i{padding:4px;width:28px;height:28px;justify-content:center;border-radius:var(--rs);font-size:calc(14px * var(--fsc,1))}
+/* Icon-only buttons highlight just the icon on hover, not their background —
+   wins by source order (equal specificity) over whichever .btn-p/.btn-s/.btn-g
+   hover rule it's paired with, without touching those shared rules (labeled
+   buttons still use their background-fill hover). .btn-d keeps its red
+   warning fill — a destructive-action cue, not decorative hover chrome. */
+.btn-i:not(.btn-d):hover{background:transparent}
 .btn-i.btn-i-sm{width:20px;height:20px;padding:2px}
 .btn-i.btn-i-sm .icon{width:11px;height:11px}
 
@@ -101,7 +107,7 @@
 	background:none;border:none;color:var(--t3);cursor:pointer;
 	font-size:calc(15px * var(--fsc,1));padding:3px 6px;border-radius:var(--rs);line-height:1;
 }
-#modal-close:hover{background:var(--hover);color:var(--t1)}
+#modal-close:hover{color:var(--t1)}
 #modal-body{padding:18px;overflow-y:auto;flex:1}
 .mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
 
@@ -121,7 +127,7 @@
 	background:none;border:none;color:var(--t3);cursor:pointer;
 	font-size:calc(15px * var(--fsc,1));padding:3px 6px;border-radius:var(--rs);line-height:1;
 }
-.fp-close:hover{background:var(--hover);color:var(--t1)}
+.fp-close:hover{color:var(--t1)}
 .fp-close .icon{width:15px;height:15px;display:block}
 .fp-body{padding:18px;overflow-y:auto;flex:1;min-height:0}
 
@@ -132,12 +138,11 @@
 .setting-shell{display:flex;height:100%;gap:16px}
 .setting-sidebar{width:190px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
 .setting-nav-head{
-	text-align:left;padding:8px 10px;border-radius:var(--rs);background:transparent;
-	color:var(--t2);cursor:pointer;font-family:inherit;font-size:calc(12.5px * var(--fsc,1));font-weight:700;
+	text-align:left;padding:8px 10px;color:var(--t2);
+	font-family:inherit;font-size:calc(12.5px * var(--fsc,1));font-weight:700;
 	text-transform:uppercase;letter-spacing:.02em;
 }
 .setting-nav-group.open>.setting-nav-head{color:var(--t1)}
-.setting-nav-head:hover{background:var(--hover);color:var(--t1)}
 .setting-nav-pages{display:flex;flex-direction:column;gap:1px;padding-left:8px;margin-bottom:4px}
 .setting-nav-item{
 	text-align:left;padding:7px 10px;border:none;border-radius:var(--rs);background:transparent;
@@ -146,6 +151,22 @@
 .setting-nav-item:hover{background:var(--hover);color:var(--t1)}
 .setting-nav-item.active{background:var(--accent);color:var(--on-accent)}
 .setting-content{flex:1;min-width:0;overflow-y:auto}
+
+/* Slider+number row (Plan part2 #1) — 5:1 width ratio, both inputs kept in
+   sync live via inline oninput on the JS side; this only lays them out. */
+.size-slider-row{display:grid;grid-template-columns:5fr 1fr;gap:8px;align-items:center}
+
+/* Module-name read-only compare list (Plan part2 #3) — reuses welcome.css's
+   .welcome-name-* box/row classes for the two-column layout; scoped here to
+   relax them (nothing here is clickable, unlike the wizard's picker) and to
+   define its own row-height var since --wz-name-row lives under
+   .welcome-wizard only. Height clamps between 4 and 5 visible rows, scaling
+   with viewport height in between since the Setting window itself is a
+   fixed-size floating panel. */
+.setting-name-cols{--wz-name-row:26px;margin-top:8px}
+.setting-name-cols .welcome-name-box{cursor:default}
+.setting-name-cols .welcome-name-box:hover{border-color:var(--border)}
+.setting-name-cols .welcome-name-list{max-height:clamp(calc(var(--wz-name-row) * 4), 26vh, calc(var(--wz-name-row) * 5))}
 
 /* PREFERENCES PANEL — sidebar-nav layout hosted inside .floating-panel */
 .prefs-shell{display:flex;height:100%;gap:16px}

@@ -216,7 +216,7 @@ body.renaming-lock *:has(.rename-input){pointer-events:auto}
 	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:4px 8px}
 .zbtn{width:18px;height:18px;border:1px solid var(--border);border-radius:4px;display:inline-flex;
 	align-items:center;justify-content:center;color:var(--t2);font-size:calc(12px * var(--fsc,1));background:var(--raised);cursor:pointer}
-.zbtn:hover{background:var(--hover);color:var(--t1)}
+.zbtn:hover{color:var(--t1)}
 .zlvl{color:var(--t1);font-size:calc(11px * var(--fsc,1));min-width:34px;text-align:center}
 
 /* Locator (progress.md Phase 7) */

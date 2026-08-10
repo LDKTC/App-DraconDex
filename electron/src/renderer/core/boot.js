@@ -87,7 +87,9 @@ async function init() {
   bindBuilderGridDrop();
   applyLeftPanelState();
   applyLeftPanelWidth();
+  applyNavRailWidth();
   q('#left-panel-resize')?.setAttribute('title', t('resizePanel'));
+  q('#nav-sidebar-resize')?.setAttribute('title', t('resizePanel'));
   observeUiLanguage();
   removeLegacyDirectorProjectButton();
   buildModuleSubNav();

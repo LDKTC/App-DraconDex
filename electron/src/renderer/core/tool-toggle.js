@@ -24,12 +24,25 @@ function applyNavToggles(){
     if (el) el.classList.toggle('tool-toggle-hidden', nav[key] === false);
   }
 }
+// Plan part2 #4 "tools switch" preview — the Setting window is a modeless
+// .floating-panel (components.css), so the live nav rail/status bar already
+// sit visible behind it and update instantly; this just makes that change
+// impossible to miss with a brief highlight on the element that just changed.
+function flashEl(sel){
+  const el = q(sel);
+  if (!el) return;
+  el.classList.remove('tool-toggle-flash');
+  void el.offsetWidth; // restart the animation if the same element flashes twice in a row
+  el.classList.add('tool-toggle-flash');
+  setTimeout(() => el.classList.remove('tool-toggle-flash'), 700);
+}
 function toggleNavSetting(key){
   const cur = (S.settings.navToggles || {})[key] !== false;
   S.settings.navToggles = Object.assign({}, S.settings.navToggles, { [key]: !cur });
   saveUiSettings();
   applyNavToggles();
   renderSettingWindow();
+  flashEl(NAV_TOGGLE_SELECTORS[key]);
 }
 function toggleStatusSetting(key){
   const cur = (S.settings.statusToggles || {})[key] !== false;
@@ -37,6 +50,7 @@ function toggleStatusSetting(key){
   saveUiSettings();
   updateStatusBar({});
   renderSettingWindow();
+  flashEl('#status-bar');
 }
 function toggleQuickExtra(key){
   const cur = !!(S.settings.quickExtras || {})[key];

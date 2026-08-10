@@ -66,6 +66,34 @@ async function fetchBuffer(url) {
   return { ok: true, buffer };
 }
 
+// Plan part2 #5 — default "install from @LDKTC" list on the Plugin page, so
+// a user doesn't need to already have a repo URL in hand. Read-only and
+// advisory: on any failure the renderer just shows nothing rather than an
+// error toast, same as the silent auto-preview-on-type path below. Unlike
+// fetchText/fetchBuffer above, api.github.com (unlike raw.githubusercontent.com)
+// rejects requests with no User-Agent header, so this sets one explicitly.
+// The /users/:name/repos endpoint lists public repos for both org and user
+// accounts, so there's no need to know which kind of account LDKTC is.
+async function pluginListOrgRepos() {
+  let res;
+  try {
+    res = await fetch('https://api.github.com/users/LDKTC/repos?per_page=100&sort=updated', {
+      headers: { 'User-Agent': 'DraconDex', Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (e) { return { ok: false }; }
+  if (!res.ok) return { ok: false };
+  let repos;
+  try { repos = await res.json(); } catch (e) { return { ok: false }; }
+  if (!Array.isArray(repos)) return { ok: false };
+  return {
+    ok: true,
+    repos: repos
+      .filter((repo) => !repo.is_template && !repo.archived)
+      .map((repo) => ({ name: repo.name, description: repo.description || '', url: repo.clone_url, stars: repo.stargazers_count || 0 })),
+  };
+}
+
 // Turns one pasted URL into a concrete {host,owner,repo,ref} + parsed manifest.
 // When the URL names no branch we try REF_CANDIDATES (main, then master) and,
 // per ref, both manifest filenames — so "paste the .git link" works without the
@@ -509,6 +537,7 @@ function pluginApiDelete(pluginId, localName, rowId) {
 
 module.exports = {
   pluginList, pluginGetById, pluginPreview, pluginInstall, pluginUninstall,
+  pluginListOrgRepos,
   migratePluginDir, pluginByPanelPath, pluginNetAllowed,
   pluginNetFetch, pluginNetStream, pluginOAuthAuthorize,
   pluginApiGetSchema, pluginApiQuery, pluginApiInsert, pluginApiUpdate, pluginApiDelete,

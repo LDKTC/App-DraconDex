@@ -46,6 +46,8 @@ const I = {
   item: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`,
   story: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
   func: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  chevronLeft: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`,
+  chevronRight: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
   book: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
   writer: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
   series: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
@@ -65,6 +67,7 @@ const UI_SETTINGS_KEY = 'novel-manager-ui-settings';
 const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
 const INSPECTOR_COLLAPSED_KEY = 'novel-manager-inspector-collapsed';
 const LEFT_PANEL_WIDTH_KEY = 'novel-manager-left-panel-width';
+const NAV_RAIL_WIDTH_KEY = 'novel-manager-nav-rail-width';
 const INSPECTOR_WIDTH_KEY = 'novel-manager-inspector-width';
 const PAGE_VIEW_WIDTH_KEY = 'novel-manager-page-view-width';
 const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
@@ -209,6 +212,7 @@ const S = {
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
   inspectorCollapsed:localStorage.getItem(INSPECTOR_COLLAPSED_KEY) === '1',
   leftPanelWidth:Number(localStorage.getItem(LEFT_PANEL_WIDTH_KEY)) || 264,
+  navRailWidth:Number(localStorage.getItem(NAV_RAIL_WIDTH_KEY)) || 42,
   inspectorWidth:Number(localStorage.getItem(INSPECTOR_WIDTH_KEY)) || 290,
   pageViewWidth:Number(localStorage.getItem(PAGE_VIEW_WIDTH_KEY)) || null, // Plan part1 #2: null = fill pane (default)
   // Navigator module state
