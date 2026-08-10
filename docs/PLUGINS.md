@@ -74,7 +74,7 @@
 ```json
 {
   "id": "myplugin", "name": "My Plugin", "version": "1.0.0",
-  "entry": "index.html", "files": ["index.html", "app.js"],
+  "entry": "electron/index.html", "files": ["electron/index.html", "app.js"],
   "tables": [{ "name": "notes", "columns": [
     { "name": "title", "type": "TEXT" }, { "name": "rating", "type": "INTEGER" }
   ]}]
@@ -115,8 +115,8 @@ Inspector — กดแล้วหน้าของปลั๊กอิน**�
 ```json
 {
   "id": "myplugin", "name": "My Plugin", "version": "1.0.0",
-  "entry": "index.html",
-  "files": ["index.html", "panel.html", "app.js"],
+  "entry": "electron/index.html",
+  "files": ["electron/index.html", "panel.html", "app.js"],
   "panels": [
     { "id": "chat", "title": "My Chat", "icon": "💬", "entry": "panel.html" }
   ],
@@ -132,7 +132,7 @@ Inspector — กดแล้วหน้าของปลั๊กอิน**�
   - `title`: ยาวไม่เกิน 40 ตัวอักษร (แสดงบนปุ่มและหัว panel)
   - `icon`: optional ไม่เกิน 8 ตัวอักษร (อีโมจิ) ไม่ใส่ = ใช้ไอคอนดีฟอลต์
   - `entry`: ไฟล์ `.html` และ**ต้องอยู่ใน `files`** — แอปดาวน์โหลดเฉพาะไฟล์ใน
-    `files` เท่านั้น และ main.js ปฏิเสธการฝัง `<webview>` ที่ชี้ไปไฟล์อื่น
+    `files` เท่านั้น และ electron/main.js ปฏิเสธการฝัง `<webview>` ที่ชี้ไปไฟล์อื่น
 - `permissions.net`: ไม่เกิน 10 รายการ ต้องเป็น **origin `https://` ล้วนๆ**
   (`https://api.example.com` ผ่าน แต่ `https://api.example.com/v1`,
   `http://…`, มี query/fragment/user:pass → ไม่ผ่าน) เหตุผลอยู่ใน §2.4
@@ -192,21 +192,21 @@ window.pluginApi.panel.close();   // ขอให้แอปหลักปิ�
 ### 2.1 สถาปัตยกรรม
 
 ```
-Renderer (แอปหลัก, src/renderer/plugin.js)        Plugin window (แยกต่างหาก)
+Renderer (แอปหลัก, electron/src/renderer/plugin.js)        Plugin window (แยกต่างหาก)
    │ window.api.plugin.*  (preload.js)               │ window.pluginApi.table.*
    │ preview/install/list/uninstall/launch/stop        (preload-plugin.js —
    ▼                                                    ไม่มี window.api เลย)
-Main process (main.js)                            ▼
+Main process (electron/main.js)                            ▼
    │ createPluginWindow() — BrowserWindow ใหม่         pluginapi:table:* IPC
    │   ต่อปลั๊กอินที่รัน, preload: preload-plugin.js,    (raw ipcMain.handle,
    │   contextIsolation:true, nodeIntegration:false,     resolve pluginId จาก
    │   sandbox:true (ดู §2.4 ว่าทำไมนี่คือความ            BrowserWindow.
    │   ซื่อสัตย์ ไม่ใช่การอวดอ้าง)                        fromWebContents)
    ▼
-src/db/plugin.js       — resolveRepo/preview/install/uninstall (ไฟล์+DB),
+electron/src/db/plugin.js       — resolveRepo/preview/install/uninstall (ไฟล์+DB),
                          pluginApiQuery/Insert/Update/Delete/GetSchema
                          (บังคับ ownership ทุกครั้ง)
-src/db/plugin-manifest.js — logic ล้วนๆ ไม่ require electron/db เลย:
+electron/src/db/plugin-manifest.js — logic ล้วนๆ ไม่ require electron/db เลย:
                          validateManifest, parseRepoUrl, rawUrl
                          (แยกออกมาเพื่อให้ `node --test` เรียกตรงได้ —
                           test/plugin-url.test.mjs)
@@ -215,7 +215,7 @@ src/db/plugin-manifest.js — logic ล้วนๆ ไม่ require electron/d
 ### 2.2 ทำไมต้องแยกระบบใหม่ทั้งหมด ไม่ใช้ของเดิม
 
 `module.kind` มี SQL `CHECK` constraint บังคับ 15 ค่าตายตัว
-(`src/db/schema/ddl.js`) — SQLite ไม่รองรับการ `ALTER` constraint นี้ ปลั๊กอิน
+(`electron/src/db/schema/ddl.js`) — SQLite ไม่รองรับการ `ALTER` constraint นี้ ปลั๊กอิน
 จึงต้องมีตาราง/registry เป็นของตัวเอง (`plugin`, `plugin_table`) ไม่ใช่
 kind ที่ 16
 
@@ -224,7 +224,7 @@ kind ที่ 16
 ไม่มี prepared-statement parameter ตัวไหน bind ชื่อ table/column ได้ (bind ได้
 แค่ค่า value) — ดังนั้นทุก identifier ที่มาจากปลั๊กอิน (manifest's table/
 column names) ต้องผ่าน regex whitelist ที่เข้มงวดก่อนถูกนำไปประกอบ SQL เสมอ
-regex ทั้งชุดอยู่ใน `src/db/plugin-manifest.js`:
+regex ทั้งชุดอยู่ใน `electron/src/db/plugin-manifest.js`:
 
 ```js
 PLUGIN_ID_RE     = /^[a-z0-9_]{1,20}$/
@@ -253,13 +253,13 @@ RESERVED_COLS    = {'id','rowid','oid','_rowid_'}
 พรีวิวที่ค้างอยู่หรือถูกแก้ในหน้าเว็บจึงขยายสิ่งที่ถูกติดตั้งไม่ได้
 
 ฝั่ง renderer: ทุกฟิลด์ของ manifest ที่เอามาวาดในการ์ดพรีวิวผ่าน `x()` ทุกจุด
-(`pluginPreviewHtml` ใน `src/renderer/plugin.js`) — นี่เป็นที่เดียวในแอปที่
+(`pluginPreviewHtml` ใน `electron/src/renderer/plugin.js`) — นี่เป็นที่เดียวในแอปที่
 ข้อความจากอินเทอร์เน็ตถูกวาดเป็น HTML
 
 ### 2.4 สิ่งที่ป้องกันได้ vs สิ่งที่ป้องกันไม่ได้ (ซื่อสัตย์ ไม่ใช่โฆษณา)
 
 **ป้องกันได้:**
-- หน้าต่างปลั๊กอินไม่เคยได้รับ `preload.js` เลย — เข้าถึง `window.api.*`
+- หน้าต่างปลั๊กอินไม่เคยได้รับ `electron/preload.js` เลย — เข้าถึง `window.api.*`
   ไม่ได้เด็ดขาด (เป็นข้อเท็จจริงเชิงโครงสร้าง ไม่ใช่การเช็คแบบ runtime ที่ bypass
   ได้)
 - แตะตารางของปลั๊กอินอื่นหรือของแอปหลักไม่ได้ — ทุกคำสั่ง `pluginApi.table.*`
@@ -268,16 +268,16 @@ RESERVED_COLS    = {'id','rowid','oid','_rowid_'}
   หน้าต่างปลั๊กอิน และตาราง `pluginPanelContents` สำหรับ panel ที่ฝังอยู่ —
   ตารางหลังถูกเติมโดย `hardenWebviewAttach` ซึ่งตรวจ src มาแล้ว)
 - รัน SQL เองไม่ได้เลย — ไม่มี raw-SQL passthrough ใน `pluginApi.*` แม้แต่จุดเดียว
-- **panel ฝังหน้าอื่นไม่ได้** (v4.3.0) — `will-attach-webview` ใน `main.js`
+- **panel ฝังหน้าอื่นไม่ได้** (v4.3.0) — `will-attach-webview` ใน `electron/main.js`
   ปฏิเสธการฝังทุกกรณีที่ src ไม่ใช่ไฟล์ `panels[].entry` ที่ปลั๊กอินซึ่งติดตั้ง
   แล้วประกาศไว้จริง เทียบ path ด้วย `path.relative` ไม่ใช่ prefix ของ string
   (กัน `<plugins>/foo-evil` ผ่านเพราะขึ้นต้นเหมือน `<plugins>/foo`) และ
   `webPreferences` ที่หน้าเว็บขอมาถูก**เขียนทับ ไม่ใช่ merge** — preload ถูก
-  บังคับเป็น `preload-plugin.js`, `nodeIntegration:false`, popup ถูกปิด และ
+  บังคับเป็น `electron/preload-plugin.js`, `nodeIntegration:false`, popup ถูกปิด และ
   navigate ออกนอกไฟล์ตัวเองถูกบล็อก
 
 **ป้องกันไม่ได้ (ยอมรับเป็นข้อจำกัดที่รู้อยู่แล้ว ไม่ใช่สิ่งที่ระบบนี้อ้างว่าแก้ได้):**
-- **ไม่มี OS-level Chromium sandbox จริง** — `main.js` มี
+- **ไม่มี OS-level Chromium sandbox จริง** — `electron/main.js` มี
   `app.commandLine.appendSwitch('no-sandbox')` ตั้งไว้ทั้งโปรเซส (เพื่อความ
   เข้ากันได้กับ portable build) ตั้งแต่ก่อนฟีเจอร์นี้จะมีอยู่ — ทุกหน้าต่างในแอป
   รวมถึงหน้าต่างปลั๊กอินได้รับผลกระทบนี้เหมือนกันหมด Electron ไม่รองรับการ
@@ -340,9 +340,9 @@ runtime ไม่ได้และไม่ควรพึ่งพา) — แ
 
 | ของเดิม (≤ v4.1) | ของใหม่ (v4.2+) |
 |---|---|
-| `src/db/extension.js` | `src/db/plugin.js` (+ `src/db/plugin-manifest.js`) |
-| `src/renderer/extension.js` | `src/renderer/plugin.js` |
-| `preload-ext.js` | `preload-plugin.js` |
+| `electron/src/db/extension.js` | `electron/src/db/plugin.js` (+ `electron/src/db/plugin-manifest.js`) |
+| `electron/src/renderer/extension.js` | `electron/src/renderer/plugin.js` |
+| `preload-ext.js` | `electron/preload-plugin.js` |
 | IPC `extension:*` | `plugin:*` (+ ช่องใหม่ `plugin:preview`) |
 | IPC `extapi:table:*` | `pluginapi:table:*` |
 | `window.extApi` | `window.pluginApi` (`extApi` ยังอยู่เป็น alias) |
@@ -351,21 +351,21 @@ runtime ไม่ได้และไม่ควรพึ่งพา) — แ
 | ตารางของแต่ละตัว `ext_<id>_<name>` | `plg_<id>_<name>` |
 | โฟลเดอร์ `<dataRoot>/extensions/` | `<dataRoot>/plugins/` |
 
-- **ฝั่ง DB**: `migratePluginV42(db)` ใน `src/db/schema/migrations.js` — ต่างจาก
+- **ฝั่ง DB**: `migratePluginV42(db)` ใน `electron/src/db/schema/migrations.js` — ต่างจาก
   migration อื่นตรงที่ **รันก่อน `db.exec(DDL_SQL)`** ใน `schema/init.js` ไม่งั้น
   `CREATE TABLE IF NOT EXISTS plugin` จะสร้างตารางเปล่าขึ้นมาข้างๆ ข้อมูลเก่า
   และต้องอยู่ใน `parts[]` ของ `schemaStamp()` ด้วย ไม่งั้น DB เดิมจะข้าม `initDB`
   ทั้งก้อนแล้วไม่เคย migrate เลย (พลาดแบบไม่มี error ให้เห็น)
-- **ฝั่งดิสก์**: `migratePluginDir()` ใน `src/db/plugin.js` เรียกครั้งเดียวจาก
-  `main.js` ตอน `app.whenReady()` — ย้าย `extensions/` → `plugins/` ถ้ายังไม่เคยย้าย
+- **ฝั่งดิสก์**: `migratePluginDir()` ใน `electron/src/db/plugin.js` เรียกครั้งเดียวจาก
+  `electron/main.js` ตอน `app.whenReady()` — ย้าย `extensions/` → `plugins/` ถ้ายังไม่เคยย้าย
 - **ปลั๊กอินเก่าไม่ต้องแก้อะไร**: `window.extApi` ยังใช้ได้ และชื่อไฟล์
   `dracondex-extension.json` ยังหาเจอ
 
 ### 2.7 การทดสอบ
 
 1. **Manifest validator + URL parser** (`validateManifest`, `parseRepoUrl`,
-   `rawUrl`) — เป็น pure function ใน `src/db/plugin-manifest.js` ไม่พึ่ง Electron
-   เลย มีเทสต์จริงที่ `test/plugin-url.test.mjs` (`node --test 'test/*.test.mjs'`)
+   `rawUrl`) — เป็น pure function ใน `electron/src/db/plugin-manifest.js` ไม่พึ่ง Electron
+   เลย มีเทสต์จริงที่ `test/plugin-url.test.mjs` (`node --test 'electron/test/*.test.mjs'`)
    ครอบคลุมลิงก์ทุกรูปแบบใน §1.1, ลิงก์ที่ต้องปฏิเสธ (โฮสต์อื่น, path traversal,
    percent-encoding, ช่องว่าง) และ fixture manifest ที่ต้องไม่ผ่าน (id ผิดรูปแบบ,
    column type ผิด, ชื่อ column สงวนไว้, มี SQL metacharacter, path traversal ใน
@@ -374,9 +374,9 @@ runtime ไม่ได้และไม่ควรพึ่งพา) — แ
    ย้ายมาครบ, `ext_*` ถูก rename เป็น `plg_*` พร้อมข้อมูลข้างใน, `repo_host`
    ถูก backfill, FK `ON DELETE CASCADE` ยังทำงาน, รันซ้ำแล้วไม่เปลี่ยนอะไร
 3. **เส้นทางอัปเกรดเต็ม** — data dir ที่มีทั้ง DB v4.1 และโฟลเดอร์ `extensions/`
-   แล้วบูต `database.js` จริง: `pluginList()` คืนปลั๊กอินเดิม, `pluginApiQuery`
+   แล้วบูต `electron/database.js` จริง: `pluginList()` คืนปลั๊กอินเดิม, `pluginApiQuery`
    อ่านข้อมูลในตารางที่ถูก rename ได้, ไฟล์ย้ายไป `plugins/` และ path ที่
-   `main.js` ใช้ `loadFile` ยังชี้ถูก
+   `electron/main.js` ใช้ `loadFile` ยังชี้ถูก
 4. **preview/install** — ตรวจว่า `rawUrl` ของทั้ง GitHub และ GitLab ยิงไปโดน
    ไฟล์จริงบนเน็ตได้ (HTTP 200) และ repo จริงที่ไม่มี manifest คืน `no_manifest`
    (ไม่ใช่ `network`) จากนั้นทดสอบ install เต็มเส้นด้วย fetch ที่ stub เป็น repo

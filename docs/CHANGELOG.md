@@ -19,6 +19,69 @@
 
 ---
 
+## 2026-08-10 — แยก repo เป็น electron/ · flutter/ · src/ (shared resource)
+- commit: uncommitted
+- ไฟล์ที่แก้: ย้ายไฟล์ทั้ง repo (ดูรายละเอียดด้านล่าง) + `package.json`,
+  `.github/workflows/{build-electron,build-apk,publish-package}.yml`,
+  `.gitignore`, `.claude/skills/dracondex-file-arch/check-arch.mjs`,
+  `.claude/skills/dracondex-module-style/check.mjs`,
+  `.claude/skills/run-dracondex/{driver,web-driver}.mjs`, docs ทั้งชุด
+- อะไรเปลี่ยน:
+  - **root เหลือ 3 โฟลเดอร์โค้ด**: `electron/` (แอป Electron ทั้งหมด),
+    `flutter/` (เดิม `flutter_app/`), `src/` (**ของกลางที่สองฝั่งใช้ร่วมกัน —
+    ไม่มีโค้ดแอป**) ส่วน `package.json`, `docs/`, `.claude/`, `.github/`
+    ยังอยู่ root เพราะเป็นของทั้งโปรเจกต์
+  - ย้ายเข้า `electron/`: `main.js`, `preload.js`, `preload-plugin.js`,
+    `database.js`, `index.html`, `start.js`, `ensure-electron.js`, `css/`,
+    `src/db/`, `src/renderer/`, `vendor/`, `scripts/`, `test/` —
+    **คงชื่อ `src/` ข้างในไว้** relative path ภายในจึงไม่ต้องแก้เลย
+    (`<script src>` 59 บรรทัดใน `index.html` และ `require()` 32 บรรทัดใน
+    `database.js` ไม่ขยับสักบรรทัด)
+  - ย้ายเข้า `src/` (ของกลาง): `Image/` → `src/assets/brand/`,
+    `flutter_app/assets/images` → `src/assets/flutter/`,
+    `flutter_app/assets/fonts` → `src/assets/fonts/`, `ds-bundle/` →
+    `src/design/`, `supabase/` → `src/supabase/`
+  - ไฟล์ใหม่: `src/README.md` (อะไร shared / ใครกิน / ทิศทางของ truth),
+    `src/schema/README.md` (สัญญา SQLite — `electron/src/db/schema/ddl.js`
+    103 ตารางเป็นของจริง, Dart 40 ตารางเป็น subset แท้),
+    `src/sync-assets.mjs` (mirror asset ลง `flutter/assets/`, มี `--check`)
+  - path ที่ต้องแก้จริงในโค้ด: `main.js` (dev data dir เป็น
+    `__dirname/../tmp-user-data` — ถ้าไม่แก้ DB dev เดิมเหมือนหาย, icon 3 จุด
+    ชี้ `../src/assets/brand/`, `loadFile` ใช้ `path.join(__dirname,…)` ให้ไม่
+    ขึ้นกับ cwd), `ensure-electron.js` (`node_modules` อยู่ root → `../`),
+    `scripts/finish-portable.mjs` (root ขึ้นอีกชั้น), `css/nav-hub.css` 34 จุด
+    (`../Image/` → `../../src/assets/brand/`), renderer 4 ไฟล์ + `index.html`
+    (`Image/` → `../src/assets/brand/`), `docs/mockups/*` 79 จุด
+  - `package.json`: `main` → `electron/main.js`; `files`/`build.files` เหลือ
+    `electron/**` (ตัด `test/`, `scripts/`) + `src/assets/brand/**` — tarball
+    ลดจาก 9.3 MB เหลือ 3.0 MB เพราะเลิก ship asset ฝั่ง Flutter
+  - checker/driver ทั้ง 4 ตัวอัปเดต prefix แล้ว: `check-arch.mjs` เพิ่ม
+    `APP_DIR` + matcher ของ `build.files` ที่เข้าใจ glob/negation,
+    `check.mjs` อ่านผ่าน `app()`, `web-driver.mjs` ชี้ `electron/*`
+- ทำไม: เดิม root ปนกันหมด — ไฟล์ Electron นั่งระดับเดียวกับ `flutter_app/`,
+  `supabase/`, `ds-bundle/` มองไม่ออกว่าอะไรเป็นของฝั่งไหน อะไรใช้ร่วมกัน
+  ตอนนี้ชื่อโฟลเดอร์บอกได้เองว่าแก้ที่นี่แล้วกระทบใคร และ `src/` บังคับให้
+  "ของกลาง" มีที่อยู่ชัดเจนแทนที่จะกระจายตามราก
+  - `flutter/assets/` ยังต้องมีไฟล์จริง เพราะ `pubspec.yaml` อ้าง asset นอก
+    package ตัวเองไม่ได้ — จึงใช้ `src/assets/` เป็นต้นฉบับแล้ว commit สำเนา
+    ไว้ (git เก็บ blob เดียวเพราะเนื้อหาเหมือนกัน) `build-apk.yml` เรียก
+    `--check` ก่อน `pub get` กันคนแก้ผิดฝั่ง
+- ตรวจแล้ว: `check-arch.mjs` 0 error / `check.mjs` 0 error 56 warning (เท่า
+  HEAD เดิมเป๊ะ ต่างแค่ข้อความ path — baseline ใน CLAUDE.md ที่เขียนไว้ 55
+  นั้นเก่าไปหนึ่ง จึงแก้เป็น 56), `node --test 'electron/test/*.test.mjs'`
+  ผ่าน 15/15, `npm install` (postinstall หา Electron เจอ), driver จริงใต้
+  xvfb + web-driver บูตติดทั้งคู่ — screenshot ยืนยันว่า CSS/ธีม/ภาษาไทย/
+  โลโก้จาก `src/assets/brand/` ขึ้นครบ, `npm pack --dry-run` เห็น
+  `electron/**` + `src/assets/brand/**` ครบและไม่มี path เก่า
+- Doc ที่อัปเดต: `CLAUDE.md` (Repo layout เขียนใหม่ + กฎ path),
+  `README.md` (Project structure), `docs/FILES.md`, `docs/Architec.md`,
+  `docs/SYSTEMS.md`, `docs/PLUGINS.md`, `docs/SYNC.md`, `docs/DRIVE.md`,
+  `docs/UPDATE.md`, skill ทั้ง 5 ตัว, `.design-sync/`, `Install-Guide.txt`,
+  `cmd-note.txt` — รายการเก่าใน CHANGELOG/procress.md ปล่อยไว้ตามเดิมเพราะ
+  เป็นบันทึกของสภาพ ณ เวลานั้น
+
+---
+
 ## 2026-08-09 — Newcomer customize: ตัด left panel, ย่อหน้าต่าง, ลิสต์ชื่อ module เทียบซ้าย-ขวา
 - commit: uncommitted
 - ไฟล์ที่แก้: `main.js` (ขนาดหน้าต่าง Welcome), `src/renderer/core/welcome.js`,

@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const OUT = __dirname;
-const LOGO = '../../Image/DraconDex-SymbolWhite.png'; // relative to docs/mockups
+const LOGO = '../../src/assets/brand/DraconDex-SymbolWhite.png'; // relative to docs/mockups
 
 const ic = {
   plus: '<svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',

@@ -61,8 +61,8 @@ node .claude/skills/run-dracondex/driver.mjs --fresh \
   "ss 01-<flow-start>" "click ..." "wait 400" "ss 02-<flow-step>"
 ```
 
-Also read the actual renderer code for the flow (`src/renderer/*.js`,
-`src/renderer/mod/*.js`) to count real steps/clicks/decisions — not the
+Also read the actual renderer code for the flow (`electron/src/renderer/*.js`,
+`electron/src/renderer/mod/*.js`) to count real steps/clicks/decisions — not the
 apparent ones (a picker that *looks* like one click might hide a second
 confirmation step, etc.).
 

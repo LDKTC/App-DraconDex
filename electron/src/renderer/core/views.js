@@ -203,7 +203,7 @@ function buildBuilderPageHtml() {
     : (S.kindBrowserPage && typeof buildKindBrowserPageHtml === 'function') ? buildKindBrowserPageHtml()
     : (S.importDockPage && typeof buildImportDockPageHtml === 'function') ? buildImportDockPageHtml()
     : `<div class="empty" style="margin-top:80px">
-    <div class="ei"><img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
+    <div class="ei"><img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
     <h3>${x(S.nexus.name)}</h3>
     <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
   </div>`;

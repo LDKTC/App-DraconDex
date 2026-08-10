@@ -25,9 +25,9 @@ command inuse
     to run app build from terminal.
     - "app name.exe"
 
-command inuse (flutter_app / Android APK)
+command inuse (flutter / Android APK)
 
-    to download flutter packages (run inside flutter_app).
+    to download flutter packages (run inside flutter).
     - flutter pub get
 
     to check code problems.
@@ -39,7 +39,7 @@ command inuse (flutter_app / Android APK)
     to test on a phone/emulator.
     - flutter run
 
-    to build the APK (result in flutter_app/build/app/outputs/flutter-apk/).
+    to build the APK (result in flutter/build/app/outputs/flutter-apk/).
     - flutter build apk --release --split-per-abi
     - flutter build apk --release
 

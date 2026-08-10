@@ -3,7 +3,7 @@
   "mode": "tokens-only",
   "reason": "Vanilla-JS Electron app — no React component library, no dist/, no Storybook. Off-script extraction of design tokens from style.css only.",
   "tokensSource": "style.css",
-  "outputDir": "ds-bundle",
+  "outputDir": "src/design",
   "defaultTheme": "midnight",
   "themes": ["midnight", "daylight", "moonlight"]
 }

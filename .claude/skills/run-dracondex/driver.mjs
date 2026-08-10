@@ -32,7 +32,7 @@ import { _electron as electron } from 'playwright-core';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const require_ = createRequire(import.meta.url);
-const { ensureElectron } = require_(path.join(root, 'ensure-electron.js'));
+const { ensureElectron } = require_(path.join(root, 'electron', 'ensure-electron.js'));
 
 // --- parse argv ---
 const commands = [];

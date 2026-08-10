@@ -5,7 +5,7 @@
 > ตั้งโปรเจกต์ Supabase ใด ๆ เพื่อใช้ DraconDex
 
 ระบบสำรองข้อมูลบนคลาวด์ที่ใช้งานอยู่จริงตอนนี้คือ **Google Drive Backup**
-(OAuth ตรงกับ Google, scope `drive.appdata`) — ดู [`../docs/DRIVE.md`](../docs/DRIVE.md)
+(OAuth ตรงกับ Google, scope `drive.appdata`) — ดู [`docs/DRIVE.md`](../../docs/DRIVE.md)
 ไม่เกี่ยวกับโฟลเดอร์นี้แม้แต่น้อย
 
 ## ทำไมยังเก็บไฟล์พวกนี้ไว้
@@ -19,7 +19,7 @@
 ## ถ้าจะเปิดกลับ
 
 1. ตั้ง `CLOUD_SYNC_ENABLED = true` ใน `src/renderer/core/state.js`
-2. ทำตาม [`../docs/SYNC.md`](../docs/SYNC.md) §1.1–1.2 (สร้างโปรเจกต์ Supabase,
+2. ทำตาม [`docs/SYNC.md`](../../docs/SYNC.md) §1.1–1.2 (สร้างโปรเจกต์ Supabase,
    รัน migration **ตามลำดับ**, เปิด Google provider, กรอก URL + anon key ในแอป)
 
 ```

@@ -5,13 +5,13 @@ Step 1: After you download program of this file in your device
     -Open this folder by use your IDE Program eg. VSCode ,AntiGravity ,and another
     -After you open your IDE. Check that you has *all the important file we need*
         -filename
-        database.js
-        ,index.html
-        ,main.js
+        electron/database.js
+        ,electron/index.html
+        ,electron/main.js
         ,package.json
         ,package-lock.json
-        ,preload.js
-        ,start.js
+        ,electron/preload.js
+        ,electron/start.js
         ,Style.css
 
 Step 2: After you got all the file. run this in your terminal.
@@ -76,9 +76,9 @@ Step last: Carry it on a flash drive
     - Android Studio with Android SDK 24+
     - A phone with USB debugging ON  OR  an Android emulator
 
-Step 1: Go to the flutter_app folder
+Step 1: Go to the flutter folder
 
-        cd flutter_app
+        cd flutter
 
 Step 2: Download all packages
 
@@ -118,7 +118,7 @@ Step 6: Find your APK
 
     - APK files will be in this folder:
 
-        flutter_app/build/app/outputs/flutter-apk/
+        flutter/build/app/outputs/flutter-apk/
 
     - File names:
         app-arm64-v8a-release.apk   (for most modern phones)

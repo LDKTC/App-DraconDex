@@ -9,7 +9,7 @@ One checker, run from the repo root:
 
 ```bash
 node .claude/skills/dracondex-file-arch/check-arch.mjs              # whole repo
-node .claude/skills/dracondex-file-arch/check-arch.mjs src/renderer/hub/tree.js
+node .claude/skills/dracondex-file-arch/check-arch.mjs electron/src/renderer/hub/tree.js
 ```
 
 Errors (exit 1) are wiring failures a split can introduce. Notices and warnings
@@ -39,23 +39,23 @@ From `Plan.md`, in priority order:
    file doing four things is not.
 
 Data files are exempt and listed in `DATA_FILES` in the checker
-(`src/renderer/i18n.js`, `src/db/schema/{ddl,indexes,seed}.js`,
-`css/themes.css`). Adding a new one? Add it there too.
+(`electron/src/renderer/i18n.js`, `electron/src/db/schema/{ddl,indexes,seed}.js`,
+`electron/css/themes.css`). Adding a new one? Add it there too.
 
 ## Where things live
 
 ```
-main.js preload.js database.js      entry points — the only app .js in the repo root
-css/                                14 stylesheets, cascade order = <link> order in index.html
-src/renderer/core/                  state, ui primitives, settings, theme, nav, pickers, views, nexus, router, shortcuts
-src/renderer/{hub,navigator,hero}/  one folder per split module family
-src/renderer/mod/                   the 15 v3 module-kind renderers
-src/renderer/*.js                   still-single-file modules (director, writer, scribe, …)
-src/db/                             one file per system; schema/ holds DDL, indexes, seed, init, migrations
+electron/main.js electron/preload.js electron/database.js      entry points — the only app .js in the repo root
+electron/css/                                14 stylesheets, cascade order = <link> order in electron/index.html
+electron/src/renderer/core/                  state, ui primitives, settings, theme, nav, pickers, views, nexus, router, shortcuts
+electron/src/renderer/{hub,navigator,hero}/  one folder per split module family
+electron/src/renderer/mod/                   the 15 v3 module-kind renderers
+electron/src/renderer/*.js                   still-single-file modules (director, writer, scribe, …)
+electron/src/db/                             one file per system; schema/ holds DDL, indexes, seed, init, migrations
 ```
 
 A module family that outgrows one file becomes a **folder**, not
-`foo-bar.js` siblings. Keep `src/db` flat except for `schema/`.
+`foo-bar.js` siblings. Keep `electron/src/db` flat except for `schema/`.
 
 ## How to split safely (this codebase, specifically)
 
@@ -70,7 +70,7 @@ load-bearing:
 
    ```bash
    # after splitting, this must print nothing
-   diff <(cat css/tokens.css css/themes.css …) style.css.orig
+   diff <(cat electron/css/tokens.css electron/css/themes.css …) style.css.orig
    ```
 
 2. **Top-level `const`/`let` are in a cross-script TDZ.** The file that declares
@@ -80,15 +80,15 @@ load-bearing:
 
 3. **Lazy groups load out of order.** `loadModule()` appends a `<script>` to
    `<head>`, which is async — a folder loaded lazily has *no* intra-group
-   ordering. Register it in `LAZY_GROUPS` (`src/renderer/core/views.js`) and
+   ordering. Register it in `LAZY_GROUPS` (`electron/src/renderer/core/views.js`) and
    call `loadGroup(name)`, which awaits all of them, and make sure no file in
    the group reads another file's binding at top level.
 
 4. **`url()` in CSS resolves against the stylesheet.** Moving a rule from a
-   root-level file into `css/` turns `url('Image/x.png')` into a 404 — it needs
-   `../Image/x.png`. The checker enforces this.
+   root-level file into `electron/css/` turns `url('src/assets/brand/x.png')` into a 404 — it needs
+   `../../src/assets/brand/x.png`. The checker enforces this.
 
-For CommonJS (`src/db/`), a split needs real `require`/`module.exports` wiring:
+For CommonJS (`electron/src/db/`), a split needs real `require`/`module.exports` wiring:
 keep the old file as a **façade** that re-exports the same names, so the ~29
 `require('./core')` call sites never learn about the change. Watch for
 `require('./x')` paths that move a directory deeper, and for the original
@@ -100,12 +100,12 @@ file's trailing `module.exports` riding along in the last slice.
 |---|---|---|
 | size bands + data-file exemption | notice/warn | the Plan.md signal |
 | >500 lines with ≥4 banner sections or ≥25 top-level declarations | warning | prints the banner seams a split would follow |
-| loose source files in the repo root; db files outside `src/db{,/schema}` | warning | folder conventions |
-| every `src/renderer/**/*.js` has a `<script>` tag, a `loadModule()` reference, or a `LAZY_GROUPS` folder | **error** | a split file that nobody loads fails silently |
+| loose source files in the repo root; db files outside `electron/src/db{,/schema}` | warning | folder conventions |
+| every `electron/src/renderer/**/*.js` has a `<script>` tag, a `loadModule()` reference, or a `LAZY_GROUPS` folder | **error** | a split file that nobody loads fails silently |
 | no top-level name declared in two renderer files | **error** | one global scope: a duplicate `const` throws, a duplicate `function` silently shadows |
-| every `css/*.css` is linked, every link exists, every relative `url()` starts with `../` | **error** | unlinked styles / 404 assets |
+| every `electron/css/*.css` is linked, every link exists, every relative `url()` starts with `../` | **error** | unlinked styles / 404 assets |
 | `package.json` `build.files` covers `src`, `css`, `Image`, and the entry files | **error** | a packaged build shipping without its CSS |
-| every `src/db/**/*.js` is reachable from `database.js` | **error** | orphan data-layer file |
+| every `electron/src/db/**/*.js` is reachable from `electron/database.js` | **error** | orphan data-layer file |
 
 The duplicate-globals check is not theoretical: it found `flattenModuleTree`
 defined differently in `hub/menus.js` and `mod/viewer.js`, with viewer's
@@ -117,7 +117,7 @@ zero-argument version winning and making the nest row's "Move to…" menu throw.
 2. `node .claude/skills/dracondex-module-style/check.mjs` → 0 errors, warnings
    not above the baseline (they redistribute across the new files; the total
    can rise slightly because per-file warnings are deduped per file).
-3. `node --test 'test/*.test.mjs'`.
+3. `node --test 'electron/test/*.test.mjs'`.
 4. Drive the real app (`/run-dracondex`) and **read** the screenshots. A bad cut
    shows up in the console as `SyntaxError`, `X is not defined`, or
    `Identifier 'S' has already been declared`, and a CSS mistake shows up as a

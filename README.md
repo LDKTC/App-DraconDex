@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Image/DraconDex_Color.png" alt="DraconDex logo" width="160">
+  <img src="src/assets/brand/DraconDex_Color.png" alt="DraconDex logo" width="160">
 </p>
 
 <h1 align="center">DraconDex</h1>
@@ -30,7 +30,7 @@ The default UI language is **Thai**, with **18 locales** supported
 locale).
 
 A separate, in-progress **Flutter mobile port** lives in
-[`flutter_app/`](flutter_app/). It shares the same SQLite schema as the
+[`flutter/`](flutter/). It shares the same SQLite schema as the
 desktop app (databases can be transferred between the two — see
 [Mobile (Flutter) build](#mobile-flutter-build) below) but is developed
 independently and is currently **behind** the desktop app in features.
@@ -72,18 +72,18 @@ independently and is currently **behind** the desktop app in features.
 | Desktop shell | Electron (`contextIsolation: true`, `nodeIntegration: false`) |
 | Renderer (UI) | Vanilla JS — no framework, HTML built as strings |
 | Data layer | `node-sqlite3-wasm`, accessed from the renderer via Electron IPC |
-| Mobile port | Flutter + Riverpod (`flutter_app/`), same SQLite schema |
+| Mobile port | Flutter + Riverpod (`flutter/`), same SQLite schema |
 
 ## Getting started (desktop / dev)
 
 Requirements: Node.js and npm.
 
 ```bash
-npm install     # postinstall runs ensure-electron.js to validate the Electron binary
+npm install     # postinstall runs electron/ensure-electron.js to validate the Electron binary
 npm start       # launches the app against local dev data in tmp-user-data/
 ```
 
-`npm start` runs `start.js` and opens the app against an isolated dev
+`npm start` runs `electron/start.js` and opens the app against an isolated dev
 database in `tmp-user-data/` (override with the `DRACONDEX_DATA_DIR`
 environment variable). Note that pressing Ctrl-C in the terminal won't
 close the Electron window — close the window itself to stop the app.
@@ -149,9 +149,9 @@ it automatically, so a release carries both the Windows installers above
 and the package; a manual run can publish the current `package.json`
 version on its own, or just pack the tarball to inspect it (*dry run*).
 
-The tarball is the app itself — `main.js`, `preload*.js`, `database.js`,
-`index.html`, `start.js`, plus `src/`, `css/`, `Image/`, `vendor/` and
-`scripts/` (~3 MB). It is **not** a library: there is nothing to `import`,
+The tarball is the app itself — everything under `electron/` except its
+tests, plus the shared brand assets in `src/assets/brand/` (~3 MB).
+It is **not** a library: there is nothing to `import`,
 and it is meant for consuming the sources programmatically (vendoring,
 plugin tooling, running from source). Most people want the installer from
 [Releases](https://github.com/LDKTC/App-DraconDex/releases) instead.
@@ -175,13 +175,13 @@ Electron is a *dev* dependency, so it is not pulled in by that install —
 ## Mobile (Flutter) build
 
 > ฝั่งมือถือยังไม่ครบทุกฟีเจอร์เท่าเวอร์ชัน Desktop — ดูรายละเอียดใน
-> `flutter_app/README.md`
+> `flutter/README.md`
 
 Requirements: Flutter SDK 3.44.4+, Android Studio with Android SDK 24+, and
 either a phone with USB debugging on or an Android emulator.
 
 ```bash
-cd flutter_app
+cd flutter
 flutter pub get
 flutter doctor       # confirm the Android toolchain shows no red X
 flutter run          # launch on a connected phone or emulator
@@ -191,7 +191,7 @@ flutter build apk --release --split-per-abi   # smaller, per-ABI APKs (recommend
 flutter build apk --release                   # universal APK, works on all devices
 ```
 
-APKs are written to `flutter_app/build/app/outputs/flutter-apk/`
+APKs are written to `flutter/build/app/outputs/flutter-apk/`
 (`app-arm64-v8a-release.apk`, `app-armeabi-v7a-release.apk`, or
 `app-release.apk`). You can also build without a local Flutter setup via
 the repo's **"Build Flutter APK"** GitHub Actions workflow (Actions tab →
@@ -208,27 +208,38 @@ phone, then use **Settings → Import Database** in the Android app.
 ## Project structure
 
 ```
-main.js             Electron main process — window creation, all IPC handlers (delegates to database.js)
-preload.js           contextBridge — exposes window.api.<namespace>.<fn>, 1:1 with main.js IPC channels
-database.js          require()s + re-exports everything in src/db/*.js as one object
-index.html           near-empty HTML shell; loads css/ and every renderer script in order
-css/                 all styling (tokens → themes → base → chrome → layout → components → v3)
-src/db/              data layer (runs in main process), one file per system
-src/renderer/        UI layer, one file per legacy module/system
-src/renderer/core/   global state, UI primitives, settings/theme, nav, routing
-src/renderer/hub/    the v3 Hub: kind registry, nest tree, menus, module CRUD
-src/renderer/mod/    UI layer for the 15 v3 "module kind" renderers
-vendor/              vendored D3 + Konva (offline-first; unpkg CDN is fallback only)
-scripts/             build/packaging helper scripts
+electron/                  THE ELECTRON APP — everything only this side uses
+  main.js                  main process — window creation, all IPC handlers (delegates to database.js)
+  preload.js               contextBridge — exposes window.api.<namespace>.<fn>, 1:1 with main.js IPC channels
+  database.js              require()s + re-exports everything in src/db/*.js as one object
+  index.html               near-empty HTML shell; loads css/ and every renderer script in order
+  css/                     all styling (tokens → themes → base → chrome → layout → components → v3)
+  src/db/                  data layer (runs in main process), one file per system
+  src/renderer/            UI layer, one file per legacy module/system
+  src/renderer/core/       global state, UI primitives, settings/theme, nav, routing
+  src/renderer/hub/        the v3 Hub: kind registry, nest tree, menus, module CRUD
+  src/renderer/mod/        UI layer for the 15 v3 "module kind" renderers
+  vendor/                  vendored D3 + Konva (offline-first; unpkg CDN is fallback only)
+  scripts/                 build/packaging helper scripts
+  test/                    a handful of node --test regression tests
+
+flutter/                   separate Flutter front-end, same DB schema, behind parity
+
+src/                       SHARED between Electron and Flutter — no app code (see src/README.md)
+  assets/brand/            logo/icon set Electron reads directly
+  assets/flutter/, assets/fonts/   masters mirrored into flutter/assets/ by src/sync-assets.mjs
+  schema/                  the SQLite contract — which side owns which tables
+  design/                  design tokens extracted from electron/css/
+  supabase/                server-side migrations for Cloud Sync (disabled since v4.5.0)
+
 docs/                architecture, per-system behavior, per-file reference, changelog (see below)
-flutter_app/         separate Flutter front-end, same DB schema, behind parity
-test/                a handful of node --test regression tests
+package.json         root — "main" points at electron/main.js
 ```
 
 ## Testing
 
 ```bash
-node --test 'test/*.test.mjs'
+node --test 'electron/test/*.test.mjs'
 ```
 
 There is no linter configured for this project. Correctness is otherwise

@@ -53,7 +53,7 @@ briefly and move on rather than investigating it deeply.
 - If the Electron binary can't launch in this environment, fall back to
   `.claude/skills/run-dracondex/web-driver.mjs` (same command vocabulary).
 - Also read the actual renderer code for the flow
-  (`src/renderer/*.js`, `src/renderer/mod/*.js`) to count real
+  (`electron/src/renderer/*.js`, `electron/src/renderer/mod/*.js`) to count real
   clicks/decisions, not just what a screenshot implies.
 
 ## Report format

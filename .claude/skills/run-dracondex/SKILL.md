@@ -11,16 +11,16 @@ driver at `.claude/skills/run-dracondex/driver.mjs`. All paths below are
 relative to the repo root. Verified on Windows 11, Electron 42, Node via
 Git Bash.
 
-There is also a Flutter port in `flutter_app/` — that is a separate front-end
+There is also a Flutter port in `flutter/` — that is a separate front-end
 and is NOT covered by this skill.
 
 ## No Electron binary? Use web-driver.mjs
 
 In sandboxes where the Electron zip cannot be downloaded (GitHub releases
-blocked → `ensure-electron.js` fails with 403), use
+blocked → `electron/ensure-electron.js` fails with 403), use
 `.claude/skills/run-dracondex/web-driver.mjs` instead. It runs the **real**
-renderer, the **real** `preload.js` mapping, and the **real** db layer
-(`main.js` IPC handlers, in-process) inside Playwright Chromium
+renderer, the **real** `electron/preload.js` mapping, and the **real** db layer
+(`electron/main.js` IPC handlers, in-process) inside Playwright Chromium
 (pre-installed at `/opt/pw-browsers`); only Electron's shell
 (app/BrowserWindow/Menu/dialog) is stubbed. Same command vocabulary and the
 same scratch data dir / `shots/` layout as `driver.mjs`, plus a persistent
@@ -34,7 +34,7 @@ multi-process IPC.
 Node.js + npm (already on PATH). No OS packages needed on Windows.
 
 ```bash
-npm install   # postinstall runs ensure-electron.js to validate the Electron binary
+npm install   # postinstall runs electron/ensure-electron.js to validate the Electron binary
 ```
 
 `playwright-core` is a devDependency (drives Electron; downloads no browsers).
@@ -116,16 +116,16 @@ npm run build:exe        # old single-file portable exe (unpacks to %TEMP% on ea
 
 ## Finding selectors
 
-`index.html` is mostly empty shells — the renderer builds all UI at runtime.
-Grep `src/renderer/*.js` for `onclick=` to find handlers;
+`electron/index.html` is mostly empty shells — the renderer builds all UI at runtime.
+Grep `electron/src/renderer/*.js` for `onclick=` to find handlers;
 attribute selectors like `button[onclick='openProjectModal()']` are the most
 robust click targets. Modal input ids are short (`#pn` project name, `#fn`
-folder name, `#cn` category, `#on` object — see `src/renderer/modals.js`).
+folder name, `#cn` category, `#on` object — see `electron/src/renderer/modals.js`).
 All UI handler functions are globals, so `eval openProjectModal()` also works.
 
 ## The app opens on the Welcome window
 
-Since v4.6.0 `main.js` opens a **Welcome window** (`index.html?welcome=1`,
+Since v4.6.0 `electron/main.js` opens a **Welcome window** (`electron/index.html?welcome=1`,
 `body.welcome-mode`) on launch, not the app shell — and boot no longer reopens
 the last vault. So the driver's first window is the Welcome screen: a vault
 list in the left panel and a hero with recent vaults on the right. Picking one
@@ -143,7 +143,7 @@ node .claude/skills/run-dracondex/driver.mjs --fresh \
 (3 most recent vaults) and its "เปลี่ยน Nexus…" row / the ⇄ button, which both
 reopen the Welcome window.
 
-`web-driver.mjs` has no main process to open windows, so it loads `index.html`
+`web-driver.mjs` has no main process to open windows, so it loads `electron/index.html`
 bare — the no-vault picker fallback. Use `--query welcome=1` (or
 `--query nexus=<id>`) there to reach the mode you want.
 
@@ -155,7 +155,7 @@ bare — the no-vault picker fallback. Use `--query welcome=1` (or
 - **Frameless window** (`frame: false`): no OS chrome. Window controls are DOM
   buttons `#win-min` / `#win-max` / `#win-close`.
 - **Data isolation is via `DRACONDEX_DATA_DIR`** (dev-mode override added in
-  `main.js`). Without it, dev runs use `tmp-user-data/` — the developer's real
+  `electron/main.js`). Without it, dev runs use `tmp-user-data/` — the developer's real
   working DB. The driver always sets it; don't point `--data-dir` at
   `tmp-user-data`.
 - **Single-instance lock is per data dir** (keyed on `userData`, set from
@@ -176,8 +176,8 @@ bare — the no-vault picker fallback. Use `--query welcome=1` (or
 
 - `Timeout ... waiting for locator` on a click → selector doesn't exist in the
   current view. Look at `tmp-driver-data/shots/_failure.png` (saved
-  automatically) and re-derive the selector from `src/renderer/*.js`.
-- `Electron binary is missing or incomplete` → `node ensure-electron.js`
+  automatically) and re-derive the selector from `electron/src/renderer/*.js`.
+- `Electron binary is missing or incomplete` → `node electron/ensure-electron.js`
   (or delete `node_modules/electron` and `npm install`).
 - Driver hangs ~15 s then fails at startup → another instance already holds the
   lock for that data dir (see single-instance gotcha), or the renderer crashed

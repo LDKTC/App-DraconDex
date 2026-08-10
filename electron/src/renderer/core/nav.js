@@ -53,7 +53,7 @@ function updateTopNavButton(){
   if(logoBtn){
     logoBtn.innerHTML = inModule
       ? I.return
-      : `<img src="Image/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex">`;
+      : `<img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex">`;
     const title = !inModule ? 'DraconDex' : S.project ? tr('Back to project list') : S.world ? tr('Back to world list') : tr('Back to Nexus');
     logoBtn.setAttribute('title', title);
     logoBtn.classList.toggle('is-return', inModule);

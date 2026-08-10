@@ -22,7 +22,7 @@ login, คนละ token, คนละ scope ดูเหตุผลที่ 
 | Build | Backend ที่ใช้ |
 |---|---|
 | ติดตั้ง (installer) / portable | Google Drive จริง — ต้องตั้งค่า Google OAuth client (§1.1) |
-| dev (`npm start` / driver) | **เซิร์ฟเวอร์ต้นแบบในเครื่อง** (`src/db/drive-devserver.js`) เริ่มเองอัตโนมัติ ไม่ต้องมีบัญชี Google จริง — "เชื่อมต่อ" จะได้บัญชีจำลอง `dev-drive@local.test` ทันที |
+| dev (`npm start` / driver) | **เซิร์ฟเวอร์ต้นแบบในเครื่อง** (`electron/src/db/drive-devserver.js`) เริ่มเองอัตโนมัติ ไม่ต้องมีบัญชี Google จริง — "เชื่อมต่อ" จะได้บัญชีจำลอง `dev-drive@local.test` ทันที |
 
 ---
 
@@ -111,14 +111,14 @@ Supabase Auth (ที่ Cloud Sync ใช้ login Google) **ไม่รีเ
 ### 2.2 สถาปัตยกรรม
 
 ```
-Renderer (src/renderer/drive.js — หน้า "BackupData" ใน Setting window
-          (src/renderer/core/setting-window.js), src/renderer/core/
+Renderer (electron/src/renderer/drive.js — หน้า "BackupData" ใน Setting window
+          (electron/src/renderer/core/setting-window.js), electron/src/renderer/core/
           account.js — หน้า "User profile" (layout slot),
           + ตัวจับเวลา auto-backup รายชั่วโมง — อยู่ฝั่ง renderer เพราะ
           layout profile มีอยู่ใน localStorage เท่านั้น main อ่านไม่ได้)
    │ window.api.drive.*  (preload.js)
    ▼
-Main process IPC 'drive:*' (main.js) → src/db/drive.js
+Main process IPC 'drive:*' (electron/main.js) → electron/src/db/drive.js
    │ exportDatabaseTo / importDatabaseMerge  (src/db/import-merge.js, reuse เดิม)
    │ PKCE + loopback http server ชั่วคราว (src/db/oauth-loopback.js,
    │   ใช้ร่วมกับ src/db/sync.js)
@@ -150,7 +150,7 @@ Google OAuth + Drive API v3 โดยตรง         เซิร์ฟเว�
 - ยกเลิกสิทธิ์จากฝั่ง Google ระหว่างใช้งาน → รีเฟรชครั้งถัดไปได้ `invalid_grant`
   → ล้าง `drive:refreshToken` ในเครื่อง, สถานะกลับเป็น "ยังไม่เชื่อมต่อ" โดย
   ไม่มีการบังคับ re-login กลางคัน; เครือข่ายล่มชั่วคราวไม่ทำให้ถูกตัดการ
-  เชื่อมต่อ (เหมือนพฤติกรรมของ src/db/sync.js)
+  เชื่อมต่อ (เหมือนพฤติกรรมของ electron/src/db/sync.js)
 
 ### 2.4 Drive API ที่ใช้ (appDataFolder เท่านั้น)
 
@@ -171,18 +171,18 @@ Google OAuth + Drive API v3 โดยตรง         เซิร์ฟเว�
 
 "Layout profile" คือ blob เดิมที่มีอยู่แล้วใน renderer
 `localStorage['novel-manager-ui-settings']` (theme/language/size/fontScale/
-customThemes/... — ดู `src/renderer/core/state.js`) serialize ทั้งก้อนแบบ
+customThemes/... — ดู `electron/src/renderer/core/state.js`) serialize ทั้งก้อนแบบ
 ไม่มีการแก้ schema ใหม่ — auto-backup เก็บ blob เดี่ยวนี้ที่ไฟล์ appdata ชื่อ
 `dracondex-layout-profile.json` (`LAYOUT_FILE`) เขียนทับทุกครั้ง main
 process อ่าน localStorage ไม่ได้เอง จึง renderer เป็นฝ่ายส่ง blob นี้ไปกับ
 IPC ทุกครั้งที่ backup
 
 .ddx ใช้ `exportDatabaseTo`/`importDatabaseMerge`/`getDatabasePath` จาก
-`src/db/import-merge.js` โดยตรง — ฟังก์ชันเดียวกับเมนู "ส่งออก/นำเข้า
+`electron/src/db/import-merge.js` โดยตรง — ฟังก์ชันเดียวกับเมนู "ส่งออก/นำเข้า
 ฐานข้อมูล" ที่มีอยู่แล้ว ไม่เขียนกลไกใหม่
 
 **Layout slot (2026-07-30)** — `driveListLayoutSlots`/`driveSaveLayoutSlot`/
-`driveRestoreLayoutSlot`/`driveDeleteLayoutSlot` (`src/db/drive.js`) เก็บ
+`driveRestoreLayoutSlot`/`driveDeleteLayoutSlot` (`electron/src/db/drive.js`) เก็บ
 หลาย slot ตั้งชื่อได้ใน appdata ไฟล์**คนละไฟล์**จาก auto-backup ด้านบน —
 `dracondex-layout-slots.json` (`LAYOUT_SLOTS_FILE`) เก็บเป็น
 `{slots: [{id, name, updatedAt, json}]}` อ่าน-แก้-เขียนทับทั้งไฟล์ทุกครั้ง

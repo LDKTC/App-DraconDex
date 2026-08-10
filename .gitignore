@@ -39,7 +39,7 @@ old_db_data/
 # Editor / IDE
 .idea/
 
-# Flutter (flutter_app/ has its own .gitignore too)
+# Flutter (flutter/ has its own .gitignore too)
 .dart_tool/
 .flutter_sdk/
-flutter_app/build/
+flutter/build/

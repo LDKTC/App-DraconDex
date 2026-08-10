@@ -21,7 +21,7 @@ const tempDataPath = isPackaged
   ? (portableRoot
       ? path.join(portableRoot, 'novel-manager-data')
       : path.join(app.getPath('appData'), 'DraconDex', 'novel-manager-data'))
-  : (process.env.DRACONDEX_DATA_DIR || path.join(__dirname, 'tmp-user-data'));
+  : (process.env.DRACONDEX_DATA_DIR || path.join(__dirname, '..', 'tmp-user-data'));
 if (!fs.existsSync(tempDataPath)) fs.mkdirSync(tempDataPath, { recursive: true });
 const electronUserDataPath = path.join(tempDataPath, 'electron-user-data');
 app.setPath('userData', electronUserDataPath);
@@ -72,7 +72,7 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
     backgroundColor: '#050506',
     frame: false,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, 'Image', 'DraconDex_Icon.ico'),
+    icon: path.join(__dirname, '..', 'src', 'assets', 'brand', 'DraconDex_Icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -93,7 +93,7 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
   const params = new URLSearchParams();
   if (bootstrapNexusId) params.set('nexus', bootstrapNexusId);
   if (bootstrapTabKey) { params.set('tab', bootstrapTabKey); params.set('popup', '1'); }
-  win.loadFile('index.html', params.toString() ? { search: params.toString() } : undefined);
+  win.loadFile(path.join(__dirname, 'index.html'), params.toString() ? { search: params.toString() } : undefined);
 }
 
 // Welcome window (v4.6.0) — the app's single entry point. Boot no longer
@@ -121,7 +121,7 @@ function createWelcomeWindow() {
     backgroundColor: '#050506',
     frame: false,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, 'Image', 'DraconDex_Icon.ico'),
+    icon: path.join(__dirname, '..', 'src', 'assets', 'brand', 'DraconDex_Icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -130,7 +130,7 @@ function createWelcomeWindow() {
   });
   welcomeWindowIds.add(win.id);
   win.on('closed', () => welcomeWindowIds.delete(win.id));
-  win.loadFile('index.html', { search: 'welcome=1' });
+  win.loadFile(path.join(__dirname, 'index.html'), { search: 'welcome=1' });
 }
 
 // Plugins (v4.0.0 as "Github extensions", renamed v4.2.0): one dedicated
@@ -224,7 +224,7 @@ function createPluginWindow(plugin) {
     backgroundColor: '#050506',
     frame: false,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, 'Image', 'DraconDex_Icon.ico'),
+    icon: path.join(__dirname, '..', 'src', 'assets', 'brand', 'DraconDex_Icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload-plugin.js'), // narrow — never preload.js
       contextIsolation: true,

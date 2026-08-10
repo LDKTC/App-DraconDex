@@ -49,7 +49,7 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Run regression tests
-        run: node --test "test/*.test.mjs"
+        run: node --test "electron/test/*.test.mjs"
 
       - name: Resolve package name and version
         id: meta

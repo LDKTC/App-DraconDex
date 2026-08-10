@@ -10,11 +10,11 @@ places, timelines, relationships, game/story design, and free-form
 Obsidian-style markdown notes with `[[wikilinks]]`. The renderer is
 **vanilla JS** (no framework) that builds all UI as HTML strings; the data
 layer is `node-sqlite3-wasm` behind Electron IPC. The default UI language is
-**Thai**, with 18 locales supported (see `src/renderer/i18n.js`:
+**Thai**, with 18 locales supported (see `electron/src/renderer/i18n.js`:
 `en ja ko th zh vi id es pt fr de ru it nl pl uk tr qd` — `qd` is a fictional
 "dragonish" placeholder locale, keep it filled in like any other).
 
-There is also an independent **Flutter port** in `flutter_app/` sharing the
+There is also an independent **Flutter port** in `flutter/` sharing the
 same SQLite schema but a separate, behind-parity codebase (see its own
 section below). Everything else in this file describes the Electron app.
 
@@ -38,30 +38,53 @@ These docs are written in **Thai** (matching the project's primary language)
 
 ## Repo layout
 
+Three top-level folders carry the code: `electron/` (this app), `flutter/`
+(the port), and `src/` (**shared resources only — no app code**). Everything
+else at the root is project-wide: `package.json`, `docs/`, `.claude/`,
+`.github/`.
+
 ```
-main.js            Electron main process — window creation, all IPC handlers (no business logic; delegates straight to database.js)
-preload.js         contextBridge — exposes window.api.<namespace>.<fn>, 1:1 with main.js IPC channels
-database.js        require()s + re-exports everything in src/db/*.js as one object
-index.html         near-empty HTML shell; <link>s css/ and loads every renderer script IN ORDER
-css/               all styling, 14 files (tokens → themes → base → chrome → layout → components → legacy → v3). ORDER IS THE CASCADE; url() paths are relative to css/, hence ../Image/…
-start.js           `npm start` entry point
-ensure-electron.js postinstall — validates/repairs the Electron binary
-src/db/            data layer (runs in main process), one file per system
-src/db/schema/     ddl.js / indexes.js / seed.js (SQL data), init.js (schemaStamp+initDB), migrations.js
-src/renderer/       UI layer, one file per legacy module/system
-src/renderer/core/  global state, UI primitives, settings/theme, nav, pickers, views, routing (12 files; state.js first)
-src/renderer/hub/   the v3 Hub: kind registry, nest tree, menus, module CRUD (7 files, eager)
-src/renderer/navigator/, src/renderer/hero/  the two big legacy modules, lazy-loaded as a group via loadGroup()
-src/renderer/mod/   UI layer for the 15 v3 "module kind" renderers
-vendor/            vendored D3 + Konva (offline-first; unpkg CDN is fallback only)
-scripts/           finish-portable.mjs (post-build packaging step)
+electron/                    THE ELECTRON APP — everything only this side uses
+  main.js                    main process — window creation, all IPC handlers (no business logic; delegates straight to database.js)
+  preload.js                 contextBridge — exposes window.api.<namespace>.<fn>, 1:1 with main.js IPC channels
+  database.js                require()s + re-exports everything in src/db/*.js as one object
+  index.html                 near-empty HTML shell; <link>s css/ and loads every renderer script IN ORDER
+  css/                       all styling, 16 files (tokens → themes → base → chrome → layout → components → legacy → v3). ORDER IS THE CASCADE; url() is relative to the stylesheet, hence ../../src/assets/brand/…
+  start.js                   `npm start` entry point
+  ensure-electron.js         postinstall — validates/repairs the Electron binary (node_modules is at the repo root, hence ../)
+  src/db/                    data layer (runs in main process), one file per system
+  src/db/schema/             ddl.js / indexes.js / seed.js (SQL data), init.js (schemaStamp+initDB), migrations.js
+  src/renderer/              UI layer, one file per legacy module/system
+  src/renderer/core/         global state, UI primitives, settings/theme, nav, pickers, views, routing (state.js first)
+  src/renderer/hub/          the v3 Hub: kind registry, nest tree, menus, module CRUD (7 files, eager)
+  src/renderer/navigator/, src/renderer/hero/   the two big legacy modules, lazy-loaded as a group via loadGroup()
+  src/renderer/mod/          UI layer for the 15 v3 "module kind" renderers
+  vendor/                    vendored D3 + Konva (offline-first; unpkg CDN is fallback only)
+  scripts/                   finish-portable.mjs (post-build packaging step)
+  test/                      a handful of node --test regression tests (`node --test 'electron/test/*.test.mjs'`)
+
+flutter/                     separate Flutter front-end, same DB schema, behind parity
+
+src/                         SHARED between Electron and Flutter — see src/README.md
+  assets/brand/              logo/icon set Electron reads directly (../src/assets/brand/… from index.html)
+  assets/flutter/, assets/fonts/   masters mirrored into flutter/assets/ by src/sync-assets.mjs
+  schema/                    the SQLite contract — which side owns what; read before changing a table
+  design/                    design tokens extracted from electron/css/
+  supabase/                  server-side migrations for Cloud Sync (disabled since v4.5.0)
+  sync-assets.mjs            copies the asset masters into flutter/assets/ (`--check` to verify only)
+
+package.json       root — "main" points at electron/main.js; files/build.files ship electron/** + src/assets/brand/**
 docs/              Architec.md, SYSTEMS.md, FILES.md, CHANGELOG.md — see table above
-flutter_app/       separate Flutter front-end, same DB schema, behind parity
 .claude/skills/    run-dracondex, dracondex-module-style, dracondex-file-arch, write-docs (see above)
-test/              a handful of node --test regression tests (`node --test 'test/*.test.mjs'`)
 tmp-user-data/     real dev-mode database (gitignored) — don't wipe casually
 tmp-driver-data/   scratch data dir for the run-dracondex driver (gitignored)
 ```
+
+**Paths inside `electron/` stay relative to `electron/`** — `index.html` loads
+`src/renderer/…`, `database.js` requires `./src/db/…`. Only references that
+leave the folder (the shared assets, `node_modules`, `tmp-user-data/`) carry a
+`../`. Paths given to the checkers and to `node --test` are relative to the
+repo root and therefore start with `electron/`.
 
 For exhaustive per-file detail (line counts, exported functions, IPC
 channels), use `docs/FILES.md` instead of re-reading every file cold.
@@ -69,32 +92,32 @@ channels), use `docs/FILES.md` instead of re-reading every file cold.
 ## Architecture in one page
 
 ```
-Main process (main.js)
+Main process (electron/main.js)
   picks a data dir (dev / portable / installer), opens a frameless
   BrowserWindow (1280x800, contextIsolation:true, nodeIntegration:false),
   registers ~230+ IPC handlers grouped by namespace, each delegating
-  straight to database.js
+  straight to electron/database.js
         │ ipcRenderer.invoke, via contextBridge
-preload.js
+electron/preload.js
   window.api.<namespace>.<fn>(...) → invoke('<namespace>:<fn>', ...)
   — this file is the best "table of contents" for what the renderer can do
-Renderer (src/renderer/*.js, vanilla JS)
+Renderer (electron/src/renderer/*.js, vanilla JS)
   global state object `S` holds everything (open project, selected tab, …)
   render = build an HTML string → innerHTML; handlers are global functions
   wired via onclick="..."; shared components: openModal/closeModal, toast(),
   uiConfirm() (never native alert/confirm), colorPicker(), hashtagSelector()
-src/db/*.js (main process)
+electron/src/db/*.js (main process)
   node-sqlite3-wasm, single file novel-manager.db, one file per system
 ```
 
 **Two coexisting module systems**, both live and both real:
 
 1. **7 legacy fixed modules** — Director, Navigator, Hero, Writer, Scribe,
-   Sage, Artisan. Each has its own `src/renderer/<name>.js` +
-   `src/db/<name>.js` + IPC namespace. Director/Navigator/Hero/Writer are
+   Sage, Artisan. Each has its own `electron/src/renderer/<name>.js` +
+   `electron/src/db/<name>.js` + IPC namespace. Director/Navigator/Hero/Writer are
    **hidden from the nav rail** (code still fully works) — reachable only by
    creating new ones through Artisan or migrating old data via
-   `src/db/migrate_v3.js`. Scribe/Sage/Artisan remain normal rail buttons.
+   `electron/src/db/migrate_v3.js`. Scribe/Sage/Artisan remain normal rail buttons.
 2. **v3 generic module tree ("Nexus nest")** — a user-buildable tree of
    nodes under a vault (Nexus), each node picking one of **15 kinds**
    (collector, manager, inspector, classifier, locator, chronicler, wanderer,
@@ -103,7 +126,7 @@ src/db/*.js (main process)
    `openModuleNode` dispatches kind → data loader. Full kind↔file↔IPC table
    lives in `docs/Architec.md` §1 — don't guess this mapping, look it up.
 
-Data-dir selection (`main.js`): dev (`npm start`) → `tmp-user-data/` (or
+Data-dir selection (`electron/main.js`): dev (`npm start`) → `tmp-user-data/` (or
 `DRACONDEX_DATA_DIR` env override); portable build → next to the exe;
 installer build → `%APPDATA%/DraconDex/`. The `run-dracondex` driver always
 uses an isolated scratch dir — it never touches your real dev data.
@@ -116,7 +139,7 @@ just reading source.
 ## Dev workflow
 
 ```bash
-npm install     # postinstall runs ensure-electron.js to validate the Electron binary
+npm install     # postinstall runs electron/ensure-electron.js to validate the Electron binary
 npm start       # launches the app against real dev data in tmp-user-data/ (Ctrl-C won't kill Electron — close the window)
 
 npm run build:portable    # electron-builder dir target
@@ -125,7 +148,7 @@ npm run build:installer   # NSIS installer
 ```
 
 There is **no linter**, and only a handful of regression tests
-(`node --test 'test/*.test.mjs'` — note the glob; `node --test test/` fails).
+(`node --test 'electron/test/*.test.mjs'` — note the glob; `node --test electron/test/` fails).
 Correctness is verified by actually running the app (see next section) and by
 the two static checkers.
 
@@ -142,7 +165,7 @@ node .claude/skills/run-dracondex/driver.mjs --fresh \
 
 - Screenshots land in `tmp-driver-data/shots/` — **read them**, don't assume.
 - If the Electron binary can't be downloaded in this environment (GitHub
-  releases blocked, `ensure-electron.js` 403s), use
+  releases blocked, `electron/ensure-electron.js` 403s), use
   `.claude/skills/run-dracondex/web-driver.mjs` instead — same command
   vocabulary, runs the real renderer/preload/db stack inside Playwright
   Chromium with only the Electron shell stubbed.
@@ -161,9 +184,9 @@ These are the **hard failures** the `dracondex-module-style` checker
 (`check.mjs`) flags — treat them as required, not optional:
 
 - Every `window.api.<ns>.<fn>()` call in the renderer must have a matching
-  entry in `preload.js`, which must have a matching handler in `main.js`.
+  entry in `electron/preload.js`, which must have a matching handler in `electron/main.js`.
 - Every `t('key')` used in the renderer must exist in **all 18 locale
-  blocks** in `src/renderer/i18n.js` (`const L`), including `qd`. A missing
+  blocks** in `electron/src/renderer/i18n.js` (`const L`), including `qd`. A missing
   key renders as the literal key string, not an error — easy to miss without
   the checker.
 - Never use `alert()` / `window.confirm()` — use the shared `openModal`/
@@ -185,18 +208,18 @@ It hard-fails on the things a split breaks silently: a renderer file no
 `<script>` tag or `loadModule()` ever loads, the same top-level name declared in
 two renderer files (they share one global scope), an unlinked stylesheet or a
 `url()` that lost its `../`, `build.files` not shipping a source dir, and a
-`src/db` file `database.js` can't reach.
+`electron/src/db` file `electron/database.js` can't reach.
 
 Run the style checker after any renderer/module change:
 
 ```bash
-node .claude/skills/dracondex-module-style/check.mjs src/renderer/<file>.js
-node .claude/skills/dracondex-module-style/check.mjs --module <kind> src/renderer/<file>.js   # new module: full wiring check
+node .claude/skills/dracondex-module-style/check.mjs electron/src/renderer/<file>.js
+node .claude/skills/dracondex-module-style/check.mjs --module <kind> electron/src/renderer/<file>.js   # new module: full wiring check
 node .claude/skills/dracondex-module-style/check.mjs                                          # full sweep
 ```
 
 Warnings (hardcoded colors, untranslated Thai literals, unstyled classes) are
-metrics against a known baseline (**55** as of 2026-07-26 — it jumped from 31
+metrics against a known baseline (**56** as of 2026-08-10 — it jumped from 31
 when the sweep started recursing into `mod/` and the split folders, so those
 are newly-visible pre-existing warnings, not new debt) — new code should add
 **zero new warnings**, but don't chase down the pre-existing baseline unless
@@ -227,7 +250,7 @@ See `docs/SYSTEMS.md` §11 for the full list; notably:
   fallback for old hardcoded strings) can visually re-translate **user
   data** that happens to match a dictionary key — display-only, doesn't
   corrupt the DB, but is a known and accepted quirk.
-- `openObjectModal()` in `src/renderer/modals.js` throws if called without a
+- `openObjectModal()` in `electron/src/renderer/modals.js` throws if called without a
   `catId` in a project with no category — current UI always passes it, so
   it's latent, not currently reachable.
 - The v3 "module tree" system (`docs/Architec.md`) is documented at the
@@ -235,7 +258,7 @@ See `docs/SYSTEMS.md` §11 for the full list; notably:
   behavior-verified depth as the 7 legacy modules in `docs/SYSTEMS.md` §3–9
   — treat v3 behavioral claims as less certain until driven live.
 
-## Flutter port (`flutter_app/`)
+## Flutter port (`flutter/`)
 
 Separate front-end, Riverpod-based, structured under `lib/{core,data,
 providers,widgets,features}/`. Shares the same SQLite schema/file as the

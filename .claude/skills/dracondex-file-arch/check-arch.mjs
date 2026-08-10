@@ -3,7 +3,7 @@
 //
 // Usage (from repo root):
 //   node .claude/skills/dracondex-file-arch/check-arch.mjs            # whole repo
-//   node .claude/skills/dracondex-file-arch/check-arch.mjs src/renderer/hub/tree.js
+//   node .claude/skills/dracondex-file-arch/check-arch.mjs electron/src/renderer/hub/tree.js
 //
 // Two halves:
 //   SIZE / ORGANISATION — the Plan.md bands (0-500 / 500-1000 / 1000-2000 /
@@ -34,18 +34,22 @@ const ok = (m) => console.log(`  ok      ${m}`);
 const argvFiles = process.argv.slice(2).map((f) => f.replace(/\\/g, '/'));
 
 // ── what counts as app source ──────────────────────────────────────────────
-const SOURCE_ROOTS = ['src', 'css', 'scripts'];
-const ROOT_FILES = ['main.js', 'preload.js', 'preload-plugin.js', 'database.js', 'start.js', 'ensure-electron.js', 'index.html'];
-const SKIP_DIRS = new Set(['node_modules', 'vendor', 'flutter_app', 'ds-bundle', 'old_db_data', '.git']);
+// Every Electron path is relative to the repo root and therefore carries the
+// APP_DIR prefix; the repo root itself holds only package/docs/tooling now.
+const APP_DIR = 'electron';
+const app = (f) => `${APP_DIR}/${f}`;
+const SOURCE_ROOTS = [app('src'), app('css'), app('scripts')];
+const ENTRY_FILES = ['main.js', 'preload.js', 'preload-plugin.js', 'database.js', 'start.js', 'ensure-electron.js', 'index.html'];
+const SKIP_DIRS = new Set(['node_modules', 'vendor', 'flutter', 'old_db_data', '.git']);
 
 // Data files: long by nature, exempt from the size bands. Plan.md names this
 // exemption explicitly ("เว้นแต่เป็นไฟล์ข้อมูล (เช่น i18n, constants)").
 const DATA_FILES = new Set([
-  'src/renderer/i18n.js',
-  'src/db/schema/ddl.js',
-  'src/db/schema/indexes.js',
-  'src/db/schema/seed.js',
-  'css/themes.css',
+  app('src/renderer/i18n.js'),
+  app('src/db/schema/ddl.js'),
+  app('src/db/schema/indexes.js'),
+  app('src/db/schema/seed.js'),
+  app('css/themes.css'),
 ]);
 
 const walk = (dir) => {
@@ -60,7 +64,7 @@ const walk = (dir) => {
     });
 };
 
-const allSource = [...ROOT_FILES.filter((f) => f.endsWith('.js') && existsSync(path.join(root, f))),
+const allSource = [...ENTRY_FILES.filter((f) => f.endsWith('.js') && existsSync(path.join(root, APP_DIR, f))).map(app),
                    ...SOURCE_ROOTS.flatMap(walk)];
 const lineCount = (f) => read(f).split('\n').length - 1;
 
@@ -126,26 +130,26 @@ if (argvFiles.length) {
   process.exit(errors ? 1 : 0);
 }
 
-const indexSrc = read('index.html');
-const rendererFiles = walk('src/renderer');
-const dbFiles = walk('src/db');
-const cssFiles = walk('css');
+const indexSrc = read(app('index.html'));
+const rendererFiles = walk(app('src/renderer'));
+const dbFiles = walk(app('src/db'));
+const cssFiles = walk(app('css'));
 
 // ═══ 3. Folder conventions ══════════════════════════════════════════════════
 console.log('=== folder conventions ===');
 {
-  const strayRoot = readdirSync(root, { withFileTypes: true })
-    .filter((e) => e.isFile() && /\.(js|css)$/.test(e.name) && !ROOT_FILES.includes(e.name));
-  if (strayRoot.length) warn(`loose source file(s) in the repo root: ${strayRoot.map((e) => e.name).join(', ')} — app code belongs in src/ or css/`);
-  else ok(`repo root holds only the ${ROOT_FILES.length} expected entry files`);
+  const strayApp = readdirSync(path.join(root, APP_DIR), { withFileTypes: true })
+    .filter((e) => e.isFile() && /\.(js|css)$/.test(e.name) && !ENTRY_FILES.includes(e.name));
+  if (strayApp.length) warn(`loose source file(s) in ${APP_DIR}/: ${strayApp.map((e) => e.name).join(', ')} — app code belongs in ${app('src')}/ or ${app('css')}/`);
+  else ok(`${APP_DIR}/ holds only the ${ENTRY_FILES.length} expected entry files`);
 
-  const dbStray = dbFiles.filter((f) => !/^src\/db\/(schema\/)?[\w.-]+\.js$/.test(f));
-  if (dbStray.length) warn(`db file(s) outside src/db/ or src/db/schema/: ${dbStray.join(', ')}`);
-  else ok(`all ${dbFiles.length} db files sit in src/db/ or src/db/schema/`);
+  const dbStray = dbFiles.filter((f) => !/^electron\/src\/db\/(schema\/)?[\w.-]+\.js$/.test(f));
+  if (dbStray.length) warn(`db file(s) outside ${app('src/db')}/ or ${app('src/db/schema')}/: ${dbStray.join(', ')}`);
+  else ok(`all ${dbFiles.length} db files sit in ${app('src/db')}/ or ${app('src/db/schema')}/`);
 
   // A renderer family that grew past one file should be a folder, not a
   // sprawl of foo-bar.js siblings.
-  const hyphenated = rendererFiles.filter((f) => /\/[\w]+-[\w-]+\.js$/.test(f) && f.split('/').length === 3);
+  const hyphenated = rendererFiles.filter((f) => /\/[\w]+-[\w-]+\.js$/.test(f) && f.split('/').length === 4);
   if (hyphenated.length) note(`flat multi-word renderer file(s) — consider a folder: ${hyphenated.join(', ')}`);
 }
 
@@ -153,14 +157,16 @@ console.log('=== folder conventions ===');
 console.log('=== renderer files are loaded ===');
 {
   const referenced = new Set();
-  for (const m of indexSrc.matchAll(/<script src="([^"]+)"/g)) referenced.add(m[1]);
+  // index.html and loadModule() name paths relative to electron/; walk() yields
+  // them relative to the repo root, so prefix before comparing.
+  for (const m of indexSrc.matchAll(/<script src="([^"]+)"/g)) referenced.add(app(m[1]));
   // loadModule('src/renderer/x.js') and the LAZY_GROUPS template form
   // `src/renderer/navigator/${f}.js` — the latter names a whole folder.
   const folderRefs = new Set();
   for (const f of rendererFiles) {
     const src = read(f);
-    for (const m of src.matchAll(/['"`]src\/renderer\/[\w/-]+\.js['"`]/g)) referenced.add(m[0].slice(1, -1));
-    for (const m of src.matchAll(/`src\/renderer\/([\w-]+)\/\$\{/g)) folderRefs.add(`src/renderer/${m[1]}`);
+    for (const m of src.matchAll(/['"`]src\/renderer\/[\w/-]+\.js['"`]/g)) referenced.add(app(m[0].slice(1, -1)));
+    for (const m of src.matchAll(/`src\/renderer\/([\w-]+)\/\$\{/g)) folderRefs.add(app(`src/renderer/${m[1]}`));
   }
   const orphans = rendererFiles.filter((f) =>
     !referenced.has(f) && !folderRefs.has(path.posix.dirname(f)));
@@ -188,7 +194,7 @@ console.log('=== duplicate global declarations (renderer) ===');
 // ═══ 6. Stylesheets ═════════════════════════════════════════════════════════
 console.log('=== stylesheets ===');
 {
-  const linked = [...indexSrc.matchAll(/<link[^>]+href="([^"]+\.css)"/g)].map((m) => m[1]);
+  const linked = [...indexSrc.matchAll(/<link[^>]+href="([^"]+\.css)"/g)].map((m) => app(m[1]));
   const missing = cssFiles.filter((f) => !linked.includes(f));
   const dangling = linked.filter((f) => !existsSync(path.join(root, f)));
   if (missing.length) missing.forEach((f) => err(`${f} exists but index.html never links it`));
@@ -204,8 +210,8 @@ console.log('=== stylesheets ===');
       badUrl.push(`${f}: url('${m[1]}')`);
     }
   }
-  if (badUrl.length) badUrl.forEach((u) => err(`${u} — relative to the stylesheet, so an asset outside css/ needs '../'`));
-  else ok('every relative url() in css/ resolves from css/, not from the repo root');
+  if (badUrl.length) badUrl.forEach((u) => err(`${u} — relative to the stylesheet, so an asset outside ${app('css')}/ needs '../'`));
+  else ok(`every relative url() in ${app('css')}/ resolves from the stylesheet, not from ${APP_DIR}/`);
 }
 
 // ═══ 7. Packaged build covers every source dir ══════════════════════════════
@@ -213,8 +219,19 @@ console.log('=== packaged build (package.json build.files) ===');
 {
   const pkg = JSON.parse(read('package.json'));
   const files = pkg.build?.files ?? [];
-  const needed = ['index.html', 'main.js', 'preload.js', 'database.js', 'src', 'css', 'Image'];
-  const uncovered = needed.filter((n) => !files.some((f) => f === n || f.startsWith(`${n}/`)));
+  const needed = [app('index.html'), app('main.js'), app('preload.js'), app('database.js'),
+                  app('src'), app('css'), 'src/assets/brand'];
+  // build.files entries are globs ('electron/**/*') and exclusions ('!…/test/**').
+  // Match on the literal prefix ahead of the first wildcard, in either
+  // direction: a broad 'electron/**/*' covers a specific file, and a narrow
+  // 'electron/css/**' still proves 'electron/css' ships.
+  const covers = (pattern, target) => {
+    if (pattern.startsWith('!')) return false;
+    const prefix = pattern.split('*')[0].replace(/\/+$/, '');
+    return prefix === '' || target === prefix ||
+           target.startsWith(`${prefix}/`) || prefix.startsWith(`${target}/`);
+  };
+  const uncovered = needed.filter((n) => !files.some((f) => covers(f, n)));
   if (uncovered.length) uncovered.forEach((n) => err(`build.files does not ship '${n}' — the packaged app would be missing it`));
   else ok(`build.files covers all ${needed.length} required entries`);
 }
@@ -232,10 +249,10 @@ console.log('=== db files are required ===');
       visit(target);
     }
   };
-  visit('database.js');
+  visit(app('database.js'));
   const unreached = dbFiles.filter((f) => !seen.has(f));
-  if (unreached.length) unreached.forEach((f) => err(`${f} is never required from database.js (directly or transitively)`));
-  else ok(`all ${dbFiles.length} db files are reachable from database.js`);
+  if (unreached.length) unreached.forEach((f) => err(`${f} is never required from ${app('database.js')} (directly or transitively)`));
+  else ok(`all ${dbFiles.length} db files are reachable from ${app('database.js')}`);
 }
 
 console.log(`\n${errors} error(s), ${warnings} warning(s)`);
