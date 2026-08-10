@@ -17,6 +17,12 @@
 .btn-g{background:transparent;color:var(--t2)}
 .btn-g:hover{background:var(--hover);color:var(--t1)}
 .btn-i{padding:4px;width:28px;height:28px;justify-content:center;border-radius:var(--rs);font-size:calc(14px * var(--fsc,1))}
+/* Icon-only buttons highlight just the icon on hover, not their background —
+   wins by source order (equal specificity) over whichever .btn-p/.btn-s/.btn-g
+   hover rule it's paired with, without touching those shared rules (labeled
+   buttons still use their background-fill hover). .btn-d keeps its red
+   warning fill — a destructive-action cue, not decorative hover chrome. */
+.btn-i:not(.btn-d):hover{background:transparent}
 .btn-i.btn-i-sm{width:20px;height:20px;padding:2px}
 .btn-i.btn-i-sm .icon{width:11px;height:11px}
 
@@ -101,7 +107,7 @@
 	background:none;border:none;color:var(--t3);cursor:pointer;
 	font-size:calc(15px * var(--fsc,1));padding:3px 6px;border-radius:var(--rs);line-height:1;
 }
-#modal-close:hover{background:var(--hover);color:var(--t1)}
+#modal-close:hover{color:var(--t1)}
 #modal-body{padding:18px;overflow-y:auto;flex:1}
 .mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
 
@@ -121,7 +127,7 @@
 	background:none;border:none;color:var(--t3);cursor:pointer;
 	font-size:calc(15px * var(--fsc,1));padding:3px 6px;border-radius:var(--rs);line-height:1;
 }
-.fp-close:hover{background:var(--hover);color:var(--t1)}
+.fp-close:hover{color:var(--t1)}
 .fp-close .icon{width:15px;height:15px;display:block}
 .fp-body{padding:18px;overflow-y:auto;flex:1;min-height:0}
 

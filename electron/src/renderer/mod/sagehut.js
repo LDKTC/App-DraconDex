@@ -76,7 +76,10 @@ function buildSageHutHtml() {
         <span class="kicon" style="color:var(--accent)" data-no-i18n>${I.sage}</span>
         Sage Hut <span class="kind-chip" data-no-i18n>Analytics</span>
       </h2>
-      <div class="drafter-hint">${t('sageHutSubtitle')} ${x(S.nexus.name)}</div>
+      <div class="mtags">
+        <span class="drafter-hint" style="margin:0">${t('sageHutSubtitle')} ${x(S.nexus.name)}</span>
+        <span class="btn-i" style="visibility:hidden" aria-hidden="true"></span>
+      </div>
     </div>
     <div class="classifier-toolbar">${viewBar}</div>
     ${tiles}${body}`);

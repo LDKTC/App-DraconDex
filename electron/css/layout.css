@@ -110,7 +110,7 @@
 .char-link-expand{display:none;position:absolute;top:0;right:0;width:22px;height:22px;
   align-items:center;justify-content:center;background:var(--raised);border:1px solid var(--border);
   border-radius:var(--rs);color:var(--t3);font-size:calc(11px * var(--fsc,1));cursor:pointer;line-height:1}
-.char-link-expand:hover{background:var(--hover);color:var(--t1)}
+.char-link-expand:hover{color:var(--t1)}
 .char-link-expand.show{display:flex}
 
 /* FOLDER */
@@ -137,7 +137,7 @@
 	font-size:calc(13px * var(--fsc,1));color:var(--t3);transition:background var(--ease),color var(--ease);
 	border-radius:var(--rs);
 }
-.char-fav:hover{background:var(--hover);color:var(--t1)}
+.char-fav:hover{color:var(--t1)}
 .char-fav.active{color:var(--accent);background:color-mix(in srgb, var(--accent) 15%, transparent)}
 
 /* Floating name tooltip for canvas (Konva) nodes — the map board's placed

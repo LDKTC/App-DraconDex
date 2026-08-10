@@ -472,8 +472,8 @@ function renderBuilderPanes(contentHtml, runMounts) {
 function builderPaneHeadHtml(i, pane, focused) {
   const canBack = pane.hIdx > 0, canFwd = pane.hIdx < pane.history.length - 1;
   const nav = `
-    <button class="btn btn-g btn-i bnav" ${canBack ? '' : 'disabled'} onclick="builderFocusPane(${i}).then(builderBack)" title="${t('navBack')}">◀</button>
-    <button class="btn btn-g btn-i bnav" ${canFwd ? '' : 'disabled'} onclick="builderFocusPane(${i}).then(builderForward)" title="${t('navForward')}">▶</button>`;
+    <button class="btn btn-g btn-i bnav" ${canBack ? '' : 'disabled'} onclick="builderFocusPane(${i}).then(builderBack)" title="${t('navBack')}">${I.chevronLeft}</button>
+    <button class="btn btn-g btn-i bnav" ${canFwd ? '' : 'disabled'} onclick="builderFocusPane(${i}).then(builderForward)" title="${t('navForward')}">${I.chevronRight}</button>`;
   const tabs = pane.tabs.map(key => {
     const meta = builderTabMeta(key);
     if (!meta) return '';
