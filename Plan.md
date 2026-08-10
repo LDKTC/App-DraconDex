@@ -23,5 +23,6 @@
 
 ## process 2, do clear after finished
 ### part 1 : Nav bar
-- [ ] btn, on selected, แสดง c,
+- [ ] btn, on active, แสดงแถบสีด้านข้างเป้นhighlight เพื่อให้รู้ว่าเป็น active 
+- [ ]  
 ----- 
