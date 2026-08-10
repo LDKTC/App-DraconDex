@@ -3,7 +3,7 @@
   "productName": "DraconDex",
   "version": "4.7.1",
   "description": "Novel data management app",
-  "main": "main.js",
+  "main": "electron/main.js",
   "license": "MIT",
   "author": "LDKTC",
   "repository": {
@@ -14,23 +14,14 @@
     "registry": "https://npm.pkg.github.com"
   },
   "files": [
-    "index.html",
-    "main.js",
-    "preload.js",
-    "preload-plugin.js",
-    "database.js",
-    "start.js",
-    "ensure-electron.js",
-    "css/**/*",
-    "src/**/*",
-    "Image/**/*",
-    "vendor/**/*",
-    "scripts/**/*"
+    "electron/**/*",
+    "!electron/test/**",
+    "src/assets/brand/**/*"
   ],
   "scripts": {
-    "start": "node ./start.js",
-    "postinstall": "node ./ensure-electron.js",
-    "build:portable": "electron-builder --win dir --publish never && node scripts/finish-portable.mjs",
+    "start": "node ./electron/start.js",
+    "postinstall": "node ./electron/ensure-electron.js",
+    "build:portable": "electron-builder --win dir --publish never && node electron/scripts/finish-portable.mjs",
     "build:exe": "electron-builder --win portable --publish never",
     "build:installer": "electron-builder --win nsis --publish never"
   },
@@ -50,16 +41,11 @@
       "output": "DraconDexPortable"
     },
     "files": [
-      "index.html",
-      "main.js",
-      "preload.js",
-      "preload-plugin.js",
-      "css/**/*",
-      "database.js",
       "package.json",
-      "src/**/*",
-      "Image/**/*",
-      "vendor/**/*"
+      "electron/**/*",
+      "!electron/test/**",
+      "!electron/scripts/**",
+      "src/assets/brand/**/*"
     ],
     "electronLanguages": [
       "en-US",
@@ -67,7 +53,7 @@
     ],
     "win": {
       "signAndEditExecutable": false,
-      "icon": "Image/DraconDex_Icon.ico",
+      "icon": "src/assets/brand/DraconDex_Icon.ico",
       "target": [
         {
           "target": "dir",

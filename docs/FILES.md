@@ -12,30 +12,40 @@
 ## โครงสร้างรีโป
 
 ```
-App-NovelManager/
-├─ main.js            ← Electron main process + IPC handlers ทั้งหมด
-├─ preload.js         ← สะพาน window.api (contextBridge)
-├─ database.js        ← รวม export ของ src/db/*
-├─ index.html         ← โครง HTML เปล่า + <link> css/ 14 ไฟล์ + <script> ตามลำดับ
-├─ start.js           ← ตัวรัน npm start
-├─ ensure-electron.js ← ตรวจ/ซ่อม Electron binary (postinstall)
-├─ css/               ← สไตล์ทั้งแอป 14 ไฟล์ (แยกจาก style.css เดิม — Plan part1)
-├─ vendor/            ← D3 + Konva ที่ vendor ไว้ใช้ออฟไลน์ (v2.8)
-├─ src/
-│  ├─ db/             ← ชั้นฐานข้อมูล (main process) 37 ไฟล์ (รวม schema/ 5 ไฟล์)
-│  └─ renderer/       ← ชั้น UI (renderer) 72 ไฟล์ (รวม core/ hub/ navigator/ hero/ mod/)
-├─ scripts/finish-portable.mjs
-├─ Image/             ← ไอคอน/โลโก้
-├─ flutter_app/       ← Flutter port (front-end แยก ใช้ schema เดียวกัน)
-├─ tmp-user-data/     ← ข้อมูล dev จริง (npm start)
-└─ tmp-driver-data/   ← ข้อมูล scratch ของ driver ทดสอบ (gitignored)
+App-DraconDex/
+├─ electron/            ← แอป Electron ทั้งหมด (ของฝั่งนี้ฝั่งเดียว)
+│  ├─ main.js           ← Electron main process + IPC handlers ทั้งหมด
+│  ├─ preload.js        ← สะพาน window.api (contextBridge)
+│  ├─ database.js       ← รวม export ของ src/db/*
+│  ├─ index.html        ← โครง HTML เปล่า + <link> css/ 16 ไฟล์ + <script> ตามลำดับ
+│  ├─ start.js          ← ตัวรัน npm start
+│  ├─ ensure-electron.js ← ตรวจ/ซ่อม Electron binary (postinstall)
+│  ├─ css/              ← สไตล์ทั้งแอป 16 ไฟล์ (แยกจาก style.css เดิม — Plan part1)
+│  ├─ vendor/           ← D3 + Konva ที่ vendor ไว้ใช้ออฟไลน์ (v2.8)
+│  ├─ src/
+│  │  ├─ db/            ← ชั้นฐานข้อมูล (main process) 44 ไฟล์ (รวม schema/ 5 ไฟล์)
+│  │  └─ renderer/      ← ชั้น UI (renderer) 84 ไฟล์ (รวม core/ hub/ navigator/ hero/ mod/)
+│  ├─ scripts/finish-portable.mjs
+│  └─ test/             ← regression test (node --test 'electron/test/*.test.mjs')
+├─ flutter/             ← Flutter port (front-end แยก ใช้ schema เดียวกัน)
+├─ src/                 ← ของกลางที่สองฝั่งใช้ร่วมกัน (ไม่มีโค้ดแอป — ดู src/README.md)
+│  ├─ assets/brand/     ← ไอคอน/โลโก้ ที่ฝั่ง Electron อ่านตรง ๆ
+│  ├─ assets/flutter/, assets/fonts/  ← ต้นฉบับที่ mirror ลง flutter/assets/
+│  ├─ schema/           ← สัญญา SQLite schema (ใครถือของจริง)
+│  ├─ design/           ← design tokens ที่สกัดจาก electron/css/
+│  ├─ supabase/         ← migration ฝั่งเซิร์ฟเวอร์ของ Cloud Sync (ปิดใช้อยู่)
+│  └─ sync-assets.mjs   ← สคริปต์ mirror asset ลง flutter/assets/
+├─ docs/                ← เอกสารทั้งโปรเจกต์
+├─ package.json         ← "main" ชี้ electron/main.js
+├─ tmp-user-data/       ← ข้อมูล dev จริง (npm start)
+└─ tmp-driver-data/     ← ข้อมูล scratch ของ driver ทดสอบ (gitignored)
 ```
 
 ---
 
 ## ไฟล์ระดับ root
 
-### main.js (~450 บรรทัด) — Main process
+### electron/main.js (~450 บรรทัด) — Main process
 - **บรรทัด 1–41**: เลือกโฟลเดอร์ข้อมูลตาม build flavor (dev → `tmp-user-data/`
   หรือ `DRACONDEX_DATA_DIR`; portable → ข้าง exe; installer → appData) แล้วตั้ง
   `userData` + single-instance lock ต่อ data dir
@@ -53,7 +63,7 @@ App-NovelManager/
   ตอน module load (ต้องก่อน app ready) + `registerDisplayImageProtocol()` ที่
   เรียกใน `whenReady` ก่อน `createWindow()` — เสิร์ฟไฟล์รูป display image ให้
   `<img src>` ตรงๆ แทนการ base64 ผ่าน IPC. จงใจ**ไม่ใช้** `standard: true`:
-  `index.html` โหลดด้วย `loadFile` (origin เป็น `file://`) และ Chromium ปฏิเสธ
+  `electron/index.html` โหลดด้วย `loadFile` (origin เป็น `file://`) และ Chromium ปฏิเสธ
   ไม่โหลด custom scheme แบบ standard เป็น subresource ของหน้า `file://`
   (ทดสอบแล้ว — request ไม่ถึง handler เลย `<img>` ยิง onerror ทันที) — scheme
   แบบ non-standard เป็น opaque origin เหมือน `data:`/`blob:` จึงโหลดได้.
@@ -63,7 +73,7 @@ App-NovelManager/
   อ่านไฟล์ใดก็ได้; handler เสิร์ฟเฉพาะเมื่อ row นั้นมีจริงและ `file_type` อยู่
   ใน `IMAGE_EXTS` เท่านั้น + ส่ง ETag (mtime+size) กับ `Cache-Control: no-cache`
   เพื่อให้เบราว์เซอร์ revalidate (ไฟล์ที่ถูกแทนที่บนดิสก์เห็นผลทันที).
-  ทั้ง 2 จุดมี guard `if (protocol)` เพราะ web-driver harness โหลด main.js
+  ทั้ง 2 จุดมี guard `if (protocol)` เพราะ web-driver harness โหลด electron/main.js
   โดย stub Electron shell ไว้ (ไม่มี `protocol`) — ที่นั่นใช้ทาง fallback
   `<img onerror>` → `importdock:readFiles` แทน
 - `importdock:readFile` เปลี่ยนเป็น async (`fs.promises`) และ**ไม่ส่ง base64 ของ
@@ -74,9 +84,9 @@ App-NovelManager/
   `write:getProjects`, `search:all`) รับพารามิเตอร์ `nexusId` เพิ่ม (v2.8)
   เพื่อ scope ผลลัพธ์ตาม vault ที่เปิดอยู่
 
-### preload.js (~380 บรรทัด) — สะพาน IPC
+### electron/preload.js (~380 บรรทัด) — สะพาน IPC
 - `contextBridge.exposeInMainWorld('api', {...})` — mapping 1:1 กับช่อง IPC
-  ใน main.js จัดกลุ่มเป็น namespace (`api.project.create(...)` →
+  ใน electron/main.js จัดกลุ่มเป็น namespace (`api.project.create(...)` →
   `invoke('project:create', ...)`)
 - เป็น "สารบัญ API" ที่ดีที่สุดของแอป: อยากรู้ว่า renderer ทำอะไรกับ DB ได้บ้าง
   ให้เปิดไฟล์นี้
@@ -90,11 +100,11 @@ App-NovelManager/
   ก่อนจะมีอะไรให้ยืนยัน (namespace `db` ไม่อยู่ในรายการ read-only guard
   จึงไม่ต้องแก้ `IMPORT_DB_READONLY_NS`)
 
-### database.js (~32 บรรทัด)
-- require `src/db/*` ทั้ง 15 ไฟล์ (v2.8 เพิ่ม `nexus.js`, `scribe.js`,
-  `wiki.js`) แล้ว spread รวมเป็น object เดียว export ให้ main.js ใช้
+### electron/database.js (~32 บรรทัด)
+- require `electron/src/db/*` ทั้ง 15 ไฟล์ (v2.8 เพิ่ม `nexus.js`, `scribe.js`,
+  `wiki.js`) แล้ว spread รวมเป็น object เดียว export ให้ electron/main.js ใช้
 
-### index.html (~330 บรรทัด)
+### electron/index.html (~330 บรรทัด)
 - โครงคงที่: `#nav-sidebar` (ปุ่ม rail ทุกโมดูล รวม Explorer/Scribe ที่เพิ่มใน
   v2.8 — ส่วนใหญ่ `display:none` รอ JS เปิดตาม state), `#left-panel`
   (+ ปุ่มย่อ), `#main-area`, `#status-bar` (v2.8 — IDE-style footer),
@@ -116,7 +126,7 @@ App-NovelManager/
   mdeditor ก่อน core เพราะ core เรียก `createMarkdownEditor` โดยตรงในบาง
   จุด) — โมดูลอื่น lazy-load
 - เนื้อหาเกือบทั้งหมดของหน้าถูกสร้างด้วย JS ตอนรัน — grep hendler จาก
-  `src/renderer/*.js` ไม่ใช่จากไฟล์นี้
+  `electron/src/renderer/*.js` ไม่ใช่จากไฟล์นี้
 
 ### style.css (~85KB)
 - สไตล์ทั้งแอป + นิยามธีมทั้งหมดเป็นชุดตัวแปร CSS (`--bg --t1 --accent ...`)
@@ -141,16 +151,16 @@ App-NovelManager/
 - คลาสใหม่: `.busy-veil`/`.busy-spin`/`.busy-text` (ตัวบอกสถานะโหลดตัวเดียวของแอป),
   `#confirm-box.wide` + `#confirm-box .fg` (ใช้โดย `uiPrompt()`)
 
-### start.js (31 บรรทัด)
-- `npm start` → ตรวจ Electron binary ผ่าน `ensure-electron.js` แล้ว spawn
+### electron/start.js (31 บรรทัด)
+- `npm start` → ตรวจ Electron binary ผ่าน `electron/ensure-electron.js` แล้ว spawn
   Electron ด้วยรีโปเป็น app path (ลบ env `ELECTRON_RUN_AS_NODE` ก่อน)
 
-### ensure-electron.js (~100 บรรทัด)
+### electron/ensure-electron.js (~100 บรรทัด)
 - หา/ตรวจความครบของ `node_modules/electron/dist/electron.exe` — ถ้าเสีย/หาย
   จะรัน installer ของแพ็กเกจ electron ใหม่; ใช้เป็น `postinstall` และถูก driver
   ทดสอบใช้ด้วย
 
-### scripts/finish-portable.mjs
+### electron/scripts/finish-portable.mjs
 - ขั้นตอนท้าย `npm run build:portable`: เปลี่ยนชื่อ `win-unpacked` →
   `DraconDex-<version>` แล้วพิมพ์ขนาด/วิธีใช้
 
@@ -161,7 +171,7 @@ App-NovelManager/
   `portable` / `nsis` (สคริปต์ `build:portable` / `build:exe` /
   `build:installer`)
 
-### vendor/ (v2.8)
+### electron/vendor/ (v2.8)
 - `d3.min.js` + `d3.LICENSE`, `konva.min.js` + `konva.LICENSE` — ก้อน npm
   pack ตรงจาก `d3@7`/`konva@9` ให้แอปใช้งานได้แบบออฟไลน์ (`ensureD3`/
   `ensureKonva` ใน relation.js/map.js ลองไฟล์นี้ก่อน แล้วค่อย fallback ไป
@@ -188,9 +198,9 @@ App-NovelManager/
 
 เกณฑ์/ขั้นตอน/ตัวตรวจอยู่ในสกิลใหม่ `.claude/skills/dracondex-file-arch/`
 
-### css/ — แยกจาก `style.css` (3159 บรรทัด → 14 ไฟล์)
+### electron/css/ — แยกจาก `style.css` (3159 บรรทัด → 14 ไฟล์)
 
-`index.html` มี `<link>` 14 ตัว **เรียงตามลำดับเดิมของกฎ** (ห้ามสลับ — ลำดับคือ
+`electron/index.html` มี `<link>` 14 ตัว **เรียงตามลำดับเดิมของกฎ** (ห้ามสลับ — ลำดับคือ
 พฤติกรรมของ cascade)
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
@@ -210,11 +220,11 @@ App-NovelManager/
 | `kinds.css` | 372 | CSS ของ 15 v3 module kinds + Sage Hut + Import Dock |
 | `builder.css` | 165 | Builder split-tree, tab strip, layout picker, overlay panels |
 
-> ⚠️ `url()` ใน CSS อ้างอิงจาก**ตัวไฟล์ CSS** ไม่ใช่จาก `index.html` — รูปใน
-> `css/nav-hub.css` จึงเป็น `../Image/…` (ตอนแยกครั้งแรกลืมจุดนี้ → รูปโลโก้
+> ⚠️ `url()` ใน CSS อ้างอิงจาก**ตัวไฟล์ CSS** ไม่ใช่จาก `electron/index.html` — รูปใน
+> `electron/css/nav-hub.css` จึงเป็น `../../src/assets/brand/…` (ตอนแยกครั้งแรกลืมจุดนี้ → รูปโลโก้
 > 404 ทั้งชุด; ตัวตรวจ `check-arch.mjs` จับกรณีนี้แล้ว)
 
-### src/renderer/core/ — แยกจาก `core.js` (2642 บรรทัด → 12 ไฟล์)
+### electron/src/renderer/core/ — แยกจาก `core.js` (2642 บรรทัด → 12 ไฟล์)
 
 โหลดด้วย `<script>` 12 ตัวเรียงตามเดิม — `state.js` **ต้องมาก่อน** เพราะ
 top-level `const` ข้ามสคริปต์อยู่ใน TDZ จนกว่าไฟล์นั้นจะถูก evaluate
@@ -235,12 +245,12 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 | `router.js` | 167 | `selectModule()`, Import-DB hub, `openEntityByKey`, status bar |
 | `shortcuts.js` | 125 | คีย์ลัดรวม, `returnToNexus`, sidebar ของ Director |
 
-### src/renderer/{hub,navigator,hero}/ — 3 โมดูลใหญ่
+### electron/src/renderer/{hub,navigator,hero}/ — 3 โมดูลใหญ่
 
 | โฟลเดอร์ | เดิม | ไฟล์ใหม่ | โหลดแบบ |
 |---|---|---|---|
 | `hub/` | 1301 | `kinds.js` 164 · `sections.js` 220 · `tree.js` 277 · `popups.js` 112 · `menus.js` 277 · `edit.js` 159 · `open.js` 93 | eager (`<script>` 7 ตัว, `kinds.js` ก่อน) |
-| `navigator/` | 1807 | `shell.js` 78 · `sidebar.js` 138 · `main.js` 144 · `world.js` 80 · `origcat.js` 358 · `chars.js` 253 · `cats.js` 97 · `maps.js` 293 · `board.js` 367 | lazy ผ่าน `loadGroup('navigator')` |
+| `navigator/` | 1807 | `shell.js` 78 · `sidebar.js` 138 · `electron/main.js` 144 · `world.js` 80 · `origcat.js` 358 · `chars.js` 253 · `cats.js` 97 · `maps.js` 293 · `board.js` 367 | lazy ผ่าน `loadGroup('navigator')` |
 | `hero/` | 1088 | `shell.js` 61 · `project.js` 255 · `novel.js` 76 · `story.js` 311 · `tags.js` 63 · `modals.js` 323 | lazy ผ่าน `loadGroup('hero')` |
 
 > ⚠️ `loadModule()` แทรก `<script>` เข้า `<head>` ซึ่งเป็น **async** — ไฟล์ใน
@@ -248,11 +258,11 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 > (`core/views.js`) แล้วเรียก `loadGroup(name)` ที่ `await` ครบทุกไฟล์ก่อน
 > render และห้ามไฟล์ในกลุ่มอ่าน binding ของอีกไฟล์ที่ระดับ top level
 
-### src/db/ — แยกจาก `core.js` (2532 บรรทัด → 7 ไฟล์ + façade)
+### electron/src/db/ — แยกจาก `core.js` (2532 บรรทัด → 7 ไฟล์ + façade)
 
-`src/db/core.js` เหลือ 18 บรรทัดเป็น **façade** re-export ชื่อเดิมทั้ง 5
+`electron/src/db/core.js` เหลือ 18 บรรทัดเป็น **façade** re-export ชื่อเดิมทั้ง 5
 (`getDB`, `adaptDb`, `exportDatabaseTo`, `importDatabaseMerge`, `perfLog`) —
-ไฟล์อื่นอีก ~29 ไฟล์ที่ `require('./core')` และ `database.js` จึงไม่ต้องแก้เลย
+ไฟล์อื่นอีก ~29 ไฟล์ที่ `require('./core')` และ `electron/database.js` จึงไม่ต้องแก้เลย
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
@@ -282,7 +292,7 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 module kinds) เพิ่มเข้ามาแบบ **additive** ควบคู่กับโค้ดเดิมทุกไฟล์ด้านล่างนี้
 (ไม่มีไฟล์เดิมถูกลบ) ดูภาพรวมสถาปัตยกรรมเต็มที่ [Architec.md](Architec.md) §1
 
-### src/db/ (ใหม่)
+### electron/src/db/ (ใหม่)
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
@@ -301,7 +311,7 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | `nexus.js` (แก้ไข ไม่ใช่ไฟล์ใหม่) | 43 (เดิม ~41) | เหลือแค่ CRUD vault — logic module tree ทั้งหมดย้ายไป `module.js` แล้ว; `getNexuses`/`deleteNexus` นับรวมทั้ง project เดิม + module ระดับบนสุด |
 | `artisan.js` (แก้ไข) | ~7 | ฟังก์ชันสร้างจากเทมเพลตแบบ transaction เดียวเดิมถูกลบทิ้ง เหลือ `module.exports = {}` — wizard ใหม่เรียก `module:`/`classifier:`/`author:` ตรงๆ แทน |
 
-### src/renderer/ (ใหม่)
+### electron/src/renderer/ (ใหม่)
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
@@ -330,18 +340,18 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | `mod/sagehut.js` | 160 | Hub section: สถิติวอลต์ (ใช้ `db/sage.js` บางฟังก์ชัน); header มีไอคอน `I.sage` แล้ว (Plan part1 #4, เดิมไม่มีไอคอนทำให้ header สูงไม่เท่า Nexus Nest); `buildSageHutHtml` ห่อด้วย `wrapPageView` (Plan part1 #2); **Plan part2 #2.3** — `openSageTab` ดึงเฉพาะ payload ที่แท็บนั้นใช้ และ memo ไว้ที่ `S.sageHutCache` ต่อ nexus ผ่าน `sageHutCached()` (เดิมยิงครบ 3 ก้อนทุกครั้งที่คลิกแท็บ รวม `wiki:getGraph` ที่แพงสุด) |
 | `mod/fileviewer.js` | 335 | Hub section: Import Dock — list/link ไฟล์ + viewer read-only ใน Builder; `buildFileViewerHtml` ห่อด้วย `wrapPageView` (Plan part1 #2); **Plan part2 #2.2** — `hydrateDisplayImages` ชี้ `<img src>` ไปที่ `ddx-file://<importFileId>` ตรงๆ (ไม่มี IPC เลย) แทนการ await `importdock:readFile` ทีละรูป, `queueDisplayImageFallback`/`flushDisplayImageFallback` เป็นทาง fallback ผ่าน `onerror` (รวมทุกรูปที่ล้มเป็น `importdock:readFiles` ครั้งเดียว) สำหรับ renderer ที่ไม่มี protocol เช่น web-driver harness, `invalidateDisplayImages()` เคลียร์ทั้ง `S.displayImageCache` และ `S.displayImageData` (เดิมตัวหลังไม่เคยถูกล้างเลย → ไฟล์ที่ถูกแทนที่บนดิสก์ค้างเก่าทั้ง session) |
 
-`vendor/` เพิ่ม konva/d3 เดิมยังใช้ร่วม (ไม่มีไฟล์ vendor ใหม่ในรอบนี้)
+`electron/vendor/` เพิ่ม konva/d3 เดิมยังใช้ร่วม (ไม่มีไฟล์ vendor ใหม่ในรอบนี้)
 
 ## Cloud Sync (Supabase) — ไฟล์ใหม่ (2026-07-17), เปลี่ยนเป็น Token Sync (2026-07-30), ⛔ ปิดใช้ (2026-08-09, v4.5.0)
 
 > **ปิดใช้แต่ไม่ลบ** — ไฟล์ทุกไฟล์ในตารางนี้ยังอยู่ครบและยังถูกโหลด/ลงทะเบียน
 > ตามเดิม (script tag, IPC, preload) สิ่งที่ตัดไปคือทางเข้า UI 2 จุดผ่านค่า
-> `CLOUD_SYNC_ENABLED` ใน `src/renderer/core/state.js` เท่านั้น
+> `CLOUD_SYNC_ENABLED` ใน `electron/src/renderer/core/state.js` เท่านั้น
 >
-> ⚠️ **`src/db/sync.js` ไม่ใช่ไฟล์ที่ตายแล้ว** — snapshot engine ในนั้น
+> ⚠️ **`electron/src/db/sync.js` ไม่ใช่ไฟล์ที่ตายแล้ว** — snapshot engine ในนั้น
 > (`serializeVault` / `applySnapshotCore` / `applySnapshot` /
 > `importModuleSnapshot` / `collectModuleSubtreeIds`) ถูกเรียกโดย
-> `src/db/db-transfer.js` (ส่งออก/นำเข้าไฟล์ Nexus และ module ในหน้า Setting →
+> `electron/src/db/db-transfer.js` (ส่งออก/นำเข้าไฟล์ Nexus และ module ในหน้า Setting →
 > App-data → Database) ซึ่งเป็นระบบออฟไลน์ล้วน และ `test/module-transfer.test.mjs`
 > ก็ผูกกับซอร์สไฟล์นี้ตรง ๆ — ห้ามลบทิ้งเวลาเก็บกวาดโค้ด Supabase
 
@@ -351,19 +361,19 @@ quota ตาม tier บัญชี — ดูรายละเอียดพ
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/db/sync.js` | ~1005 | ทั้งฟีเจอร์ฝั่ง main: config ใน `app_setting` (`sync:url`/`sync:anonKey`/`google:refreshToken`/`sync:slotMap`), Google login (`syncGoogleLogin/Logout/AuthStatus` — PKCE + loopback ผ่าน `src/db/oauth-loopback.js` ที่ใช้ร่วมกับ Google Drive Backup, access-token refresh อัตโนมัติ), `generateToken` (crypto, 16 หลัก), `rpc()` fetch wrapper (แนบ Bearer access-token เมื่อ login แล้ว, error taxonomy `{ok,code,error}` ไม่ throw), `serializeVault(nexusId, moduleIds?)` (2026-07-30: เพิ่ม `moduleIds` optional — scope ทุกคิวรีจาก `m.nexus_ref=?` เป็น `m.id IN (...)`, ตารางระดับ vault-global อย่าง relations/notes ถูกข้ามเมื่อ scope ผ่าน `allGlobal()`), `collectModuleSubtreeIds(nexusId, moduleId)` (เดินต้นไม้ `parent_id` ในหน่วยความจำ ไม่ใช้ SQL recursive CTE), `applySnapshotCore(nexusId, payload, {wipe, updateNexusMeta, reparentRootTo})` (แกนกลางที่ `applySnapshot`/`importModuleSnapshot` เรียกใช้ร่วมกัน), `applySnapshot` (wipe-and-rebuild ทั้ง nexus เหมือนเดิม, เรียก core ด้วย `wipe:true`), `importModuleSnapshot(nexusId, parentModuleId, payload)` (ใหม่ — merge module subtree เข้า nexus แบบเพิ่มเข้าไปเท่านั้น ไม่ล้างของเดิม, ใช้โดย `src/db/db-transfer.js`), ops: `syncStatus/syncPushVault/syncPullVault/syncPullByToken/syncDeleteUpload` (คืนรายการ "ช่องอัปโหลด" ของบัญชี ไม่ใช่ช่องเดียวอีกต่อไป) |
-| `src/renderer/sync.js` | ~230 | หน้าต่างซิงก์หลายสถานะ (ตั้งค่าเซิร์ฟเวอร์ / ยังไม่ login / login แล้ว—รายการช่องอัปโหลด), แผงโทเคนแบบแสดงครั้งเดียว + คัดลอก, ช่องกรอกโทเคนพร้อม sub-flow เผยรหัสผ่านเมื่อเจอ `bad_password`, `syncErrToast` map error code → i18n toast; เข้าจากปุ่ม ☁ ใน vault-head (core.js); โหมด dev ข้ามหน้าตั้งค่าและแสดงป้าย dev server |
-| `src/db/sync-devserver.js` | ~230 | เซิร์ฟเวอร์ซิงก์จำลองสำหรับ build dev (`!app.isPackaged`): HTTP in-process บน loopback, endpoint/กติกา auth/tier-quota/expiry/lockout เหมือน migration ใหม่ทุกอย่าง, bearer token รูปแบบ `<uid>:<tier>` (login จำลองฝั่ง `sync.js` ไม่ผ่าน `/auth/*` จริง), เก็บ state เป็น `dev-sync-server.json` ข้าง novel-manager.db; `ensureDevSyncServer()` เริ่ม lazy ครั้งเดียวต่อโปรเซส |
-| `supabase/migrations/20260717000000_dracondex_sync_prototype.sql` | ~200 | migration เดิม (ตาราง/ฟังก์ชันคีย์ถาวรถูก `drop` ทิ้งทั้งหมดโดย migration ถัดไป — คงไฟล์นี้ไว้เพราะเคย apply แล้ว ห้ามแก้ไข) |
-| `supabase/migrations/20260730000000_dracondex_token_sync.sql` | ~250 | Token Sync จริง: ตาราง `sync_account(owner_id, tier)`, คอลัมน์ใหม่บน `sync_vault` (`owner_id`/`token_hash`/`password_hash`/`expires_at`/`pull_fail_count`/`pull_locked_until`, ไม่ unique ต่อ owner อีกต่อไป — หลายแถวต่อบัญชีได้ตาม quota), RPC SECURITY DEFINER 5 ตัว (`token_sync_push/status/delete/pull_own/pull_by_token`), helper `_sync_tier/_sync_max_bytes/_sync_max_slots` (free 1 ช่อง/10MB, pro 3 ช่อง/20MB) |
+| `electron/src/db/sync.js` | ~1005 | ทั้งฟีเจอร์ฝั่ง main: config ใน `app_setting` (`sync:url`/`sync:anonKey`/`google:refreshToken`/`sync:slotMap`), Google login (`syncGoogleLogin/Logout/AuthStatus` — PKCE + loopback ผ่าน `electron/src/db/oauth-loopback.js` ที่ใช้ร่วมกับ Google Drive Backup, access-token refresh อัตโนมัติ), `generateToken` (crypto, 16 หลัก), `rpc()` fetch wrapper (แนบ Bearer access-token เมื่อ login แล้ว, error taxonomy `{ok,code,error}` ไม่ throw), `serializeVault(nexusId, moduleIds?)` (2026-07-30: เพิ่ม `moduleIds` optional — scope ทุกคิวรีจาก `m.nexus_ref=?` เป็น `m.id IN (...)`, ตารางระดับ vault-global อย่าง relations/notes ถูกข้ามเมื่อ scope ผ่าน `allGlobal()`), `collectModuleSubtreeIds(nexusId, moduleId)` (เดินต้นไม้ `parent_id` ในหน่วยความจำ ไม่ใช้ SQL recursive CTE), `applySnapshotCore(nexusId, payload, {wipe, updateNexusMeta, reparentRootTo})` (แกนกลางที่ `applySnapshot`/`importModuleSnapshot` เรียกใช้ร่วมกัน), `applySnapshot` (wipe-and-rebuild ทั้ง nexus เหมือนเดิม, เรียก core ด้วย `wipe:true`), `importModuleSnapshot(nexusId, parentModuleId, payload)` (ใหม่ — merge module subtree เข้า nexus แบบเพิ่มเข้าไปเท่านั้น ไม่ล้างของเดิม, ใช้โดย `electron/src/db/db-transfer.js`), ops: `syncStatus/syncPushVault/syncPullVault/syncPullByToken/syncDeleteUpload` (คืนรายการ "ช่องอัปโหลด" ของบัญชี ไม่ใช่ช่องเดียวอีกต่อไป) |
+| `electron/src/renderer/sync.js` | ~230 | หน้าต่างซิงก์หลายสถานะ (ตั้งค่าเซิร์ฟเวอร์ / ยังไม่ login / login แล้ว—รายการช่องอัปโหลด), แผงโทเคนแบบแสดงครั้งเดียว + คัดลอก, ช่องกรอกโทเคนพร้อม sub-flow เผยรหัสผ่านเมื่อเจอ `bad_password`, `syncErrToast` map error code → i18n toast; เข้าจากปุ่ม ☁ ใน vault-head (core.js); โหมด dev ข้ามหน้าตั้งค่าและแสดงป้าย dev server |
+| `electron/src/db/sync-devserver.js` | ~230 | เซิร์ฟเวอร์ซิงก์จำลองสำหรับ build dev (`!app.isPackaged`): HTTP in-process บน loopback, endpoint/กติกา auth/tier-quota/expiry/lockout เหมือน migration ใหม่ทุกอย่าง, bearer token รูปแบบ `<uid>:<tier>` (login จำลองฝั่ง `sync.js` ไม่ผ่าน `/auth/*` จริง), เก็บ state เป็น `dev-sync-server.json` ข้าง novel-manager.db; `ensureDevSyncServer()` เริ่ม lazy ครั้งเดียวต่อโปรเซส |
+| `src/supabase/migrations/20260717000000_dracondex_sync_prototype.sql` | ~200 | migration เดิม (ตาราง/ฟังก์ชันคีย์ถาวรถูก `drop` ทิ้งทั้งหมดโดย migration ถัดไป — คงไฟล์นี้ไว้เพราะเคย apply แล้ว ห้ามแก้ไข) |
+| `src/supabase/migrations/20260730000000_dracondex_token_sync.sql` | ~250 | Token Sync จริง: ตาราง `sync_account(owner_id, tier)`, คอลัมน์ใหม่บน `sync_vault` (`owner_id`/`token_hash`/`password_hash`/`expires_at`/`pull_fail_count`/`pull_locked_until`, ไม่ unique ต่อ owner อีกต่อไป — หลายแถวต่อบัญชีได้ตาม quota), RPC SECURITY DEFINER 5 ตัว (`token_sync_push/status/delete/pull_own/pull_by_token`), helper `_sync_tier/_sync_max_bytes/_sync_max_slots` (free 1 ช่อง/10MB, pro 3 ช่อง/20MB) |
 | `docs/SYNC.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ (หัวเอกสารระบุสถานะปิดใช้ + วิธีเปิดกลับ) |
-| `supabase/README.md` | ~35 | **ใหม่ 2026-08-09** — ป้ายบอกว่าโฟลเดอร์นี้เป็นของฟีเจอร์ที่ปิดอยู่, ทำไมยังเก็บไว้, ขั้นตอนเปิดกลับ, และย้ำว่าห้ามแก้ไฟล์ `.sql` ที่ apply ไปแล้ว |
+| `src/supabase/README.md` | ~35 | **ใหม่ 2026-08-09** — ป้ายบอกว่าโฟลเดอร์นี้เป็นของฟีเจอร์ที่ปิดอยู่, ทำไมยังเก็บไว้, ขั้นตอนเปิดกลับ, และย้ำว่าห้ามแก้ไฟล์ `.sql` ที่ apply ไปแล้ว |
 
-ไฟล์เดิมที่แตะ: `main.js` (`sync:*` handler เปลี่ยนชุด — เพิ่ม
+ไฟล์เดิมที่แตะ: `electron/main.js` (`sync:*` handler เปลี่ยนชุด — เพิ่ม
 `googleLogin/googleLogout/authStatus/pullByToken/deleteUpload`, ตัด
-`link/createReadKey/unlink`), `preload.js` (`api.sync` namespace ตามชุดใหม่),
-`css/builder.css` (เพิ่ม `.sync-upload-row`/`.sync-upload-actions`/
-`.sync-tag-chip`), `src/renderer/i18n.js` (คีย์ `sync*` ชุดใหม่ครบ 18 locale
+`link/createReadKey/unlink`), `electron/preload.js` (`api.sync` namespace ตามชุดใหม่),
+`electron/css/builder.css` (เพิ่ม `.sync-upload-row`/`.sync-upload-actions`/
+`.sync-tag-chip`), `electron/src/renderer/i18n.js` (คีย์ `sync*` ชุดใหม่ครบ 18 locale
 แทนที่ชุดคีย์ระบบคีย์ถาวรเดิม)
 
 ### ไฟล์ที่แตะตอนปิดฟีเจอร์ (2026-08-09, v4.5.0)
@@ -373,12 +383,12 @@ quota ตาม tier บัญชี — ดูรายละเอียดพ
 
 | ไฟล์ | สิ่งที่แก้ |
 |---|---|
-| `src/renderer/core/state.js` | เพิ่มค่าคงที่ `CLOUD_SYNC_ENABLED = false` (สวิตช์จุดเดียวของทั้งฟีเจอร์ พร้อมคอมเมนต์อธิบายเหตุผล + คำเตือนว่า `src/db/sync.js` ยังทำงานอยู่) |
-| `src/renderer/core/views.js` | ปุ่ม ☁ (`openSyncModal()`) ใน vault-head ของแผงซ้าย ห่อด้วย `${CLOUD_SYNC_ENABLED ? … : ''}` |
-| `src/renderer/core/setting-window.js` | `SETTING_GROUPS.appdata` เป็น `CLOUD_SYNC_ENABLED ? ['tokensync','database','backup'] : ['database','backup']` — `SETTING_PAGE_LABEL_KEY.tokensync` และ `registerSettingPage()` ฝั่ง `sync.js` คงไว้ |
-| `src/renderer/core/account.js` | หน้า Account ย้ายไปผูกกับ Google Drive (ดูแถวของไฟล์นี้ในหัวข้อ Setting window) |
-| `src/renderer/drive.js` | ป้าย dev-mode ทั้ง 2 จุดเปลี่ยนจากคีย์ `syncDevServer` ("ไม่ต้องมี Supabase" — เขียนไว้สำหรับ sync-devserver) มาใช้คีย์ใหม่ `driveDevServer` ที่พูดถึง mock Drive server ตรงตัว |
-| `src/renderer/i18n.js` | คีย์ใหม่ `driveDevServer` ครบ 18 locale (`syncDevServer` เดิมคงไว้ — `renderer/sync.js` ยังใช้อยู่) |
+| `electron/src/renderer/core/state.js` | เพิ่มค่าคงที่ `CLOUD_SYNC_ENABLED = false` (สวิตช์จุดเดียวของทั้งฟีเจอร์ พร้อมคอมเมนต์อธิบายเหตุผล + คำเตือนว่า `electron/src/db/sync.js` ยังทำงานอยู่) |
+| `electron/src/renderer/core/views.js` | ปุ่ม ☁ (`openSyncModal()`) ใน vault-head ของแผงซ้าย ห่อด้วย `${CLOUD_SYNC_ENABLED ? … : ''}` |
+| `electron/src/renderer/core/setting-window.js` | `SETTING_GROUPS.appdata` เป็น `CLOUD_SYNC_ENABLED ? ['tokensync','database','backup'] : ['database','backup']` — `SETTING_PAGE_LABEL_KEY.tokensync` และ `registerSettingPage()` ฝั่ง `sync.js` คงไว้ |
+| `electron/src/renderer/core/account.js` | หน้า Account ย้ายไปผูกกับ Google Drive (ดูแถวของไฟล์นี้ในหัวข้อ Setting window) |
+| `electron/src/renderer/drive.js` | ป้าย dev-mode ทั้ง 2 จุดเปลี่ยนจากคีย์ `syncDevServer` ("ไม่ต้องมี Supabase" — เขียนไว้สำหรับ sync-devserver) มาใช้คีย์ใหม่ `driveDevServer` ที่พูดถึง mock Drive server ตรงตัว |
+| `electron/src/renderer/i18n.js` | คีย์ใหม่ `driveDevServer` ครบ 18 locale (`syncDevServer` เดิมคงไว้ — `renderer/sync.js` ยังใช้อยู่) |
 
 ## Google Drive Backup — ไฟล์ใหม่ (2026-07-30)
 
@@ -388,17 +398,17 @@ Google Drive ผู้ใช้ — login แยกอิสระจาก Clou
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/db/oauth-loopback.js` | ~55 | ดึงออกจาก `src/db/sync.js` (ไม่มีการเปลี่ยนพฤติกรรม): `makePkcePair()` + `runOAuthLoopback(buildAuthUrl, {timeoutMs})` — เซิร์ฟเวอร์ loopback ชั่วคราวบน `127.0.0.1` ที่รับ redirect ของ authorization code, คืน `{code, redirectUri}`; ใช้ร่วมกันทั้ง Cloud Sync (`sync.js`) และ Google Drive Backup (`drive.js`) |
-| `src/db/drive.js` | ~450 | ทั้งฟีเจอร์ฝั่ง main: config ใน `app_setting` (`drive:clientId`/`drive:clientSecret`/`drive:refreshToken`/`drive:email`/`drive:autoBackup`/`drive:backupLayout`/`drive:backupDdx`/`drive:backupLog`/`drive:lastBackupAt`), Google OAuth ตรงกับ Google (ไม่ผ่าน Supabase) ผ่าน `oauth-loopback.js`, token refresh ตรงที่ `oauth2.googleapis.com`, Drive API v3 บน `appDataFolder` เท่านั้น (`driveFindFile`/`driveUpsertFile`/`driveDownloadFile`/`driveGetQuota`, multipart upload ตาม RFC 2387), ops: `driveBackupNow`/`driveRestoreLayoutProfile`/`driveRestoreDatabase` (reuse `exportDatabaseTo`/`importDatabaseMerge` จาก `import-merge.js` โดยตรง), `driveGetBackupLog()` (2026-07-30, ใหม่ — getter ตัวแรกของ `drive:backupLog` ที่เขียนไว้อยู่แล้วแต่ไม่เคยมีใครอ่านกลับ), layout-slot ops (2026-07-30, ใหม่ — Setting window User profile): `driveListLayoutSlots`/`driveSaveLayoutSlot`/`driveRestoreLayoutSlot`/`driveDeleteLayoutSlot` เก็บลง appdata **คนละไฟล์** กับ auto-backup (`LAYOUT_SLOTS_FILE = 'dracondex-layout-slots.json'` แยกจาก `LAYOUT_FILE` เดิม) เพื่อไม่ให้ auto-backup รายชั่วโมงเขียนทับรายการ slot ที่ตั้งชื่อไว้ |
-| `src/db/drive-devserver.js` | ~200 | เซิร์ฟเวอร์ Drive จำลองสำหรับ build dev: HTTP in-process บน loopback, endpoint รูปแบบเดียวกับ Drive API v3 จริง (about/files list/create/update/get) รวมถึง multipart parsing ด้วย Buffer (ไม่ใช่ string) เพื่อไม่ทำลายไฟล์ .ddx ไบนารี, จำลองโควตาผ่าน env var `DDX_DEV_DRIVE_QUOTA_PCT`, เก็บ state เป็น `dev-drive-server.json` ข้าง novel-manager.db |
+| `electron/src/db/oauth-loopback.js` | ~55 | ดึงออกจาก `electron/src/db/sync.js` (ไม่มีการเปลี่ยนพฤติกรรม): `makePkcePair()` + `runOAuthLoopback(buildAuthUrl, {timeoutMs})` — เซิร์ฟเวอร์ loopback ชั่วคราวบน `127.0.0.1` ที่รับ redirect ของ authorization code, คืน `{code, redirectUri}`; ใช้ร่วมกันทั้ง Cloud Sync (`sync.js`) และ Google Drive Backup (`drive.js`) |
+| `electron/src/db/drive.js` | ~450 | ทั้งฟีเจอร์ฝั่ง main: config ใน `app_setting` (`drive:clientId`/`drive:clientSecret`/`drive:refreshToken`/`drive:email`/`drive:autoBackup`/`drive:backupLayout`/`drive:backupDdx`/`drive:backupLog`/`drive:lastBackupAt`), Google OAuth ตรงกับ Google (ไม่ผ่าน Supabase) ผ่าน `oauth-loopback.js`, token refresh ตรงที่ `oauth2.googleapis.com`, Drive API v3 บน `appDataFolder` เท่านั้น (`driveFindFile`/`driveUpsertFile`/`driveDownloadFile`/`driveGetQuota`, multipart upload ตาม RFC 2387), ops: `driveBackupNow`/`driveRestoreLayoutProfile`/`driveRestoreDatabase` (reuse `exportDatabaseTo`/`importDatabaseMerge` จาก `import-merge.js` โดยตรง), `driveGetBackupLog()` (2026-07-30, ใหม่ — getter ตัวแรกของ `drive:backupLog` ที่เขียนไว้อยู่แล้วแต่ไม่เคยมีใครอ่านกลับ), layout-slot ops (2026-07-30, ใหม่ — Setting window User profile): `driveListLayoutSlots`/`driveSaveLayoutSlot`/`driveRestoreLayoutSlot`/`driveDeleteLayoutSlot` เก็บลง appdata **คนละไฟล์** กับ auto-backup (`LAYOUT_SLOTS_FILE = 'dracondex-layout-slots.json'` แยกจาก `LAYOUT_FILE` เดิม) เพื่อไม่ให้ auto-backup รายชั่วโมงเขียนทับรายการ slot ที่ตั้งชื่อไว้ |
+| `electron/src/db/drive-devserver.js` | ~200 | เซิร์ฟเวอร์ Drive จำลองสำหรับ build dev: HTTP in-process บน loopback, endpoint รูปแบบเดียวกับ Drive API v3 จริง (about/files list/create/update/get) รวมถึง multipart parsing ด้วย Buffer (ไม่ใช่ string) เพื่อไม่ทำลายไฟล์ .ddx ไบนารี, จำลองโควตาผ่าน env var `DDX_DEV_DRIVE_QUOTA_PCT`, เก็บ state เป็น `dev-drive-server.json` ข้าง novel-manager.db |
 | `docs/DRIVE.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ |
 
-ไฟล์เดิมที่แตะ: `main.js`/`preload.js` (namespace `drive:*`/`api.drive` ใหม่
-+ layout-slot/backup-log channels ใหม่ 2026-07-30), `database.js`
-(re-export `src/db/drive.js`), `index.html` (script tag
-`src/renderer/drive.js`), `src/renderer/core/boot.js`
-(`initDriveAutoBackup()` ใน `init()`), `css/builder.css` (เพิ่ม
-`.drive-bar`/`.drive-bar-fill`), `src/renderer/i18n.js` (คีย์
+ไฟล์เดิมที่แตะ: `electron/main.js`/`electron/preload.js` (namespace `drive:*`/`api.drive` ใหม่
++ layout-slot/backup-log channels ใหม่ 2026-07-30), `electron/database.js`
+(re-export `electron/src/db/drive.js`), `electron/index.html` (script tag
+`electron/src/renderer/drive.js`), `electron/src/renderer/core/boot.js`
+(`initDriveAutoBackup()` ใน `init()`), `electron/css/builder.css` (เพิ่ม
+`.drive-bar`/`.drive-bar-fill`), `electron/src/renderer/i18n.js` (คีย์
 `drive*`/`prefs_backup` ใหม่ครบ 18 locale). **2026-07-30**: หน้าตั้งค่านี้
 ย้ายจาก Preferences panel (`PREFS_SECTIONS`+`'backup'`) ไปเป็นหน้า
 **BackupData** ใน Setting window ใหม่ — `prefsBackupSectionHtml()` ถูก
@@ -413,14 +423,14 @@ Window" ด้านล่าง)
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/db/update.js` | ~90 | `checkForUpdate()` (อ่าน Firestore REST doc สาธารณะ 1 ชิ้น, เช็ก login ผ่าน `syncAuthStatus()`/`driveStatus()`, เปรียบเทียบเวอร์ชันแบบ semver-ย่อ, ไม่ throw เด็ดขาด), `dismissUpdate`/`openUpdateDownload`; โหมด dev ไม่มี mock server แยก — ใช้ env var `DDX_DEV_UPDATE_VERSION` บังคับเวอร์ชัน "ล่าสุด" จำลอง |
-| `src/renderer/update.js` | ~30 | `initVersionCheck()` (เรียกจาก boot.js ครั้งเดียว, fire-and-forget) + modal แสดงเวอร์ชันใหม่/release notes/ปุ่มดาวน์โหลด+เตือนภายหลัง |
+| `electron/src/db/update.js` | ~90 | `checkForUpdate()` (อ่าน Firestore REST doc สาธารณะ 1 ชิ้น, เช็ก login ผ่าน `syncAuthStatus()`/`driveStatus()`, เปรียบเทียบเวอร์ชันแบบ semver-ย่อ, ไม่ throw เด็ดขาด), `dismissUpdate`/`openUpdateDownload`; โหมด dev ไม่มี mock server แยก — ใช้ env var `DDX_DEV_UPDATE_VERSION` บังคับเวอร์ชัน "ล่าสุด" จำลอง |
+| `electron/src/renderer/update.js` | ~30 | `initVersionCheck()` (เรียกจาก boot.js ครั้งเดียว, fire-and-forget) + modal แสดงเวอร์ชันใหม่/release notes/ปุ่มดาวน์โหลด+เตือนภายหลัง |
 | `docs/UPDATE.md` | — | คู่มือวิธีใช้ + หลักการทำงานของฟีเจอร์นี้ |
 
-ไฟล์เดิมที่แตะ: `main.js`/`preload.js`/`database.js` (namespace `update:*`
-ใหม่), `index.html` (script tag `src/renderer/update.js`),
-`src/renderer/core/boot.js` (`initVersionCheck()` ใน `init()`),
-`src/renderer/i18n.js` (คีย์ `update*` ใหม่ครบ 18 locale)
+ไฟล์เดิมที่แตะ: `electron/main.js`/`electron/preload.js`/`electron/database.js` (namespace `update:*`
+ใหม่), `electron/index.html` (script tag `electron/src/renderer/update.js`),
+`electron/src/renderer/core/boot.js` (`initVersionCheck()` ใน `init()`),
+`electron/src/renderer/i18n.js` (คีย์ `update*` ใหม่ครบ 18 locale)
 
 ## Plugins (เดิม Github Sandboxed Extensions) — (2026-07-30, เปลี่ยนชื่อ 2026-08-06)
 
@@ -429,28 +439,28 @@ Window" ด้านล่าง)
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/db/plugin-manifest.js` | ~285 | **ใหม่ 2026-08-06** — logic ล้วนๆ ไม่ `require` electron/db เลย จึงเทสต์ด้วย `node --test` ตรงได้: identifier whitelist ทั้งชุด (`PLUGIN_ID_RE`/`PLUGIN_TABLE_RE`/`PLUGIN_COLUMN_RE`/`FULL_TABLE_RE` = `plg_*`/`REPO_SEG_RE`, ชนิดคอลัมน์แค่ TEXT/INTEGER/REAL), `validateManifest()`, `parseRepoUrl()` (แกะลิงก์ git ทุกรูปแบบ: https/ssh/scp/ไม่มี scheme/`owner/repo` ย่อ/`/tree/<ref>`/GitLab nested group), `rawUrl()` (raw URL ของ GitHub และ GitLab), `MANIFEST_NAMES`/`REF_CANDIDATES`. **v4.3.0** — กฎของ `panels[]` (`PANEL_ID_RE`, entry ต้องเป็น HTML และอยู่ใน `files`) กับ `permissions` (`net` = origin `https://` ล้วน, `context` = `module`) + ตัวอ่านกลับ `manifestPanels`/`manifestNetOrigins`/`manifestContextKinds` และ `netOriginAllowed()` (เทียบ origin ไม่ใช่ prefix) |
-| `src/db/plugin.js` | ~490 | `resolveRepo()` (ไล่ ref `main`→`master` × manifest `dracondex-plugin.json`→`dracondex-extension.json`), `pluginPreview()` (dry run อ่านอย่างเดียว ไม่แตะดิสก์/DB), `pluginInstall(url)` (รับ URL ตัวเดียวแล้ว resolve ใหม่เอง ไม่เชื่อพรีวิว — ดาวน์โหลดทีละไฟล์, เขียนไฟล์+DB แบบ transaction, ล้างทิ้งถ้าล้มเหลวกลางทาง), `pluginUninstall`/`pluginList`/`pluginGetById`, `migratePluginDir()` (ย้าย `extensions/`→`plugins/` บนดิสก์), `pluginApiQuery/Insert/Update/Delete/GetSchema` (ผูก ownership จาก `(plugin_ref, local_name)` เสมอ ไม่มี raw-SQL passthrough). **v4.3.0** — `pluginList()` คืน `dir`/`panels`/`netOrigins`/`contextKinds` (อ่านกลับจาก `manifest_json` ไม่ต้อง migration), `pluginByPanelPath()` (main.js ใช้ตรวจ src ของ `<webview>`), `pluginNetAllowed`/`pluginNetFetch`/`pluginNetStream` (จำกัด method/header/ขนาด/redirect), `pluginOAuthAuthorize()` (PKCE + loopback ผ่าน `oauth-loopback.js` ตัวเดิม) |
-| `src/renderer/plugin.js` | ~245 | หน้า Setting → ปลั๊กอิน: ช่อง URL ช่องเดียว (`#plugin-url`) + auto-preview แบบ debounce 400ms + ปุ่มตรวจสอบ, `pluginPreviewHtml()` (การ์ดพรีวิว — ทุกฟิลด์ผ่าน `x()` เพราะเป็นข้อความจากอินเทอร์เน็ต), `pluginInstallClick()` (ส่งแค่ URL), รายการปลั๊กอิน + Launch/Stop/ลบ, หน้า Plugin setting (placeholder), `pluginPreviewGrantsHtml()` (v4.3.0 — โชว์ panels + net origins ก่อนติดตั้ง) |
-| `preload-plugin.js` (repo root) | ~90 | preload แยกต่างหากสำหรับหน้าต่างปลั๊กอิน **และ panel** เท่านั้น — expose `window.pluginApi.table.*` (+ `window.extApi` เป็น alias ให้ของเก่า), ไม่มี `window.api` เลย. **v4.3.0** — เพิ่ม `net.fetch`/`net.stream` (buffer chunk ที่มาก่อน id จะ resolve), `oauth.authorize`, `panel.onMessage/send/close` (บน `sendToHost`, ไม่ผ่าน main process) |
-| `src/renderer/pluginpanel.js` | ~150 | **ใหม่ v4.3.0** — จุดต่อขยาย Plugin panel: `loadPluginPanels()` (cache `S.pluginPanels` จาก `api.plugin.list()`), `openPluginPanel`/`closePluginPanel`/`togglePluginPanel`, `pluginPanelButtonsHtml()` (ปุ่มใน pane head, self-guard บน `S.activeModuleNode`), `buildPluginPanelHtml()` (`<aside class="module-inspector plugin-panel">` + `<webview>`), `mountPluginPanel()` (ผูก `ipc-message` และส่ง module context ตาม `permissions.context`) |
+| `electron/src/db/plugin-manifest.js` | ~285 | **ใหม่ 2026-08-06** — logic ล้วนๆ ไม่ `require` electron/db เลย จึงเทสต์ด้วย `node --test` ตรงได้: identifier whitelist ทั้งชุด (`PLUGIN_ID_RE`/`PLUGIN_TABLE_RE`/`PLUGIN_COLUMN_RE`/`FULL_TABLE_RE` = `plg_*`/`REPO_SEG_RE`, ชนิดคอลัมน์แค่ TEXT/INTEGER/REAL), `validateManifest()`, `parseRepoUrl()` (แกะลิงก์ git ทุกรูปแบบ: https/ssh/scp/ไม่มี scheme/`owner/repo` ย่อ/`/tree/<ref>`/GitLab nested group), `rawUrl()` (raw URL ของ GitHub และ GitLab), `MANIFEST_NAMES`/`REF_CANDIDATES`. **v4.3.0** — กฎของ `panels[]` (`PANEL_ID_RE`, entry ต้องเป็น HTML และอยู่ใน `files`) กับ `permissions` (`net` = origin `https://` ล้วน, `context` = `module`) + ตัวอ่านกลับ `manifestPanels`/`manifestNetOrigins`/`manifestContextKinds` และ `netOriginAllowed()` (เทียบ origin ไม่ใช่ prefix) |
+| `electron/src/db/plugin.js` | ~490 | `resolveRepo()` (ไล่ ref `main`→`master` × manifest `dracondex-plugin.json`→`dracondex-extension.json`), `pluginPreview()` (dry run อ่านอย่างเดียว ไม่แตะดิสก์/DB), `pluginInstall(url)` (รับ URL ตัวเดียวแล้ว resolve ใหม่เอง ไม่เชื่อพรีวิว — ดาวน์โหลดทีละไฟล์, เขียนไฟล์+DB แบบ transaction, ล้างทิ้งถ้าล้มเหลวกลางทาง), `pluginUninstall`/`pluginList`/`pluginGetById`, `migratePluginDir()` (ย้าย `extensions/`→`plugins/` บนดิสก์), `pluginApiQuery/Insert/Update/Delete/GetSchema` (ผูก ownership จาก `(plugin_ref, local_name)` เสมอ ไม่มี raw-SQL passthrough). **v4.3.0** — `pluginList()` คืน `dir`/`panels`/`netOrigins`/`contextKinds` (อ่านกลับจาก `manifest_json` ไม่ต้อง migration), `pluginByPanelPath()` (electron/main.js ใช้ตรวจ src ของ `<webview>`), `pluginNetAllowed`/`pluginNetFetch`/`pluginNetStream` (จำกัด method/header/ขนาด/redirect), `pluginOAuthAuthorize()` (PKCE + loopback ผ่าน `oauth-loopback.js` ตัวเดิม) |
+| `electron/src/renderer/plugin.js` | ~245 | หน้า Setting → ปลั๊กอิน: ช่อง URL ช่องเดียว (`#plugin-url`) + auto-preview แบบ debounce 400ms + ปุ่มตรวจสอบ, `pluginPreviewHtml()` (การ์ดพรีวิว — ทุกฟิลด์ผ่าน `x()` เพราะเป็นข้อความจากอินเทอร์เน็ต), `pluginInstallClick()` (ส่งแค่ URL), รายการปลั๊กอิน + Launch/Stop/ลบ, หน้า Plugin setting (placeholder), `pluginPreviewGrantsHtml()` (v4.3.0 — โชว์ panels + net origins ก่อนติดตั้ง) |
+| `electron/preload-plugin.js` (repo root) | ~90 | preload แยกต่างหากสำหรับหน้าต่างปลั๊กอิน **และ panel** เท่านั้น — expose `window.pluginApi.table.*` (+ `window.extApi` เป็น alias ให้ของเก่า), ไม่มี `window.api` เลย. **v4.3.0** — เพิ่ม `net.fetch`/`net.stream` (buffer chunk ที่มาก่อน id จะ resolve), `oauth.authorize`, `panel.onMessage/send/close` (บน `sendToHost`, ไม่ผ่าน main process) |
+| `electron/src/renderer/pluginpanel.js` | ~150 | **ใหม่ v4.3.0** — จุดต่อขยาย Plugin panel: `loadPluginPanels()` (cache `S.pluginPanels` จาก `api.plugin.list()`), `openPluginPanel`/`closePluginPanel`/`togglePluginPanel`, `pluginPanelButtonsHtml()` (ปุ่มใน pane head, self-guard บน `S.activeModuleNode`), `buildPluginPanelHtml()` (`<aside class="module-inspector plugin-panel">` + `<webview>`), `mountPluginPanel()` (ผูก `ipc-message` และส่ง module context ตาม `permissions.context`) |
 | `test/plugin-url.test.mjs` | ~250 | เทสต์ `parseRepoUrl`/`rawUrl`/`validateManifest` — ลิงก์ทุกรูปแบบที่ต้องผ่าน, โฮสต์อื่น/path traversal/percent-encoding ที่ต้องถูกปฏิเสธ, manifest fixture ที่ต้องไม่ผ่าน. **v4.3.0** — panels/permissions ที่ต้องผ่านและไม่ผ่าน, `netOriginAllowed` เทียบ origin ไม่ใช่ prefix, ตัวอ่านกลับที่ต้องทิ้งของเสียแทนที่จะเชื่อแถวที่เก็บไว้ |
 | `docs/PLUGINS.md` | — | คู่มือวิธีใช้ + หลักการทำงาน + ข้อจำกัดด้านความปลอดภัยแบบตรงไปตรงมา + ตารางการเปลี่ยนชื่อ v4.1→v4.2 |
 
-ไฟล์เดิมที่แตะ: `src/db/schema/ddl.js` (ตาราง `plugin`/`plugin_table` +
-คอลัมน์ `repo_host`), `src/db/schema/migrations.js` (`migratePluginV42()`),
-`src/db/schema/init.js` (เรียก `migratePluginV42` **ก่อน** `db.exec(DDL_SQL)`
-+ ใส่ใน `parts[]` ของ `schemaStamp()`), `main.js`
+ไฟล์เดิมที่แตะ: `electron/src/db/schema/ddl.js` (ตาราง `plugin`/`plugin_table` +
+คอลัมน์ `repo_host`), `electron/src/db/schema/migrations.js` (`migratePluginV42()`),
+`electron/src/db/schema/init.js` (เรียก `migratePluginV42` **ก่อน** `db.exec(DDL_SQL)`
++ ใส่ใน `parts[]` ของ `schemaStamp()`), `electron/main.js`
 (`createPluginWindow`/`pluginWindows` map, namespace `plugin:*` ผ่าน `h()`
 ปกติ + `pluginapi:table:*` ผ่าน raw `ipcMain.handle` เพราะต้องอ่าน
 `event.sender`, เรียก `db.migratePluginDir()` ที่ `app.whenReady()`),
-`preload.js` (namespace `plugin` + ช่องใหม่ `plugin:preview` —
-**ไม่แตะ** `pluginApi`), `database.js`, `index.html` (script tag),
-`package.json` (`build.files` `preload-ext.js`→`preload-plugin.js`),
-`css/builder.css` (`.plugin-preview*`), `src/renderer/i18n.js` (คีย์
+`electron/preload.js` (namespace `plugin` + ช่องใหม่ `plugin:preview` —
+**ไม่แตะ** `pluginApi`), `electron/database.js`, `electron/index.html` (script tag),
+`package.json` (`build.files` `preload-ext.js`→`electron/preload-plugin.js`),
+`electron/css/builder.css` (`.plugin-preview*`), `electron/src/renderer/i18n.js` (คีย์
 `plugin*`/`prefs_plugin`/`settingGroupPlugin`/`settingPagePluginSettings`/
 `settingPluginNoSettings` ครบ 18 locale),
-`src/renderer/core/setting-window.js` (group `extension`→`plugin`,
+`electron/src/renderer/core/setting-window.js` (group `extension`→`plugin`,
 pages `plugin`/`pluginsettings`).
 
 **2026-07-30**: หน้าฟอร์มติดตั้งย้ายจาก Preferences panel
@@ -479,28 +489,28 @@ Quick Setting popup ถูกตัดให้เหลือแค่ 4 อย
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/renderer/core/settings.js` | ~300 | (เปลี่ยน) `renderSettingsMenu()` ตัดเหลือ 4 อย่าง (ภาษา/name-mode/UI size/ปุ่มเปิด Setting window) + `quickThemeExtraHtml()`/`uiSizeOnlySliderHtml()` ใหม่; เก็บ `t/tr`, `setUiSetting()` (จุดเดียวที่ mutate `S.settings`), slider helper, theme-palette cache, `SHORTCUT_HELP`/`openShortcutsModal`/`replayGuideTour`/`setVersionLimit` (ย้ายไปแสดงใน Text&Size's Advanced reveal แทน) ไว้เหมือนเดิมเพราะ Setting window เรียกใช้ร่วม; ลบ `PREFS_SECTIONS`/`openPreferencesPanel`/`prefsBodyHtml`/theme-grid/language-preview/ui-size-advanced ทั้งหมด (ย้ายไป `setting-window.js`) |
-| `src/renderer/core/setting-window.js` | ~200 | ใหม่ — เชลล์ของ Setting window: `SETTING_GROUPS`/`registerSettingPage(group,page,fn)`/`openSettingWindow()`/`selectSettingPage()`/`renderSettingWindow()` (แทนที่ `PREFS_SECTIONS`/`selectPrefsSection`/`renderPreferencesPanel` เดิม), หน้า Workspace→Theme (ย้ายจาก `prefsThemeSectionHtml`) และ Workspace→Text&Size (รวมภาษา+ขนาด UI+ขนาดตัวอักษร, `applyAreaScales()`/`setAreaScale()` — override `--fsc` เฉพาะ container ของแต่ละพื้นที่) |
-| `src/renderer/core/tool-toggle.js` | ~85 | ใหม่ — หน้า Workspace→Tool toggle + gating จริง: `applyNavToggles()` (ซ่อน/โชว์ 4 ปุ่ม nav sidebar ผ่าน class `.tool-toggle-hidden`), `toggleNavSetting/toggleStatusSetting/toggleQuickExtra` (mutate `S.settings.{navToggles,statusToggles,quickExtras}`) |
-| `src/renderer/core/account.js` | ~140 | ใหม่ — หน้า User→Account และ User→User profile (layout slot manager เรียก `api.drive.*LayoutSlot*` ใหม่). **แก้ 2026-08-09 (v4.5.0)**: หน้า Account เปลี่ยนจากอ่าน `api.sync.authStatus/status` (Supabase + badge tier) มาอ่าน `api.drive.status()` อย่างเดียว — 3 สถานะ (ยังไม่ตั้ง client id/secret → ลิงก์ไปหน้า BackupData, ตั้งแล้วยังไม่เชื่อมต่อ → ปุ่ม `api.drive.connect()`, เชื่อมต่อแล้ว → อีเมล + `api.drive.disconnect()`), ตัด `SETTING_TIER_COPY` ทิ้ง; `settingRefreshQuickAccountBlock()` ย้ายมาใช้ `api.drive.status()` เช่นกัน |
-| `src/renderer/core/db-transfer.js` | ~110 | ใหม่ — หน้า Appdata→Database: list Nexus (`api.nexus.getAll`), module tree ต่อ Nexus แบบ expand (`api.module.getTree`), ปุ่ม export/import ทั้งระดับ Nexus และระดับ module เดี่ยว เรียก `api.db.export/importNexusFile`/`export/importModuleFile` ใหม่ — onclick ทุกจุดส่งแค่ id ไม่ฝัง name (กัน quote-escaping กรณีชื่อมี `'`) |
-| `src/db/db-transfer.js` | ~40 | ใหม่ — ห่อ `serializeVault`/`applySnapshot`/`collectModuleSubtreeIds`/`importModuleSnapshot` (จาก `src/db/sync.js`) ด้วย file I/O: `exportNexusFile`/`importNexusFile`/`exportModuleFile`/`importModuleFile` |
+| `electron/src/renderer/core/settings.js` | ~300 | (เปลี่ยน) `renderSettingsMenu()` ตัดเหลือ 4 อย่าง (ภาษา/name-mode/UI size/ปุ่มเปิด Setting window) + `quickThemeExtraHtml()`/`uiSizeOnlySliderHtml()` ใหม่; เก็บ `t/tr`, `setUiSetting()` (จุดเดียวที่ mutate `S.settings`), slider helper, theme-palette cache, `SHORTCUT_HELP`/`openShortcutsModal`/`replayGuideTour`/`setVersionLimit` (ย้ายไปแสดงใน Text&Size's Advanced reveal แทน) ไว้เหมือนเดิมเพราะ Setting window เรียกใช้ร่วม; ลบ `PREFS_SECTIONS`/`openPreferencesPanel`/`prefsBodyHtml`/theme-grid/language-preview/ui-size-advanced ทั้งหมด (ย้ายไป `setting-window.js`) |
+| `electron/src/renderer/core/setting-window.js` | ~200 | ใหม่ — เชลล์ของ Setting window: `SETTING_GROUPS`/`registerSettingPage(group,page,fn)`/`openSettingWindow()`/`selectSettingPage()`/`renderSettingWindow()` (แทนที่ `PREFS_SECTIONS`/`selectPrefsSection`/`renderPreferencesPanel` เดิม), หน้า Workspace→Theme (ย้ายจาก `prefsThemeSectionHtml`) และ Workspace→Text&Size (รวมภาษา+ขนาด UI+ขนาดตัวอักษร, `applyAreaScales()`/`setAreaScale()` — override `--fsc` เฉพาะ container ของแต่ละพื้นที่) |
+| `electron/src/renderer/core/tool-toggle.js` | ~85 | ใหม่ — หน้า Workspace→Tool toggle + gating จริง: `applyNavToggles()` (ซ่อน/โชว์ 4 ปุ่ม nav sidebar ผ่าน class `.tool-toggle-hidden`), `toggleNavSetting/toggleStatusSetting/toggleQuickExtra` (mutate `S.settings.{navToggles,statusToggles,quickExtras}`) |
+| `electron/src/renderer/core/account.js` | ~140 | ใหม่ — หน้า User→Account และ User→User profile (layout slot manager เรียก `api.drive.*LayoutSlot*` ใหม่). **แก้ 2026-08-09 (v4.5.0)**: หน้า Account เปลี่ยนจากอ่าน `api.sync.authStatus/status` (Supabase + badge tier) มาอ่าน `api.drive.status()` อย่างเดียว — 3 สถานะ (ยังไม่ตั้ง client id/secret → ลิงก์ไปหน้า BackupData, ตั้งแล้วยังไม่เชื่อมต่อ → ปุ่ม `api.drive.connect()`, เชื่อมต่อแล้ว → อีเมล + `api.drive.disconnect()`), ตัด `SETTING_TIER_COPY` ทิ้ง; `settingRefreshQuickAccountBlock()` ย้ายมาใช้ `api.drive.status()` เช่นกัน |
+| `electron/src/renderer/core/db-transfer.js` | ~110 | ใหม่ — หน้า Appdata→Database: list Nexus (`api.nexus.getAll`), module tree ต่อ Nexus แบบ expand (`api.module.getTree`), ปุ่ม export/import ทั้งระดับ Nexus และระดับ module เดี่ยว เรียก `api.db.export/importNexusFile`/`export/importModuleFile` ใหม่ — onclick ทุกจุดส่งแค่ id ไม่ฝัง name (กัน quote-escaping กรณีชื่อมี `'`) |
+| `electron/src/db/db-transfer.js` | ~40 | ใหม่ — ห่อ `serializeVault`/`applySnapshot`/`collectModuleSubtreeIds`/`importModuleSnapshot` (จาก `electron/src/db/sync.js`) ด้วย file I/O: `exportNexusFile`/`importNexusFile`/`exportModuleFile`/`importModuleFile` |
 | `test/module-transfer.test.mjs` | ~35 | ใหม่ — source-inspection test (แพทเทิร์นเดียวกับ `onboarding-tour.test.mjs` เพราะ `getDB()` ต้องการ Electron `app` จริง รันใน `node --test` ตรงๆ ไม่ได้) ยืนยันว่า `importModuleSnapshot` ไม่มีทาง wipe nexus ปลายทาง |
 
-ไฟล์เดิมที่แตะ: `index.html` (script tag ใหม่ 4 ไฟล์ข้างต้น + ลำดับหลัง
-`settings.js`), `src/renderer/core/state.js` (`loadUiSettings()` เพิ่ม
-default `quickExtras`/`navToggles`/`statusToggles`), `src/renderer/core/
+ไฟล์เดิมที่แตะ: `electron/index.html` (script tag ใหม่ 4 ไฟล์ข้างต้น + ลำดับหลัง
+`settings.js`), `electron/src/renderer/core/state.js` (`loadUiSettings()` เพิ่ม
+default `quickExtras`/`navToggles`/`statusToggles`), `electron/src/renderer/core/
 boot.js` (`applyNavToggles()`/`applyAreaScales()` เรียกครั้งเดียวหลัง
-`renderModuleRail()`), `src/renderer/core/router.js` (`updateStatusBar()`
-gate ทุก segment ด้วย `S.settings.statusToggles`), `src/renderer/sync.js`
+`renderModuleRail()`), `electron/src/renderer/core/router.js` (`updateStatusBar()`
+gate ทุก segment ด้วย `S.settings.statusToggles`), `electron/src/renderer/sync.js`
 (`settingTokenSyncPageHtml()` ใหม่ — หน้า Appdata→TokenSync เป็นแค่ทางลัดเปิด
-`openSyncModal()` เดิม), `main.js`/`preload.js` (`db:export/importNexusFile`/
+`openSyncModal()` เดิม), `electron/main.js`/`electron/preload.js` (`db:export/importNexusFile`/
 `export/importModuleFile`, `drive:listLayoutSlots`/`saveLayoutSlot`/
-`restoreLayoutSlot`/`deleteLayoutSlot`/`getBackupLog` ใหม่), `database.js`
-(re-export `src/db/db-transfer.js`), `css/nav-hub.css` (`.tool-toggle-hidden`),
-`css/components.css` (`.setting-shell`/`.setting-sidebar`/`.setting-nav-*`/
+`restoreLayoutSlot`/`deleteLayoutSlot`/`getBackupLog` ใหม่), `electron/database.js`
+(re-export `electron/src/db/db-transfer.js`), `electron/css/nav-hub.css` (`.tool-toggle-hidden`),
+`electron/css/components.css` (`.setting-shell`/`.setting-sidebar`/`.setting-nav-*`/
 `.setting-content` ใหม่ — `.prefs-*` เดิมยังอยู่เพราะ Theme/Text&Size page
-reuse), `src/renderer/i18n.js` (คีย์ `setting*` ใหม่ 51 คีย์ครบ 18 locale)
+reuse), `electron/src/renderer/i18n.js` (คีย์ `setting*` ใหม่ 51 คีย์ครบ 18 locale)
 
 ## Workspace Styles — Wyvern/Drake/Dragon ครบทั้ง 3 (2026-07-31, part2 #New Workspace จบรอบ)
 
@@ -509,48 +519,48 @@ reuse), `src/renderer/i18n.js` (คีย์ `setting*` ใหม่ 51 คี�
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
-| `src/renderer/wyvern.js` | ~140 | Wyvern (เซสชันก่อนหน้า): `renderWyvernToolbar()` (toolbar ปุ่ม Views/Import/Export/Hashtag/Color/Create-module ทุกปุ่มเรียกฟังก์ชันเดิมของ Drake), `openWyvernViewSetMenu()` (popup 4 ตัวเลือก: Nexus Nest/Sage Hut/Import Dock/Import DB), `buildWyvernBrowseHtml()`/`wyvernDrillInto()`/`wyvernDrillUp()` (drill-down card-grid browser แทน left-panel tree), `renderWyvernHome()`/`buildWyvernPageHtml()` (`renderNexusHome()` override), `buildWyvernNexusPickerHtml()` (มิเรอร์ nexus picker list เข้า `#main-inner`, Dragon เรียกใช้ซ้ำตัวนี้ด้วย) |
-| `src/renderer/dragon.js` | ~175 | ใหม่ — ทั้งฟีเจอร์ Dragon (freeform spatial canvas): `dragonLayoutFor()`/`dragonNodePosition()` (ตำแหน่งการ์ดต่อ nexus+parent เก็บใน `S.settings.dragonLayout`, client-only ไม่ผ่าน DB), `dragonBrowseCurrentList()`/`dragonDrillInto()`/`dragonDrillUp()` (drill-down เหมือน Wyvern แต่ render เป็นบอร์ดอิสระ), `buildDragonCanvasHtml()`/`mountDragonBoard()` (วาดการ์ด + ผูก pointerdown/move/up drag มิเรอร์ `mod/designer.js`), `renderDragonHome()`/`buildDragonPageHtml()` (`renderNexusHome()` override, ไม่มี toolbar ของตัวเอง) |
-| `src/renderer/core/workspace-style.js` | ~65 | ใหม่ — Setting window → Workspace → หน้า "Workspace Style": `settingWorkspaceStylePageHtml()` (3 มockup card แบบ CSS wireframe, ไม่ apply ทันที), `selectPendingWorkspaceStyle()`/`applyWorkspaceStyleChoice()` (stage แล้วค่อย apply ผ่านปุ่ม "Apply & Restart" + `uiConfirm()` + `location.reload()`) |
-| `css/workspace.css` | ~70 | stylesheet ที่ 15 (โหลดหลังสุด): เดิม (Wyvern) + เพิ่ม `body[data-workspace="dragon"]` (ซ่อนแค่ left-panel/builder-tabs/layout-menu-wrap, **คง nav-sidebar**), `.dragon-board`/`.dragon-card`, และ `.wsp-*` (mockup preview บนหน้า Setting) |
+| `electron/src/renderer/wyvern.js` | ~140 | Wyvern (เซสชันก่อนหน้า): `renderWyvernToolbar()` (toolbar ปุ่ม Views/Import/Export/Hashtag/Color/Create-module ทุกปุ่มเรียกฟังก์ชันเดิมของ Drake), `openWyvernViewSetMenu()` (popup 4 ตัวเลือก: Nexus Nest/Sage Hut/Import Dock/Import DB), `buildWyvernBrowseHtml()`/`wyvernDrillInto()`/`wyvernDrillUp()` (drill-down card-grid browser แทน left-panel tree), `renderWyvernHome()`/`buildWyvernPageHtml()` (`renderNexusHome()` override), `buildWyvernNexusPickerHtml()` (มิเรอร์ nexus picker list เข้า `#main-inner`, Dragon เรียกใช้ซ้ำตัวนี้ด้วย) |
+| `electron/src/renderer/dragon.js` | ~175 | ใหม่ — ทั้งฟีเจอร์ Dragon (freeform spatial canvas): `dragonLayoutFor()`/`dragonNodePosition()` (ตำแหน่งการ์ดต่อ nexus+parent เก็บใน `S.settings.dragonLayout`, client-only ไม่ผ่าน DB), `dragonBrowseCurrentList()`/`dragonDrillInto()`/`dragonDrillUp()` (drill-down เหมือน Wyvern แต่ render เป็นบอร์ดอิสระ), `buildDragonCanvasHtml()`/`mountDragonBoard()` (วาดการ์ด + ผูก pointerdown/move/up drag มิเรอร์ `mod/designer.js`), `renderDragonHome()`/`buildDragonPageHtml()` (`renderNexusHome()` override, ไม่มี toolbar ของตัวเอง) |
+| `electron/src/renderer/core/workspace-style.js` | ~65 | ใหม่ — Setting window → Workspace → หน้า "Workspace Style": `settingWorkspaceStylePageHtml()` (3 มockup card แบบ CSS wireframe, ไม่ apply ทันที), `selectPendingWorkspaceStyle()`/`applyWorkspaceStyleChoice()` (stage แล้วค่อย apply ผ่านปุ่ม "Apply & Restart" + `uiConfirm()` + `location.reload()`) |
+| `electron/css/workspace.css` | ~70 | stylesheet ที่ 15 (โหลดหลังสุด): เดิม (Wyvern) + เพิ่ม `body[data-workspace="dragon"]` (ซ่อนแค่ left-panel/builder-tabs/layout-menu-wrap, **คง nav-sidebar**), `.dragon-board`/`.dragon-card`, และ `.wsp-*` (mockup preview บนหน้า Setting) |
 
 ไฟล์เดิมที่แตะ (รอบ Wyvern เดิม + รอบ Dragon/Setting page นี้รวมกัน):
-`index.html` (splash script อ่าน `?workspace=`/`saved.workspaceStyle`,
+`electron/index.html` (splash script อ่าน `?workspace=`/`saved.workspaceStyle`,
 `#workspace-toolbar` div, script tag ใหม่ 3 ไฟล์: `dragon.js`/
-`workspace-style.js` เพิ่มจากรอบนี้), `src/renderer/core/state.js`
+`workspace-style.js` เพิ่มจากรอบนี้), `electron/src/renderer/core/state.js`
 (`WORKSPACE_STYLE_OPTIONS`, `loadUiSettings()` เพิ่ม `workspaceStyle`/
 `wyvernToolbarOrientation`/`dragonLayout`, `S.wyvernBrowsePath`/
 `S.dragonBrowsePath`/`S.settingPendingWorkspace`/`S.importDockPage` ใหม่),
-`src/renderer/core/boot.js` (`applyWorkspaceStyle()` — อ่าน `?workspace=`
-override ใน memory เท่านั้น แล้วเรียกหลัง `applyUiSettings()`), `src/renderer/
+`electron/src/renderer/core/boot.js` (`applyWorkspaceStyle()` — อ่าน `?workspace=`
+override ใน memory เท่านั้น แล้วเรียกหลัง `applyUiSettings()`), `electron/src/renderer/
 core/views.js` (`renderNexusHome()` เพิ่ม branch เช็ก `workspaceStyle==='wyvern'`
 และ `==='dragon'`, `runBuilderMounts()` เรียก `mountDragonBoard()` ท้ายสุด,
 `buildBuilderPageHtml()` เพิ่ม `S.importDockPage` เข้า precedence chain),
-`src/renderer/builder.js` (`builderNavigate()`/`builderPaneHeadHtml()`/
+`electron/src/renderer/builder.js` (`builderNavigate()`/`builderPaneHeadHtml()`/
 `onBodyDrop()` guard เดิมจาก `workspaceStyle==='wyvern'` ขยายเป็น
 `workspaceStyle!=='drake'` ให้ Dragon ได้ no-tab/no-split/no-drag-split
-แบบเดียวกันโดยไม่ก็อปโค้ดซ้ำ, ยืนยันแล้วว่า Drake ไม่กระทบ), `src/renderer/
+แบบเดียวกันโดยไม่ก็อปโค้ดซ้ำ, ยืนยันแล้วว่า Drake ไม่กระทบ), `electron/src/renderer/
 hub/menus.js` (guard "เปิดใน pane ใหม่" ขยายจาก `==='wyvern'` เป็น
-`!=='drake'` เหมือนกัน), `src/renderer/core/setting-window.js`
+`!=='drake'` เหมือนกัน), `electron/src/renderer/core/setting-window.js`
 (`SETTING_GROUPS.workspace` เพิ่ม `'style'`, `SETTING_PAGE_LABEL_KEY.style`),
-`src/renderer/hub/sections.js` (`goToImportDockPage()`/`buildImportDockPageHtml()`
-— หน้า Import Dock แบบเดี่ยว มิเรอร์ `goToKindBrowserHub()`), `src/renderer/
+`electron/src/renderer/hub/sections.js` (`goToImportDockPage()`/`buildImportDockPageHtml()`
+— หน้า Import Dock แบบเดี่ยว มิเรอร์ `goToKindBrowserHub()`), `electron/src/renderer/
 hub/kinds.js` (`goToNexusNestHub()`/`atHubHome` clear `importDockPage`/
-`wyvernBrowsePath`/`dragonBrowsePath`), `src/renderer/core/nexus.js`
+`wyvernBrowsePath`/`dragonBrowsePath`), `electron/src/renderer/core/nexus.js`
 (`clearWorkspaceTabs()` clear `wyvernBrowsePath`/`dragonBrowsePath`),
-`src/renderer/hub/open.js`/`src/renderer/mod/fileviewer.js`/`item.js`/
+`electron/src/renderer/hub/open.js`/`electron/src/renderer/mod/fileviewer.js`/`item.js`/
 `sagehut.js` (clear `S.importDockPage` ที่จุดเดิมทุกจุดที่ clear
-`S.kindBrowserPage` อยู่แล้ว), `src/renderer/i18n.js` (คีย์ `wyvernViewSet`
+`S.kindBrowserPage` อยู่แล้ว), `electron/src/renderer/i18n.js` (คีย์ `wyvernViewSet`
 เดิม + คีย์ใหม่รอบนี้ `settingPageWorkspaceStyle`/`workspaceStyleDrakeDesc`/
 `workspaceStyleWyvernDesc`/`workspaceStyleDragonDesc`/`settingWorkspaceApply`/
 `settingWorkspaceApplyConfirm` ครบ 18 locale)
 
 ---
 
-## src/db/ — ชั้นฐานข้อมูล (รันใน main process)
+## electron/src/db/ — ชั้นฐานข้อมูล (รันใน main process)
 
 ทุกไฟล์ pattern เดียวกัน: `getDB()` จาก core แล้ว export ฟังก์ชัน query ตรง ๆ
-(prepared statement ต่อครั้ง) — ชื่อฟังก์ชันตรงกับ handler ใน main.js
+(prepared statement ต่อครั้ง) — ชื่อฟังก์ชันตรงกับ handler ใน electron/main.js
 
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
@@ -572,7 +582,7 @@ hub/kinds.js` (`goToNexusNestHub()`/`atHubHome` clear `importDockPage`/
 
 ---
 
-## src/renderer/ — ชั้น UI
+## electron/src/renderer/ — ชั้น UI
 
 ทุกไฟล์เป็น global function (ไม่มี module system) เรียก DB ผ่าน `window.api`
 render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
@@ -594,7 +604,7 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
     แต่ locale ที่เหลือต้องมีครบ ไม่งั้น `tr()` เงียบ ๆ ตกกลับไปเป็นอังกฤษ
   - `check.mjs` บังคับกฎนี้แล้ว (ดู SYSTEMS.md §11) — เพิ่ม entry ใหม่ต้องใส่
     ครบทุก locale ไม่งั้น checker ขึ้น ERROR
-- ไม่มี logic — logic การแปลอยู่ใน `src/renderer/core/` (`t()`, `tr()` ใน
+- ไม่มี logic — logic การแปลอยู่ใน `electron/src/renderer/core/` (`t()`, `tr()` ใน
   `settings.js`; `translateStaticChrome()`, `translateCommonUiText()` ใน
   `chrome.js`)
 
@@ -604,7 +614,7 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   `==highlight==`/inline code/`[text](url)`/`[[Wikilink]]`/`[[Wikilink|alias]]`)
   escape ข้อความผู้ใช้ทุกจุดก่อนแปะ HTML
 - `mdExtractWikilinks(text)` → `[{name,alias,start,end}]` — regex เดียวกับ
-  `WIKILINK_RE` ใน `src/db/wiki.js` (คอมเมนต์ทั้งสองฝั่งเตือนให้ sync กัน)
+  `WIKILINK_RE` ใน `electron/src/db/wiki.js` (คอมเมนต์ทั้งสองฝั่งเตือนให้ sync กัน)
 
 ### mdeditor.js (267 บรรทัด, v2.8) — โหลดก่อน core.js
 - `createMarkdownEditor(container, opts)` — คอมโพเนนต์ editor กลาง reuse โดย
@@ -623,7 +633,7 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 
 ### core.js — โครงหลักของ renderer
 
-> 📁 **แยกเป็น `src/renderer/core/` 12 ไฟล์แล้ว (Plan part1)** — ดูตารางไฟล์ที่
+> 📁 **แยกเป็น `electron/src/renderer/core/` 12 ไฟล์แล้ว (Plan part1)** — ดูตารางไฟล์ที่
 > [Re-architecture](#re-architecture--การแยกไฟล์-plan-part1-2026-07-26)
 > รายละเอียดพฤติกรรมด้านล่างยังถูกต้อง เพียงกระจายอยู่คนละไฟล์
 - **State**: object `S` (view, activeModule, project/category/object,
@@ -716,10 +726,10 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 
 ### relation.js (~610 บรรทัด)
 - `renderForceGraph` (D3 force simulation, `ensureD3` โหลด D3 ครั้งแรก —
-  v2.8: ลอง `vendor/d3.min.js` ก่อน แล้วค่อย fallback ไป unpkg CDN),
+  v2.8: ลอง `electron/vendor/d3.min.js` ก่อน แล้วค่อย fallback ไป unpkg CDN),
   whiteboard 3 มุมมอง (`renderCategoryWhiteboard/renderObjectWhiteboard/
   renderProjectWhiteboard` + `switchRelViewMode`, ใช้ Konva — `ensureKonva`
-  v2.8 เช่นกันลอง `vendor/konva.min.js` ก่อน), ลาก node (`startNodeDrag`),
+  v2.8 เช่นกันลอง `electron/vendor/konva.min.js` ก่อน), ลาก node (`startNodeDrag`),
   โน้ตของ node (`showRelationNodeNote`), รายการ relation ด้านล่าง +
   ปรับความสูง (`startRelListResize`)
 
@@ -736,7 +746,7 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 
 ### navigator.js — Navigator (World)
 
-> 📁 **แยกเป็น `src/renderer/navigator/` 9 ไฟล์แล้ว (Plan part1)**, โหลดเป็นกลุ่ม
+> 📁 **แยกเป็น `electron/src/renderer/navigator/` 9 ไฟล์แล้ว (Plan part1)**, โหลดเป็นกลุ่ม
 > ผ่าน `loadGroup('navigator')`
 - `renderNavigatorView` (รายชื่อโลก) / `selectWorld` / `renderWorldSidebar`
   + `renderWorldMain` ตาม `S.worldTab` (original / chars-cats /
@@ -751,7 +761,7 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
 
 ### hero.js — Hero (Game)
 
-> 📁 **แยกเป็น `src/renderer/hero/` 6 ไฟล์แล้ว (Plan part1)**, โหลดเป็นกลุ่ม
+> 📁 **แยกเป็น `electron/src/renderer/hero/` 6 ไฟล์แล้ว (Plan part1)**, โหลดเป็นกลุ่ม
 > ผ่าน `loadGroup('hero')`
 - `renderHeroView` (รายชื่อเกม) / `selectGame` / `setGameTab`
 - หน้า project: ตัวละคร (`openCharModal`), Fields มี level

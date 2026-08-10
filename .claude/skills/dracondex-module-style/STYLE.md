@@ -1,25 +1,25 @@
 # DraconDex UI/UX conventions
 
-Extracted from the real code (`src/renderer/*.js`, `style.css`, `index.html`)
+Extracted from the real code (`electron/src/renderer/*.js`, `style.css`, `electron/index.html`)
 — every pattern below is what the existing 5 modules actually do. Paths are
 relative to the repo root.
 
 ## Files that matter (and one that doesn't)
 
-- `src/renderer/i18n.js` — i18n data: locale dict `const L` (13 languages),
+- `electron/src/renderer/i18n.js` — i18n data: locale dict `const L` (13 languages),
   `LANGUAGE_LABELS`, `COMMON_UI_TEXT`. Loaded before core.js.
-- `src/renderer/core.js` — app shell: nexus home, `selectModule()`, sidebar,
+- `electron/src/renderer/core.js` — app shell: nexus home, `selectModule()`, sidebar,
   `t()`, `toast()`, `confirmBox()`, `openModal()`, icon
   dict `I`, escape helper `x()`, `loadModule()`.
-- `src/renderer/<module>.js` — one file per module (director, navigator, hero,
+- `electron/src/renderer/<module>.js` — one file per module (director, navigator, hero,
   writer, sage) + shared panels (modals, timeline, map, relation, hashtag, search).
-- `src/db/<module>.js` → spread into `database.js` → IPC in `main.js`
-  (`h('group:method', fn)`) → exposed in `preload.js` (`inv('group:method')`)
+- `electron/src/db/<module>.js` → spread into `electron/database.js` → IPC in `electron/main.js`
+  (`h('group:method', fn)`) → exposed in `electron/preload.js` (`inv('group:method')`)
   → called as `api.group.method()` in renderer.
-- `index.html` loads `src/renderer/i18n.js` + `core.js` + `director.js` +
+- `electron/index.html` loads `electron/src/renderer/i18n.js` + `core.js` + `director.js` +
   `modals.js` + `search.js`; other modules lazy-load via `loadModule()`.
   (The legacy root `renderer.js` was removed — all renderer code lives in
-  `src/renderer/`.)
+  `electron/src/renderer/`.)
 
 ## Design tokens — never hardcode colors
 
@@ -46,22 +46,22 @@ A module renders its sidebar into `#left-panel-inner` and its detail into
 
 ## Module anatomy — the wiring checklist (checked by check.mjs --module)
 
-1. `index.html`: nav rail buttons `class="nav-btn <name>-only"` with
+1. `electron/index.html`: nav rail buttons `class="nav-btn <name>-only"` with
    `style="display:none"`, plus you rely on core.js to toggle them.
-2. `src/renderer/core.js`:
+2. `electron/src/renderer/core.js`:
    - module tile in `renderNexusHome()`: `<div class="module-item" onclick="selectModule('<name>')">`
    - branch in `selectModule()`: set `S.view`, clear `.nav-btn` actives,
-     `loadModule('src/renderer/<name>.js').then(() => render<Name>View())`
+     `loadModule('electron/src/renderer/<name>.js').then(() => render<Name>View())`
    - visibility block: toggle `.nav-btn.<name>-only` like the others
    - state reset in `returnToNexus()`
    - i18n keys added to **all 13 locales** in `const L` (en ja ko th zh vi id es pt fr de ru qd)
-3. `src/renderer/<name>.js`: entry `render<Name>View()` — sets
+3. `electron/src/renderer/<name>.js`: entry `render<Name>View()` — sets
    `S.view`/`S.activeModule`, renders `.ph` header + list into
    `#left-panel-inner`, detail/empty into `#main-inner`, ends with
    `updateTopNavButton()`.
-4. `src/db/<name>.js` exporting plain functions; spread into `database.js`.
-5. `main.js`: `h('<group>:<method>', ...)` per operation.
-6. `preload.js`: `<group>: { method: (...) => inv('<group>:<method>', ...) }`.
+4. `electron/src/db/<name>.js` exporting plain functions; spread into `electron/database.js`.
+5. `electron/main.js`: `h('<group>:<method>', ...)` per operation.
+6. `electron/preload.js`: `<group>: { method: (...) => inv('<group>:<method>', ...) }`.
 
 ## UI primitives (copy these shapes)
 
@@ -117,4 +117,4 @@ Detail header — entity color as left border, tab label in `--t3`:
 - Inline `style=""` for layout tweaks is house style (everyone does it), but
   colors inside them must be `var(--…)` or data-driven `${col}`.
 - Success actions: mutate → `closeModal()` → re-render list → select new item
-  → `toast(...)` (see `createProject()` in `src/renderer/modals.js`).
+  → `toast(...)` (see `createProject()` in `electron/src/renderer/modals.js`).

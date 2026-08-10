@@ -13,8 +13,9 @@ function getElectronExecutableName() {
   return process.platform === 'win32' ? 'electron.exe' : 'electron';
 }
 
+// node_modules lives at the repo root, one level above this file's electron/ dir.
 function getElectronPackagePath() {
-  return path.join(__dirname, 'node_modules', 'electron');
+  return path.join(__dirname, '..', 'node_modules', 'electron');
 }
 
 function getFallbackElectronPath() {

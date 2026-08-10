@@ -9,24 +9,24 @@
 > Google ตรง ๆ ไม่ต้องพึ่งเซิร์ฟเวอร์ของใครเลย — ฟีเจอร์คลาวด์ของแอปนี้จึง
 > **เหลือทางเดียวคือ Google Drive** ไปก่อน
 >
-> **ไม่มีการลบโค้ดใด ๆ** — `src/renderer/sync.js`, `src/db/sync.js`,
-> `src/db/sync-devserver.js`, IPC `sync:*` ใน `main.js`, `api.sync` ใน
-> `preload.js` และ migration ทั้ง 2 ไฟล์ยังอยู่ครบและยังลงทะเบียนตามเดิม
+> **ไม่มีการลบโค้ดใด ๆ** — `electron/src/renderer/sync.js`, `electron/src/db/sync.js`,
+> `electron/src/db/sync-devserver.js`, IPC `sync:*` ใน `electron/main.js`, `api.sync` ใน
+> `electron/preload.js` และ migration ทั้ง 2 ไฟล์ยังอยู่ครบและยังลงทะเบียนตามเดิม
 > สิ่งที่ตัดไปคือ **ทางเข้า UI 2 จุด** เท่านั้น:
 >
-> - ปุ่ม ☁ ที่มุมล่างของแผงซ้าย (`src/renderer/core/views.js`)
+> - ปุ่ม ☁ ที่มุมล่างของแผงซ้าย (`electron/src/renderer/core/views.js`)
 > - หน้า **การตั้งค่า → App-data → Token Sync** (`SETTING_GROUPS.appdata`
->   ใน `src/renderer/core/setting-window.js` — ตัวหน้ายัง
+>   ใน `electron/src/renderer/core/setting-window.js` — ตัวหน้ายัง
 >   `registerSettingPage()` ไว้เหมือนเดิม แค่ไม่ถูกลิสต์ใน nav)
 >
 > ทั้งสองจุดคุมด้วยค่าเดียวคือ **`CLOUD_SYNC_ENABLED`** ใน
-> `src/renderer/core/state.js` — **เปิดฟีเจอร์กลับ = เปลี่ยนค่านั้นเป็น `true`**
+> `electron/src/renderer/core/state.js` — **เปิดฟีเจอร์กลับ = เปลี่ยนค่านั้นเป็น `true`**
 > แล้วทำตาม §1.1–1.2 ตามปกติ เนื้อหาที่เหลือของเอกสารนี้ยังถูกต้องทั้งหมด
 >
-> ⚠️ **`src/db/sync.js` ยังทำงานอยู่จริงแม้ปิดฟีเจอร์นี้** — snapshot engine
+> ⚠️ **`electron/src/db/sync.js` ยังทำงานอยู่จริงแม้ปิดฟีเจอร์นี้** — snapshot engine
 > ในไฟล์นั้น (`serializeVault` / `applySnapshot` / `importModuleSnapshot` /
 > `collectModuleSubtreeIds`) คือกลไกเบื้องหลังของ **การตั้งค่า → App-data →
-> ฐานข้อมูล** (ส่งออก/นำเข้าไฟล์ Nexus และ module, `src/db/db-transfer.js`)
+> ฐานข้อมูล** (ส่งออก/นำเข้าไฟล์ Nexus และ module, `electron/src/db/db-transfer.js`)
 > ซึ่งเป็นระบบออฟไลน์ล้วน ไม่เกี่ยวกับ Supabase — อย่าลบไฟล์นี้ทิ้งเวลาเก็บกวาด
 >
 > สถานะเดิมก่อนถูกปิด: **token sync** — แทนที่ระบบคีย์ถาวรเดิม (access-key
@@ -42,7 +42,7 @@
 | Build | Backend ที่ใช้ |
 |---|---|
 | ติดตั้ง (installer) / portable | Supabase จริง — ตั้งค่า URL + anon key เอง (§1.1–1.2), login ด้วย Google จริงผ่านเบราว์เซอร์ระบบ |
-| dev (`npm start` / driver) | **เซิร์ฟเวอร์ต้นแบบในเครื่อง** (`src/db/sync-devserver.js`) เริ่มเองอัตโนมัติ ไม่ต้องตั้งค่าใด ๆ — login เป็นบัญชีจำลอง (ไม่ต้องมีบัญชี Google จริง) หน้าต่างซิงก์ข้ามหน้าตั้งค่าเซิร์ฟเวอร์และแสดงป้าย "เวอร์ชัน dev" |
+| dev (`npm start` / driver) | **เซิร์ฟเวอร์ต้นแบบในเครื่อง** (`electron/src/db/sync-devserver.js`) เริ่มเองอัตโนมัติ ไม่ต้องตั้งค่าใด ๆ — login เป็นบัญชีจำลอง (ไม่ต้องมีบัญชี Google จริง) หน้าต่างซิงก์ข้ามหน้าตั้งค่าเซิร์ฟเวอร์และแสดงป้าย "เวอร์ชัน dev" |
 
 ในโหมด dev ขั้นตอน §1.1–1.2 ไม่จำเป็น — กด ☁ แล้ว login (จำลอง) แล้ว Push
 ได้เลย ข้อมูล "คลาวด์" เก็บเป็นไฟล์ `dev-sync-server.json` ในโฟลเดอร์ข้อมูล
@@ -56,8 +56,8 @@ dev (ลบไฟล์ = ล้างคลาวด์จำลอง)
 
 1. สร้างโปรเจกต์ที่ [supabase.com](https://supabase.com) (แผนฟรีใช้ได้)
 2. เปิด SQL Editor ในแดชบอร์ด แล้วรันไฟล์
-   `supabase/migrations/20260717000000_dracondex_sync_prototype.sql` ตามด้วย
-   `supabase/migrations/20260730000000_dracondex_token_sync.sql` ตามลำดับ
+   `src/supabase/migrations/20260717000000_dracondex_sync_prototype.sql` ตามด้วย
+   `src/supabase/migrations/20260730000000_dracondex_token_sync.sql` ตามลำดับ
    (หรือใช้ Supabase CLI: `supabase db push`)
 3. เปิดใช้ Google เป็น OAuth provider: Authentication → Providers → Google
    ในแดชบอร์ด ใส่ Client ID/Secret ของ Google Cloud OAuth client ที่ตั้งค่า
@@ -145,10 +145,10 @@ dev (ลบไฟล์ = ล้างคลาวด์จำลอง)
 ### 2.1 สถาปัตยกรรม
 
 ```
-Renderer (src/renderer/sync.js — login/รายการช่องอัปโหลด/push/pull-by-token)
+Renderer (electron/src/renderer/sync.js — login/รายการช่องอัปโหลด/push/pull-by-token)
    │ window.api.sync.*  (preload.js)
    ▼
-Main process IPC 'sync:*' (main.js) → src/db/sync.js
+Main process IPC 'sync:*' (electron/main.js) → electron/src/db/sync.js
    │ serializeVault / applySnapshot  (SQLite ผ่าน src/db/core.js)
    │ fetch (Node/Electron built-in, main process เท่านั้น — renderer ไม่แตะเครือข่าย)
    │ Google login: PKCE + loopback http server (127.0.0.1 ชั่วคราว) → shell.openExternal
@@ -161,14 +161,14 @@ POST /auth/v1/... , /rest/v1/rpc/<fn>         (sync-devserver.js, loopback,
 Postgres: sync_vault/sync_account + RPC 5 ตัว JSON ไฟล์ dev-sync-server.json
 ```
 
-การสลับ backend อยู่ที่ `IS_DEV = !app.isPackaged` ใน src/db/sync.js —
+การสลับ backend อยู่ที่ `IS_DEV = !app.isPackaged` ใน electron/src/db/sync.js —
 โหมด dev บังคับ config เป็น URL ของเซิร์ฟเวอร์ในเครื่อง (เริ่ม lazy ตอนเรียก
 ซิงก์ครั้งแรก, port สุ่ม, ไม่ persist URL), ข้าม OAuth จริงทั้งหมด, และไม่อ่าน/
 ไม่ต้องมี `sync:url`/`sync:anonKey` ใน `app_setting`
 
 ฝั่งเซิร์ฟเวอร์อยู่ใน 2 ไฟล์ migration เรียงตามลำดับ:
-`supabase/migrations/20260717000000_dracondex_sync_prototype.sql` (ตารางเดิม)
-แล้วตามด้วย `supabase/migrations/20260730000000_dracondex_token_sync.sql`
+`src/supabase/migrations/20260717000000_dracondex_sync_prototype.sql` (ตารางเดิม)
+แล้วตามด้วย `src/supabase/migrations/20260730000000_dracondex_token_sync.sql`
 (drop ตาราง/ฟังก์ชันคีย์ถาวรเดิมทั้งหมด, เพิ่ม owner/token/tier)
 
 - `sync_vault(id, owner_id, name, snapshot jsonb, snapshot_at, token_hash,
@@ -187,7 +187,7 @@ Postgres: sync_vault/sync_account + RPC 5 ตัว JSON ไฟล์ dev-sync-s
 
 ### 2.2 Snapshot model (ไม่เปลี่ยนจากต้นแบบเดิม)
 
-`serializeVault(nexusId)` (src/db/sync.js) อ่านทั้ง closure ของ Nexus เป็น JSON
+`serializeVault(nexusId)` (electron/src/db/sync.js) อ่านทั้ง closure ของ Nexus เป็น JSON
 ก้อนเดียว (`format: dracondex-vault-snapshot`, `version: 1`) — รวม/ไม่รวมอะไร
 และ `applySnapshot(nexusId, payload)` ตอน pull ทำงานอย่างไร **เหมือนเดิมทุก
 ประการ** กับต้นแบบเดิม (ดูรายละเอียดในซอร์ส — ฟังก์ชันทั้งสองไม่ถูกแก้ในรอบนี้)

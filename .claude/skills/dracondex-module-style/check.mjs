@@ -3,7 +3,7 @@
 //
 // Usage (from repo root):
 //   node .claude/skills/dracondex-module-style/check.mjs                     # lint all renderer modules + global checks
-//   node .claude/skills/dracondex-module-style/check.mjs src/renderer/foo.js # lint specific file(s) + global checks
+//   node .claude/skills/dracondex-module-style/check.mjs electron/src/renderer/foo.js # lint specific file(s)
 //   node .claude/skills/dracondex-module-style/check.mjs --module hero       # wiring checks for one module name
 //
 // ERRORs (exit 1): broken IPC chain, api.* call with no preload entry,
@@ -18,6 +18,13 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const read = f => readFileSync(path.join(root, f), 'utf8');
+
+// The Electron app lives under electron/; paths handed to read()/walkJs() are
+// relative to the repo root, so they carry the prefix. Paths that appear
+// *inside* the source (script tags, loadModule(), database.js requires) stay
+// relative to electron/ and are matched verbatim.
+const APP_DIR = 'electron';
+const app = f => `${APP_DIR}/${f}`;
 
 let errors = 0, warnings = 0;
 const err = m => { errors++; console.log(`  ERROR   ${m}`); };
@@ -39,12 +46,12 @@ for (let i = 0; i < argv.length; i++) {
 const readDirJoined = (dir, ext) => readdirSync(path.join(root, dir))
   .filter(f => f.endsWith(ext)).sort().map(f => read(`${dir}/${f}`)).join('\n');
 
-const coreSrc = readDirJoined('src/renderer/core', '.js');
-const i18nSrc = read('src/renderer/i18n.js');
-const preloadSrc = read('preload.js');
-const mainSrc = read('main.js');
-const indexSrc = read('index.html');
-const cssSrc = readDirJoined('css', '.css');
+const coreSrc = readDirJoined(app('src/renderer/core'), '.js');
+const i18nSrc = read(app('src/renderer/i18n.js'));
+const preloadSrc = read(app('preload.js'));
+const mainSrc = read(app('main.js'));
+const indexSrc = read(app('index.html'));
+const cssSrc = readDirJoined(app('css'), '.css');
 
 const stripInterp = s => s.replace(/\$\{[^}]*\}/g, '');
 const stripStrings = s => s.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`/g, "''");
@@ -188,7 +195,7 @@ const walkJs = (dir) => readdirSync(path.join(root, dir), { withFileTypes: true 
   .sort((a, b) => a.name.localeCompare(b.name))
   .flatMap(e => e.isDirectory() ? walkJs(`${dir}/${e.name}`) : (e.name.endsWith('.js') ? [`${dir}/${e.name}`] : []));
 
-const targets = files.length ? files : walkJs('src/renderer');
+const targets = files.length ? files : walkJs(app('src/renderer'));
 
 const usedT = new Set();
 for (const file of targets) {
@@ -223,7 +230,7 @@ for (const file of targets) {
     const col = m.index - src.lastIndexOf('\n', m.index) - 1;
     const commentAt = line.indexOf('//');
     if (commentAt !== -1 && commentAt < col) continue;
-    err(`${m[1]}() at line ${lineOf(m.index)} — use toast() / confirmBox() (src/renderer/core.js)`);
+    err(`${m[1]}() at line ${lineOf(m.index)} — use toast() / confirmBox() (${app('src/renderer/core')}/)`);
   }
 
   // hardcoded hex colors (allow `|| '#xxxxxx'` data-color fallbacks)
@@ -246,7 +253,7 @@ for (const file of targets) {
   // Thai literals = untranslated UI strings
   const thai = [];
   lines.forEach((l, i) => { if (/[฀-๿]/.test(l)) thai.push(i + 1); });
-  if (thai.length) warn(`${thai.length} line(s) with hardcoded Thai text (use t() + add key to all locales in src/renderer/i18n.js): L${thai.slice(0, 8).join(' L')}${thai.length > 8 ? ' …' : ''}`);
+  if (thai.length) warn(`${thai.length} line(s) with hardcoded Thai text (use t() + add key to all locales in ${app('src/renderer/i18n.js')}): L${thai.slice(0, 8).join(' L')}${thai.length > 8 ? ' …' : ''}`);
 
   // CSS classes used but not defined in style.css
   const unknown = new Set();
@@ -264,11 +271,11 @@ if (moduleName) {
   console.log(`=== module wiring: '${m}' ===`);
   // A module is either one file or a folder of them (Plan part1 split hub,
   // navigator and hero into src/renderer/<name>/).
-  const moduleIsFolder = existsSync(path.join(root, `src/renderer/${m}`));
-  moduleIsFolder || existsSync(path.join(root, `src/renderer/${m}.js`))
-    ? ok(`src/renderer/${m}${moduleIsFolder ? '/' : '.js'} exists`) : err(`src/renderer/${m}.js missing`);
+  const moduleIsFolder = existsSync(path.join(root, app(`src/renderer/${m}`)));
+  moduleIsFolder || existsSync(path.join(root, app(`src/renderer/${m}.js`)))
+    ? ok(`${app(`src/renderer/${m}`)}${moduleIsFolder ? '/' : '.js'} exists`) : err(`${app(`src/renderer/${m}.js`)} missing`);
   coreSrc.includes(`selectModule('${m}')`)
-    ? ok(`nexus tile / selectModule('${m}') present in core.js`) : err(`no selectModule('${m}') in src/renderer/core.js — add a .module-item in renderNexusHome() and a branch in selectModule()`);
+    ? ok(`nexus tile / selectModule('${m}') present in core.js`) : err(`no selectModule('${m}') in ${app('src/renderer/core')}/ — add a .module-item in renderNexusHome() and a branch in selectModule()`);
   coreSrc.includes(`.nav-btn.${m}-only`)
     ? ok(`.nav-btn.${m}-only visibility handled in core.js`) : err(`core.js never toggles '.nav-btn.${m}-only' — add it to the nav visibility block`);
   indexSrc.includes(`${m}-only`)
@@ -280,11 +287,12 @@ if (moduleName) {
       ? ok(`lazy-loaded via ${moduleIsFolder ? `loadGroup('${m}')` : `loadModule('src/renderer/${m}.js')`}`)
       : err(`core/ must loadModule('src/renderer/${m}.js') (or loadGroup('${m}') for a folder) then call its render entry`);
   }
-  if (existsSync(path.join(root, `src/db/${m}.js`))) {
-    read('database.js').includes(`./src/db/${m}`)
-      ? ok(`src/db/${m}.js required by database.js`) : err(`src/db/${m}.js exists but database.js does not require/spread it`);
+  if (existsSync(path.join(root, app(`src/db/${m}.js`)))) {
+    // database.js sits inside electron/, so its require path stays './src/db/…'.
+    read(app('database.js')).includes(`./src/db/${m}`)
+      ? ok(`${app(`src/db/${m}.js`)} required by database.js`) : err(`${app(`src/db/${m}.js`)} exists but database.js does not require/spread it`);
   } else {
-    console.log(`  note    no src/db/${m}.js (fine if the module reuses another db file)`);
+    console.log(`  note    no ${app(`src/db/${m}.js`)} (fine if the module reuses another db file)`);
   }
 }
 

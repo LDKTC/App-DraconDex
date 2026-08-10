@@ -67,8 +67,8 @@ This skill has **two flows**, and picking the right one matters:
 
 4. **Pre gate**: does that diff touch *only* planning/write-up files
    (`Plan.md`, `procress.md`, and similarly-purposed planning docs) with
-   zero changes to actual app source (`src/`, `main.js`, `preload.js`,
-   `database.js`, `style.css`, `index.html`, `flutter_app/`, etc.)? If so:
+   zero changes to actual app source (`src/`, `electron/main.js`, `electron/preload.js`,
+   `electron/database.js`, `style.css`, `electron/index.html`, `flutter/`, etc.)? If so:
    **stop here.** Report that this is a "Pre" commit — nothing in the app
    changed, so `package.json` stays untouched. You may mention, purely as
    information for the user's own commit message, what version this plan
@@ -117,7 +117,7 @@ This skill has **two flows**, and picking the right one matters:
 
 11. **Report**: old → new version, one-line rationale for the
     classification, and note that `build.nsis.artifactName` (installer
-    filename) and `scripts/finish-portable.mjs` (portable build's output
+    filename) and `electron/scripts/finish-portable.mjs` (portable build's output
     folder name) both read this field — so the next build's artifact names
     will change too. Do not commit. If useful, suggest (don't run) a commit
     message matching this repo's own style — subject `v.X.Y.Z` or
@@ -366,14 +366,14 @@ deletions — of real app source across the whole accumulated diff since the
 anchor (the same diff Flow A step 3 gathered), plus any uncommitted work:
 
 ```bash
-paths='src main.js preload.js database.js index.html css scripts test flutter_app'
+paths='src electron/main.js electron/preload.js electron/database.js electron/index.html css scripts test flutter'
 git diff --shortstat <anchor>..HEAD -- $paths
 git diff --shortstat -- $paths            # unstaged
 git diff --shortstat --staged -- $paths   # staged
 ```
 
 Excluded from the count, deliberately: `package.json`, `package-lock.json`,
-`docs/`, `Plan.md`, `procress.md`, `.claude/`, and `vendor/` — bookkeeping,
+`docs/`, `Plan.md`, `procress.md`, `.claude/`, and `electron/vendor/` — bookkeeping,
 documentation, and vendored third-party code aren't the change's own weight,
 and `package-lock.json` alone would swamp the number.
 
@@ -469,7 +469,7 @@ Worked examples:
 - Count changed lines as insertions + deletions of app source only, over the
   whole cycle since the anchor (including uncommitted work) — excluding
   `package-lock.json`, `docs/`, `Plan.md`, `procress.md`, `.claude/`, and
-  `vendor/`. Counting a lockfile or a doc sync into the threshold is the
+  `electron/vendor/`. Counting a lockfile or a doc sync into the threshold is the
   easiest way to accidentally promote a Patch to a Minor.
 - Malformed/unparseable current version field, or nothing changed since the
   anchor: stop and say so — don't guess, don't bump on an empty diff.

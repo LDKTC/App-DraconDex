@@ -21,7 +21,7 @@ Director/Navigator/Hero/Writer (4 ใน 7 นี้) ถูกซ่อนแ�
 Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2) — Scribe/Sage/Artisan
 ยังเป็นปุ่มปกติ พฤติกรรมภายในของทั้ง 7 โมดูล (§3–§9 ด้านล่าง) ไม่เปลี่ยน
 
-> หมายเหตุ: `flutter_app/` เป็น front-end อีกตัว (Flutter port) ที่ใช้ schema เดียวกัน
+> หมายเหตุ: `flutter/` เป็น front-end อีกตัว (Flutter port) ที่ใช้ schema เดียวกัน
 > แต่แยกโค้ดกันโดยสิ้นเชิง — เอกสารนี้ครอบคลุมเฉพาะฝั่ง Electron
 
 ---
@@ -64,7 +64,7 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
   handler เป็นฟังก์ชัน global ผูกผ่าน `onclick="..."`,
   modal กลาง (`openModal`/`closeModal`), toast แจ้งผล, `uiConfirm` ก่อนลบ
 
-### ตำแหน่งข้อมูล (main.js)
+### ตำแหน่งข้อมูล (electron/main.js)
 
 | โหมด | ตำแหน่งข้อมูล |
 |---|---|
@@ -75,7 +75,7 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 มี single-instance lock ผูกกับโฟลเดอร์ข้อมูล — เปิดสองหน้าต่างบนข้อมูลเดียวกันไม่ได้
 แต่ instance ทดสอบ (คนละ data dir) รันคู่กับ dev ได้
 
-### ชั้นฐานข้อมูล (src/db/core.js)
+### ชั้นฐานข้อมูล (electron/src/db/core.js)
 
 - เปิด `novel-manager.db` ด้วย `node-sqlite3-wasm`, ตั้ง `busy_timeout=5000`,
   `journal_mode=DELETE`, `foreign_keys=ON`
@@ -101,7 +101,7 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 
 - **Welcome window เป็นทางเข้าเดียว (v4.6.0)** — เดิมเป็น modal 480px ที่เด้ง
   ทับ picker เฉพาะตอนยังไม่มี Nexus เลย ตอนนี้เป็น **หน้าต่าง Electron แยก**
-  (`createWelcomeWindow` ใน main.js → `index.html?welcome=1`,
+  (`createWelcomeWindow` ใน electron/main.js → `electron/index.html?welcome=1`,
   `body.welcome-mode`) ที่เปิด **ทุกครั้งที่เปิดแอพ**:
   - `init()` ไม่ restore vault ที่ค้างไว้อีกแล้ว — `?nexus=<id>` เป็นทางเดียว
     ที่หน้าต่างแอพจะได้ vault; เปิดแอพเมื่อไหร่ก็เจอ Welcome เสมอ
@@ -153,7 +153,7 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
     drake/wyvern/dragon อยู่แล้ว ค่าไปมีผลตอนหน้าต่างแอพเปิด
   - หน้าต่าง Welcome ปัก `body.dataset.workspace='drake'` ทับค่าที่
     `applyWorkspaceStyle()` เพิ่งตั้ง เพราะกฎ wyvern/dragon ใน
-    `css/workspace.css` ซ่อน `#left-panel` ซึ่งในหน้าต่างนี้คือรายการ vault
+    `electron/css/workspace.css` ซ่อน `#left-panel` ซึ่งในหน้าต่างนี้คือรายการ vault
     (`S.settings.workspaceStyle` ไม่ถูกแตะ)
   - หน้าต่างนี้เปิดที่ **760×560** (~ครึ่งหนึ่งของหน้าต่างแอพ 1280×800) —
     ทุกลิสต์ใน wizard จึงถูกจำกัดความสูงเป็นจำนวนแถว ไม่ใช่ px ลอย ๆ
@@ -169,7 +169,7 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 - **ข้อมูลถูก scope ตาม vault**: `project`, `world_project`, `game_project`,
   `write_project` มีคอลัมน์ `nexus_ref`; ฟังก์ชัน list/create และ `searchAll`
   รับพารามิเตอร์ `nexusId` — เปิดคนละ vault เห็นคนละชุดข้อมูล
-- **Migration อัตโนมัติ** (`migrateNexusV28` ใน src/db/core.js): DB เก่าที่มี
+- **Migration อัตโนมัติ** (`migrateNexusV28` ใน electron/src/db/core.js): DB เก่าที่มี
   project แต่ไม่มี vault จะได้ Nexus ชื่อ "Nexus" สร้างให้เองแล้ว adopt
   ทุก project เข้าไป — ข้อมูลเดิมไม่หาย
 - **ลบ vault ถูก block** ถ้ายังมี project อยู่ (`deleteNexus` คืน
@@ -189,11 +189,11 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 - **โครงสร้าง**: `note_folder` ซ้อนได้หลายชั้น + `note` (title ไม่ซ้ำกันในแต่ละ
   vault — ชนกันจะ auto-suffix "ชื่อ 2"); left panel เป็น folder tree + list
   โน้ต (`renderScribeSidebar`), main area เป็น editor กลาง (`mdeditor.js`)
-- **ตัว parser markdown** (`src/renderer/markdown.js`) เขียนเอง ไม่ใช้ lib
+- **ตัว parser markdown** (`electron/src/renderer/markdown.js`) เขียนเอง ไม่ใช้ lib
   ภายนอก — รองรับ heading/hr/quote/fenced code/list ซ้อน/checkbox +
   bold/italic/strike/`==highlight==`/inline code/`[text](url)`/
   `[[Wikilink]]`/`[[Wikilink|alias]]`; escape ข้อความผู้ใช้ทุกจุดก่อน render
-- **Editor กลาง** (`src/renderer/mdeditor.js`, `createMarkdownEditor`) reuse
+- **Editor กลาง** (`electron/src/renderer/mdeditor.js`, `createMarkdownEditor`) reuse
   โดย Scribe และช่องโน้ตของ Director — textarea ทับ backdrop ไฮไลต์ (โทน
   `[[wikilink]]` ระหว่างพิมพ์), debounce autosave 800ms, ปุ่ม/Ctrl+E สลับ
   edit↔preview, มี autocomplete `[[` (caret-positioned, ↑/↓/Enter/Esc),
@@ -207,7 +207,7 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 
 `[[Name]]` ที่พิมพ์ในเนื้อหา markdown ใดๆ (โน้ต Scribe, note ของ object ใน
 Director, chapter ของ Writer) จะถูก parse + resolve ตอน save แล้วเก็บ index
-ไว้ในตาราง `wiki_link` (`src/db/wiki.js`)
+ไว้ในตาราง `wiki_link` (`electron/src/db/wiki.js`)
 
 - **ลำดับการ resolve** (case-insensitive, ตายตัว): note title → object.name
   → world character/object → game character/element → writer
@@ -235,7 +235,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 
 ## 2d. IDE Shell (Explorer / Status bar / Shortcuts / Quick switcher) — v2.8
 
-- **Explorer** (`src/renderer/explorer.js`): มุมมองต้นไม้เดียวรวมทุกอย่างใน
+- **Explorer** (`electron/src/renderer/explorer.js`): มุมมองต้นไม้เดียวรวมทุกอย่างใน
   vault ที่เปิดอยู่ (Scribe folders/notes, Director projects→categories→
   objects, Worlds, Games, Writer series→books→chapters) ข้อมูลมาจาก IPC
   เดียว `wiki:explorerTree`; ปุ่ม rail เปิดได้ตลอดเมื่อมี vault เปิดอยู่
@@ -243,7 +243,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 - **Status bar** (`<footer id="status-bar">`): แสดง vault ที่เปิด/รายการที่
   เปิดอยู่/จำนวนคำ/สถานะ autosave — อัปเดตจาก `updateStatusBar()`
   ซึ่ง mdeditor.js เรียกทุกครั้งที่พิมพ์/บันทึก
-- **Quick switcher (Ctrl+P)** (`src/renderer/quickswitch.js`): fuzzy
+- **Quick switcher (Ctrl+P)** (`electron/src/renderer/quickswitch.js`): fuzzy
   subsequence search ข้าม entity ทุกประเภทใน vault, query ว่างโชว์รายการ
   เปิดล่าสุด (`S.recentEntities`), Enter เปิดผ่าน `openEntityByKey`
 - **Shortcut อื่น**: Ctrl+E สลับ preview (fallback เมื่อ editor ไม่ได้โฟกัส),
@@ -273,7 +273,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 
 ## 4. เครื่องมือระดับโปรเจกต์ (โผล่บน rail เมื่อเปิดโปรเจกต์ Director)
 
-### 4.1 Timeline (src/renderer/timeline.js)
+### 4.1 Timeline (electron/src/renderer/timeline.js)
 - หลาย timeline ต่อโปรเจกต์ เหตุการณ์ (`timeline_event`) มีวันเริ่ม/วันจบเป็น
   วันที่สมมุติ (DD/MM/YYYY HH:mm — เก็บ normalize ในตาราง `timeline_date`
   ผ่าน `getOrCreateDate`)
@@ -281,7 +281,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
   ด้านล่าง แต่ละเหตุการณ์มีช่อง "สตอรี่" (textarea, save ตอน change)
 - ใน modal เหตุการณ์: ผูกแท็ก และเชื่อมเหตุการณ์↔เหตุการณ์ (ผ่านระบบ relation)
 
-### 4.2 Relation (src/renderer/relation.js)
+### 4.2 Relation (electron/src/renderer/relation.js)
 - นิยาม **ประเภทความสัมพันธ์** เอง (`relation_type` + สี)
 - ความสัมพันธ์ 3 ชนิด: Object↔Object (`relation_obob`), Object↔Event
   (`relation_obtl`), Event↔Event (`relation_tltl`)
@@ -289,12 +289,12 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
   วาดด้วย Konva (โหลด lazy `ensureKonva`) — ลาก node ได้, คลิก node เปิดโน้ต,
   ปรับขนาดพื้นที่ได้, มีรายการ relation ด้านล่างพร้อมปุ่มเพิ่มทั้ง 3 ชนิด
 
-### 4.3 Map (src/renderer/map.js)
+### 4.3 Map (electron/src/renderer/map.js)
 - หลายแผนที่ต่อโปรเจกต์ → แต่ละแผนที่มีหลาย **Area** → แต่ละ area เก็บจุด
   polygon (`map_point`, บันทึกผ่าน `map:setPoints`)
 - มีเครื่องมือ (เลือก/เพิ่มจุด/ย้าย) — ต้องเลือก area ก่อนใช้ tool
 
-### 4.4 Tags / ป้ายกำกับ (src/renderer/hashtag.js)
+### 4.4 Tags / ป้ายกำกับ (electron/src/renderer/hashtag.js)
 - แท็กเป็น **global** (`hashtag` ตารางเดียวทั้งแอป) ผูกกับ project / object /
   event ผ่านตาราง mapping และโมดูลอื่นก็มี mapping ของตัวเอง
   (world, world character, game, game character, game element)
@@ -306,7 +306,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
   เพิ่ม/ลบได้; ทุก modal ใช้ `colorPicker()` ตัวเดียวกัน (สีล่าสุด + สีทั้งหมด +
   เพิ่มสีใหม่)
 
-### 4.6 ค้นหา (src/renderer/search.js + src/db/director.js:searchAll)
+### 4.6 ค้นหา (electron/src/renderer/search.js + electron/src/db/director.js:searchAll)
 - ช่องค้นหาบน sidebar ค้นทั้งแอป: โปรเจกต์ / object / แท็ก แล้วกระโดดไปยังผลลัพธ์
 - **(2026-07-25) พฤติกรรมแยกตามว่ามี Nexus เปิดอยู่หรือไม่:**
   - **มี Nexus** → ช่องค้นหา **ส่งต่อให้ Quick Switcher** (`openQuickSwitcher(seed)`)
@@ -373,7 +373,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 
 โมดูล read-only 4 tab (ไม่มีการเขียนข้อมูล):
 
-| Tab | ที่มา (src/db/sage.js) | แสดง |
+| Tab | ที่มา (electron/src/db/sage.js) | แสดง |
 |---|---|---|
 | ขนาดข้อมูล | `getDataSize` | จำนวนแถวรวมต่อโมดูล (การ์ด Director/Navigator/Hero/Writer) |
 | จำนวนรายการ | `getObjectAmounts` | จำนวน object/entity แยกตามประเภท |
@@ -385,7 +385,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 - เลือกโมดูลเป้าหมาย (Director / Navigator / Hero / Writer) → เลือกเทมเพลต
   (นิยามในฝั่ง renderer เป็นฟังก์ชัน `build(name)` คืน spec เช่น
   "นิยายมาตรฐาน" = ตัวละคร/สถานที่/ไอเทม + field พื้นฐาน + ไทม์ไลน์หลัก)
-- กรอกชื่อ/codename/memo/สี → ฝั่ง DB (`src/db/artisan.js`) สร้างทุกอย่างใน
+- กรอกชื่อ/codename/memo/สี → ฝั่ง DB (`electron/src/db/artisan.js`) สร้างทุกอย่างใน
   **transaction เดียว** แล้วกระโดดเข้า entity ที่สร้างในโมดูลของมันทันที
   (`artisanOpenCreated`)
 - ชื่อข้อมูลในเทมเพลตถูกสร้าง **ตามภาษา UI ปัจจุบัน** (เช่น locale ไทยจะได้
@@ -395,7 +395,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 
 ## 10. ระบบร่วม (cross-cutting)
 
-### i18n (src/renderer/i18n.js + core.js)
+### i18n (electron/src/renderer/i18n.js + core.js)
 - **18 ภาษา** (`en ja ko th zh vi id es pt fr de ru it nl pl uk tr` + `qd`
   ภาษาสมมุติ) ค่าเริ่มต้น **ไทย** เก็บใน `localStorage`
 - 2 กลไก: (1) `t(key)` ดึงจากตาราง `L` ใช้กับ UI ที่เขียนใหม่ ๆ
@@ -408,7 +408,7 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 
 ### ธีมและขนาด UI
 - ธีม 32 แบบ (ครอบครัว Daylight/Moonlight/Midnight/Eclipse + sky/star/time)
-  เป็นชุดตัวแปร CSS ใน `css/themes.css` เลือกจากเมนูเฟือง (มี swatch พาเลตให้ดู)
+  เป็นชุดตัวแปร CSS ใน `electron/css/themes.css` เลือกจากเมนูเฟือง (มี swatch พาเลตให้ดู)
   ทุกธีมกำหนด 12 token เหมือนกัน; `--button` เป็น token **ทางเลือก** มีแค่ 13/32
   ธีมที่ประกาศ (ใช้ผ่าน `var(--button, var(--accent))` เสมอ)
 - สไลเดอร์ขนาด UI + ย่อ/ขยาย left panel — ทั้งหมดเก็บ `localStorage`
@@ -489,21 +489,21 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   เพื่อให้ Ctrl+Shift+I เปิด DevTools ได้
 
 ### หน้า Loading ตอนเปิดแอพ (boot splash, 2026-07-25)
-- เดิมเปิดแอพแล้วเห็น "จอดำนิ่ง" — `main.js` ไม่ได้ใช้ `show:false`/`ready-to-show`
+- เดิมเปิดแอพแล้วเห็น "จอดำนิ่ง" — `electron/main.js` ไม่ได้ใช้ `show:false`/`ready-to-show`
   หน้าต่างจึงโผล่ทันทีพร้อม `backgroundColor:'#050506'` แล้วค้างอยู่จนกว่า
   `<script src>` 30 ตัว (~700KB, `i18n.js` ตัวเดียว 578KB) จะ parse ครบ และ
   `init()` จะทำงานจบ ผู้ใช้แยกไม่ออกว่าแอพค้างหรือกำลังโหลด
-- แก้ด้วย **overlay ในหน้าเดียว ไม่ใช่หน้าต่างที่ 2** — ไม่แตะ `main.js`/`preload.js`
-  และไม่เพิ่ม IPC channel เลย (ดู `#splash` ใน docs/FILES.md → index.html)
+- แก้ด้วย **overlay ในหน้าเดียว ไม่ใช่หน้าต่างที่ 2** — ไม่แตะ `electron/main.js`/`electron/preload.js`
+  และไม่เพิ่ม IPC channel เลย (ดู `#splash` ใน docs/FILES.md → electron/index.html)
 - **progress เดินตาม checkpoint จริง ไม่ใช่ timer**: 15% หลัง `i18n.js`, 35%
   หลัง `core.js`, 50% หลัง `mod/*.js`, 55% ก่อน `search.js` (สี่จุดนี้เป็น
-  inline script คั่นใน index.html) แล้ว 60% หลัง `applyUiSettings()`, **80%
+  inline script คั่นใน electron/index.html) แล้ว 60% หลัง `applyUiSettings()`, **80%
   หลัง IPC wave 1** (ช่วงยาวสุด — await แรกนี้คือตัว trigger `getDB()` ให้เปิด
   ไฟล์ SQLite + รัน `initDB()` migration ครั้งแรก), 88% หลัง wave 2, 95% หลัง
   `renderNexusHome()`, แล้ว `finish()` ท้าย `init()`
 - **แก้จอวาบดำของธีมสว่างไปพร้อมกัน**: `body[data-theme]` ปกติตั้งโดย
   `applyUiSettings()` ซึ่งเป็นบรรทัดแรกของ `init()` — คือ *หลัง* โหลด JS ครบแล้ว
-  ผู้ใช้ธีมสว่างจึงเห็นพื้นดำตลอดช่วง boot; inline script ใน index.html อ่าน
+  ผู้ใช้ธีมสว่างจึงเห็นพื้นดำตลอดช่วง boot; inline script ใน electron/index.html อ่าน
   `localStorage` แล้วตั้งธีมให้ก่อนเฟรมแรก (รองรับ `custom:<id>` ด้วย)
   `applyUiSettings()` ยังเป็นตัวตัดสินสุดท้ายเหมือนเดิม ถ้า bootstrap เดาผิด
   ก็ถูกแก้ทับภายในไม่กี่ร้อย ms
@@ -521,17 +521,17 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   (ช่องค้นหา+ชิปแท็ก ใช้ใน modal ของทุกโมดูล), novel picker แบบ tree
   (`buildNovelPickerHtml`)
 
-### Library ที่ vendor ไว้ (v2.8 — `vendor/`)
+### Library ที่ vendor ไว้ (v2.8 — `electron/vendor/`)
 - **D3** (`relation.js` force-graph) และ **Konva** (`relation.js`/`map.js`/
-  `navigator.js` whiteboard) โหลดจาก `vendor/d3.min.js` / `vendor/konva.min.js`
+  `navigator.js` whiteboard) โหลดจาก `electron/vendor/d3.min.js` / `electron/vendor/konva.min.js`
   ก่อนเสมอ (`ensureD3`/`ensureKonva`) — CDN (`unpkg.com`) เหลือไว้เป็น fallback
-  เผื่อ `vendor/` หาย ไม่ใช่เส้นทางหลักอีกต่อไป ทำให้แอปใช้งานได้แบบออฟไลน์จริง
+  เผื่อ `electron/vendor/` หาย ไม่ใช่เส้นทางหลักอีกต่อไป ทำให้แอปใช้งานได้แบบออฟไลน์จริง
 - กราฟ SVG แบบ vanilla ของ Sage (`buildSageGraph`, ไม่พึ่ง lib ภายนอกเลย) ถูก
   ปรับให้รับ opts เพิ่ม (`container`, `colors`, `labels`, `onNodeClick`) แบบ
   backward-compatible เพื่อให้ Scribe graph view (v2.8) เรียกใช้ร่วมกันได้
 
 ### Import/Export DB (v2.8 ขยายเพิ่ม, Plan part2 เพิ่ม cross-version compat)
-- `importDatabaseMerge` (src/db/core.js) นอกจากรวมข้อมูลเดิม ตอนนี้รวม
+- `importDatabaseMerge` (electron/src/db/core.js) นอกจากรวมข้อมูลเดิม ตอนนี้รวม
   `nexus`, `note_folder`, `note` ด้วย (จับคู่ตามชื่อ/title, แถวที่ nexus/folder
   หา match ไม่เจอจะข้าม) แล้ว **rebuild wiki_link index ใหม่ทั้งหมด** หลัง merge
   เผื่อเนื้อหาที่นำเข้ามามี `[[wikilink]]`
@@ -545,10 +545,10 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   `old_db_data/` (v1.1.0, v1.2.2) ว่า import ผ่านและ merge ข้อมูลได้ครบ
 - คอลัมน์ `relation_type.color` ก็มี `hasColumn` guard เพิ่มแล้ว (schema เก่ามาก
   ไม่มีคอลัมน์นี้ — เดิม unconditional SELECT ทำให้ transaction ทั้งก้อน rollback)
-- **Import DB hub** (`openImportDbHub`, src/renderer/core/router.js): เคลียร์
+- **Import DB hub** (`openImportDbHub`, electron/src/renderer/core/router.js): เคลียร์
   `S.activeModuleNode` + เรียก `renderModuleRail()` ตอนเข้าโหมด ไม่ให้ icon
   module เดิมที่ pin ไว้ค้าง `.active` ในแถบ nav; และเพิ่ม `folder` เข้า
-  `IMPORT_DB_READONLY_NS` (preload.js) เพราะ folder CRUD ของ Director ไม่เคย
+  `IMPORT_DB_READONLY_NS` (electron/preload.js) เพราะ folder CRUD ของ Director ไม่เคย
   ถูกบล็อกตอน read-only mode มาก่อน
 
 ### Cloud Sync — Supabase Token Sync (2026-07-30, แทนที่ prototype เดิม) — ⛔ ปิดใช้ตั้งแต่ v4.5.0
@@ -558,10 +558,10 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
 > Google Drive Backup (หัวข้อถัดไป) **โค้ดไม่ถูกลบ** — ตัดแค่ทางเข้า UI 2 จุด
 > (ปุ่ม ☁ ใน `views.js`, หน้า Setting → App-data → Token Sync ใน
 > `SETTING_GROUPS` ของ `setting-window.js`) ผ่านค่า `CLOUD_SYNC_ENABLED` ใน
-> `src/renderer/core/state.js` เปลี่ยนเป็น `true` = ได้ทุกอย่างด้านล่างกลับมา
+> `electron/src/renderer/core/state.js` เปลี่ยนเป็น `true` = ได้ทุกอย่างด้านล่างกลับมา
 > ครบ ดู [SYNC.md](SYNC.md)
 >
-> **แต่ `src/db/sync.js` ยังทำงานอยู่** — snapshot engine ในไฟล์นั้นคือกลไก
+> **แต่ `electron/src/db/sync.js` ยังทำงานอยู่** — snapshot engine ในไฟล์นั้นคือกลไก
 > ของ Setting → App-data → Database (ดูหัวข้อ Setting window ด้านล่าง) ซึ่ง
 > เป็นระบบออฟไลน์ ไม่เกี่ยวกับ Supabase
 
@@ -622,7 +622,7 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   สถานะ Drive เดิม — อ่านจาก `app_setting['drive:backupLog']` ที่เขียนไว้อยู่
   แล้วแต่ไม่เคยมีใครอ่านกลับมาก่อนหน้านี้ (`driveGetBackupLog()`)
 - เชื่อมต่อครั้งเดียว (PKCE + loopback redirect, ใช้ helper ร่วมกับ Cloud Sync
-  จาก `src/db/oauth-loopback.js`) → เลือกอย่างน้อย 1 อย่าง (layout profile
+  จาก `electron/src/db/oauth-loopback.js`) → เลือกอย่างน้อย 1 อย่าง (layout profile
   และ/หรือ .ddx เป็น opt-in อิสระตามคำที่ Plan.md ใช้ "หากผู้ใช้ต้องการ") →
   สำรองด้วยมือหรือเปิด auto-backup ทุก 1 ชั่วโมง (timer อยู่ฝั่ง renderer
   เพราะ layout profile มีอยู่ใน localStorage เท่านั้น)
@@ -650,7 +650,7 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   Cloud Sync ถูกปิด เงื่อนไขนี้เหลือ Drive อย่างเดียวโดยปริยาย: `checkForUpdate()`
   ยังเรียก `syncAuthStatus()` ตามเดิม แต่เมื่อไม่มีทาง login Supabase แล้ว
   ฟังก์ชันนั้นคืน `loggedIn:false` ทันที (สาขา `!configured`) จึงไม่ต้องแก้
-  `src/db/update.js` และไม่พังถ้าเปิด `CLOUD_SYNC_ENABLED` กลับ
+  `electron/src/db/update.js` และไม่พังถ้าเปิด `CLOUD_SYNC_ENABLED` กลับ
 - `checkForUpdate()` ไม่ throw เด็ดขาด — เน็ตล่ม/ยังไม่ตั้งโปรเจกต์ Firebase
   จะไม่มี error toast ทุกครั้งที่เปิดแอป
 - กด "ดาวน์โหลด" แค่เปิดเบราว์เซอร์ไปหน้าดาวน์โหลด ไม่ติดตั้งอัตโนมัติ; กด
@@ -669,7 +669,7 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
 - **Plugin panel (v4.3.0)** — manifest ประกาศ `panels[]` ได้ แล้วจะได้ปุ่มข้าง
   ปุ่ม toggle Module Inspector ใน pane head (`builderPaneHeadHtml`) ปุ่มแสดง
   **เฉพาะตอนมี `S.activeModuleNode`** กดแล้ว `buildInspectorHtml` สลับไปคืน
-  `buildPluginPanelHtml` (`src/renderer/pluginpanel.js`) ซึ่งเป็น
+  `buildPluginPanelHtml` (`electron/src/renderer/pluginpanel.js`) ซึ่งเป็น
   `<aside class="module-inspector plugin-panel">` ครอบ `<webview>` — คง class
   `module-inspector` ไว้จึงได้ resize/collapse ของ dock เดิมฟรี. panel ปิดเอง
   เมื่อสลับโมดูล และ**ถูก reload ทุกครั้งที่ pane re-render** (dock ถูกวาดใหม่
@@ -684,7 +684,7 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   บน loopback (`localhost`/`127.0.0.1`/`[::1]`) ผ่านได้ **ต้องระบุ port เสมอ**
   — เพื่อให้ปลั๊กอินอย่าง DraconDex-Plugin-Ollama ประกาศ server โมเดลภาษาที่
   รันในเครื่องได้ (`normalizeNetOrigin`/`netOriginAllowed` ใน
-  `src/db/plugin-manifest.js` ตรวจทั้งตอนติดตั้งและตอน runtime, ดู PLUGINS.md
+  `electron/src/db/plugin-manifest.js` ตรวจทั้งตอนติดตั้งและตอน runtime, ดู PLUGINS.md
   §1.6 และ §2.4). host ที่ไม่ใช่ loopback ยังถูกปฏิเสธเหมือนเดิม
 
 - แต่ละปลั๊กอินมี manifest (`dracondex-plugin.json`, fallback
@@ -703,12 +703,12 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   manifest/owner/repo/ref จาก renderer; ฝั่ง renderer ทุกฟิลด์ของ manifest
   ผ่าน `x()` ก่อนวาด เพราะเป็นข้อความจากอินเทอร์เน็ตล้วนๆ
 - รันในหน้าต่าง `BrowserWindow` แยก ได้ preload คนละไฟล์
-  (`preload-plugin.js`) **ไม่มี `window.api` เลย** — เข้าถึงข้อมูลได้แค่
+  (`electron/preload-plugin.js`) **ไม่มี `window.api` เลย** — เข้าถึงข้อมูลได้แค่
   `window.pluginApi.table.*` ที่ผูก ownership กับตัวหน้าต่างเอง
   (`BrowserWindow.fromWebContents`) ไม่ใช่จาก argument ที่ปลั๊กอินส่งมา ไม่มี
   raw-SQL passthrough ใดๆ (`window.extApi` ยังอยู่เป็น alias ให้ของเก่า)
 - **ข้อจำกัดที่ยอมรับไว้ตรงๆ**: ไม่มี OS-level Chromium sandbox จริง เพราะ
-  `main.js` ตั้ง `--no-sandbox` ทั้งโปรเซสไว้ก่อนหน้านี้แล้ว (เพื่อ portable
+  `electron/main.js` ตั้ง `--no-sandbox` ทั้งโปรเซสไว้ก่อนหน้านี้แล้ว (เพื่อ portable
   build) — ทุกหน้าต่างรวมถึงหน้าต่างปลั๊กอินได้รับผลกระทบเหมือนกัน; โค้ดจาก repo
   ถูกเชื่อถือทันทีที่ติดตั้ง ไม่มี code review/signing และพรีวิวเป็นแค่การแจ้งให้
   ทราบว่าจะติดตั้งอะไร ไม่ได้ตรวจว่าโค้ดข้างในทำอะไร
@@ -724,7 +724,7 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   สร้างตารางเปล่าข้างๆ ข้อมูลเก่า) และต้องอยู่ใน `parts[]` ของ `schemaStamp()`
   (ไม่งั้น DB เดิมข้าม initDB ทั้งก้อนแบบไม่มี error ให้เห็น)
 - ตรวจแล้วด้วย E2E จริง: migration บน DB v4.1 (แถว/ข้อมูลในตาราง/FK cascade
-  รอดครบ, รันซ้ำไม่เปลี่ยนอะไร), เส้นทางอัปเกรดเต็ม (บูต `database.js` จริงบน
+  รอดครบ, รันซ้ำไม่เปลี่ยนอะไร), เส้นทางอัปเกรดเต็ม (บูต `electron/database.js` จริงบน
   data dir เก่า แล้ว `pluginApiQuery` ยังอ่านข้อมูลเดิมได้ + ไฟล์ย้ายไป
   `plugins/`), preview/install ด้วย fetch ที่ stub เป็น repo ปลอม (preview ไม่
   เขียนอะไร, install เขียนไฟล์+แถว+ตาราง, ติดตั้งซ้ำถูกปฏิเสธ, uninstall ลบครบ),
@@ -743,12 +743,12 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
 `PREFS_SECTIONS`/`openPreferencesPanel` ในหัวข้อ Cloud Sync ด้านบนไม่ตรงกับ
 โค้ดปัจจุบันแล้ว โครงสร้างใหม่คือ 2 ชั้น (group → page):
 
-- **Quick Setting popup** (`renderSettingsMenu`, `src/renderer/core/
+- **Quick Setting popup** (`renderSettingsMenu`, `electron/src/renderer/core/
   settings.js`) ถูกตัดให้เหลือแค่ 4 อย่างตาม Plan.md: เปลี่ยนภาษา, สลับโหมด
   ชื่อโมดูล (Unique/Classic), ขนาด UI, ปุ่ม "เปิดการตั้งค่า" — ธีม/ขนาดตัวอักษร/
   version limit/help ย้ายไป Setting window แล้ว ผู้ใช้เลือกเปิดกลับมาแสดงใน
   popup ได้ผ่านหน้า Tool toggle (ดูล่าง)
-- **Setting window** (`src/renderer/core/setting-window.js`, floating panel
+- **Setting window** (`electron/src/renderer/core/setting-window.js`, floating panel
   แทนที่ `#prefs-panel` เดิม) — sidebar 2 ชั้น: **Workspace** (Theme/
   Text&Size/Tool toggle) → **User** (Account/User profile) → **Appdata**
   (TokenSync/Database/BackupData) → **Plugin** (ปลั๊กอิน/ตั้งค่าปลั๊กอิน)
@@ -783,13 +783,13 @@ Navigator ซึ่งเป็นโมดูล legacy ที่ซ่อน�
   รายการ slot ที่ผู้ใช้ตั้งชื่อไว้
 - **TokenSync** — ⛔ **ไม่ถูกลิสต์ใน nav แล้วตั้งแต่ v4.5.0** (`CLOUD_SYNC_ENABLED
   = false`) ตัวหน้ายัง `registerSettingPage('appdata','tokensync', …)` ไว้ใน
-  `src/renderer/sync.js` เหมือนเดิม แค่ไม่มีทางเข้า เนื้อหาเดิมของหน้านี้เป็น
+  `electron/src/renderer/sync.js` เหมือนเดิม แค่ไม่มีทางเข้า เนื้อหาเดิมของหน้านี้เป็น
   แค่ทางลัด (แสดงชื่อ Nexus ที่เปิดอยู่ + ปุ่มเปิด modal เดิมของ Cloud Sync)
   ไม่ได้ย้าย logic ทั้งหมดมาไว้ในหน้านี้ เพราะ Token Sync ผูกกับ `S.nexus.id`
   แต่ Setting window ไม่ผูกกับ nexus ที่เปิดอยู่
 - **Database** — list Nexus ทั้งหมด, export/import ได้ทั้งระดับ Nexus และ
   ระดับ module เดี่ยว (subtree) ใช้ snapshot format เดียวกับ Token Sync
-  (`serializeVault`/`applySnapshot` ใน `src/db/sync.js`, ขยาย
+  (`serializeVault`/`applySnapshot` ใน `electron/src/db/sync.js`, ขยาย
   `moduleIds` param ใหม่ให้ scope ลงเฉพาะ module ได้) — import ระดับ module
   เป็นการ**เพิ่มเข้าไป**เท่านั้น ไม่ล้าง Nexus ปลายทางเหมือน import ระดับ
   Nexus (มี unit test คุมพฤติกรรมนี้ที่ `test/module-transfer.test.mjs`)
@@ -812,7 +812,7 @@ Dragon + หน้า Setting "Workspace Style" ให้เสร็จ คร�
   `'dragon'`, เก็บใน localStorage เทียบชั้นเดียวกับ theme) หรือ query param
   `?workspace=` สำหรับทดสอบ (override ใน memory เท่านั้น ไม่เขียนทับ
   localStorage เหมือน `?nexus=` เดิม) **หรือผ่าน Setting window → Workspace →
-  หน้า "Workspace Style" ใหม่** (`src/renderer/core/workspace-style.js`) —
+  หน้า "Workspace Style" ใหม่** (`electron/src/renderer/core/workspace-style.js`) —
   3 mockup card วาดด้วย CSS (ไม่ใช้รูปภาพ), คลิกแค่ stage ตัวเลือกไว้ใน
   `S.settingPendingWorkspace` ยังไม่ apply ทันที ต้องกดปุ่ม "Apply & Restart"
   (ยืนยันผ่าน `uiConfirm()` ก่อน) ถึงจะเขียนลง `S.settings.workspaceStyle`
@@ -823,9 +823,9 @@ Dragon + หน้า Setting "Workspace Style" ให้เสร็จ คร�
 
 - **Chrome**: ซ่อน nav-sidebar/left-panel (Nexus Nest tree)/legacy tab
   strip/split-layout picker/hub-toggle/titlebar vault name ทั้งหมด (มิเรอร์
-  `.popup-mode` เดิมใน `css/titlebar.css` แต่**คงปุ่ม Settings และ status bar
+  `.popup-mode` เดิมใน `electron/css/titlebar.css` แต่**คงปุ่ม Settings และ status bar
   ไว้** ต่างจาก popup window) — แทนที่ด้วย toolbar แนวตั้งบางๆ ทางซ้าย
-  (`#workspace-toolbar`, `src/renderer/wyvern.js`)
+  (`#workspace-toolbar`, `electron/src/renderer/wyvern.js`)
 - **Toolbar**: ปุ่ม "Views" (popup 4 ตัวเลือก: Nexus Nest/Sage Hut/Import
   Dock/Import DB — Import Dock เป็นหน้าเดี่ยวใหม่ `goToImportDockPage()`,
   มิเรอร์ `goToKindBrowserHub()` เดิม), Import DB, Export DB, Hashtag, Color,
@@ -854,7 +854,7 @@ style)
 - **Chrome**: **คง nav-sidebar ไว้** (import/export/hashtag/color ครบตามที่
   Plan.md ระบุ "แสดง tool ตามเดิม") — ต่างจาก Wyvern ที่ซ่อน nav-sidebar
   ไปเลย จุดที่ซ่อนมีแค่ left-panel (Nest tree)/left-panel-resize/builder-tabs/
-  layout-menu-wrap ไม่มี toolbar เป็นของตัวเอง (`src/renderer/dragon.js` ไม่มี
+  layout-menu-wrap ไม่มี toolbar เป็นของตัวเอง (`electron/src/renderer/dragon.js` ไม่มี
   `render*Toolbar()` แบบ Wyvern)
 - **บอร์ดอิสระแทน left-panel tree**: `buildDragonCanvasHtml()` วาด module
   ระดับปัจจุบันเป็นการ์ด absolute-positioned บน `#dragon-stage` ภายใน
@@ -898,7 +898,7 @@ style)
 
 ## 11. บั๊ก/จุดอ่อนที่รู้แล้ว (จากการรันทดสอบ 2026-07-04)
 
-1. **Crash แฝง** — [`src/renderer/modals.js:159`](../src/renderer/modals.js#L159)
+1. **Crash แฝง** — [`electron/src/renderer/modals.js:159`](../electron/src/renderer/modals.js#L159)
    `openObjectModal()` ที่ถูกเรียกโดยไม่มี `catId` ในโปรเจกต์ที่ไม่มี category จะ
    throw `Cannot read properties of null (reading 'id')` (ปุ่มใน UI ปัจจุบันส่ง
    `catId` เสมอเลยยังไม่แสดงอาการ) — ควร guard `S.category?.id`
@@ -916,8 +916,8 @@ style)
     `COMMON_UI_TEXT` เลย** จึงไม่ถูกแปลใน *ทุก* ภาษา ไม่ใช่แค่ไทย —
     `"No timelines yet on this map."` เป็นคนละสตริงกับ `"No timelines yet."`
     ที่มีอยู่ (dictionary จับแบบ exact-match ไม่ใช่ prefix)
-  - กวาดทั้ง `src/renderer/navigator/` + `sage.js` เจอลักษณะนี้ 15 จุด
-    (board.js 3, chars.js 2, main.js 2, maps.js 5, origcat.js 2, sidebar.js 1)
+  - กวาดทั้ง `electron/src/renderer/navigator/` + `sage.js` เจอลักษณะนี้ 15 จุด
+    (board.js 3, chars.js 2, electron/main.js 2, maps.js 5, origcat.js 2, sidebar.js 1)
     เพิ่มเข้า `COMMON_UI_TEXT` ครบ 18 locale ทั้งหมด
 - ~~**5 locale ไม่มีใน `COMMON_UI_TEXT` เลย**~~ → `it`/`nl`/`pl`/`uk`/`tr`
   อยู่ใน `LANGUAGE_LABELS` (เลือกได้ใน picker) และมีครบใน `L` แต่ **ไม่มีใน

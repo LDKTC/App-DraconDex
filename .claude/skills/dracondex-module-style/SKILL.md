@@ -22,17 +22,17 @@ After any renderer/module change:
 
 ```bash
 # lint the file(s) you touched + global IPC/i18n checks
-node .claude/skills/dracondex-module-style/check.mjs src/renderer/hero.js
+node .claude/skills/dracondex-module-style/check.mjs electron/src/renderer/hero.js
 
 # adding a whole module? verify all wiring for it
-node .claude/skills/dracondex-module-style/check.mjs --module hero src/renderer/hero.js
+node .claude/skills/dracondex-module-style/check.mjs --module hero electron/src/renderer/hero.js
 
 # full sweep (baseline table for comparison)
 node .claude/skills/dracondex-module-style/check.mjs
 ```
 
 ERRORs (exit 1) are hard failures: `api.*` call with no preload entry, preload
-channel with no `main.js` handler, `t('key')` missing from a locale,
+channel with no `electron/main.js` handler, `t('key')` missing from a locale,
 `alert()`/`window.confirm()` usage, missing module wiring. Fix them.
 
 Warnings are metrics — hardcoded colors, Thai literals (untranslated strings),
@@ -67,7 +67,7 @@ What to compare (the shared chrome every module must have):
 
 ## Gotchas
 
-- All renderer code lives in `src/renderer/*.js` (the legacy root `renderer.js`
+- All renderer code lives in `electron/src/renderer/*.js` (the legacy root `renderer.js`
   was removed in the architecture cleanup).
 - `t()` falls back to the raw key, so a key missing from `const L` renders
   literally (this exact bug shipped in writer.js — `t('cancel')` showed
@@ -82,10 +82,10 @@ What to compare (the shared chrome every module must have):
 
 ## Troubleshooting
 
-- Checker reports `api.X() called but preload.js exposes no such path` for
+- Checker reports `api.X() called but electron/preload.js exposes no such path` for
   code that works → you called it as `api.a.b.c()` with a group nesting the
-  parser missed; check `preload.js` group braces are one-per-line (house
+  parser missed; check `electron/preload.js` group braces are one-per-line (house
   format). All 276 current channels parse clean.
 - `locale 'xx' missing N key(s) vs en` warnings after you add keys → you added
-  to `en` only. Every locale block in `const L` (src/renderer/i18n.js) needs
+  to `en` only. Every locale block in `const L` (electron/src/renderer/i18n.js) needs
   the key.

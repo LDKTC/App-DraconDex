@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Fallback driver for environments where the Electron binary cannot be
 // downloaded (e.g. Linux CI/sandbox without GitHub release access).
-// Runs the REAL renderer (index.html + src/renderer/*) in Playwright Chromium,
+// Runs the REAL renderer (electron/index.html + electron/src/renderer/*) in Chromium,
 // the REAL preload.js mapping, and the REAL db layer (main.js IPC handlers) in
 // this Node process — only Electron's shell (app/BrowserWindow/Menu/dialog) is
 // stubbed. Same command vocabulary as driver.mjs.
@@ -61,7 +61,7 @@ Module._load = function (request, ...rest) {
   if (request === 'electron') return fakeElectron;
   return origLoad.call(this, request, ...rest);
 };
-require(path.join(root, 'main.js')); // registers all ~230 IPC handlers
+require(path.join(root, 'electron', 'main.js')); // registers all ~230 IPC handlers
 console.log(`[web-driver] ${handlers.size} IPC handlers registered`);
 
 // BigInt (lastInsertRowid) is not JSON-serializable across the page bridge.
@@ -92,7 +92,7 @@ await page.exposeFunction('__ipc', async (ch, args) => {
 });
 
 // Run the real preload.js with contextBridge/ipcRenderer shims.
-const preloadSrc = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
+const preloadSrc = fs.readFileSync(path.join(root, 'electron', 'preload.js'), 'utf8');
 await page.addInitScript(`
   (() => {
     // preload.js destructures these from require('electron') itself.
@@ -107,7 +107,7 @@ await page.addInitScript(`
   })();
 `);
 
-await page.goto('file://' + path.join(root, 'index.html') + (query ? `?${query}` : ''));
+await page.goto('file://' + path.join(root, 'electron', 'index.html') + (query ? `?${query}` : ''));
 await page.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body', { timeout: 15000 });
 console.log('[web-driver] app ready');
 

@@ -30,11 +30,11 @@
 ### 2.1 สถาปัตยกรรม
 
 ```
-Renderer (src/renderer/update.js — initVersionCheck() เรียกจาก boot.js
+Renderer (electron/src/renderer/update.js — initVersionCheck() เรียกจาก boot.js
           ครั้งเดียวตอนเปิดแอป, แบบ fire-and-forget)
    │ window.api.update.*  (preload.js)
    ▼
-Main process IPC 'update:*' (main.js) → src/db/update.js
+Main process IPC 'update:*' (electron/main.js) → electron/src/db/update.js
    │ syncAuthStatus() (sync.js) + driveStatus() (drive.js) — เช็ก login
    │ fetch() ตรงไปที่ Firestore REST API — ไม่มี firebase SDK
    ▼
@@ -50,7 +50,7 @@ GET /v1/projects/{id}/databases/(default)/documents/public_config/latest_version
 deployment ต้องตั้งเอง (เพราะแต่ละที่อาจต่อ backend คนละอันกัน) — โปรเจกต์
 Firebase นี้มีเพียง**อันเดียว**ที่ทุกเครื่องที่ติดตั้งแอปนี้อ่านค่าเดียวกันหมด
 ไม่มีอะไรให้ operator ตั้งค่าเอง จึงเก็บเป็น `const FIRESTORE_PROJECT_ID` ใน
-`src/db/update.js` แทนที่จะเป็น setting ที่แก้ได้ตอน runtime
+`electron/src/db/update.js` แทนที่จะเป็น setting ที่แก้ได้ตอน runtime
 
 ### 2.3 เอกสาร Firestore + Security Rule (ตั้งค่าครั้งเดียวโดยผู้ดูแลแอป)
 
@@ -75,7 +75,7 @@ Response shape ของ Firestore REST เป็นแบบ wrapped:
 ตัดส่วนหลัง `-` ทิ้งก่อนเทียบ (suffix `-n` มีไว้เฉพาะระหว่างพัฒนา ไม่ควรมีใน
 build ที่ปล่อยจริง) แล้วเทียบทีละ segment ตัวเลขจาก `.` แพดด้วย 0 — ไม่ใช้
 package semver เพราะ logic สั้นพอที่จะเขียนเองได้ใน ~10 บรรทัด
-(`isNewerVersion` ใน `src/db/update.js`)
+(`isNewerVersion` ใน `electron/src/db/update.js`)
 
 ### 2.5 ทนต่อความล้มเหลว
 
