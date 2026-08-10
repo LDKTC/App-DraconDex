@@ -132,12 +132,11 @@
 .setting-shell{display:flex;height:100%;gap:16px}
 .setting-sidebar{width:190px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
 .setting-nav-head{
-	text-align:left;padding:8px 10px;border-radius:var(--rs);background:transparent;
-	color:var(--t2);cursor:pointer;font-family:inherit;font-size:calc(12.5px * var(--fsc,1));font-weight:700;
+	text-align:left;padding:8px 10px;color:var(--t2);
+	font-family:inherit;font-size:calc(12.5px * var(--fsc,1));font-weight:700;
 	text-transform:uppercase;letter-spacing:.02em;
 }
 .setting-nav-group.open>.setting-nav-head{color:var(--t1)}
-.setting-nav-head:hover{background:var(--hover);color:var(--t1)}
 .setting-nav-pages{display:flex;flex-direction:column;gap:1px;padding-left:8px;margin-bottom:4px}
 .setting-nav-item{
 	text-align:left;padding:7px 10px;border:none;border-radius:var(--rs);background:transparent;
@@ -146,6 +145,22 @@
 .setting-nav-item:hover{background:var(--hover);color:var(--t1)}
 .setting-nav-item.active{background:var(--accent);color:var(--on-accent)}
 .setting-content{flex:1;min-width:0;overflow-y:auto}
+
+/* Slider+number row (Plan part2 #1) — 5:1 width ratio, both inputs kept in
+   sync live via inline oninput on the JS side; this only lays them out. */
+.size-slider-row{display:grid;grid-template-columns:5fr 1fr;gap:8px;align-items:center}
+
+/* Module-name read-only compare list (Plan part2 #3) — reuses welcome.css's
+   .welcome-name-* box/row classes for the two-column layout; scoped here to
+   relax them (nothing here is clickable, unlike the wizard's picker) and to
+   define its own row-height var since --wz-name-row lives under
+   .welcome-wizard only. Height clamps between 4 and 5 visible rows, scaling
+   with viewport height in between since the Setting window itself is a
+   fixed-size floating panel. */
+.setting-name-cols{--wz-name-row:26px;margin-top:8px}
+.setting-name-cols .welcome-name-box{cursor:default}
+.setting-name-cols .welcome-name-box:hover{border-color:var(--border)}
+.setting-name-cols .welcome-name-list{max-height:clamp(calc(var(--wz-name-row) * 4), 26vh, calc(var(--wz-name-row) * 5))}
 
 /* PREFERENCES PANEL — sidebar-nav layout hosted inside .floating-panel */
 .prefs-shell{display:flex;height:100%;gap:16px}

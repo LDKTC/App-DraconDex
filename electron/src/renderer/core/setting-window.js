@@ -53,6 +53,10 @@ function renderSettingWindow(){
   if(body) body.innerHTML = settingWindowBodyHtml();
 }
 function settingWindowNavHtml(){
+  // Plan part2 "session head": every group's page list stays open (no more
+  // single-open accordion), and the group header is plain text now that
+  // clicking it has nothing left to toggle — page buttons below are the only
+  // way to select a page.
   return Object.keys(SETTING_GROUPS).map(g => {
     const openGroup = S.settingGroup === g;
     const pages = SETTING_GROUPS[g].map(p => {
@@ -60,8 +64,8 @@ function settingWindowNavHtml(){
       return `<button type="button" class="setting-nav-item${active?' active':''}" onclick="selectSettingPage('${g}','${p}')">${t(SETTING_PAGE_LABEL_KEY[p])}</button>`;
     }).join('');
     return `<div class="setting-nav-group${openGroup?' open':''}">
-      <div class="setting-nav-head" onclick="selectSettingPage('${g}','${SETTING_GROUPS[g][0]}')">${t(SETTING_GROUP_LABEL_KEY[g])}</div>
-      ${openGroup ? `<div class="setting-nav-pages">${pages}</div>` : ''}
+      <div class="setting-nav-head">${t(SETTING_GROUP_LABEL_KEY[g])}</div>
+      <div class="setting-nav-pages">${pages}</div>
     </div>`;
   }).join('');
 }
@@ -162,14 +166,24 @@ function setAreaScale(key, value){
   applyAreaScales();
   renderSettingWindow();
 }
+// Shared by every size row in the Advanced reveal (Plan part2 #1) — a slider
+// and a number input in one row (5:1 width ratio via .size-slider-row CSS),
+// synced live by writing straight to the sibling on oninput; onchange still
+// calls the same setter each row already used, so persistence is unchanged.
+function sliderNumberRowHtml(labelHtml, { min, max, step = 1, value, commit }) {
+  return `<div class="fg"><label>${labelHtml}</label>
+    <div class="size-slider-row">
+      <input class="settings-slider" type="range" min="${min}" max="${max}" step="${step}" value="${value}" oninput="this.nextElementSibling.value=this.value" onchange="${commit}">
+      <input class="settings-number" type="number" min="${min}" max="${max}" value="${value}" oninput="this.previousElementSibling.value=this.value" onchange="${commit}">
+    </div></div>`;
+}
 function settingTextSizePageHtml(){
   const rows = UI_LANGUAGE_OPTIONS.map(lang => `
     <div class="lang-item${S.settings.language===lang?' active':''}" onmouseenter="settingPreviewLang('${lang}')" onclick="setUiSetting('language','${lang}')">
       <span>${LANGUAGE_LABELS[lang]}</span>${S.settings.language===lang?'<span class="theme-check">✓</span>':''}
     </div>`).join('');
-  const areaRows = Object.keys(SETTING_AREA_CONTAINERS).map(key => `
-    <div class="fg"><label>${t('settingArea_'+key)} (%)</label>
-      <input class="settings-number" type="number" min="50" max="150" value="${(S.settings.areaScale||{})[key] ?? 100}" onchange="setAreaScale('${key}', this.value)"></div>`).join('');
+  const areaRows = Object.keys(SETTING_AREA_CONTAINERS).map(key =>
+    sliderNumberRowHtml(`${t('settingArea_'+key)} (%)`, { min: 50, max: 150, value: (S.settings.areaScale||{})[key] ?? 100, commit: `setAreaScale('${key}', this.value)` })).join('');
   return `<div class="settings-label">${t('language')}</div>
     <div class="prefs-lang-shell">
       <div class="lang-list">${rows}</div>
@@ -178,21 +192,20 @@ function settingTextSizePageHtml(){
     <div class="settings-group">
       <div class="settings-label">${t('moduleNameMode')}</div>
       ${nameModeSegHtml()}
+      ${nameModeCompareListHtml()}
     </div>
     <div class="settings-group">
       <div class="settings-label">${t('uiSize')}</div>
       ${uiSizeSlidersHtml()}
     </div>
     <button class="btn ${S.settingAdvanced ? 'btn-p' : 'btn-s'}" onclick="toggleSettingAdvanced()">${t('advanced')}</button>
+    <div class="settings-label">${t('versionLimit')}</div>
+    <input class="settings-number" type="number" min="1" max="500" value="${S.versionLimitCache ?? 50}" onchange="setVersionLimit(this.value)">
     ${S.settingAdvanced ? `<div class="prefs-advanced">
-      <div class="fg"><label>${t('uiSize')} (%)</label>
-        <input class="settings-number" type="number" min="${UI_SIZE_MIN}" max="${UI_SIZE_MAX}" value="${S.settings.size}" onchange="setUiSetting('size', this.value)"></div>
-      <div class="fg"><label>${t('fontSize')} (%)</label>
-        <input class="settings-number" type="number" min="80" max="130" value="${S.settings.fontScale || 100}" onchange="setUiSetting('fontScale', this.value)"></div>
+      ${sliderNumberRowHtml(`${t('uiSize')} (%)`, { min: UI_SIZE_MIN, max: UI_SIZE_MAX, step: UI_SIZE_STEP, value: S.settings.size, commit: "setUiSetting('size', this.value)" })}
+      ${sliderNumberRowHtml(`${t('fontSize')} (%)`, { min: 80, max: 130, step: 5, value: S.settings.fontScale || 100, commit: "setUiSetting('fontScale', this.value)" })}
       <div class="settings-label">${t('settingAreaScale')}</div>
       ${areaRows}
-      <div class="settings-label">${t('versionLimit')}</div>
-      <input class="settings-number" type="number" min="1" max="500" value="${S.versionLimitCache ?? 50}" onchange="setVersionLimit(this.value)">
       <div class="settings-label">${t('help')}</div>
       <button class="btn btn-s" style="width:100%;margin-bottom:6px" onclick="openShortcutsModal()">${I.info} ${t('shortcuts')}</button>
       <button class="btn btn-s" style="width:100%" onclick="replayGuideTour()">${I.book} ${t('replayTour')}</button>

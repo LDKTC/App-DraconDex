@@ -128,6 +128,27 @@ function nameModeSegHtml(){
   </div>
   <div class="settings-hint">${t('moduleNameModeHint')}</div>`;
 }
+// Read-only compare view (Plan part2 #3) alongside the toggle above — every
+// kind's name in both vocabularies at once, so a user can see the full list
+// before switching. Same two-column markup as the wizard's picker
+// (welcomeStepNamesHtml, core/welcome.js) but with the onclick/active-state
+// removed: nameModeSegHtml() above is still the only thing that switches
+// nameMode, this is purely informational.
+function nameModeCompareListHtml(){
+  const kinds = Object.keys(KIND_CLASSIC_KEY);
+  const uniqueName = k => (typeof KIND_LABEL !== 'undefined' && KIND_LABEL[k]) || k;
+  const box = (label, nameOf) => `
+    <div class="welcome-name-box">
+      <div class="welcome-name-head" data-no-i18n>${label}</div>
+      <div class="welcome-name-list" onscroll="welcomeSyncNameScroll(this)">
+        ${kinds.map(k => `<div class="welcome-name-row" data-no-i18n>${x(nameOf(k))}</div>`).join('')}
+      </div>
+    </div>`;
+  return `<div class="welcome-name-cols setting-name-cols">
+    ${box('Unique', uniqueName)}
+    ${box('Classic', k => t(KIND_CLASSIC_KEY[k]))}
+  </div>`;
+}
 function uiSizeSlidersHtml(){
   return `
     <div class="settings-group">

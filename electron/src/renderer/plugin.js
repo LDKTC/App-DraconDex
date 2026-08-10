@@ -27,7 +27,8 @@ function pluginErrToast(r) {
 // its own DOM once ready, same pattern every setting page uses.
 function settingPluginPageHtml() {
   pluginRefreshSection();
-  return `<div class="settings-label">${t('prefs_plugin')}</div><div id="plugin-body">${t('syncWorking')}</div>`;
+  pluginRefreshOrgRepos();
+  return `<div id="plugin-org-repos"></div><div class="settings-label">${t('prefs_plugin')}</div><div id="plugin-body">${t('syncWorking')}</div>`;
 }
 registerSettingPage('plugin', 'plugin', settingPluginPageHtml);
 
@@ -41,6 +42,41 @@ async function pluginRefreshSection() {
   if (!el) return; // panel closed or switched section before this resolved
   const running = await Promise.all(list.map((p) => api.plugin.isRunning(p.id)));
   el.innerHTML = pluginBodyHtml(list, running);
+}
+
+// Plan part2 #5 — default "install from @LDKTC" list, so a user doesn't need
+// a repo URL already in hand. Advisory only: a network failure (offline, rate
+// limited) just leaves this section empty, no error toast — same silence
+// convention as the auto-preview-on-type path below.
+async function pluginRefreshOrgRepos() {
+  const r = await api.plugin.listOrgRepos();
+  const el = q('#plugin-org-repos');
+  if (!el) return; // panel closed or switched section before this resolved
+  if (!r?.ok || !r.repos.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="fg">
+      <label>${t('pluginOrgReposLabel')}</label>
+      ${r.repos.map((repo) => `
+        <div class="sync-upload-row">
+          <div>
+            <b data-no-i18n>${x(repo.name)}</b>
+            <div class="sync-hint" data-no-i18n>${x(repo.description)}</div>
+          </div>
+          <div class="sync-upload-actions">
+            <button class="btn btn-s btn-sm" onclick="pluginInstallFromOrgRepo('${x(repo.url)}')">${t('pluginPreviewBtn')}</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// Feeds straight into the existing paste-a-link flow (pluginUrlInput +
+// pluginPreviewRun) rather than a second install path — the preview→confirm
+// trust boundary (docs/PLUGINS.md §2.3b) stays the one and only way in.
+function pluginInstallFromOrgRepo(url) {
+  const input = q('#plugin-url');
+  if (input) input.value = url;
+  pluginUrlInput(url);
+  pluginPreviewRun();
 }
 
 function pluginRowHtml(p, isRunning) {
