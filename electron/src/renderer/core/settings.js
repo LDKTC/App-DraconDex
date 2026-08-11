@@ -62,7 +62,11 @@ function setUiSetting(key, value){
   saveUiSettings();
   applyUiSettings();
   renderSettingsMenu();
-  if(q('#prefs-panel')) renderPreferencesPanel();
+  // procress1 part3: #prefs-panel was the old Preferences floating panel,
+  // replaced by the Setting window — this guard checked an element that no
+  // longer exists, silently skipping the refresh renderSettingWindow() now
+  // does; it already no-ops when the panel isn't open.
+  renderSettingWindow();
   translateStaticChrome();
   renderProjectTabs();
   if(key === 'language') switchView(S.view || 'projects');
