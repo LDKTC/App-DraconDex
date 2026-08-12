@@ -19,6 +19,7 @@ function pluginErrToast(r) {
     install_failed: 'pluginErrServer',
     running: 'pluginErrRunning',
     not_found: 'pluginErrNotFound',
+    dependency_failed: 'pluginErrDependencyFailed',
   };
   toast(t(map[r?.code] || 'pluginErrServer'), 'error');
 }
@@ -197,6 +198,25 @@ function pluginPreviewGrantsHtml(m) {
   return h;
 }
 
+// v4.8.0 — other plugins this one declares in `dependencies`. Shown as its own
+// block for the same reason panels/net get one: installing this plugin does
+// more than create its own files and tables, and the user should see that
+// before confirming, not discover it afterward. A dependency that failed to
+// resolve is still listed (by its raw URL) rather than silently dropped, so
+// "why do I suddenly have two new plugins" never has a hidden half.
+function pluginPreviewDepsHtml(m) {
+  const deps = m.dependencies || [];
+  if (!deps.length) return '';
+  const items = deps.map((d) => {
+    if (!d.ok) return `<li data-no-i18n>${x(d.url)} <span class="plugin-preview-warn">(${x(d.code || 'error')})</span></li>`;
+    const already = d.alreadyInstalled ? ` <span class="sync-hint">(${t('pluginPreviewDepAlready')})</span>` : '';
+    return `<li>${x(d.name)} <span class="sync-hint" data-no-i18n>${x(d.id)}</span>${already}</li>`;
+  }).join('');
+  return `<div class="plugin-preview-row"><span>${t('pluginPreviewDepsLabel')}</span><b>${deps.length}</b></div>
+    <ul class="plugin-preview-files">${items}</ul>
+    <div class="plugin-preview-warn">${t('pluginPreviewDepsWarn')}</div>`;
+}
+
 // Everything rendered here came off the internet a moment ago — every single
 // field goes through x() before it touches an HTML string. This is the one
 // place in the app where remote text is drawn as markup.
@@ -219,6 +239,7 @@ function pluginPreviewHtml(p) {
       <div class="plugin-preview-row"><span>${t('pluginPreviewTablesLabel')}</span><b>${(m.tables || []).length}</b></div>
       <ul class="plugin-preview-files">${tables}</ul>
       ${pluginPreviewGrantsHtml(m)}
+      ${pluginPreviewDepsHtml(m)}
       <div class="plugin-preview-warn">${t('pluginPreviewWarn')}</div>
       <div class="plugin-preview-actions">
         ${p.alreadyInstalled
