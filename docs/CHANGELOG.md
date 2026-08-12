@@ -19,6 +19,55 @@
 
 ---
 
+## 2026-08-12 — Plugin `dependencies` — ปลั๊กอินติดตั้งปลั๊กอินอื่นไปด้วยกัน (v4.8.0)
+- commit: uncommitted
+- ไฟล์ที่แก้: `electron/src/db/plugin-manifest.js`, `electron/src/db/plugin.js`,
+  `electron/src/renderer/plugin.js`, `electron/src/renderer/i18n.js`,
+  `electron/test/plugin-url.test.mjs`, `docs/PLUGINS.md`, `docs/FILES.md`
+- อะไรเปลี่ยน:
+  - manifest เพิ่มฟิลด์ optional `dependencies` — array ของ repo URL (รูปแบบ
+    เดียวกับช่องติดตั้ง §1.1 ทุกแบบ) ไม่เกิน 5 รายการ ห้ามซ้ำ repo กัน
+    (`validateDependencies`/`MAX_DEPENDENCIES` ใน `plugin-manifest.js`) +
+    `manifestDependencies()` อ่านกลับ
+  - `pluginPreview()` resolve dependency แต่ละตัวด้วย (`previewDependency()`)
+    แล้วคืนใน `manifest.dependencies[]` — บอกชื่อ/id/ติดตั้งแล้วหรือยัง หรือ
+    error code ถ้า resolve ไม่ได้ — พรีวิวการ์ดโชว์เป็นบล็อก **"ติดตั้งมาด้วย"**
+    แยกจาก panels/net (`pluginPreviewDepsHtml()` ใน renderer)
+  - `pluginInstall()` ติดตั้ง dependency ที่ยังไม่มีก่อนตัวปลั๊กอินหลัก
+    (`installDependencyIfMissing()`, ข้ามเงียบๆ ถ้าติดตั้งแล้ว) แล้วค่อยติดตั้ง
+    ปลั๊กอินที่ผู้ใช้ขอจริง — แยก `installResolvedPlugin()` ออกมาจากโค้ดเดิมให้
+    เรียกซ้ำได้ทั้งสองทาง ลึกแค่ชั้นเดียวโดยตั้งใจ (ไม่มองเข้า `dependencies`
+    ของ dependency เอง จึงไม่มี cycle), ปฏิเสธ dependency ที่ id ชนกับตัวเอง,
+    dependency ล้มเหลว = หยุดทั้งก้อนก่อนแตะปลั๊กอินหลัก แต่ dependency ที่ติดตั้ง
+    สำเร็จไปก่อนหน้าไม่ถูกถอนกลับ (ดูเหตุผลใน `docs/PLUGINS.md` §1.8)
+  - **ไม่มี API ใหม่ให้ปลั๊กอินที่กำลังรันสั่งติดตั้งปลั๊กอินอื่นเองตอน
+    runtime** — ทั้งหมดผ่าน install flow เดิม (preview→confirm) ที่มีอยู่แล้ว
+    เท่านั้น ตั้งใจไม่เพิ่ม capability ให้หน้าต่างปลั๊กอินที่ sandbox ไม่ได้ให้
+  - เพิ่ม i18n key ใหม่ 4 ตัวครบทั้ง 18 locale: `pluginPreviewDepsLabel`,
+    `pluginPreviewDepAlready`, `pluginPreviewDepsWarn`, `pluginErrDependencyFailed`
+  - เทสต์ใหม่ 2 รายการใน `plugin-url.test.mjs` (validateManifest กับ
+    dependencies ผิดรูปแบบ/เกิน limit/ซ้ำ, `manifestDependencies` อ่านกลับ) —
+    รวมทั้งไฟล์ 17/17 ผ่าน; ตัว `pluginInstall`/`pluginPreview` เองต้อง
+    `require('electron')` จึงทดสอบอัตโนมัติแบบเต็มไม่ได้ — **ตรวจด้วยมือจริง
+    ผ่าน `run-dracondex` web-driver ต่อ repo สาธารณะบน GitHub 3 ตัวแล้ว**
+    (`DraconDex-Plugin-Claude`/`-Ollama` branch `claude/dracodex-ai-native-
+    plugin-o1c3l5` ที่ประกาศ `dependencies` ชี้ `DraconDex-Plugin-Native`):
+    พรีวิวโชว์บล็อก "ติดตั้งมาด้วย" ถูกต้อง (ชื่อ/id/`alreadyInstalled`),
+    ยืนยันครั้งเดียวติดตั้งทั้งปลั๊กอินหลักและ dependency, ติดตั้งปลั๊กอิน AI ตัว
+    ที่สองแล้ว dependency ที่มีอยู่แล้วถูกข้ามจริงไม่มีแถวซ้ำ (ดู §2.7 ข้อ 7 ที่
+    อัปเดต)
+- ทำไม: DraconDex-Plugin-Claude/-Ollama/-Codex (ปลั๊กอินแชท AI 3 ตัว) ต้องการ
+  "auto pull" ปลั๊กอิน AI Native (DraconDex-Plugin-Native ที่ปรับปรุงใหม่ให้
+  เป็นคลัง `catalog.json` สาธารณะของฟีเจอร์/เครื่องมือของแอป) ตอนติดตั้งครั้งแรก
+  แต่สถาปัตยกรรม sandbox เดิมไม่มีทางให้ปลั๊กอินสั่งติดตั้งปลั๊กอินอื่นเองได้เลย
+  (ไม่มีปลั๊กอินไหนแตะข้อมูล/API ของปลั๊กอินอื่นได้) ทางแก้ที่ไม่เพิ่มรูรั่วคือ
+  ประกาศไว้ใน manifest แล้วให้ install flow ที่ผู้ใช้กดยืนยันอยู่แล้วจัดการให้
+  ทั้งหมดในทีเดียว — ผู้ใช้เห็นและอนุมัติครั้งเดียวเหมือน panels/net เดิม
+- Doc ที่อัปเดต: `docs/PLUGINS.md` §1.8 (ใหม่), §2.7 ข้อ 1 และ 7,
+  `docs/FILES.md` (3 บรรทัดของ plugin-manifest.js/plugin.js/renderer/plugin.js)
+
+---
+
 ## 2026-08-10 — แยก repo เป็น electron/ · flutter/ · src/ (shared resource)
 - commit: uncommitted
 - ไฟล์ที่แก้: ย้ายไฟล์ทั้ง repo (ดูรายละเอียดด้านล่าง) + `package.json`,

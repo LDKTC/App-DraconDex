@@ -24,7 +24,7 @@ const {
   PLUGIN_TABLE_RE, FULL_TABLE_RE, MAX_FILE_BYTES,
   MANIFEST_NAMES, REF_CANDIDATES,
   validateManifest, parseRepoUrl, rawUrl,
-  manifestPanels, manifestNetOrigins, manifestContextKinds, netOriginAllowed,
+  manifestPanels, manifestNetOrigins, manifestContextKinds, manifestDependencies, netOriginAllowed,
 } = require('./plugin-manifest');
 
 const dataRoot = () => path.dirname(app.getPath('userData'));
@@ -123,6 +123,25 @@ async function resolveRepo(url) {
     : { ok: false, code: 'no_manifest' };
 }
 
+// Resolves one dependency URL to a preview-shaped summary, for the "also
+// installs" block on the preview card. Never rejects — a dependency that
+// fails to resolve is reported as its own { ok:false } entry so the rest of
+// the preview still renders; pluginInstall is what actually enforces it.
+async function previewDependency(depUrl, selfId) {
+  const depR = await resolveRepo(depUrl);
+  if (!depR.ok) return { url: depUrl, ok: false, code: depR.code };
+  const valid = validateManifest(depR.manifest);
+  if (!valid.ok) return { url: depUrl, ok: false, code: 'bad_manifest' };
+  if (depR.manifest.id === selfId) return { url: depUrl, ok: false, code: 'self_dependency' };
+
+  const installed = getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(depR.manifest.id);
+  return {
+    url: depUrl, ok: true,
+    id: depR.manifest.id, name: depR.manifest.name, version: depR.manifest.version || null,
+    alreadyInstalled: !!installed,
+  };
+}
+
 // Read-only dry run behind the "paste a link" field: resolve + validate and
 // report exactly what installing would create, WITHOUT touching disk or the DB.
 // The renderer shows this for confirmation only — pluginInstall() below never
@@ -135,6 +154,11 @@ async function pluginPreview(url) {
   if (!valid.ok) return { ok: false, code: 'bad_manifest', error: valid.error };
 
   const installed = getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(r.manifest.id);
+  const dependencies = [];
+  for (const depUrl of manifestDependencies(r.manifest)) {
+    dependencies.push(await previewDependency(depUrl, r.manifest.id));
+  }
+
   return {
     ok: true,
     url: String(url || '').trim(),
@@ -152,25 +176,22 @@ async function pluginPreview(url) {
       panels: manifestPanels(r.manifest),
       netOrigins: manifestNetOrigins(r.manifest),
       contextKinds: manifestContextKinds(r.manifest),
+      // v4.8.0 — other plugins this one will pull in alongside itself. Each
+      // entry already carries whether it's installed yet, so the preview card
+      // can say "already have it" instead of a bare list of names.
+      dependencies,
     },
   };
 }
 
-// Takes the pasted URL and nothing else. Everything — repo coordinates, ref,
-// manifest — is re-fetched and re-validated here; the preview above is a UI
-// hint, never an input. This is the one trust boundary for the whole feature.
-async function pluginInstall(url) {
-  const r = await resolveRepo(url);
-  if (!r.ok) return r;
-  const { host, owner, repo, ref, manifest } = r;
-
-  const valid = validateManifest(manifest);
-  if (!valid.ok) return { ok: false, code: 'bad_manifest', error: valid.error };
-
+// Fetches every file a resolved+validated manifest declares and writes the
+// plugin's files + DB rows as one unit. Shared by pluginInstall (the plugin
+// the user asked for) and installDependencyIfMissing (a manifest-declared
+// dependency of it) so both go through the exact same fetch/write/cleanup
+// path — a dependency is a real, independently-valid plugin install, not a
+// special case.
+async function installResolvedPlugin(host, owner, repo, ref, manifest) {
   const db = getDB();
-  if (db.prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(manifest.id)) {
-    return { ok: false, code: 'already_installed' };
-  }
 
   // Fetch every declared file fully into memory before writing anything.
   const fileBuffers = {};
@@ -215,6 +236,66 @@ async function pluginInstall(url) {
   }
 
   return { ok: true, pluginKey: manifest.id };
+}
+
+// Resolves + validates one manifest-declared dependency and installs it if no
+// plugin with that id exists yet. Returns null on success (nothing to
+// report, including "already installed" — that is the common, expected case
+// once one AI plugin has pulled AI Native in for the others). Returns an
+// { ok:false, code:'dependency_failed', error } the caller should return
+// as-is otherwise.
+//
+// Deliberately one level deep: this never looks at the dependency's own
+// manifest.dependencies, so a dependency chain can't form. A dependency that
+// resolves to the SAME id as the plugin being installed is rejected rather
+// than silently overwriting it — see previewDependency's self_dependency.
+async function installDependencyIfMissing(depUrl, selfId) {
+  const depR = await resolveRepo(depUrl);
+  if (!depR.ok) return { ok: false, code: 'dependency_failed', error: `${depUrl}: ${depR.code}` };
+  const valid = validateManifest(depR.manifest);
+  if (!valid.ok) return { ok: false, code: 'dependency_failed', error: `${depUrl}: ${valid.error}` };
+  if (depR.manifest.id === selfId) {
+    return { ok: false, code: 'dependency_failed', error: `${depUrl}: a plugin cannot depend on its own id (${depR.manifest.id})` };
+  }
+
+  if (getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(depR.manifest.id)) return null;
+
+  const res = await installResolvedPlugin(depR.host, depR.owner, depR.repo, depR.ref, depR.manifest);
+  if (!res.ok) return { ok: false, code: 'dependency_failed', error: `${depUrl}: ${res.error || res.code}` };
+  return null;
+}
+
+// Takes the pasted URL and nothing else. Everything — repo coordinates, ref,
+// manifest — is re-fetched and re-validated here; the preview above is a UI
+// hint, never an input. This is the one trust boundary for the whole feature.
+async function pluginInstall(url) {
+  const r = await resolveRepo(url);
+  if (!r.ok) return r;
+  const { host, owner, repo, ref, manifest } = r;
+
+  const valid = validateManifest(manifest);
+  if (!valid.ok) return { ok: false, code: 'bad_manifest', error: valid.error };
+
+  const db = getDB();
+  if (db.prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(manifest.id)) {
+    return { ok: false, code: 'already_installed' };
+  }
+
+  // Dependencies land first, each individually skipped if already installed —
+  // so by the time the plugin the user actually asked for is written, every
+  // plugin it declared as required is already there (this is the "auto pull
+  // AI Native the first time an AI plugin installs" path). A dependency
+  // failure aborts BEFORE this plugin is touched at all; any dependency that
+  // installed successfully before a later one failed is left in place rather
+  // than rolled back — it is a complete, independently valid plugin install,
+  // not a partial/corrupt one, and there's a decent chance it's exactly what
+  // another already-installed plugin also depends on.
+  for (const depUrl of manifestDependencies(manifest)) {
+    const depErr = await installDependencyIfMissing(depUrl, manifest.id);
+    if (depErr) return depErr;
+  }
+
+  return installResolvedPlugin(host, owner, repo, ref, manifest);
 }
 
 function pluginUninstall(id) {

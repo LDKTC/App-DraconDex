@@ -185,6 +185,43 @@ window.pluginApi.panel.close();   // ขอให้แอปหลักปิ�
 (เกินแล้วตัดพร้อมธง `truncated`), redirect ที่พาไป origin นอก allowlist ถูก
 ปฏิเสธ และ**ไม่มี cookie jar** — `fetch` ในฝั่ง main ไม่แตะ session ของ Electron
 
+### 1.8 Plugin dependencies — ติดตั้งปลั๊กอินอื่นไปด้วยกัน (v4.8.0)
+
+ปลั๊กอินหนึ่งตัวประกาศได้ว่า "ต้องมีปลั๊กอินตัวอื่นติดตั้งอยู่ด้วย" ผ่าน
+`dependencies` ใน manifest — เป็นลิงก์ repo แบบเดียวกับที่วางในช่องติดตั้ง
+(§1.1 ทุกรูปแบบใช้ได้: `owner/repo` ย่อ, ลิงก์เต็ม, ระบุ branch ฯลฯ):
+
+```json
+{
+  "id": "claude_chat", "name": "Claude Chat", "...": "...",
+  "dependencies": ["https://github.com/LDKTC/DraconDex-Plugin-Native"]
+}
+```
+
+- ไม่เกิน **5 รายการ** ห้ามซ้ำ repo กัน (`MAX_DEPENDENCIES` ใน `plugin-manifest.js`)
+- พรีวิวก่อนติดตั้งจะโชว์บล็อก **"ติดตั้งมาด้วย"** แยกจาก panels/net — บอกชื่อ,
+  `id` และว่าเครื่องนี้มีติดตั้งอยู่แล้วหรือยัง ก่อนผู้ใช้กดยืนยัน เหมือนกับ
+  panels/net origins ใน §1.6
+- กด **ยืนยันการติดตั้ง** ครั้งเดียว → แอปติดตั้ง dependency ที่ยังไม่มีให้ก่อน
+  (ตัวที่มีอยู่แล้วข้ามเงียบๆ ไม่ error) แล้วค่อยติดตั้งปลั๊กอินที่ผู้ใช้ขอจริงๆ
+  ทีหลัง — เป็นการ auto-install ผ่าน install flow เดิมทั้งหมด **ไม่มี** API ใหม่
+  ให้ปลั๊กอินที่กำลังรันอยู่สั่งติดตั้งปลั๊กอินอื่นเองตอน runtime (นั่นจะเป็นการ
+  เพิ่ม capability ให้หน้าต่างปลั๊กอินที่ sandbox ไม่ได้ตั้งใจให้มี)
+- **ลึกแค่ชั้นเดียวโดยตั้งใจ** — ตัวติดตั้งไม่มองเข้าไปใน `dependencies` ของตัว
+  dependency เอง ดังนั้น dependency chain ก่อตัวไม่ได้ และไม่มี cycle ให้ต้องกัน
+- dependency ที่ resolve แล้วได้ `id` ซ้ำกับปลั๊กอินที่กำลังติดตั้งเองถูกปฏิเสธ
+  (`a plugin cannot depend on its own id`) แทนที่จะเขียนทับกันเงียบๆ
+- dependency ที่ล้มเหลว (resolve ไม่ได้, manifest ไม่ผ่าน, ดาวน์โหลดไม่สำเร็จ)
+  ทำให้ **การติดตั้งทั้งก้อนหยุดก่อนที่ปลั๊กอินหลักจะถูกแตะเลย** — คืน
+  `{ ok:false, code:'dependency_failed' }` ส่วน dependency ตัวก่อนหน้าที่ติดตั้ง
+  สำเร็จไปแล้วจะ**ไม่ถูกถอนกลับ** (มันคือปลั๊กอินที่สมบูรณ์และใช้งานได้จริง
+  ไม่ใช่สถานะค้างครึ่งๆ กลางๆ — ดู §2.1 ว่าทำไมถึงออกแบบแบบนี้)
+- ตัวอย่างการใช้งานจริง: `DraconDex-Plugin-Claude`/`-Ollama`/`-Codex` ประกาศ
+  `DraconDex-Plugin-Native` ("AI Native" — ปลั๊กอินคลังข้อมูล feature/tool ของ
+  แอปแบบ public ให้ AI ปลั๊กอินตัวอื่นอ่าน) เป็น dependency ตัวเดียวกัน — ติดตั้ง
+  AI chat ปลั๊กอินตัวไหนก่อนก็ได้ ตัวที่สอง/สามที่ติดตั้งตามมาจะเจอ AI Native
+  ติดตั้งอยู่แล้วและข้ามไปเงียบๆ
+
 ---
 
 ## ส่วนที่ 2 — หลักการทำงาน + ข้อจำกัดด้านความปลอดภัย (สำหรับผู้พัฒนา)
@@ -369,7 +406,8 @@ runtime ไม่ได้และไม่ควรพึ่งพา) — แ
    ครอบคลุมลิงก์ทุกรูปแบบใน §1.1, ลิงก์ที่ต้องปฏิเสธ (โฮสต์อื่น, path traversal,
    percent-encoding, ช่องว่าง) และ fixture manifest ที่ต้องไม่ผ่าน (id ผิดรูปแบบ,
    column type ผิด, ชื่อ column สงวนไว้, มี SQL metacharacter, path traversal ใน
-   `files`, ตาราง/คอลัมน์เกิน limit)
+   `files`, ตาราง/คอลัมน์เกิน limit, `dependencies[]` ที่ไม่ใช่ URL ที่ parse ได้/
+   เกิน `MAX_DEPENDENCIES`/ซ้ำ repo กัน — §1.8)
 2. **migratePluginV42** — ทดสอบด้วยฐานข้อมูลรูปแบบ v4.1 จริง: แถวใน `extension`
    ย้ายมาครบ, `ext_*` ถูก rename เป็น `plg_*` พร้อมข้อมูลข้างใน, `repo_host`
    ถูก backfill, FK `ON DELETE CASCADE` ยังทำงาน, รันซ้ำแล้วไม่เปลี่ยนอะไร
@@ -390,3 +428,12 @@ runtime ไม่ได้และไม่ควรพึ่งพา) — แ
    HTML แฝงมา (`<img src=x onerror=...>` ออกมาเป็นข้อความ ไม่ใช่ element)
 7. การติดตั้งจาก repo สาธารณะจริงที่มี `dracondex-plugin.json` (network เต็มรูปแบบ
    ตั้งแต่ต้นจนจบ) ยังต้องตรวจสอบด้วยมือ — สภาพแวดล้อม CI ไม่มี repo แบบนั้นให้ยิง
+   `pluginInstall`/`pluginPreview` require `electron` ตรงๆ (ผ่าน `./core`) จึง
+   เรียกจาก `node --test` ล้วนๆ ไม่ได้ **`dependencies[]` (§1.8) ตรวจแล้วด้วยมือ
+   จริง (2026-08-12, `run-dracondex` web-driver)** ต่อ repo สาธารณะจริง 3 ตัว
+   (`DraconDex-Plugin-Claude`/`-Ollama` ที่ branch ประกาศ `dependencies` ชี้ไป
+   `DraconDex-Plugin-Native`): พรีวิวโชว์บล็อก "ติดตั้งมาด้วย" พร้อม
+   `alreadyInstalled` ที่ถูกต้อง, ยืนยันครั้งเดียวติดตั้งทั้งคู่
+   (`pluginList()` คืนทั้ง `claude_chat` และ dependency), ติดตั้งปลั๊กอิน AI ตัว
+   ที่สอง (`ollama_chat`) แล้ว dependency ที่มีอยู่แล้วถูกข้ามจริง — ไม่มีแถวซ้ำ
+   ไม่มี error

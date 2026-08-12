@@ -9,7 +9,7 @@ import { createRequire } from 'node:module';
 const require_ = createRequire(import.meta.url);
 const {
   parseRepoUrl, validateManifest, rawUrl,
-  manifestPanels, manifestNetOrigins, manifestContextKinds, netOriginAllowed,
+  manifestPanels, manifestNetOrigins, manifestContextKinds, manifestDependencies, netOriginAllowed,
 } = require_('../src/db/plugin-manifest.js');
 
 test('parseRepoUrl accepts every shape a user can copy out of GitHub', () => {
@@ -264,4 +264,38 @@ test('manifest readers drop anything malformed rather than trusting the stored r
   assert.deepEqual(manifestNetOrigins({ permissions: { net: ['http://x.test'] } }), []);
   assert.deepEqual(manifestContextKinds(panelManifest()), ['module']);
   assert.deepEqual(manifestContextKinds({ permissions: { context: ['module', 'secrets'] } }), ['module']);
+});
+
+// --- v4.8.0: dependencies ---------------------------------------------------
+// Another plugin (by repo URL) this one wants auto-installed alongside it —
+// the AI chat plugins use this to pull in AI Native. Same URL shapes as the
+// paste-a-link install box, since parseRepoUrl is reused verbatim; actually
+// installing them (src/db/plugin.js, not covered here — it needs electron+DB)
+// is exercised manually per docs/PLUGINS.md §2.7.
+test('validateManifest accepts and rejects "dependencies"', () => {
+  const withDeps = (dependencies) => validateManifest({ ...goodManifest(), dependencies });
+
+  assert.equal(validateManifest(goodManifest()).ok, true, 'omitted entirely is still valid');
+  assert.equal(withDeps(['acme/other-plugin']).ok, true, 'shorthand owner/repo is accepted');
+  assert.equal(withDeps(['https://github.com/acme/other-plugin']).ok, true);
+  assert.equal(withDeps(['https://gitlab.com/acme/team/other-plugin']).ok, true, 'nested GitLab namespace');
+  assert.equal(withDeps([]).ok, true, 'an empty array is valid');
+
+  assert.equal(withDeps('acme/other-plugin').ok, false, 'must be an array');
+  assert.equal(withDeps([123]).ok, false, 'entries must be strings');
+  assert.equal(withDeps(['']).ok, false);
+  assert.equal(withDeps(['not a url']).ok, false, 'must parse like a repo URL');
+  assert.equal(withDeps(['https://evil.com/acme/repo']).ok, false, 'same host allowlist as install');
+  assert.equal(withDeps(['acme/x', 'acme/x']).ok, false, 'duplicate dependency');
+  assert.equal(withDeps(['acme/x', 'ACME/X']).ok, false, 'duplicate check is case-insensitive');
+  assert.equal(withDeps(['acme/x', 'github.com/acme/x']).ok, false, 'same repo via a different URL shape is still a duplicate');
+  assert.equal(withDeps(Array.from({ length: 6 }, (_, i) => `acme/plugin-${i}`)).ok, false, 'too many dependencies');
+  assert.equal(withDeps(Array.from({ length: 5 }, (_, i) => `acme/plugin-${i}`)).ok, true, 'exactly the max is fine');
+});
+
+test('manifestDependencies reads back a stored manifest\'s dependency URLs', () => {
+  assert.deepEqual(manifestDependencies({}), []);
+  assert.deepEqual(manifestDependencies({ dependencies: ['acme/x', 'acme/y'] }), ['acme/x', 'acme/y']);
+  assert.deepEqual(manifestDependencies({ dependencies: ['acme/x', '', 42, null] }), ['acme/x'], 'malformed entries dropped, not surfaced');
+  assert.deepEqual(manifestDependencies({ dependencies: 'acme/x' }), [], 'must be an array');
 });

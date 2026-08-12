@@ -42,6 +42,10 @@ const MAX_NET_ORIGINS = 10;
 // a second context kind doesn't change the manifest shape.
 const CONTEXT_KINDS = new Set(['module']);
 const MAX_CONTEXT_KINDS = CONTEXT_KINDS.size;
+// Other plugins (by repo URL, same shapes §1.1 accepts) this one wants
+// installed alongside it — see §1.8. Small cap: this is for "the AI plugins
+// share a common capability plugin", not a general package manager.
+const MAX_DEPENDENCIES = 5;
 
 // The manifest filename is looked up in this order, so a repo written for the
 // pre-v4.2.0 "extension" naming still installs unchanged.
@@ -145,9 +149,33 @@ function validatePermissions(permissions) {
   return { ok: true };
 }
 
+// `dependencies` (v4.8.0): other plugins to auto-install alongside this one —
+// see §1.8. Each entry is a repo URL in any shape §1.1 accepts; parseRepoUrl
+// is the same parser the paste-a-link install box uses, so anything a human
+// could paste there a manifest can name here. Deliberately NOT recursive: a
+// dependency's own "dependencies" are never consulted (pluginInstall in
+// src/db/plugin.js resolves exactly one level), so no chain can form and there
+// is no cycle to detect.
+function validateDependencies(dependencies) {
+  if (dependencies == null) return { ok: true };
+  if (!Array.isArray(dependencies) || dependencies.length > MAX_DEPENDENCIES) {
+    return { ok: false, error: `"dependencies" must be an array of at most ${MAX_DEPENDENCIES} entries` };
+  }
+  const seen = new Set();
+  for (const dep of dependencies) {
+    if (typeof dep !== 'string' || !dep.trim()) return { ok: false, error: `invalid dependency: ${dep}` };
+    const parsed = parseRepoUrl(dep);
+    if (!parsed.ok) return { ok: false, error: `invalid dependency url: ${dep}` };
+    const key = `${parsed.host}/${parsed.owner}/${parsed.repo}`.toLowerCase();
+    if (seen.has(key)) return { ok: false, error: `duplicate dependency: ${dep}` };
+    seen.add(key);
+  }
+  return { ok: true };
+}
+
 function validateManifest(manifest) {
   if (!manifest || typeof manifest !== 'object') return { ok: false, error: 'manifest is not an object' };
-  const { id, name, version, entry, files, tables, panels, permissions } = manifest;
+  const { id, name, version, entry, files, tables, panels, permissions, dependencies } = manifest;
 
   if (!PLUGIN_ID_RE.test(String(id || ''))) return { ok: false, error: 'invalid or missing "id"' };
   if (!name || typeof name !== 'string' || name.length > 80) return { ok: false, error: 'invalid or missing "name"' };
@@ -191,6 +219,8 @@ function validateManifest(manifest) {
   if (!panelCheck.ok) return panelCheck;
   const permCheck = validatePermissions(permissions);
   if (!permCheck.ok) return permCheck;
+  const depsCheck = validateDependencies(dependencies);
+  if (!depsCheck.ok) return depsCheck;
 
   return { ok: true };
 }
@@ -219,6 +249,11 @@ function manifestContextKinds(manifest) {
   const context = manifest?.permissions?.context;
   if (!Array.isArray(context)) return [];
   return context.filter((k) => CONTEXT_KINDS.has(k));
+}
+
+function manifestDependencies(manifest) {
+  if (!Array.isArray(manifest?.dependencies)) return [];
+  return manifest.dependencies.filter((d) => typeof d === 'string' && d.trim());
 }
 
 // The single yes/no a pluginApi.net.* call is gated on. Compares ORIGINS, never
@@ -351,7 +386,7 @@ module.exports = {
   REPO_SEG_RE, COL_TYPES, RESERVED_COLS,
   MAX_TABLES_PER_PLUGIN, MAX_COLS_PER_TABLE, MAX_FILES, MAX_FILE_BYTES,
   MANIFEST_NAMES, REF_CANDIDATES,
-  PANEL_ID_RE, MAX_PANELS, MAX_NET_ORIGINS, CONTEXT_KINDS,
+  PANEL_ID_RE, MAX_PANELS, MAX_NET_ORIGINS, CONTEXT_KINDS, MAX_DEPENDENCIES,
   validateManifest, parseRepoUrl, rawUrl,
-  manifestPanels, manifestNetOrigins, manifestContextKinds, netOriginAllowed,
+  manifestPanels, manifestNetOrigins, manifestContextKinds, manifestDependencies, netOriginAllowed,
 };
