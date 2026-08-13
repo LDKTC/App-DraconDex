@@ -14,6 +14,7 @@ const os = require('os');
 const path = require('path');
 const { app } = require('electron');
 const { getAppSetting, setAppSetting } = require('./versions');
+const { getSecret, setSecret } = require('./secret-store');
 const { exportDatabaseTo, importDatabaseMerge } = require('./import-merge');
 const { makePkcePair, makeState, runOAuthLoopback } = require('./oauth-loopback');
 
@@ -36,14 +37,14 @@ const apiBase = () => (IS_DEV ? devUrl : 'https://www.googleapis.com');
 // pattern as sync.js's sync:url/sync:anonKey.
 // ---------------------------------------------------------------------------
 function getDriveConfig() {
-  const clientId = getAppSetting('drive:clientId') || '';
-  const clientSecret = getAppSetting('drive:clientSecret') || '';
+  const clientId = getSecret('drive:clientId') || '';
+  const clientSecret = getSecret('drive:clientSecret') || '';
   return { clientId, clientSecret, configured: IS_DEV || !!(clientId && clientSecret), dev: IS_DEV };
 }
 
 function setDriveConfig(clientId, clientSecret) {
-  setAppSetting('drive:clientId', String(clientId || '').trim());
-  setAppSetting('drive:clientSecret', String(clientSecret || '').trim());
+  setSecret('drive:clientId', String(clientId || '').trim());
+  setSecret('drive:clientSecret', String(clientSecret || '').trim());
   return { ok: true };
 }
 
@@ -63,7 +64,7 @@ async function driveConnect() {
   if (IS_DEV) {
     await ensureDevBackend();
     const email = 'dev-drive@local.test';
-    setAppSetting(DRIVE_REFRESH_KEY, 'dev-drive-token');
+    setSecret(DRIVE_REFRESH_KEY, 'dev-drive-token');
     setAppSetting(DRIVE_EMAIL_KEY, email);
     memDriveToken = { accessToken: 'dev-drive-token', exp: Infinity };
     return { ok: true, email };
@@ -109,7 +110,7 @@ async function driveConnect() {
   const data = await res.json();
   if (!data.refresh_token) return { ok: false, code: 'no_refresh_token' };
   memDriveToken = { accessToken: data.access_token, exp: Date.now() + (data.expires_in || 3600) * 1000 };
-  setAppSetting(DRIVE_REFRESH_KEY, data.refresh_token);
+  setSecret(DRIVE_REFRESH_KEY, data.refresh_token);
 
   let email = '';
   try {
@@ -125,7 +126,7 @@ async function driveConnect() {
 
 async function driveDisconnect() {
   if (!IS_DEV) {
-    const refreshToken = getAppSetting(DRIVE_REFRESH_KEY);
+    const refreshToken = getSecret(DRIVE_REFRESH_KEY);
     if (refreshToken) {
       try {
         await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(refreshToken)}`, {
@@ -135,7 +136,7 @@ async function driveDisconnect() {
       } catch (_) { /* best-effort */ }
     }
   }
-  setAppSetting(DRIVE_REFRESH_KEY, '');
+  setSecret(DRIVE_REFRESH_KEY, '');
   setAppSetting(DRIVE_EMAIL_KEY, '');
   memDriveToken = null;
   return { ok: true };
@@ -151,7 +152,7 @@ async function driveEnsureAccessToken() {
   await ensureDevBackend();
   if (IS_DEV) return memDriveToken ? memDriveToken.accessToken : null;
   if (memDriveToken && memDriveToken.exp > Date.now() + 5000) return memDriveToken.accessToken;
-  const refreshToken = getAppSetting(DRIVE_REFRESH_KEY);
+  const refreshToken = getSecret(DRIVE_REFRESH_KEY);
   if (!refreshToken) { memDriveToken = null; return null; }
   const { clientId, clientSecret } = getDriveConfig();
   if (!clientId || !clientSecret) return null;
@@ -170,14 +171,14 @@ async function driveEnsureAccessToken() {
   }
   if (!res.ok) {
     if (res.status === 400 || res.status === 401) {
-      setAppSetting(DRIVE_REFRESH_KEY, '');
+      setSecret(DRIVE_REFRESH_KEY, '');
       memDriveToken = null;
     }
     return null;
   }
   const data = await res.json();
   memDriveToken = { accessToken: data.access_token, exp: Date.now() + (data.expires_in || 3600) * 1000 };
-  if (data.refresh_token) setAppSetting(DRIVE_REFRESH_KEY, data.refresh_token);
+  if (data.refresh_token) setSecret(DRIVE_REFRESH_KEY, data.refresh_token);
   return memDriveToken.accessToken;
 }
 
@@ -320,7 +321,7 @@ function driveGetBackupLog() {
 
 async function driveStatus() {
   const { configured } = getDriveConfig();
-  const connected = IS_DEV ? !!memDriveToken : !!getAppSetting(DRIVE_REFRESH_KEY);
+  const connected = IS_DEV ? !!memDriveToken : !!getSecret(DRIVE_REFRESH_KEY);
   const out = {
     ok: true, configured, dev: IS_DEV, connected,
     email: connected ? (getAppSetting(DRIVE_EMAIL_KEY) || '') : '',

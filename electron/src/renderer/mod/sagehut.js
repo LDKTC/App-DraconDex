@@ -106,9 +106,9 @@ function buildSageHutLinkerListHtml(d) {
     <thead><tr><th>${t('relFrom')}</th><th data-no-i18n>[[link]]</th><th>${t('relTo')}</th></tr></thead>
     <tbody>${d.linkRows.map(r => `
       <tr>
-        <td class="lk" onclick="openEntityByKey('${x(r.from.key)}')">${x(r.from.name)} <small data-no-i18n>${x(r.from.type)}</small></td>
+        <td class="lk" onclick="openEntityByKey(${xj(r.from.key)})">${x(r.from.name)} <small data-no-i18n>${x(r.from.type)}</small></td>
         <td data-no-i18n>[[${x(r.text)}]]</td>
-        <td ${r.to ? `class="lk" onclick="openEntityByKey('${x(r.to.key)}')"` : 'class="ghost"'}>${r.to ? `${x(r.to.name)} <small data-no-i18n>${x(r.to.type)}</small>` : '—'}</td>
+        <td ${r.to ? `class="lk" onclick="openEntityByKey(${xj(r.to.key)})"` : 'class="ghost"'}>${r.to ? `${x(r.to.name)} <small data-no-i18n>${x(r.to.type)}</small>` : '—'}</td>
       </tr>`).join('') || `<tr><td colspan="3" class="ghost">—</td></tr>`}
     </tbody></table>`;
 }

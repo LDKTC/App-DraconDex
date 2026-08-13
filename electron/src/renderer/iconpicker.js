@@ -53,7 +53,7 @@ async function iconPicker(selIcon, selColorId, previewName, previewKind) {
       ${ICON_PICKER_KEYS.map(k => `<div class="ipk-cell${selKey===k?' sel':''}" data-name="${k}" onclick="pickIconPickerIcon(this,'${k}')" title="${k}">${I[k]}</div>`).join('')}
     </div>
     <div class="ipk-grid" id="ipk-symbol-grid" style="display:none">
-      ${symbols.map(s => `<div class="ipk-cell ipk-symbol${selSym===s.glyph?' sel':''}" data-name="${x((s.label||'').toLowerCase())}" onclick="pickIconPickerSymbol(this,'${x(s.glyph).replace(/'/g,"\\'")}')" title="${x(s.label||'')}">${x(s.glyph)}</div>`).join('')}
+      ${symbols.map(s => `<div class="ipk-cell ipk-symbol${selSym===s.glyph?' sel':''}" data-name="${x((s.label||'').toLowerCase())}" onclick="pickIconPickerSymbol(this,${xj(s.glyph)})" title="${x(s.label||'')}">${x(s.glyph)}</div>`).join('')}
     </div>
     <div class="ipk-grid" id="ipk-upload-pane" style="display:none">${icropUploadPromptHtml()}</div>
     <input type="file" accept="image/*" id="icrop-file-input" style="display:none" onchange="handleIconUpload(this)">

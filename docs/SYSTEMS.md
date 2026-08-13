@@ -905,6 +905,98 @@ style)
 
 ---
 
+## 10.9 ความปลอดภัย (security hardening, v4.7.6)
+
+รอบตรวจความปลอดภัยเต็มรูปแบบ (process config / renderer injection / plugin +
+Drive + secrets) พบว่าโครงเดิม**แน่นอยู่แล้วในจุดคลาสสิกส่วนใหญ่** —
+`contextIsolation: true` + `nodeIntegration: false` ทุกหน้าต่าง, contextBridge
+ระบุฟังก์ชันครบทุกตัวไม่มีช่องทางทั่วไป, SQL ผูก parameter ทั้งหมด,
+`will-attach-webview` ตรวจเข้มจริง, `markdown.js` escape ครบและกัน scheme ที่
+ไม่ใช่ `http(s)` และ**ไม่มี credential ฝังในซอร์สเลย**
+
+สิ่งที่แก้ในรอบนี้คือ chain ที่ต่อกันได้จริง 1 เส้น + ชั้นจำกัดความเสียหายที่ยังขาด
+
+### 10.9.1 chain ที่ปิดไป
+
+1. `update.js` อ่าน Firestore ของโปรเจกต์ `dracondex-app` ที่ในซอร์สเขียนกำกับว่า
+   `TODO(maintainer): real Firebase project id` → ใครจดชื่อนี้ก็คุม
+   `version`/`notes`/`url` ของทุกเครื่องที่ติดตั้งแอป
+2. `url` นั้นถูกแทรกลง `onclick="updateDownloadClick('${x(r.url)}')"` และ `x()`
+   **ไม่ escape `'`** → หลุดออกจาก JS string literal ได้
+3. โค้ดที่หลุดออกมารันใน renderer หลักซึ่งถือ `window.api` ทั้งชุด และ
+   `setting:get` เป็นช่อง K/V ทั่วไปไม่จำกัด key →
+   `api.setting.get('drive:refreshToken')` คืน refresh token ของ Google
+4. ไม่มี CSP, ไม่มี `setWindowOpenHandler`/`will-navigate` ระดับหน้าต่าง,
+   ไม่มี permission handler → ไม่มีอะไรจำกัดผลที่ตามมา
+
+แก้ทั้ง 4 จุด: ย้าย trust root ไป GitHub Releases พร้อมตรวจทุก field
+(ดู `docs/UPDATE.md` §2.3), ให้ `x()` escape `'` และเพิ่ม `xj()` สำหรับ
+JS-argument context, ทำ allowlist ของ `setting:get/set`, และเติมชั้นจำกัด
+ความเสียหายทั้งหมด
+
+### 10.9.2 `x()` กับ `xj()` — ทำไมต้องมีสองตัว
+
+`x()` ใช้กับ **text / attribute value**; `xj()` ใช้กับ **ค่าที่ส่งเป็น argument
+ของ inline handler**:
+
+```js
+onclick="openThing(${xj(name)})"     // ถูก — ไม่มี quote ล้อม
+onclick="openThing('${x(name)}')"    // ผิด — แทรกโค้ดได้
+```
+
+รูปแบบที่สองแก้ด้วยการ escape `'` **ไม่ได้** เพราะ HTML parser decode entity
+*ก่อน* JS parser จะอ่าน — `&#39;` กลายเป็น `'` แล้วปิด string literal อยู่ดี
+ทางแก้เดียวคือปล่อย JS literal ที่สมบูรณ์ออกมา (`JSON.stringify` แล้วค่อย `x()`)
+
+**ข้อควรระวังตอนแก้:** ก่อนหน้านี้มี 3 จุดที่แก้ปัญหานี้ด้วยมือแบบ
+`x(v).replace(/'/g,"\\'")` (`iconpicker.js`, `mod/classifier.js`,
+`core/pickers.js`) — พอ `x()` escape `'` เองแล้ว `.replace` จะหาไม่เจอและ
+**กลับมาพังใหม่** ทั้งสามจุดจึงต้องเปลี่ยนเป็น `xj()` พร้อมกันในคอมมิตเดียว
+
+รอบนี้แปลงเฉพาะจุดที่รับข้อมูลจาก network / ไฟล์ที่ import / ข้อความอิสระของ
+ผู้ใช้ (~30 จุด) ไม่ได้กวาดครบทั้ง 88 จุดที่ใช้รูปแบบนี้
+
+### 10.9.3 ชั้นจำกัดความเสียหาย
+
+| กลไก | ที่อยู่ | ครอบอะไร |
+|---|---|---|
+| `app.on('web-contents-created')` | `main.js` | `setWindowOpenHandler` ปฏิเสธทุกกรณี + `will-navigate` ยอมเฉพาะ `index.html` ของแอปเอง หรือไฟล์ในโฟลเดอร์ของ plugin นั้น — เดิม guard มีแค่ webview guest ทำให้ **หน้าต่าง plugin ย้ายตัวเองไป origin ระยะไกลแล้วยังถือ `pluginApi` อยู่ได้** |
+| `partition: persist:plugin-<key>` | `main.js` | หน้าต่าง plugin ใช้ session แยกเหมือนที่ panel ใช้อยู่แล้ว (เดิมใช้ session เดียวกับแอป) |
+| `setPermissionRequestHandler`/`CheckHandler` | `main.js` | ปฏิเสธ permission ทุกชนิดทั้ง default session และ `persist:plugin-*` |
+| CSP `<meta>` | `index.html` | ต้องเป็น meta tag ไม่ใช่ `onHeadersReceived` เพราะหน้าโหลดด้วย `loadFile()` = `file://` ไม่มี HTTP header ให้แก้ |
+
+**CSP นี้ทำอะไรได้จริงแค่ไหน** — `script-src` ยังต้องมี `'unsafe-inline'`
+เพราะ boot script เป็น inline และ UI ทั้งแอปสร้างบน `onclick=` (~500 จุด)
+จึง**ไม่ได้กัน XSS จาก inline handler** ที่ได้จริงคือ `connect-src 'none'`
+(renderer ไม่ยิง network ตรงเลย — ทุกอย่างผ่าน `window.api` ไป main process
+จึงตั้งเป็น `'none'` ได้โดยไม่พังอะไร) ซึ่งตัดทางส่งข้อมูลออก, กันโหลด
+`<script src>` ระยะไกล, ปิด object/frame และกัน `<base>` hijack
+จะรัดกว่านี้ต้องย้าย inline handler ทั้งหมดไปเป็น delegated listener — คนละงาน
+
+### 10.9.4 path / URL ที่มาจาก renderer
+
+- `importdock:add` เดิมรับ absolute path **และ** `file_type` จาก renderer ตรงๆ
+  แล้วมี 3 ทางอ่านไฟล์นั้นกลับ (`readFile`, `readFiles`, `ddx-file://`) =
+  อ่านไฟล์อะไรก็ได้บนเครื่อง → ตอนนี้รับเฉพาะ path ที่อยู่ใต้ root ที่ผู้ใช้
+  เลือกผ่าน dialog จริง (`pickedImportRoots`, เทียบด้วย `path.relative`
+  ไม่ใช่ prefix) และ `type` คำนวณจากนามสกุลจริงฝั่ง main
+- `db:importMergeFile` ผูกกับ path ที่ `db:pickImportFile` คืนมาเท่านั้น
+- `sync:setConfig` ตรวจว่าเป็น `https:` (หรือ `http:` เฉพาะ loopback) ก่อนเก็บ —
+  ค่านี้คือปลายทางที่ token และ snapshot ทั้ง vault ถูกส่งไป
+
+### 10.9.5 credential ที่เก็บบนดิสก์
+
+`electron/src/db/secret-store.js` ห่อ `app_setting` ด้วย `safeStorage`
+(ดูรายละเอียดใน `docs/FILES.md`) — ค่าเก่าที่เป็น plaintext อ่านได้ปกติแล้ว
+เขียนทับเป็นแบบเข้ารหัสให้เอง ไม่ต้อง login ใหม่
+
+**ยังไม่ได้แก้ในรอบนี้ (ตั้งใจ):** `--no-sandbox` ยังเป็นระดับ process ทำให้
+`sandbox: true` ที่หน้าต่าง plugin ยังเป็นแค่ชื่อ, `drive:getConfig` ยังส่ง
+`clientSecret` ไปให้ renderer แสดงในช่อง input, งาน CI/workflow, การกวาด
+inline handler ที่เหลือ, และการเซ็น/ปักหมุด hash ของโค้ด plugin
+
+---
+
 ## 11. บั๊ก/จุดอ่อนที่รู้แล้ว (จากการรันทดสอบ 2026-07-04)
 
 1. **Crash แฝง** — [`electron/src/renderer/modals.js:159`](../electron/src/renderer/modals.js#L159)

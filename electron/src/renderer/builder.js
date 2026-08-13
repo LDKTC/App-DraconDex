@@ -496,15 +496,15 @@ function builderPaneHeadHtml(i, pane, focused) {
     // Draggable target is a plain div, not a native form control — matches
     // the Nest tree row's own element choice for its draggable rows.
     return `<div class="project-tab module-tab ${active && focused ? 'active' : active ? 'pane-active' : ''}"
-      draggable="true" data-tab-key="${x(key)}" ondragstart="onTabDragStart(event,${i},'${x(key)}')"
-      ondragover="onTabDragOver(event,this)" ondragleave="onTabDragLeave(event,this)" ondrop="onTabDrop(event,${i},'${x(key)}',this)"
-      ondragend="onTabDragEnd(event,${i},'${x(key)}')"
-      onclick="builderSwitchTab(${i},'${x(key)}')" title="${x(meta.name)}">
+      draggable="true" data-tab-key="${x(key)}" ondragstart="onTabDragStart(event,${i},${xj(key)})"
+      ondragover="onTabDragOver(event,this)" ondragleave="onTabDragLeave(event,this)" ondrop="onTabDrop(event,${i},${xj(key)},this)"
+      ondragend="onTabDragEnd(event,${i},${xj(key)})"
+      onclick="builderSwitchTab(${i},${xj(key)})" title="${x(meta.name)}">
       <span class="tab-kicon" style="color:${x(meta.color)}">${meta.icon || ''}</span>
       <span class="tab-name">${x(meta.name)}</span>
       <span class="ek" data-no-i18n>${S.settings.nestSignatureMode === 'icon' && meta.badgeIcon ? meta.badgeIcon : x(meta.badge)}</span>
-      ${S.isPopup ? `<span class="tab-close" onclick="event.stopPropagation();builderMoveTabToMain(${i},'${x(key)}')" title="${t('moveToMainWindow')}">${I.return}</span>` : ''}
-      <span class="tab-close" onclick="event.stopPropagation();builderCloseTab(${i},'${x(key)}')" title="${t('closeTab')}">&times;</span>
+      ${S.isPopup ? `<span class="tab-close" onclick="event.stopPropagation();builderMoveTabToMain(${i},${xj(key)})" title="${t('moveToMainWindow')}">${I.return}</span>` : ''}
+      <span class="tab-close" onclick="event.stopPropagation();builderCloseTab(${i},${xj(key)})" title="${t('closeTab')}">&times;</span>
     </div>`;
   }).join('');
   const isSplit = builderState().layoutTree.type === 'split';

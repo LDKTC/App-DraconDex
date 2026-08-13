@@ -306,7 +306,8 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | `designer.js` | 40 | ไดอะแกรมของ kind `designer` |
 | `viewer.js` | 90 | saved-filter lens ของ kind `viewer`/`connector` |
 | `importdock.js` | 55 | ตาราง `import_file` — ไฟล์นำเข้า + `linker_key` ผูก entity |
-| `versions.js` | 89 | `module_version`: `recordVersion`/`restoreVersion` (whitelist `RESTORE_OPS`), retention ตาม `app_setting.versionLimit` |
+| `versions.js` | 89 | `module_version`: `recordVersion`/`restoreVersion` (whitelist `RESTORE_OPS`), retention ตาม `app_setting.versionLimit`; ยังเป็นเจ้าของ `getAppSetting`/`setAppSetting` ที่ `secret-store.js` ห่ออีกชั้น |
+| `secret-store.js` | 77 | เข้ารหัส credential ที่เก็บใน `app_setting` ด้วย `safeStorage` — `getSecret`/`setSecret` + `SECRET_KEYS` (แหล่งความจริงเดียวที่ `main.js` ใช้ทำ allowlist ของ `setting:get/set` ด้วย) ค่าที่เข้ารหัสแล้วขึ้นต้นด้วย `enc:v1:`; ค่าเก่าที่เป็น plaintext อ่านได้ตามปกติแล้วเขียนทับเป็นแบบเข้ารหัสให้เอง (ไม่ต้องมีขั้น migration แยก) ถ้า OS ไม่มี keyring จะ fallback เป็น plaintext แทนที่จะ login ไม่ได้ |
 | `migrate_v3.js` | 223 | `migrateLegacy(nexusId,target,legacyId)` — map โปรเจกต์เก่า 1 อันเป็น Manager Major + Minor ที่ kind เหมาะสม แบบไม่แตะข้อมูลต้นทาง; `listLegacyProjects` ป้อนลิสต์ migrate ของ Artisan |
 | `nexus.js` (แก้ไข ไม่ใช่ไฟล์ใหม่) | 43 (เดิม ~41) | เหลือแค่ CRUD vault — logic module tree ทั้งหมดย้ายไป `module.js` แล้ว; `getNexuses`/`deleteNexus` นับรวมทั้ง project เดิม + module ระดับบนสุด |
 | `artisan.js` (แก้ไข) | ~7 | ฟังก์ชันสร้างจากเทมเพลตแบบ transaction เดียวเดิมถูกลบทิ้ง เหลือ `module.exports = {}` — wizard ใหม่เรียก `module:`/`classifier:`/`author:` ตรงๆ แทน |
@@ -615,6 +616,23 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   escape ข้อความผู้ใช้ทุกจุดก่อนแปะ HTML
 - `mdExtractWikilinks(text)` → `[{name,alias,start,end}]` — regex เดียวกับ
   `WIKILINK_RE` ใน `electron/src/db/wiki.js` (คอมเมนต์ทั้งสองฝั่งเตือนให้ sync กัน)
+
+### sanitize.js (104 บรรทัด, v4.7.6) — โหลดหลัง markdown.js ก่อน mdeditor.js
+- `sanitizeHtml(html)` — ตัวกรอง HTML แบบ allowlist บน `DOMParser` ไม่มี
+  dependency ภายนอก ใช้ที่เดียวคือ Author (`mod/author.js`) ซึ่งเป็นจุดเดียว
+  ในแอปที่เอา **HTML ดิบที่เก็บไว้** ไปใส่ `innerHTML` (ที่อื่นสร้าง markup จาก
+  ค่าที่ `x()` escape แล้ว หรือผ่าน `mdRender()` ซึ่ง escape ให้ตั้งแต่ต้นทาง)
+- `SANITIZE_ALLOWED_TAGS` เก็บแท็กที่ toolbar ของ Author สร้างได้จริง +
+  ที่ `mdRender` ปล่อยออกมา; `SANITIZE_DROP_TAGS` ลบทั้ง element และเนื้อใน
+  (`script/iframe/object/svg/math/form/...`); แท็กที่ไม่อยู่ในทั้งสองชุดจะถูก
+  unwrap (เก็บข้อความ ทิ้ง element)
+- attribute เหลือแค่ `class/colspan/rowspan/align/title` — `on*` ทุกตัวและ
+  `style` ถูกตัดทิ้งเสมอ; `href` ผ่าน `new URL()` แล้วต้องเป็น `http:`/`https:`
+  เท่านั้น (กัน `javascript:`/`data:` รวมถึงรูปแบบที่พรางด้วย entity/ช่องว่าง)
+- เดินโหนดจากลึกไปตื้นบน snapshot ของ `querySelectorAll('*')` ไม่ใช่ live tree
+  (การ unwrap ทำให้ `childNodes` เปลี่ยนกลางลูป) และ **normalize `tagName` เป็น
+  ตัวใหญ่ก่อนเทียบ** เพราะ SVG/MathML เป็น foreign content ที่ `tagName` เป็น
+  ตัวเล็ก — `<svg><script>` คือ `'script'` ไม่ใช่ `'SCRIPT'`
 
 ### mdeditor.js (267 บรรทัด, v2.8) — โหลดก่อน core.js
 - `createMarkdownEditor(container, opts)` — คอมโพเนนต์ editor กลาง reuse โดย

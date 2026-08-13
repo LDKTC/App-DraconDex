@@ -2,6 +2,32 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
+  <!-- Content-Security-Policy. Must be a meta tag, not a webRequest header:
+       this document is loaded with loadFile(), so it is a file:// page and has
+       no HTTP response headers for onHeadersReceived to rewrite.
+
+       Read this honestly: script-src needs 'unsafe-inline' because the boot
+       script below is inline and the whole UI is built on inline onclick=
+       handlers, so this policy does NOT stop inline-handler XSS. What it does
+       buy is real all the same — connect-src 'none' means a compromised
+       renderer has no way to phone data out (every network call in this app
+       goes through window.api to the main process, so nothing legitimate
+       breaks), remote <script src> can't be loaded, plugins/objects are off,
+       and <base> can't be hijacked to re-point relative URLs.
+       Tightening script-src further means migrating ~500 inline handlers to
+       delegated listeners — a separate job, not a quick win. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: blob: ddx-file:;
+    font-src 'self';
+    media-src 'self' blob: ddx-file:;
+    connect-src 'none';
+    object-src 'none';
+    frame-src 'none';
+    base-uri 'none';
+    form-action 'none';">
   <title>Novel Manager</title>
   <!-- style.css was split into css/ (Plan part1). ORDER IS BEHAVIOUR: these are
        contiguous slices of the old file and the cascade depends on them staying
@@ -320,6 +346,7 @@
   <script src="src/renderer/i18n.js"></script>
   <script>__splash.set(15)</script>
   <script src="src/renderer/markdown.js"></script>
+  <script src="src/renderer/sanitize.js"></script>
   <script src="src/renderer/mdeditor.js"></script>
   <!-- core.js was split into src/renderer/core/ (Plan part1). These are classic
        scripts sharing one global scope and each file is a verbatim slice of the

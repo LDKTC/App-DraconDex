@@ -280,7 +280,7 @@ function filterClassifierRecentNames() {
   const value = (q('#cr-name')?.value || '').trim().toLowerCase();
   const names = classifierRecentRelationNames().filter(n => !value || n.toLowerCase().includes(value));
   box.innerHTML = names.length
-    ? names.map(n => `<span class="htag-chip" style="cursor:pointer" onclick="q('#cr-name').value='${x(n).replace(/'/g, "\\'")}'">${x(n)}</span>`).join('')
+    ? names.map(n => `<span class="htag-chip" style="cursor:pointer" onclick="q('#cr-name').value=${xj(n)}">${x(n)}</span>`).join('')
     : '';
 }
 

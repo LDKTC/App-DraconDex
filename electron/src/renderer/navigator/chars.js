@@ -207,7 +207,7 @@ function buildObjectPickerHtml(pickId, objects) {
           <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${objs.length}</span>
         </div>
         <div class="np-group-items">
-          ${objs.map(o => `<div class="np-item" style="padding-left:42px" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${o.id},'${x(o.name)}')">${x(o.name)}</div>`).join('')}
+          ${objs.map(o => `<div class="np-item" style="padding-left:42px" onclick="event.stopPropagation();selectNovelFromPicker(${xj(pickId)},${o.id},${xj(o.name)})">${x(o.name)}</div>`).join('')}
         </div>
       </div>`;
     }

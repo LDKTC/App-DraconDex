@@ -104,9 +104,9 @@ function settingThemeGridCellHtml(key, name, vars, {active, isCustom, onclick, t
     </div>
     <div class="prefs-theme-name" data-no-i18n>${x(name)}</div>
     ${tools ? `<div class="prefs-theme-tools">
-      <span onclick="event.stopPropagation();duplicateTheme('${key}')" title="${t('duplicate')}">⧉</span>
-      ${isCustom ? `<span onclick="event.stopPropagation();openCustomThemeModal('${rawId}')" title="${t('edit')}">✎</span>
-                    <span onclick="event.stopPropagation();deleteCustomTheme('${rawId}')" title="${t('delete')}">×</span>` : ''}
+      <span onclick="event.stopPropagation();duplicateTheme(${xj(key)})" title="${t('duplicate')}">⧉</span>
+      ${isCustom ? `<span onclick="event.stopPropagation();openCustomThemeModal(${xj(rawId)})" title="${t('edit')}">✎</span>
+                    <span onclick="event.stopPropagation();deleteCustomTheme(${xj(rawId)})" title="${t('delete')}">×</span>` : ''}
     </div>` : ''}
     ${active ? '<span class="prefs-theme-check">✓</span>' : ''}
   </div>`;

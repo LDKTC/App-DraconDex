@@ -64,7 +64,7 @@ async function pluginRefreshOrgRepos() {
             <div class="sync-hint" data-no-i18n>${x(repo.description)}</div>
           </div>
           <div class="sync-upload-actions">
-            <button class="btn btn-s btn-sm" onclick="pluginInstallFromOrgRepo('${x(repo.url)}')">${t('pluginPreviewBtn')}</button>
+            <button class="btn btn-s btn-sm" onclick="pluginInstallFromOrgRepo(${xj(repo.url)})">${t('pluginPreviewBtn')}</button>
           </div>
         </div>`).join('')}
     </div>`;

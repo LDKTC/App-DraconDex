@@ -1,6 +1,7 @@
-# Firebase Version-Update Notice
+# GitHub Releases Version-Update Notice
 
-> สถานะ: ใช้งานได้ — เพิ่มเข้ามาในเวอร์ชัน 4.0.0 (2026-07-30)
+> สถานะ: ใช้งานได้ — เพิ่มเข้ามาในเวอร์ชัน 4.0.0 (2026-07-30),
+> ย้ายจาก Firebase Firestore มาเป็น GitHub Releases ในเวอร์ชัน 4.7.6 (2026-08-13)
 > **ไม่ใช่ auto-updater** — แค่แจ้งเตือนว่ามีเวอร์ชันใหม่ + ปุ่มเปิดหน้าดาวน์โหลด
 > ในเบราว์เซอร์ ไม่มีการติดตั้งอัตโนมัติ ไม่มี silent update
 
@@ -15,11 +16,11 @@
 - ต้อง **login แล้ว** — login เข้า Cloud Sync (Supabase) **หรือ** Google Drive
   Backup อย่างใดอย่างหนึ่งก็พอ (แอปนี้ยังไม่มีระบบบัญชีรวมศูนย์ ถือว่า login
   เข้าอันใดอันหนึ่งคือ "login แล้ว")
-- ทุกครั้งที่เปิดแอป ระบบเช็กเวอร์ชันล่าสุดจาก Firebase เงียบๆ — ถ้าเน็ตล่ม หรือ
+- ทุกครั้งที่เปิดแอป ระบบเช็ก release ล่าสุดจาก GitHub เงียบๆ — ถ้าเน็ตล่ม หรือ
   ยังไม่ login จะไม่มีอะไรเกิดขึ้น ไม่มี error แสดง
 - ถ้ามีเวอร์ชันใหม่กว่าที่ใช้อยู่ **และยังไม่เคยกด "เตือนภายหลัง" สำหรับ
   เวอร์ชันนั้น** จะขึ้นหน้าต่างแจ้งเตือน แสดงเลขเวอร์ชันใหม่ + release notes
-- กด **ดาวน์โหลด** — เปิดเบราว์เซอร์ไปหน้าดาวน์โหลด (ไม่ติดตั้งให้อัตโนมัติ)
+- กด **ดาวน์โหลด** — เปิดเบราว์เซอร์ไปหน้า release บน GitHub (ไม่ติดตั้งให้อัตโนมัติ)
 - กด **เตือนภายหลัง** — ปิดหน้าต่าง จะไม่เตือนซ้ำสำหรับเวอร์ชันนั้นอีก (แต่ถ้ามี
   เวอร์ชันใหม่กว่านั้นออกมาอีก จะเตือนใหม่)
 
@@ -36,39 +37,52 @@ Renderer (electron/src/renderer/update.js — initVersionCheck() เรียก
    ▼
 Main process IPC 'update:*' (electron/main.js) → electron/src/db/update.js
    │ syncAuthStatus() (sync.js) + driveStatus() (drive.js) — เช็ก login
-   │ fetch() ตรงไปที่ Firestore REST API — ไม่มี firebase SDK
+   │ fetch() ตรงไปที่ GitHub REST API — ไม่มี SDK
    ▼
-Firestore (โปรเจกต์เดียว ของผู้ดูแลแอปเอง):
-GET /v1/projects/{id}/databases/(default)/documents/public_config/latest_version
-(ไม่ต้องใช้ credential ใดๆ — เอกสารนี้ตั้งเป็น public read เท่านั้น)
+GET https://api.github.com/repos/LDKTC/App-DraconDex/releases/latest
+(ไม่ต้องใช้ credential — repo เป็น public; /releases/latest ข้าม draft
+ และ prerelease ให้อยู่แล้ว)
 ```
 
-### 2.2 ทำไม Project ID เป็นค่าคงที่ ไม่ใช่ app_setting
+### 2.2 ทำไมย้ายจาก Firestore มา GitHub Releases
 
-ต่างจาก Supabase (`sync:url`/`sync:anonKey`) และ Google Drive
-(`drive:clientId`/`drive:clientSecret`) ที่เป็นค่าที่ operator ของแต่ละ
-deployment ต้องตั้งเอง (เพราะแต่ละที่อาจต่อ backend คนละอันกัน) — โปรเจกต์
-Firebase นี้มีเพียง**อันเดียว**ที่ทุกเครื่องที่ติดตั้งแอปนี้อ่านค่าเดียวกันหมด
-ไม่มีอะไรให้ operator ตั้งค่าเอง จึงเก็บเป็น `const FIRESTORE_PROJECT_ID` ใน
-`electron/src/db/update.js` แทนที่จะเป็น setting ที่แก้ได้ตอน runtime
+โค้ดเดิมอ่าน Firestore doc ของโปรเจกต์ `dracondex-app` ซึ่งในซอร์สมีคอมเมนต์
+กำกับไว้ว่า `TODO(maintainer): real Firebase project id` — คือ **ยังไม่ได้
+จดทะเบียนจริง** ปัญหาคือ Firebase project id เป็น namespace ระดับโลกแบบ
+ใครจดก่อนได้ก่อน ถ้า id นั้นไม่ได้เป็นของผู้ดูแลแอปจริง ใครก็ตามที่ไปจดชื่อนี้
+จะกลายเป็นคนกำหนดค่า `version` / `notes` / `url` ที่ทุกเครื่องที่ติดตั้งแอปนี้
+เชื่อถือ — และ `url` นั้นถูกส่งต่อไปยัง `shell.openExternal()`
 
-### 2.3 เอกสาร Firestore + Security Rule (ตั้งค่าครั้งเดียวโดยผู้ดูแลแอป)
+GitHub Releases ย้าย trust root มาอยู่ที่ repo ที่โปรเจกต์เป็นเจ้าของอยู่แล้ว
+ไม่ต้องดูแล backend เพิ่ม และ release ที่ตัดผ่าน `build-release-git` skill
+ก็กลายเป็นแหล่งข้อมูลเดียวกันโดยอัตโนมัติ
 
-Path: `public_config/latest_version`, fields: `version` (string), `notes`
-(string, release notes ภาษาเดียว ไม่รองรับหลายภาษา — YAGNI), `url` (string,
-ลิงก์ดาวน์โหลด)
+`REPO` ยังคงเป็นค่าคงที่ในซอร์ส (ไม่ใช่ app_setting) ด้วยเหตุผลเดิม — ต่างจาก
+`sync:url`/`drive:clientId` ที่ operator แต่ละ deployment ต้องตั้งเอง
+โปรเจกต์นี้มี repo เดียวที่ทุกเครื่องอ่านค่าเดียวกันหมด **ผู้ที่ fork ต้องแก้
+ค่านี้เป็น repo ของตัวเอง** ไม่งั้นจะได้รับแจ้งเตือน release ของ upstream
 
-Firestore Security Rule ที่ path นี้:
-```
-allow read: if true;
-allow write: if false;
-```
-ทำให้ REST GET ไม่ต้องใช้ API key/credential ใดๆ เลย — แต่ **ต้องแก้ค่าผ่าน
-Firebase Console เท่านั้น** (ไม่มี write path ที่แอปหรือใครเข้าถึงได้)
+### 2.3 ไม่เชื่อ response — ตรวจทุก field
 
-Response shape ของ Firestore REST เป็นแบบ wrapped:
-`{fields: {version: {stringValue: "..."}}, ...}` — parse ผ่าน
-`json.fields.<name>.stringValue`
+`parseGithubRelease()` ถือว่า response เป็นข้อมูลจากภายนอกทั้งหมด:
+
+| field | ที่มา | การตรวจ |
+|---|---|---|
+| `version` | `tag_name` ตัด `v` นำหน้า | ต้องตรงกับ `/^\d+(\.\d+){0,3}$/` ไม่งั้นคืน `null` (= ไม่มีอัปเดต) |
+| `url` | `html_url` | ต้องขึ้นต้นด้วย `https://github.com/LDKTC/App-DraconDex/releases/` ไม่งั้นตกกลับไปใช้ prefix นั้นตรงๆ |
+| `notes` | `body` | ตัดที่ 4000 ตัวอักษร |
+
+ที่ต้องตรึง **ทั้ง host และ path prefix** เพราะตรึงแต่ host ไม่พอ —
+`https://github.com/evil/repo/releases/...` ก็ยังเป็น github.com
+
+`openUpdateDownload()` ตรวจ prefix เดิมซ้ำอีกรอบก่อน `shell.openExternal()`
+เพราะ URL เดินทางผ่าน renderer ไปกลับ — เดิมเช็กแค่ `^https?://` ซึ่งแปลว่า
+renderer ที่ถูกยึดสามารถสั่งเปิดเว็บอะไรก็ได้
+
+ฝั่ง renderer (`electron/src/renderer/update.js`) **ไม่เอาค่าจาก network ไปแทรก
+ใน inline handler อีกแล้ว** — เดิมเป็น `onclick="updateDownloadClick('${x(r.url)}')"`
+ซึ่ง `x()` ไม่ escape `'` จึงหลุดออกจาก JS string literal ได้ ตอนนี้เก็บ release
+ไว้ในตัวแปรระดับโมดูล (`_pendingUpdate`) แล้วปุ่มเรียกฟังก์ชันแบบไม่มี argument
 
 ### 2.4 การเปรียบเทียบเวอร์ชัน
 
@@ -80,10 +94,14 @@ package semver เพราะ logic สั้นพอที่จะเขี�
 ### 2.5 ทนต่อความล้มเหลว
 
 `checkForUpdate()` **ไม่ throw เด็ดขาด** — เน็ตล่ม, response ไม่ใช่ 200, JSON
-parse ไม่ได้, field ขาด, หรือแม้แต่ error ตอนเช็ก login ก็ตกไปที่
+parse ไม่ได้, field ขาด, tag รูปแบบผิด, หรือแม้แต่ error ตอนเช็ก login ก็ตกไปที่
 `{ok:true, available:false}` ทั้งหมด ตรงตาม convention เดิมของ
-`sync.js`/`drive.js` ("public function ไม่ throw") — ผู้ใช้ที่ไม่มีเน็ตหรือ
-ยังไม่ตั้งโปรเจกต์ Firebase จะไม่เห็น error toast ทุกครั้งที่เปิดแอป
+`sync.js`/`drive.js` ("public function ไม่ throw") — ผู้ใช้ที่ไม่มีเน็ตจะไม่เห็น
+error toast ทุกครั้งที่เปิดแอป
+
+หมายเหตุ: GitHub API แบบไม่ใส่ token จำกัดที่ 60 request/ชั่วโมง/IP ซึ่งเหลือ
+เฟือสำหรับการเช็กครั้งเดียวต่อการเปิดแอป และถ้าโดน rate limit ก็ตกไปที่
+"ไม่มีอัปเดต" ตามปกติ request ต้องมี `User-Agent` ไม่งั้น GitHub ปฏิเสธ
 
 ### 2.6 โหมด dev — ไม่มี mock server แยก
 
@@ -97,8 +115,13 @@ doc ปลอมในหน่วยความจำ; ตัวแปรแ�
 
 ### 2.7 การทดสอบ
 
-ทดสอบผ่าน `run-dracondex` driver: บังคับ `DDX_DEV_UPDATE_VERSION=99.0.0` +
-fake-login (`api.sync.googleLogin()`) → `api.update.check()` ต้องได้
+`electron/test/update-release.test.mjs` ครอบส่วน parse ทั้งหมด — payload จริงจาก
+GitHub, tag ที่รูปแบบผิด, `html_url` ที่ชี้ออกนอก repo (รวม
+`https://github.com.evil.example/...`), การตัดความยาว notes, และกันไม่ให้
+endpoint Firestore เดิมกลับมา
+
+ทดสอบ end-to-end ผ่าน `run-dracondex` driver: บังคับ `DDX_DEV_UPDATE_VERSION=99.0.0`
++ fake-login (`api.sync.googleLogin()`) → `api.update.check()` ต้องได้
 `available:true` → เปิด modal → screenshot → กด "เตือนภายหลัง" → เช็กซ้ำต้อง
 ได้ `dismissed:true` สำหรับเวอร์ชันเดิม; และยืนยันว่า launch ปกติ (ไม่ตั้ง
 env var, ไม่ login) จะไม่มี modal ขึ้นเลย

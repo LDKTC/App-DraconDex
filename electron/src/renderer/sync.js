@@ -84,7 +84,10 @@ async function syncSaveConfig() {
   const url = q('#sync-url').value.trim();
   const key = q('#sync-anon-key').value.trim();
   if (!url || !key) return;
-  await api.sync.setConfig(url, key);
+  // setConfig rejects anything that isn't https (or loopback for dev), since
+  // this URL is where tokens and the whole vault snapshot get sent.
+  const res = await api.sync.setConfig(url, key);
+  if (res && res.ok === false) { toast(t('syncErrBadUrl'), 'err'); return; }
   toast(t('syncConfigSaved'), 'ok');
   openSyncModal();
 }
@@ -126,8 +129,8 @@ function syncUploadRowHtml(u, st) {
         <div class="sync-hint">${syncFmtSize(u.sizeBytes)} · ${t('syncExpires')} ${syncFmtTime(u.expiresAt)}</div>
       </div>
       <div class="sync-upload-actions">
-        <button class="btn btn-s btn-sm" onclick="syncPullOwnNow('${x(u.vaultId)}')">${t('syncPullIn')}</button>
-        <button class="btn btn-d btn-sm" onclick="syncDeleteUploadNow('${x(u.vaultId)}')">${t('delete')}</button>
+        <button class="btn btn-s btn-sm" onclick="syncPullOwnNow(${xj(u.vaultId)})">${t('syncPullIn')}</button>
+        <button class="btn btn-d btn-sm" onclick="syncDeleteUploadNow(${xj(u.vaultId)})">${t('delete')}</button>
       </div>
     </div>`;
 }

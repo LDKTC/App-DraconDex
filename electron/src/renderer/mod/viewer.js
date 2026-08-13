@@ -160,7 +160,7 @@ function buildViewerMainHtml(m) {
 // ── Table view (mockup 14) ──────────────────────────────────────────────
 function buildViewerTableHtml(d) {
   const rows = d.items.map(it => `
-    <tr onclick="openViewerItem('${x(it.key)}',${it.moduleId})">
+    <tr onclick="openViewerItem(${xj(it.key)},${it.moduleId})">
       <td><span class="dot" style="background:${x(it.color || 'var(--accent)')}"></span> ${x(it.name)}</td>
       <td>${x(it.moduleName)}</td>
       <td data-no-i18n>${VIEWER_KIND_LABEL[it.kind] || it.kind}</td>
@@ -176,7 +176,7 @@ function buildViewerTableHtml(d) {
 // ── Cards view (mockup 32) ──────────────────────────────────────────────
 function buildViewerCardsHtml(d) {
   return `<div class="vw-cards">${d.items.map(it => `
-    <div class="vw-card" style="border-top:3px solid ${x(it.color || 'var(--accent)')}" onclick="openViewerItem('${x(it.key)}',${it.moduleId})">
+    <div class="vw-card" style="border-top:3px solid ${x(it.color || 'var(--accent)')}" onclick="openViewerItem(${xj(it.key)},${it.moduleId})">
       <div class="vw-card-head"><span class="vw-card-name">${x(it.name)}</span>
         <span class="vw-card-kind" data-no-i18n>${VIEWER_KIND_LABEL[it.kind] || it.kind}</span></div>
       <div class="vw-card-src" data-no-i18n>Module: ${x(it.moduleName)}</div>
@@ -200,7 +200,7 @@ function buildViewerBoardHtml(d) {
     <div class="vw-col">
       <div class="vw-col-head" data-no-i18n><span>${x(g.label)}</span><span class="cnt">${g.items.length}</span></div>
       ${g.items.map(it => `
-        <div class="vw-col-card" style="border-left:3px solid ${x(it.color || 'var(--accent)')}" onclick="openViewerItem('${x(it.key)}',${it.moduleId})">
+        <div class="vw-col-card" style="border-left:3px solid ${x(it.color || 'var(--accent)')}" onclick="openViewerItem(${xj(it.key)},${it.moduleId})">
           <div class="vw-card-name">${x(it.name)}</div>
           <div class="vw-card-src" data-no-i18n>${VIEWER_KIND_LABEL[it.kind] || it.kind}${viewerTimeText(it) ? ` · ${x(viewerTimeText(it))}` : ''}</div>
         </div>`).join('')}

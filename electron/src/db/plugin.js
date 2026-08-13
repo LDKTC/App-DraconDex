@@ -355,7 +355,10 @@ function pluginGetById(id) {
 // whether a <webview> src is a legitimate plugin panel. Returns the plugin row
 // or null. Path containment is checked with path.relative rather than a string
 // prefix so `<plugins>/foo-evil` can't satisfy `<plugins>/foo`.
-function pluginByPanelPath(filePath) {
+// Containment only: which installed plugin's directory does this path live
+// in? Returns { row, relInPlugin } or null. Split out from pluginByPanelPath
+// because the two callers need different strictness — see below.
+function resolvePluginPath(filePath) {
   let rel;
   try { rel = path.relative(pluginsRoot(), path.resolve(filePath)); } catch (_) { return null; }
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
@@ -363,13 +366,27 @@ function pluginByPanelPath(filePath) {
   if (!key) return null;
   const row = getDB().prepare(`SELECT * FROM plugin WHERE plugin_key=?`).get(key) || null;
   if (!row) return null;
+  return { row, relInPlugin: rel.split(path.sep).slice(1).join('/') };
+}
+
+function pluginByPanelPath(filePath) {
+  const hit = resolvePluginPath(filePath);
+  if (!hit) return null;
   // The path must additionally be one of the panel entries this plugin
   // declared — a plugin can't get its arbitrary files embedded in the dock.
-  const manifest = parseManifestJson(row);
+  const manifest = parseManifestJson(hit.row);
   const entries = new Set(manifestPanels(manifest || {}).map((p) => p.entry));
-  const relInPlugin = rel.split(path.sep).slice(1).join('/');
-  if (!entries.has(relInPlugin)) return null;
-  return row;
+  if (!entries.has(hit.relInPlugin)) return null;
+  return hit.row;
+}
+
+// Looser sibling used by main.js's will-navigate guard: a plugin may move
+// between its OWN installed files (a multi-page plugin navigating from
+// index.html to settings.html is legitimate), but may not leave the plugin
+// directory or reach a remote origin. Panel embedding stays on the stricter
+// pluginByPanelPath above.
+function pluginByOwnedPath(filePath) {
+  return resolvePluginPath(filePath)?.row || null;
 }
 
 // The allowlist gate for pluginapi:net:* . pluginId comes from the calling
@@ -619,7 +636,7 @@ function pluginApiDelete(pluginId, localName, rowId) {
 module.exports = {
   pluginList, pluginGetById, pluginPreview, pluginInstall, pluginUninstall,
   pluginListOrgRepos,
-  migratePluginDir, pluginByPanelPath, pluginNetAllowed,
+  migratePluginDir, pluginByPanelPath, pluginByOwnedPath, pluginNetAllowed,
   pluginNetFetch, pluginNetStream, pluginOAuthAuthorize,
   pluginApiGetSchema, pluginApiQuery, pluginApiInsert, pluginApiUpdate, pluginApiDelete,
   // re-exported so the run-dracondex `evalmain` checks can reach them through

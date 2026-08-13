@@ -216,6 +216,63 @@ function hardenWebviewAttach(hostContents) {
   });
 }
 
+// A file:// URL's on-disk path, or null if it isn't one. Windows file URLs
+// parse with a leading slash before the drive letter (file:///C:/…), same
+// normalisation hardenWebviewAttach does for params.src.
+function fileUrlToPath(url) {
+  let u;
+  try { u = new URL(String(url || '')); } catch (_) { return null; }
+  if (u.protocol !== 'file:') return null;
+  let p = decodeURIComponent(u.pathname);
+  if (process.platform === 'win32' && /^\/[A-Za-z]:/.test(p)) p = p.slice(1);
+  return p;
+}
+
+const APP_INDEX_PATH = path.join(__dirname, 'index.html');
+
+// Keep in sync with the <webview partition="..."> written by
+// src/renderer/pluginpanel.js — a plugin's window and its docked panel must
+// land in the SAME session, or the two forms of the same plugin would see
+// different storage.
+const pluginPartition = (pluginKey) => `persist:plugin-${pluginKey}`;
+
+// This app needs no web permissions at all: no camera, microphone, geolocation,
+// notifications, MIDI or clipboard-read anywhere in the UI. Denying the whole
+// set is therefore free, and it matters most for the persist:plugin-* sessions,
+// which host third-party code downloaded from a git repo.
+function lockDownSession(sess) {
+  if (!sess || sess.__ddxLocked) return sess;
+  sess.__ddxLocked = true;
+  sess.setPermissionRequestHandler((_wc, _perm, callback) => callback(false));
+  sess.setPermissionCheckHandler(() => false);
+  return sess;
+}
+
+// Catch-all containment for EVERY webContents the app ever creates — the main
+// window, the Welcome window, Builder popups, plugin windows and webview
+// guests alike. Before this, only webview guests were guarded
+// (hardenWebviewAttach), which left two holes: the app windows carry the full
+// window.api preload and could be navigated away from index.html, and a
+// plugin WINDOW could navigate itself to a remote origin while keeping its
+// preload-plugin.js bridge — handing pluginApi.table/net to attacker-hosted
+// script. Neither window needs to navigate anywhere at runtime, so the rule
+// is simply: stay on your own file, and never open new windows.
+app.on('web-contents-created', (_e, contents) => {
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  // Covers every session the app ever touches, including the per-plugin
+  // partitions created lazily when a plugin window or panel first loads.
+  lockDownSession(contents.session);
+  contents.on('will-navigate', (event, url) => {
+    const p = fileUrlToPath(url);
+    // The app's own document: index.html, including its ?welcome=1 / popup
+    // query-string variants, which URL() has already stripped from pathname.
+    if (p && path.normalize(p) === APP_INDEX_PATH) return;
+    // A plugin page navigating within its own installed directory.
+    if (p && db.pluginByOwnedPath(p)) return;
+    event.preventDefault();
+  });
+});
+
 function createPluginWindow(plugin) {
   const existing = findPluginWindow(plugin.id);
   if (existing && !existing.isDestroyed()) { existing.focus(); return existing; }
@@ -231,6 +288,12 @@ function createPluginWindow(plugin) {
       nodeIntegration: false,
       sandbox: true,
       webviewTag: false,
+      // Same per-plugin partition the docked PANEL form already uses
+      // (src/renderer/pluginpanel.js). Without it a plugin window ran in the
+      // app's own default session, sharing cache/storage/cookies with the
+      // main renderer; now each plugin gets its own and they are isolated
+      // from the app and from each other.
+      partition: pluginPartition(plugin.plugin_key),
     },
   });
   pluginWindows.set(win.id, plugin.id);
@@ -318,6 +381,13 @@ h('db:exportFile', async () => {
 // Split into pick + merge so the renderer can show its "merge into the current
 // database?" confirm *between* the two — while these were one call, the merge
 // had already run by the time there was anything to confirm.
+//
+// That split also left db:importMergeFile accepting ANY absolute path the
+// renderer passed, so an arbitrary local file could be opened as a SQLite
+// database and merged into the vault. Paths this dialog returned are recorded
+// here and the merge below accepts nothing else.
+const pickedImportDbPaths = new Set();
+
 h('db:pickImportFile', async () => {
   // Accepts both the current .ddx format and legacy .db files (pre-v3.11,
   // or a v1/v2 export) — an old-shaped .db import is exactly the trigger
@@ -328,11 +398,13 @@ h('db:pickImportFile', async () => {
     filters: [{ name: 'DraconDex / SQLite DB', extensions: ['ddx', 'db'] }],
   });
   if (result.canceled || !result.filePaths?.[0]) return { canceled: true };
+  pickedImportDbPaths.add(path.resolve(result.filePaths[0]));
   return { canceled: false, filePath: result.filePaths[0] };
 });
 
 h('db:importMergeFile', async (filePath) => {
   if (!filePath) return { canceled: true };
+  if (!pickedImportDbPaths.has(path.resolve(String(filePath)))) return { canceled: true };
   const summary = db.importDatabaseMerge(filePath);
   return { canceled: false, summary };
 });
@@ -502,8 +574,37 @@ h('sketcher:deletePin',    (id)         => db.deleteSketchPin(id));
 const IMPORT_EXTS = new Set(['png','jpg','jpeg','gif','webp','svg','md','txt','docx']);
 const IMAGE_EXTS = new Set(['png','jpg','jpeg','gif','webp','svg']);
 const imageMime = (ext) => (ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`);
+// Roots the USER actually chose through a dialog this session. importdock:add
+// takes absolute paths straight from the renderer and import_file rows are
+// later read back as bytes (importdock:readFile / readFiles and the
+// ddx-file:// protocol handler), so without this a compromised renderer could
+// register any file on disk — `C:\Users\…\anything` declared as type 'png' —
+// and then simply read it. Registration is confined to what a dialog returned.
+const pickedImportRoots = new Set();
+
+const isUnderPickedRoot = (p) => {
+  let abs;
+  try { abs = path.resolve(String(p || '')); } catch (_) { return false; }
+  for (const root of pickedImportRoots) {
+    const rel = path.relative(root, abs);
+    // path.relative rather than a string prefix, so `<root>-evil` can't pass
+    // as `<root>` — same idiom as db.pluginByPanelPath.
+    if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return true;
+  }
+  return false;
+};
+
 h('importdock:list',          (nx)     => db.getImportFiles(nx));
-h('importdock:add',           (nx,fs2) => db.addImportFiles(nx,fs2));
+h('importdock:add', (nx, fs2) => {
+  const clean = (Array.isArray(fs2) ? fs2 : []).filter((f) => isUnderPickedRoot(f?.path)).map((f) => ({
+    ...f,
+    // Derived here, never taken from the renderer: file_type decides which
+    // reader will later serve the bytes, so letting the caller pick it would
+    // re-open the same hole from the other side.
+    type: path.extname(String(f.path || '')).slice(1).toLowerCase(),
+  })).filter((f) => IMPORT_EXTS.has(f.type));
+  return db.addImportFiles(nx, clean);
+});
 h('importdock:setLinker',     (id,k)   => db.setImportLinker(id,k));
 h('importdock:setUseAsImage', (id,on)  => db.setImportUseAsImage(id,on));
 h('importdock:delete',        (id)     => db.deleteImportFile(id));
@@ -513,6 +614,8 @@ h('importdock:pickFolder', async () => {
   const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
   if (res.canceled || !res.filePaths?.length) return { canceled: true };
   const root = res.filePaths[0];
+  // The user picked it, so anything under it may be registered later.
+  pickedImportRoots.add(path.resolve(root));
   const files = [];
   const walk = (dir) => {
     for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -569,8 +672,17 @@ h('importdock:readFiles', async (ids) => {
 // Version control (v3 Phase 21)
 h('versions:list',    (mref) => db.listVersions(mref));
 h('versions:restore', (id)   => db.restoreVersion(id));
-h('setting:get',      (k)    => db.getAppSetting(k));
-h('setting:set',      (k,v)  => db.setAppSetting(k,v));
+// setting:get/set are a GENERIC key/value door into app_setting, which is
+// also where Drive/Sync park their refresh tokens and OAuth client secret.
+// Unrestricted, one line of renderer-side script execution turns into
+// `api.setting.get('drive:refreshToken')` and walks off with the user's
+// Google credentials. The renderer only ever asks for one key (verified:
+// every api.setting.* call site passes a literal, and 'versionLimit' is the
+// only one), so this is an allowlist rather than a denylist — a new secret
+// key added later is closed by default instead of open by default.
+const RENDERER_SETTING_KEYS = new Set(['versionLimit']);
+h('setting:get',      (k)    => (RENDERER_SETTING_KEYS.has(String(k)) ? db.getAppSetting(k) : null));
+h('setting:set',      (k,v)  => (RENDERER_SETTING_KEYS.has(String(k)) ? db.setAppSetting(k,v) : { ok: false }));
 
 // Cloud sync — Token Sync (Supabase) — snapshot push/pull per vault slot
 h('sync:getConfig',     ()             => db.getSyncConfig());

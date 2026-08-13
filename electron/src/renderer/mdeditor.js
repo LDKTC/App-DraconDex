@@ -294,7 +294,7 @@ function createMarkdownEditor(container, opts) {
 
   // ── Backlinks / outgoing-links side panel ──
   const linkRow = (e) => e.key
-    ? `<div class="li mded-linkrow" onclick="openEntityByKey('${x(e.key)}')">
+    ? `<div class="li mded-linkrow" onclick="openEntityByKey(${xj(e.key)})">
          <span class="dot" style="background:${e.color || 'var(--accent)'}"></span>
          <span class="name">${x(e.name)}</span><span class="mded-linktype">${x(e.type)}</span>
        </div>`

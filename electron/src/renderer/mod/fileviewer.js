@@ -155,7 +155,7 @@ function buildFileViewerHtml() {
   }
   const isImage = c.kind === 'image';
   const linkerChip = f.entity
-    ? `<span class="htag lk" data-no-i18n onclick="openEntityByKey('${x(f.linker_key)}')">[[${x(f.entity.name)}]]</span>`
+    ? `<span class="htag lk" data-no-i18n onclick="openEntityByKey(${xj(f.linker_key)})">[[${x(f.entity.name)}]]</span>`
     : `<span class="pv ghost">${t('notLinked')}</span>`;
   return wrapPageView(`<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
       <h2 style="margin:0;font-size:1.15em" data-no-i18n>${x(f.file_name)} <span class="kind-chip" data-no-i18n>File</span></h2>

@@ -14,6 +14,7 @@ const crypto = require('crypto');
 const { app } = require('electron');
 const { getDB } = require('./core');
 const { getAppSetting, setAppSetting } = require('./versions');
+const { getSecret, setSecret } = require('./secret-store');
 const { makePkcePair, runOAuthLoopback } = require('./oauth-loopback');
 
 const SNAPSHOT_FORMAT = 'dracondex-vault-snapshot';
@@ -40,13 +41,29 @@ function getSyncConfig() {
     return { url: devUrl || '', anonKey: 'dev-local', configured: true, dev: true };
   }
   const url = (getAppSetting('sync:url') || '').replace(/\/+$/, '');
-  const anonKey = getAppSetting('sync:anonKey') || '';
+  const anonKey = getSecret('sync:anonKey') || '';
   return { url, anonKey, configured: !!(url && anonKey), dev: false };
 }
 
+// The stored URL is string-interpolated into every outbound sync request —
+// the token exchange and the full vault snapshot both go to `${url}/...` — so
+// whatever lands here is where this app's auth tokens and the user's entire
+// vault get sent. It was previously stored after nothing but a trim, meaning a
+// single renderer-side call could silently repoint sync at an attacker's host
+// (or downgrade it to plaintext http, or aim it at an internal address).
+// https only, except loopback for the local dev backend.
+function isAllowedSyncUrl(raw) {
+  let u;
+  try { u = new URL(String(raw)); } catch (_) { return false; }
+  if (u.protocol === 'https:') return true;
+  return u.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]', '::1'].includes(u.hostname);
+}
+
 function setSyncConfig(url, anonKey) {
-  setAppSetting('sync:url', String(url || '').trim().replace(/\/+$/, ''));
-  setAppSetting('sync:anonKey', String(anonKey || '').trim());
+  const clean = String(url || '').trim().replace(/\/+$/, '');
+  if (clean && !isAllowedSyncUrl(clean)) return { ok: false, error: 'invalid_url' };
+  setAppSetting('sync:url', clean);
+  setSecret('sync:anonKey', String(anonKey || '').trim());
   return { ok: true };
 }
 
@@ -145,7 +162,7 @@ async function syncGoogleLogin(devUid, devTier) {
     uid: data.user?.id,
     email: data.user?.email,
   };
-  setAppSetting(REFRESH_TOKEN_KEY, data.refresh_token || '');
+  setSecret(REFRESH_TOKEN_KEY, data.refresh_token || '');
   return { ok: true, email: memSession.email };
 }
 
@@ -161,7 +178,7 @@ async function syncGoogleLogout() {
         });
       } catch (_) { /* best-effort */ }
     }
-    setAppSetting(REFRESH_TOKEN_KEY, '');
+    setSecret(REFRESH_TOKEN_KEY, '');
   }
   memSession = null;
   return { ok: true };
@@ -173,7 +190,7 @@ async function syncGoogleLogout() {
 async function ensureAccessToken() {
   if (IS_DEV) return memSession ? memSession.accessToken : null;
   if (memSession && memSession.accessTokenExp > Date.now() + 5000) return memSession.accessToken;
-  const refreshToken = getAppSetting(REFRESH_TOKEN_KEY);
+  const refreshToken = getSecret(REFRESH_TOKEN_KEY);
   if (!refreshToken) { memSession = null; return null; }
   const { url, anonKey, configured } = getSyncConfig();
   if (!configured) return null;
@@ -190,7 +207,7 @@ async function ensureAccessToken() {
   }
   if (!res.ok) {
     if (res.status === 400 || res.status === 401) {
-      setAppSetting(REFRESH_TOKEN_KEY, '');
+      setSecret(REFRESH_TOKEN_KEY, '');
       memSession = null;
     }
     return null;
@@ -202,7 +219,7 @@ async function ensureAccessToken() {
     uid: data.user?.id,
     email: data.user?.email,
   };
-  if (data.refresh_token) setAppSetting(REFRESH_TOKEN_KEY, data.refresh_token); // GoTrue rotates refresh tokens
+  if (data.refresh_token) setSecret(REFRESH_TOKEN_KEY, data.refresh_token); // GoTrue rotates refresh tokens
   return memSession.accessToken;
 }
 
