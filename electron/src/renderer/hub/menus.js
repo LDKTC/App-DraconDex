@@ -29,6 +29,19 @@ function openModuleContextMenu(ev, id) {
 // but without its builderCloseTab step, since nothing existing is being
 // moved/closed here (the module opens in the new window while the current
 // pane/tab, if any, is left untouched).
+// Plan procress1 part2 #1: explicit escape hatch for tab-accumulation now
+// that builderNavigate's default open REPLACES the pane's active tab —
+// pushes the key into pane.tabs itself first so builderNavigate's own
+// "already includes" branch just switches to it instead of replacing.
+async function openModuleInNewTab(id) {
+  const m = findModuleNode(id);
+  if (!m) return;
+  const key = builderPageKey({ kind: 'module', id });
+  const pane = builderState().panes[builderState().focused];
+  if (!pane.tabs.includes(key)) pane.tabs.push(key);
+  await openModuleNode(id);
+}
+
 async function openModuleInNewWindow(id) {
   const m = findModuleNode(id);
   if (!m) return;
@@ -79,6 +92,7 @@ function buildModuleContextMenuHtml(id, isMajor, pinned) {
   const m = findModuleNode(id);
   if (m && m.kind !== 'collector') {
     html += `
+    <div class="kind-list-item" onclick="closeAllPopups();openModuleInNewTab(${id})"><span class="kli-name">${x(t('openInNewTab'))}</span></div>
     <div class="kind-list-item" onclick="closeAllPopups();openModuleInNewWindow(${id})"><span class="kli-name">${x(t('openInNewWindow'))}</span></div>
     ${S.settings.workspaceStyle !== 'drake' ? '' : `<div class="kind-list-item kli-submenu-parent" onmouseenter="openPaneDirectionSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
       <span class="kli-name">${x(t('openInNewPane'))}</span><span class="kli-arrow">›</span>

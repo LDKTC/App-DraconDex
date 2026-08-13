@@ -80,7 +80,14 @@ function builderNavigate(ref) {
     if (sageIdx === -1) pane.tabs.push(key);
     else pane.tabs[sageIdx] = key;
   } else if (!pane.tabs.includes(key)) {
-    pane.tabs.push(key);
+    // Plan procress1 part2 #1: normal open CHANGES the current tab instead
+    // of accumulating a new one — mirrors the Sage Hut branch's own
+    // replace-in-place trick above. openModuleInNewTab (hub/menus.js)
+    // bypasses this by pushing the key into pane.tabs itself before
+    // routing through here, so it lands in the "already includes" branch.
+    const activeIdx = pane.tabs.indexOf(pane.active);
+    if (activeIdx >= 0) pane.tabs[activeIdx] = key;
+    else pane.tabs.push(key); // no active tab yet (fresh/empty pane) — first tab
   }
   pane.active = key;
   if (!S._builderNav && builderPageKey(pane.history[pane.hIdx]) !== key) {
@@ -249,7 +256,11 @@ async function builderCloseTab(paneIdx, key) {
   pane.tabs.splice(idx, 1);
 
   if (pane.tabs.length === 0) {
-    if (!builderCloseIfEmpty(paneIdx)) { pane.active = null; renderNexusHome(); }
+    // Plan procress1 part2 #3: builderOpenPage(null) clears S.activeModuleNode/
+    // filePreview/sageHut/activeItemNode before rendering — a plain
+    // renderNexusHome() here left those globals stale, so the pane body kept
+    // showing the just-closed page even with an empty tab strip.
+    if (!builderCloseIfEmpty(paneIdx)) { pane.active = null; await builderOpenPage(null); }
     // Plan part1 #1: a popup window (S.isPopup) always starts as a single
     // leaf pane with no parent split node, so builderCloseIfEmpty above is
     // always a no-op for it — closing its last tab must close the window
@@ -349,6 +360,10 @@ function ensureNodeElement(node) {
       // than holding a reference to the one that existed at observe() time.
       const head = el.querySelector('.bpane-head');
       new ResizeObserver(() => syncTabBarCompact(head.querySelector('.bpane-tabs'))).observe(head);
+      // Plan procress1 part2 #2: split/close-pane actions live here now
+      // instead of as inline buttons — bound once, like the ResizeObserver
+      // above, since .bpane-head's own element survives every re-render.
+      head.oncontextmenu = (ev) => openBuilderPaneContextMenu(ev, Number(el.dataset.pane));
       const body = el.querySelector('.bpane-body');
       body.ondragover = (ev) => onBodyDragOver(ev, body);
       body.ondragleave = (ev) => onBodyDragLeave(ev, body);
@@ -506,14 +521,58 @@ function builderPaneHeadHtml(i, pane, focused) {
   // nav/split buttons at the far left. pluginPanelButtonsHtml self-guards on
   // S.activeModuleNode — with no module open there is no dock to replace.
   const pluginPanelBtns = !isSplit && typeof pluginPanelButtonsHtml === 'function' ? pluginPanelButtonsHtml() : '';
-  // Wyvern/Dragon (Plan part2 #New Workspace) never split — no split/
-  // close-pane affordance to offer at all, matching builderNavigate's
+  // Plan procress1 part2 #2: split/close-pane buttons removed from here —
+  // right-click the pane head instead (openBuilderPaneContextMenu, wired
+  // once in ensureNodeElement). Wyvern/Dragon (Plan part2 #New Workspace)
+  // never split, so that handler no-ops there — matching builderNavigate's
   // single-tab guard above and onBodyDrop's disarmed drag-to-split below.
-  const splitBtns = S.settings.workspaceStyle !== 'drake' ? '' : `
-    <button class="btn btn-g btn-i bnav" onclick="builderSplitPane(${i},'h')" title="${t('splitPane')}">◫</button>
-    <button class="btn btn-g btn-i bnav" onclick="builderSplitPane(${i},'v')" title="${t('splitPane')}">⬓</button>
-    ${isSplit ? `<button class="btn btn-g btn-i bnav" onclick="builderClosePane(${i})" title="${t('closePane')}">${I.close}</button>` : ''}`;
-  return `${nav}${splitBtns}<div class="bpane-tabs" ondragover="onTabStripDragOver(event,${i})" ondrop="onTabStripDrop(event,${i})">${tabs}</div>${pluginPanelBtns}${inspectorToggle}`;
+  return `${nav}<div class="bpane-tabs" ondragover="onTabStripDragOver(event,${i})" ondrop="onTabStripDrop(event,${i})">${tabs}</div>${pluginPanelBtns}${inspectorToggle}`;
+}
+
+// ═══ Pane right-click context menu (Plan procress1 part2 #2) ══════════
+// Same shape as the Nest tree's own module context menu (openModuleContextMenu
+// / buildModuleContextMenuHtml, hub/menus.js) and its "open in a new pane"
+// hover flyout (openPaneDirectionSubmenu / buildPaneDirectionListHtml,
+// hub/menus.js) — reuses those files' shared popup plumbing (hub/popups.js:
+// closeAllPopups/positionPopupNear/positionSubmenuNear/cancelCtxSubmenuClose/
+// scheduleCtxSubmenuClose/ctxAnchor) rather than inventing a second one.
+function openBuilderPaneContextMenu(ev, paneIdx) {
+  if (S.settings.workspaceStyle !== 'drake') return; // Wyvern/Dragon never split — no menu to offer
+  ev.preventDefault();
+  ev.stopPropagation();
+  closeAllPopups();
+  S.ctxMenuPos = { x: ev.clientX, y: ev.clientY };
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup context-menu-popup';
+  pop.innerHTML = buildBuilderPaneContextMenuHtml(paneIdx);
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  positionPopupNear(pop, ctxAnchor(ev).getBoundingClientRect());
+}
+function buildBuilderPaneContextMenuHtml(paneIdx) {
+  const isSplit = builderState().layoutTree.type === 'split';
+  return `
+    <div class="kind-list-item kli-submenu-parent" onmouseenter="openBuilderSeparateSubmenu(event,${paneIdx})" onmouseleave="scheduleCtxSubmenuClose()">
+      <span class="kli-name">${x(t('separatePane'))}</span><span class="kli-arrow">›</span>
+    </div>
+    ${isSplit ? `<div class="ctx-sep"></div><div class="kind-list-item" onclick="closeAllPopups();builderClosePane(${paneIdx})"><span class="kli-name">${x(t('closePane'))}</span></div>` : ''}`;
+}
+function buildBuilderSeparateListHtml(paneIdx) {
+  return [['h', '◫'], ['v', '⬓']].map(([dir, icon]) =>
+    `<div class="kind-list-item" onclick="closeAllPopups();builderSplitPane(${paneIdx},'${dir}')"><span class="kli-name">${icon} ${x(t('splitPane'))}</span></div>`
+  ).join('');
+}
+function openBuilderSeparateSubmenu(ev, paneIdx) {
+  cancelCtxSubmenuClose();
+  if (document.querySelector('.ctx-submenu')) return;
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup kind-list-popup ctx-submenu';
+  pop.innerHTML = buildBuilderSeparateListHtml(paneIdx);
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  pop.addEventListener('mouseenter', cancelCtxSubmenuClose);
+  pop.addEventListener('mouseleave', scheduleCtxSubmenuClose);
+  positionSubmenuNear(pop, ev.currentTarget.getBoundingClientRect());
 }
 
 // ═══ Tab drag-reorder / cross-pane move (Plan part3 #1, reworked part1 #3)

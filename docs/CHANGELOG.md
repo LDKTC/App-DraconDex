@@ -60,11 +60,87 @@
   "auto pull" ปลั๊กอิน AI Native (DraconDex-Plugin-Native ที่ปรับปรุงใหม่ให้
   เป็นคลัง `catalog.json` สาธารณะของฟีเจอร์/เครื่องมือของแอป) ตอนติดตั้งครั้งแรก
   แต่สถาปัตยกรรม sandbox เดิมไม่มีทางให้ปลั๊กอินสั่งติดตั้งปลั๊กอินอื่นเองได้เลย
-  (ไม่มีปลั๊กอินไหนแตะข้อมูล/API ของปลั๊กอินอื่นได้) ทางแก้ที่ไม่เพิ่มรูรั่วคือ
+  (ไม่มีปลั๊กินไหนแตะข้อมูล/API ของปลั๊กอินอื่นได้) ทางแก้ที่ไม่เพิ่มรูรั่วคือ
   ประกาศไว้ใน manifest แล้วให้ install flow ที่ผู้ใช้กดยืนยันอยู่แล้วจัดการให้
   ทั้งหมดในทีเดียว — ผู้ใช้เห็นและอนุมัติครั้งเดียวเหมือน panels/net เดิม
 - Doc ที่อัปเดต: `docs/PLUGINS.md` §1.8 (ใหม่), §2.7 ข้อ 1 และ 7,
   `docs/FILES.md` (3 บรรทัดของ plugin-manifest.js/plugin.js/renderer/plugin.js)
+
+---
+
+## 2026-08-11 — Plan.md procress1 part3: Setting window checkmark/ภาษาค้าง — แก้ที่ dead `#prefs-panel` guard
+- commit: uncommitted
+- ไฟล์ที่แก้: electron/src/renderer/core/settings.js, electron/src/renderer/core/theme.js, electron/src/renderer/core/setting-window.js, Plan.md
+- อะไรเปลี่ยน:
+  - `setUiSetting()` (settings.js) — เดิมมี `if(q('#prefs-panel')) renderPreferencesPanel();`
+    ซึ่งเป็นโค้ดตายตั้งแต่ Setting window มาแทน Preferences panel เดิม
+    (`#prefs-panel` ไม่มีอยู่ใน DOM แล้ว, `renderPreferencesPanel` ไม่มี
+    definition เหลืออยู่เลย — grep เจอแค่ 3 จุดเรียก ไม่มีจุดประกาศ) เปลี่ยนเป็น
+    เรียก `renderSettingWindow()` ตรงๆ (ฟังก์ชันรีเฟรช panel ตัวจริงที่มีอยู่
+    แล้ว และ no-op เองถ้า panel ไม่ได้เปิดอยู่) — แก้ปัญหา checkmark
+    (theme/language) ค้างค่าเก่าและข้อความ Setting window ไม่เปลี่ยนภาษาทันที
+  - `deleteCustomTheme()`/`duplicateTheme()` (theme.js) — dead guard ตัวเดียวกัน
+    เปลี่ยนเป็น `renderSettingWindow()` เหมือนกัน — theme grid รีเฟรชทันทีหลัง
+    ลบ/ทำสำเนา custom theme
+  - `renderSettingWindow()` (setting-window.js) — เพิ่มรีเฟรช `.fp-head span`
+    (title ของ floating panel เอง มี `data-no-i18n` เลยพ้น auto-translate DOM
+    pass) ไม่ใช่แค่ `.fp-body` — พบระหว่าง verify สด: เปลี่ยนภาษาแล้วเนื้อหาใน
+    panel เปลี่ยนทันทีแต่ title bar ("การตั้งค่า"/"Setting") ยังค้างภาษาเดิม
+- ทำไม: Plan.md "procress 1, part 3 : setting" — ผู้ใช้รายงานว่าคลิกเลือกค่า
+  setting แล้ว checkmark ยังค้างอยู่ list เก่า และเปลี่ยนภาษาใน setting แล้ว
+  ข้อความไม่เปลี่ยนทันที ต้องสลับหน้าถึงจะอัปเดต — root cause เดียวกันทั้งคู่
+  (panel ไม่เคยถูกสั่ง re-render หลัง `setUiSetting()`) — verify ผ่าน
+  run-dracondex driver จริง (เปลี่ยนภาษา TH→EN เห็น checkmark ย้ายทันที + ทุก
+  label ในหน้าต่างเปลี่ยนภาษาทันทีรวม title bar, คลิก theme ใหม่เห็น ✓ ย้าย
+  ทันที, duplicate/delete custom theme เห็นจำนวน cell เปลี่ยนทันที)
+- Doc ที่อัปเดต: docs/FILES.md (แถว `settings.js`/`theme.js` ในตาราง
+  `core/`, ย่อหน้า `setting-window.js`)
+
+---
+
+## 2026-08-11 — Plan.md procress1 part2: Builder tab เปลี่ยนเป็น replace-on-open + split/close pane ย้ายเข้า context menu
+- commit: uncommitted
+- ไฟล์ที่แก้: electron/src/renderer/builder.js, electron/src/renderer/hub/menus.js, electron/src/renderer/i18n.js, Plan.md
+- อะไรเปลี่ยน:
+  - `builderNavigate()`: เปิด module/file/item ปกติ (คลิกจาก nest tree ฯลฯ)
+    **แทนที่แท็บ active เดิมในตำแหน่งเดิม** แทนการ push แท็บใหม่ต่อท้ายเสมอ
+    เหมือนก่อนหน้านี้ — ใช้ trick เดียวกับ branch ของ Sage Hut sub-view ที่มี
+    replace-in-place อยู่แล้ว ตรรกะ back/forward/switch-tab/drag-reorder/
+    multi-pane เดิมไม่กระทบเพราะไม่มีจุดไหน push เข้า `pane.tabs` เอง
+  - เพิ่ม `openModuleInNewTab(id)` (hub/menus.js) เป็นทางออกให้ยังสะสมหลายแท็บ
+    ใน pane เดียวได้ตามต้องการ — push key เข้า `pane.tabs` เองก่อนเรียก
+    `openModuleNode` ทำให้ตกไป branch "มีอยู่แล้ว" ของ `builderNavigate` แทน
+    branch replace ปรากฏเป็นรายการ "เปิดในแท็บใหม่" ใน context menu ของ
+    module (ข้าง "เปิดในหน้าต่างใหม่"/"เปิดใน Pane ใหม่")
+  - ปุ่ม split/close pane แบบ inline (◫/⬓/×) ใน `builderPaneHeadHtml` ถูกถอด
+    ออกทั้งหมด ย้ายไปเป็น right-click context menu บน pane header แทน —
+    `openBuilderPaneContextMenu`/`buildBuilderPaneContextMenuHtml`/
+    `openBuilderSeparateSubmenu` ลอกแพทเทิร์น submenu ที่มีอยู่แล้ว
+    (`openPaneDirectionSubmenu`/hub/popups.js ปลั๊กปลั๊ก) — เมนู "แยกส่วน
+    Pane ▸" ซ้อน split-horizontal/split-vertical, "ปิด pane" เป็นรายการ
+    top-level แยกต่างหาก (โผล่เฉพาะตอน pane ถูก split แล้ว) ผูก
+    `oncontextmenu` ครั้งเดียวใน `ensureNodeElement` เหมือน ResizeObserver เดิม
+  - `builderCloseTab()`: ปิดแท็บสุดท้ายของ pane เดี่ยว (ปิดเหลือ pane เดี่ยว
+    แล้วไม่มี parent split ให้ merge) เรียก `builderOpenPage(null)` แทนการ
+    เซ็ต `pane.active=null` แล้ว `renderNexusHome()` ตรงๆ เหมือนเดิม — ของเดิม
+    ไม่ได้เคลียร์ `S.activeModuleNode`/`filePreview`/`sageHut`/`activeItemNode`
+    ทำให้เนื้อหาโมดูลที่เพิ่งปิดค้างอยู่ใน pane body ทั้งที่แท็บว่างแล้ว
+  - i18n key ใหม่ 2 คีย์ครบ 18 locale: `openInNewTab`, `separatePane`
+    (`splitPane`/`closePane` เดิมนำมาใช้ซ้ำเป็น label ของแถวใน submenu)
+- ทำไม: Plan.md "procress 1, part 2 : builder changes" — ผู้ใช้ต้องการให้
+  เปิดโมดูลจาก nest tree เปลี่ยนเนื้อหาแท็บเดิมแทนการสะสมแท็บอัตโนมัติ
+  (พร้อมทางเลือกเปิดแท็บใหม่แบบตั้งใจ), ปุ่ม split/close ที่เคยอยู่บน pane
+  header แบบถาวรรกไป ย้ายเข้า context menu, และปิดแท็บสุดท้ายของ pane ต้องขึ้น
+  "ไม่มีอะไรเปิดอยู่" แทนเนื้อหาเก่าที่ค้าง — verify ผ่าน run-dracondex driver
+  จริง (เปิด 2 โมดูลติดกันเห็นแท็บเดียว, คลิก "เปิดในแท็บใหม่" เห็น 2 แท็บ,
+  right-click pane header เห็นเมนูใหม่ครบ, split แล้ว "ปิด pane" โผล่, ปิด
+  แท็บสุดท้ายเห็น welcome placeholder ของ vault แทนเนื้อหาเก่า)
+- Doc ที่อัปเดต: docs/FILES.md (`builder.js` entry, ย่อหน้า `hub.js` — เพิ่ม
+  "เปิดในแท็บใหม่"/`openModuleInNewTab`)
+
+---
+
+
 
 ---
 

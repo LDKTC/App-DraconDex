@@ -51,6 +51,12 @@ function selectSettingPage(group, page){
 function renderSettingWindow(){
   const body = q('#setting-window .fp-body');
   if(body) body.innerHTML = settingWindowBodyHtml();
+  // procress1 part3: the floating-panel title itself is baked in once by
+  // openFloatingPanel (data-no-i18n, exempt from the auto-translate DOM
+  // walk) — refresh it here too so a language change updates it immediately
+  // instead of only on next open.
+  const head = q('#setting-window .fp-head span');
+  if(head) head.innerHTML = `${I.settings} ${t('settingWindowTitle')}`;
 }
 function settingWindowNavHtml(){
   // Plan part2 "session head": every group's page list stays open (no more

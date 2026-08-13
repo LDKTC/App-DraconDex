@@ -163,7 +163,7 @@ async function deleteCustomTheme(id){
   saveUiSettings();
   applyUiSettings();
   renderSettingsMenu();
-  if (q('#prefs-panel')) renderPreferencesPanel();
+  renderSettingWindow(); // procress1 part3: refresh the Setting window's theme grid, not the retired #prefs-panel
   toast(t('deleted'),'ok');
 }
 
@@ -191,7 +191,7 @@ function duplicateTheme(key){
   S.settings.customThemes.push(ct);
   saveUiSettings();
   renderSettingsMenu();
-  if (q('#prefs-panel')) renderPreferencesPanel();
+  renderSettingWindow(); // procress1 part3: refresh the Setting window's theme grid, not the retired #prefs-panel
   toast(t('duplicated'), 'ok');
 }
 
