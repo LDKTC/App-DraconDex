@@ -19,7 +19,7 @@ same SQLite schema but a separate, behind-parity codebase (see its own
 section below). Everything else in this file describes the Electron app.
 
 This repo already has an extensive, actively-maintained documentation set and
-four project-specific Claude skills — **read those before re-deriving
+nine project-specific Claude skills — **read those before re-deriving
 things from scratch.** This file is a map, not a replacement for them.
 
 | Need to know... | Go to |
@@ -28,10 +28,19 @@ things from scratch.** This file is a map, not a replacement for them.
 | How each system behaves (Director, Navigator, Hero, Writer, Scribe, Sage, Artisan, wikilinks, IDE shell) | `docs/SYSTEMS.md` |
 | What's in a specific file, line-by-line responsibilities | `docs/FILES.md` |
 | History of what changed and why, session to session | `docs/CHANGELOG.md` |
+| Google Drive backup (the app's one cloud feature) | `docs/DRIVE.md` |
+| Sandboxed plugin runtime (installed from a git repo link) | `docs/PLUGINS.md` |
+| Cloud Sync / Supabase Token Sync — **disabled since v4.5.0**, kept for history | `docs/SYNC.md` |
+| Update-check notice (not an auto-updater) | `docs/UPDATE.md` |
 | How to run/click/screenshot the real app | `.claude/skills/run-dracondex/SKILL.md` |
 | UI/UX + wiring conventions and the static checker | `.claude/skills/dracondex-module-style/SKILL.md`, `STYLE.md` |
 | Whether a file should be split, and how to split it safely | `.claude/skills/dracondex-file-arch/SKILL.md` |
 | How to keep the docs above in sync after a change | `.claude/skills/write-docs/SKILL.md` |
+| Bumping `package.json`'s version (x.y.z-n scheme) | `.claude/skills/version-update/SKILL.md` |
+| Deciding/cutting a GitHub release (`vX.Y.Z` tag → build workflow) | `.claude/skills/build-release-git/SKILL.md` |
+| Closing out a finished `Plan.md` into `procress.md` | `.claude/skills/procress-writing/SKILL.md` |
+| Visual/theming review (contrast, spacing, polish across 30+ themes) | `.claude/skills/ui-researcher/SKILL.md` (also an `Agent` type) |
+| UX review (task flow, information architecture, discoverability) | `.claude/skills/ux-researcher/SKILL.md` (also an `Agent` type) |
 
 These docs are written in **Thai** (matching the project's primary language)
 — that's intentional and expected; don't "fix" them to English.
@@ -74,8 +83,15 @@ src/                         SHARED between Electron and Flutter — see src/REA
   sync-assets.mjs            copies the asset masters into flutter/assets/ (`--check` to verify only)
 
 package.json       root — "main" points at electron/main.js; files/build.files ship electron/** + src/assets/brand/**
-docs/              Architec.md, SYSTEMS.md, FILES.md, CHANGELOG.md — see table above
-.claude/skills/    run-dracondex, dracondex-module-style, dracondex-file-arch, write-docs (see above)
+docs/              Architec.md, SYSTEMS.md, FILES.md, CHANGELOG.md, DRIVE.md, PLUGINS.md,
+                   SYNC.md, UPDATE.md — see table above; mockups/ (static HTML/PNG design
+                   references from the v3 design pass) and superpowers/plans+specs/ (past
+                   feature plan/spec write-ups) are historical, not live docs
+.claude/skills/    run-dracondex, dracondex-module-style, dracondex-file-arch, write-docs,
+                   version-update, build-release-git, procress-writing, ui-researcher,
+                   ux-researcher (see table above)
+.claude/agents/    ui-researcher.md, ux-researcher.md — same research role as the two
+                   skills above, invocable as an `Agent` subagent_type instead of a skill
 tmp-user-data/     real dev-mode database (gitignored) — don't wipe casually
 tmp-driver-data/   scratch data dir for the run-dracondex driver (gitignored)
 ```
@@ -95,7 +111,7 @@ channels), use `docs/FILES.md` instead of re-reading every file cold.
 Main process (electron/main.js)
   picks a data dir (dev / portable / installer), opens a frameless
   BrowserWindow (1280x800, contextIsolation:true, nodeIntegration:false),
-  registers ~230+ IPC handlers grouped by namespace, each delegating
+  registers ~470+ IPC handlers grouped by namespace, each delegating
   straight to electron/database.js
         │ ipcRenderer.invoke, via contextBridge
 electron/preload.js

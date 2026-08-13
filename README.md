@@ -256,6 +256,10 @@ in **Thai** (the project's primary language):
 | [`docs/SYSTEMS.md`](docs/SYSTEMS.md) | How each system behaves (Director, Navigator, Hero, Writer, Scribe, Sage, Artisan, wikilinks, IDE shell) |
 | [`docs/FILES.md`](docs/FILES.md) | What's in each file, line-by-line responsibilities |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | History of what changed and why, session to session |
+| [`docs/DRIVE.md`](docs/DRIVE.md) | Google Drive backup (the app's one active cloud feature) |
+| [`docs/PLUGINS.md`](docs/PLUGINS.md) | Sandboxed plugin runtime, installed from a git repo link |
+| [`docs/SYNC.md`](docs/SYNC.md) | Cloud Sync / Supabase Token Sync — disabled since v4.5.0, kept for history |
+| [`docs/UPDATE.md`](docs/UPDATE.md) | Update-check notice (not an auto-updater) |
 
 > เอกสารเหล่านี้เขียนเป็นภาษาไทยโดยตั้งใจ ให้สอดคล้องกับภาษาไทยที่เป็น
 > ภาษาหลักของโปรเจกต์
@@ -265,11 +269,14 @@ in **Thai** (the project's primary language):
 This repo is developed with heavy use of [Claude Code](https://claude.com/claude-code).
 [`CLAUDE.md`](CLAUDE.md) documents the architecture and conventions for AI
 assistants (and human contributors) working in this codebase, and
-`.claude/skills/` contains project-specific skills — including a driver for
-running/screenshotting the real app (`run-dracondex`) and static checkers
+`.claude/skills/` contains nine project-specific skills — including a driver
+for running/screenshotting the real app (`run-dracondex`), static checkers
 for UI/UX wiring conventions (`dracondex-module-style`) and file
-organization (`dracondex-file-arch`).
+organization (`dracondex-file-arch`), a doc-sync workflow (`write-docs`),
+version/release helpers (`version-update`, `build-release-git`,
+`procress-writing`), and UI/UX research audits (`ui-researcher`,
+`ux-researcher`).
 
 ## License
 
-No license file is currently included in this repository.
+[MIT](LICENSE)
