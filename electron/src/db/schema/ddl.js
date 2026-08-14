@@ -37,6 +37,37 @@ const APP_DDL_SQL = `
       value TEXT
     );
 
+    -- The vault index (v4.9.0). One row per Nexus, holding everything the
+    -- Welcome window needs to draw the list WITHOUT opening a single vault
+    -- file — name, colour, and a cached item count refreshed whenever that
+    -- vault is open. Opening N databases to render a list of N rows would be
+    -- unacceptable, and would fail outright for a vault on a disconnected
+    -- drive.
+    --
+    -- id is the SAME id as the single "nexus" row inside the vault file, and
+    -- the same id the renderer already passes around (?nexus=<id>, the MRU
+    -- list, window:openNexus) — so nothing downstream has to learn a new
+    -- identifier. AUTOINCREMENT so an id is never REUSED after a delete: a
+    -- reused id would collide with a stale vault file the user later re-adds.
+    --
+    -- file_path NULL means: still inside the pre-split single database. The
+    -- split migration fills it in. color_code is stored literally rather than
+    -- as a use_color FK because a vault's colour has to be readable with no
+    -- vault open.
+    CREATE TABLE IF NOT EXISTS nexus_file (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      memo TEXT,
+      color_code TEXT,
+      file_path TEXT UNIQUE,
+      project_count INTEGER NOT NULL DEFAULT 0,
+      counts_at TEXT,
+      last_opened_at TEXT,
+      missing INTEGER NOT NULL DEFAULT 0,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- Plugins (v4.0.0 as "Github extensions", renamed v4.2.0 — see
     -- migratePluginV42 in schema/migrations.js): a downloaded plugin owns its
     -- own plg_<key>_<name> table(s), tracked here so src/db/plugin.js can

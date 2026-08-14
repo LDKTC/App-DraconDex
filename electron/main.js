@@ -91,8 +91,18 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
   // Which vault this window's IPC calls belong to. Registered before loadFile
   // so the renderer's very first wave of calls already resolves.
   if (bootstrapNexusId) {
-    windowNexus.set(win.id, Number(bootstrapNexusId));
-    win.on('closed', () => windowNexus.delete(win.id));
+    const nexusId = Number(bootstrapNexusId);
+    windowNexus.set(win.id, nexusId);
+    // The Welcome list's item count is a cached value in app.ddx, refreshed on
+    // the window lifecycle rather than on every module create/delete — those
+    // are hot paths, and "counts as of the last time this vault was open" is
+    // correct the moment its window closes. Refreshed on open too, so a vault
+    // whose file was edited elsewhere corrects itself on first use.
+    try { db.refreshVaultCounts(nexusId); } catch (_) {}
+    win.on('closed', () => {
+      windowNexus.delete(win.id);
+      try { db.refreshVaultCounts(nexusId); } catch (_) {}
+    });
   }
   if (bootstrapTabKey) {
     popupWindowIds.add(win.id);
