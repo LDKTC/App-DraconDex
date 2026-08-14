@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, Menu, protocol } = require('electro
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
+const { isSecretKey } = require('./src/db/secret-store');
 
 // Data location per build flavor:
 // - portable exe (build:exe): PORTABLE_EXECUTABLE_DIR is set by the launcher
@@ -681,8 +682,14 @@ h('versions:restore', (id)   => db.restoreVersion(id));
 // only one), so this is an allowlist rather than a denylist — a new secret
 // key added later is closed by default instead of open by default.
 const RENDERER_SETTING_KEYS = new Set(['versionLimit']);
-h('setting:get',      (k)    => (RENDERER_SETTING_KEYS.has(String(k)) ? db.getAppSetting(k) : null));
-h('setting:set',      (k,v)  => (RENDERER_SETTING_KEYS.has(String(k)) ? db.setAppSetting(k,v) : { ok: false }));
+// Two gates, not one. The allowlist is the rule; isSecretKey() is the backstop
+// that survives someone widening the allowlist later without noticing they
+// just handed the renderer a refresh token. Cloud-provider credentials are
+// keyed by provider id (cloud:<id>:refreshToken, …) and so cannot be
+// enumerated in a set — isSecretKey matches them by shape.
+const rendererSettingAllowed = (k) => RENDERER_SETTING_KEYS.has(String(k)) && !isSecretKey(k);
+h('setting:get',      (k)    => (rendererSettingAllowed(k) ? db.getAppSetting(k) : null));
+h('setting:set',      (k,v)  => (rendererSettingAllowed(k) ? db.setAppSetting(k,v) : { ok: false }));
 
 // Cloud sync — Token Sync (Supabase) — snapshot push/pull per vault slot
 h('sync:getConfig',     ()             => db.getSyncConfig());
@@ -713,6 +720,20 @@ h('drive:listLayoutSlots',   ()          => db.driveListLayoutSlots());
 h('drive:saveLayoutSlot',    (name,json) => db.driveSaveLayoutSlot(name,json));
 h('drive:restoreLayoutSlot', (id)        => db.driveRestoreLayoutSlot(id));
 h('drive:deleteLayoutSlot',  (id)        => db.driveDeleteLayoutSlot(id));
+
+// Cloud storage registry (v4.9.0) — the provider-agnostic surface. Google
+// Drive is reachable through BOTH this and the drive:* channels above: these
+// delegate to the same functions via src/db/cloud-drive.js, they do
+// not reimplement anything. Every other provider is a declared stub that
+// answers not_implemented; see src/db/cloud.js for the contract.
+h('cloud:listProviders',   ()        => db.cloudListProviders());
+h('cloud:setActive',       (id)      => db.cloudSetActive(id));
+h('cloud:setPrefs',        (id,p)    => db.cloudSetProviderPrefs(id,p));
+h('cloud:getConfig',       (id)      => db.cloudGetConfig(id));
+h('cloud:setConfig',       (id,cfg)  => db.cloudSetConfig(id,cfg));
+h('cloud:connect',         (id)      => db.cloudConnect(id));
+h('cloud:disconnect',      (id)      => db.cloudDisconnect(id));
+h('cloud:status',          (id)      => db.cloudStatus(id));
 
 // Firebase — app-update notice (read-only Firestore doc check, no auto-updater)
 h('update:check',        ()    => db.checkForUpdate());

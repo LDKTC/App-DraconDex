@@ -213,6 +213,16 @@ contextBridge.exposeInMainWorld('api', {
     restoreLayoutSlot: (id)        => inv('drive:restoreLayoutSlot', id),
     deleteLayoutSlot:  (id)        => inv('drive:deleteLayoutSlot', id),
   },
+  cloud: {
+    listProviders: ()       => inv('cloud:listProviders'),
+    setActive:     (id)     => inv('cloud:setActive', id),
+    setPrefs:      (id,p)   => inv('cloud:setPrefs', id,p),
+    getConfig:     (id)     => inv('cloud:getConfig', id),
+    setConfig:     (id,cfg) => inv('cloud:setConfig', id,cfg),
+    connect:       (id)     => inv('cloud:connect', id),
+    disconnect:    (id)     => inv('cloud:disconnect', id),
+    status:        (id)     => inv('cloud:status', id),
+  },
   update: {
     check:        ()    => inv('update:check'),
     dismiss:      (v)   => inv('update:dismiss', v),

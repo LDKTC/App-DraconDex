@@ -29,6 +29,18 @@ const SECRET_KEYS = new Set([
   'sync:anonKey',
 ]);
 
+// Cloud-provider credentials (src/db/cloud.js) are keyed by provider id, so they
+// cannot be enumerated in the set above without this file having to know every
+// provider that will ever exist. Matched by shape instead: the credential
+// fields are a fixed, closed list, so a non-secret per-provider setting like
+// `cloud:webdav:role` is deliberately NOT matched and keeps using plain
+// getAppSetting/setAppSetting.
+const CLOUD_SECRET_RE = /^cloud:[a-z0-9_]+:(clientId|clientSecret|refreshToken|token|password|secretKey)$/;
+
+// The single "does this key hold a credential" test. Use this rather than
+// SECRET_KEYS.has() directly — the set alone no longer answers the question.
+const isSecretKey = (key) => SECRET_KEYS.has(key) || CLOUD_SECRET_RE.test(String(key || ''));
+
 let _warned = false;
 function encryptionAvailable() {
   let ok = false;
@@ -73,4 +85,4 @@ function getSecret(key) {
   }
 }
 
-module.exports = { SECRET_KEYS, getSecret, setSecret };
+module.exports = { SECRET_KEYS, isSecretKey, getSecret, setSecret };
