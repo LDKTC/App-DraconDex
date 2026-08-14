@@ -254,7 +254,7 @@ async function openPlaceObjectAtModal(worldId, eventId, px, py) {
 // but each row is an object/character with its color as a leading dot and its
 // symbol glyph (if any) — a native <select><option> can't render either.
 function buildEntityPickerHtml(pickId, objs, chars) {
-  const row = (kind, item) => `<div class="np-item" style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();selectEntityFromPicker('${pickId}','${kind}',${item.id},'${x(item.name)}')">
+  const row = (kind, item) => `<div class="np-item" style="display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();selectEntityFromPicker(${xj(pickId)},${xj(kind)},${item.id},${xj(item.name)})">
       <div class="dot" style="background:${item.color_code || '#6366f1'};width:8px;height:8px;border-radius:50%;flex-shrink:0"></div>
       ${item.symbol ? `<span style="flex-shrink:0">${x(item.symbol)}</span>` : ''}
       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(item.name)}</span>

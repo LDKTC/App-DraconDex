@@ -177,10 +177,10 @@ function renderProjectTabs(){
       </button>
     `).join('');
     const entTabs = S.entityTabs.map(tab => `
-      <button class="project-tab ${S.activeModule===tab.module && S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab('${tab.key}')" title="${x(tab.name)}">
+      <button class="project-tab ${S.activeModule===tab.module && S.activeEntityTabKey===tab.key?'active':''}" onclick="switchEntityTab(${xj(tab.key)})" title="${x(tab.name)}">
         <span class="tab-dot" style="background:${tab.color}"></span>
         <span class="tab-name">${x(tab.name)}</span>
-        <span class="tab-close" onclick="event.stopPropagation();closeEntityTab('${tab.key}')" title="${t('closeTab')}">&times;</span>
+        <span class="tab-close" onclick="event.stopPropagation();closeEntityTab(${xj(tab.key)})" title="${t('closeTab')}">&times;</span>
       </button>
     `).join('');
     el.innerHTML = dirTabs + entTabs;

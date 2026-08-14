@@ -3,9 +3,22 @@
 // (this app never uses native alert/confirm), and the panel resize/collapse
 // handling. Anything here is fair game for any renderer file to call.
 const q = (s) => document.querySelector(s);
-const x = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// Text and attribute-value contexts. `'` is escaped too (matching _mdEsc in
+// markdown.js) so single-quoted attributes are safe as well as double-quoted.
+const x = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 // `esc` is an alias for `x` used by the Writer/Sage modules.
 const esc = x;
+// JS-ARGUMENT context — for values passed into an inline handler:
+//
+//   onclick="openThing(${xj(name)})"      <-- correct, note: NO quotes around it
+//   onclick="openThing('${x(name)}')"     <-- WRONG, injectable
+//
+// The second form cannot be fixed by escaping `'`: the HTML parser decodes
+// entities BEFORE the JS is parsed, so `&#39;` turns back into `'` and closes
+// the string literal anyway. The only fix is to emit a complete JS literal.
+// JSON.stringify escapes the quotes and backslashes, x() then makes it safe as
+// attribute text, and the parser hands well-formed JS to the handler.
+const xj = (v) => x(JSON.stringify(String(v ?? '')));
 const fmtDate = (d,m,y,hh,mm) => {
   if(d==null) return '?';
   const ts = (hh||mm) ? ` ${String(hh||0).padStart(2,'0')}:${String(mm||0).padStart(2,'0')}` : '';

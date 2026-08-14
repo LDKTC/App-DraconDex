@@ -32,13 +32,13 @@ function buildNpTree(pickId, excludeIds) {
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(f.name)}</span>
         <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${fps.length}</span>
       </div>
-      ${open ? fps.map(p => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('') : ''}
+      ${open ? fps.map(p => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker(${xj(pickId)},${p.id},${xj(p.name)})">${x(p.name)}</div>`).join('') : ''}
     </div>`;
   }
   const unfiled = (S.projects || []).filter(p => !p.folder_id && !ex.has(p.id));
   if (unfiled.length) {
     if ((S.folders||[]).length) html += `<div style="border-top:1px solid var(--border);margin:4px 0"></div>`;
-    html += unfiled.map(p => `<div class="np-item np-unfiled" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('');
+    html += unfiled.map(p => `<div class="np-item np-unfiled" onclick="event.stopPropagation();selectNovelFromPicker(${xj(pickId)},${p.id},${xj(p.name)})">${x(p.name)}</div>`).join('');
   }
   if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:calc(13px * var(--fsc,1))">No novels available</div>`;
   return html;
@@ -60,13 +60,13 @@ function buildLinkedNovelPicker(pickId, linkedProjects, currentName, onSelectCb)
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x(f.name)}</span>
         <span style="color:var(--t3);font-size:calc(11px * var(--fsc,1))">${fps.length}</span>
       </div>
-      ${open ? fps.map(p => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('') : ''}
+      ${open ? fps.map(p => `<div class="np-item" onclick="event.stopPropagation();selectNovelFromPicker(${xj(pickId)},${p.id},${xj(p.name)})">${x(p.name)}</div>`).join('') : ''}
     </div>`;
   }
   const unfiled = (linkedProjects || []).filter(p => !p.folder_id);
   if (unfiled.length) {
     if ((S.folders||[]).length && html) html += `<div style="border-top:1px solid var(--border);margin:4px 0"></div>`;
-    html += unfiled.map(p => `<div class="np-item np-unfiled" onclick="event.stopPropagation();selectNovelFromPicker('${pickId}',${p.id},'${x(p.name)}')">${x(p.name)}</div>`).join('');
+    html += unfiled.map(p => `<div class="np-item np-unfiled" onclick="event.stopPropagation();selectNovelFromPicker(${xj(pickId)},${p.id},${xj(p.name)})">${x(p.name)}</div>`).join('');
   }
   if (!html) html = `<div style="padding:10px 12px;color:var(--t3);font-size:calc(13px * var(--fsc,1))">No linked novels</div>`;
   const cbAttr = onSelectCb ? ` data-on-select="${x(onSelectCb)}"` : '';
@@ -185,7 +185,7 @@ async function colorPicker(selId=null) {
 // ═══ SYMBOL PICKER ═════════════════════════════════════
 function buildSymbolSwatches(symbols, selId, hiddenInputId, previewId, customInputId){
   return symbols.map(s =>
-    `<button type="button" class="symswatch ${selId===s.id?'sel':''}" title="${x(s.label||'')}" onclick="pickSymbol('${hiddenInputId}','${previewId||''}','${customInputId||''}',this,${s.id},'${x(s.glyph).replace(/'/g,"\\'")}')">${x(s.glyph)}</button>`
+    `<button type="button" class="symswatch ${selId===s.id?'sel':''}" title="${x(s.label||'')}" onclick="pickSymbol(${xj(hiddenInputId)},${xj(previewId||'')},${xj(customInputId||'')},this,${s.id},${xj(s.glyph)})">${x(s.glyph)}</button>`
   ).join('');
 }
 

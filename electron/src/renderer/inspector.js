@@ -59,11 +59,11 @@ function buildInspectorHtml(m) {
     <div class="insp-label">${t('moduleLink')}</div>
     <div class="prop"><span class="pk">${t('outgoingLinks')}</span></div>
     <div class="insp-chips">${d.links.outgoing.length ? d.links.outgoing.map(l =>
-      l.key ? `<span class="htag lk" onclick="openEntityByKey('${l.key}')">[[${x(l.name)}]]</span>` : `<span class="htag" style="opacity:.5">[[${x(l.name)}]]</span>`
+      l.key ? `<span class="htag lk" onclick="openEntityByKey(${xj(l.key)})">[[${x(l.name)}]]</span>` : `<span class="htag" style="opacity:.5">[[${x(l.name)}]]</span>`
     ).join('') : `<span class="pv ghost">—</span>`}</div>
     <div class="prop"><span class="pk">${t('backlinks')}</span></div>
     <div class="insp-chips">${d.links.backlinks.length ? d.links.backlinks.map(l =>
-      `<span class="htag lk" onclick="openEntityByKey('${l.key}')">${x(l.name)}</span>`
+      `<span class="htag lk" onclick="openEntityByKey(${xj(l.key)})">${x(l.name)}</span>`
     ).join('') : `<span class="pv ghost">${t('noBacklinks')}</span>`}</div>
 
     <div class="insp-label">${t('moduleUiSpec')}</div>

@@ -134,9 +134,14 @@ function mountAuthorEditor() {
 function authorLooksHtml(content) {
   return /^\s*</.test(content || '');
 }
+// The HTML branch is sanitized (sanitize.js) because chapter_content is not
+// necessarily locally authored — it also arrives via an imported .db or a
+// pulled sync vault, and this is the one place stored markup reaches
+// innerHTML unescaped. The markdown branch needs no filter; mdRender escapes
+// everything on the way through.
 function authorContentAsHtml(content) {
   return authorLooksHtml(content)
-    ? (content || '')
+    ? sanitizeHtml(content || '')
     : mdRender(content || '', { resolveLink: typeof resolveWikiNameCached === 'function' ? resolveWikiNameCached : null });
 }
 
@@ -185,8 +190,12 @@ function mountAuthorRichEditor(el, ch) {
   });
 
   const doSave = async () => {
-    await api.author.updateContent(ch.id, body.innerHTML);
-    ch.chapter_content = body.innerHTML;
+    // Sanitize on the way OUT as well as in: a paste into the contenteditable
+    // brings the source document's markup with it, so this is what keeps a
+    // payload from being written to the DB in the first place.
+    const clean = sanitizeHtml(body.innerHTML);
+    await api.author.updateContent(ch.id, clean);
+    ch.chapter_content = clean;
     if (saveState) saveState.textContent = t('saved');
   };
   const scheduleSave = () => {

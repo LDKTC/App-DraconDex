@@ -74,7 +74,7 @@ function pluginPanelButtonsHtml() {
       // auto-translator off a name the plugin author chose.
       const label = panel.icon ? x(panel.icon) : I.layer;
       html += `<button class="btn btn-g btn-i bnav plgp-btn ${active ? 'active' : ''}" data-no-i18n
-        onclick="togglePluginPanel('${x(owner.pluginKey)}','${x(panel.id)}')"
+        onclick="togglePluginPanel(${xj(owner.pluginKey)},${xj(panel.id)})"
         title="${t('openPluginPanel')} — ${x(panel.title)}">${label}</button>`;
     }
   }

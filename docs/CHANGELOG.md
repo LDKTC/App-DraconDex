@@ -19,6 +19,62 @@
 
 ---
 
+## 2026-08-13 — Security hardening: ปิด chain RCE→ขโมย credential + ชั้นจำกัดความเสียหาย (v4.7.6)
+- commit: uncommitted
+- ไฟล์ที่แก้: `electron/main.js`, `electron/index.html`,
+  `electron/src/db/update.js`, `electron/src/db/secret-store.js` (ใหม่),
+  `electron/src/db/drive.js`, `electron/src/db/sync.js`, `electron/src/db/plugin.js`,
+  `electron/src/renderer/sanitize.js` (ใหม่), `electron/src/renderer/core/ui.js`,
+  `electron/src/renderer/update.js`, `electron/src/renderer/mod/author.js`,
+  + 14 ไฟล์ renderer ที่แปลง inline handler มาใช้ `xj()`,
+  `electron/src/renderer/i18n.js`, `electron/test/update-release.test.mjs` (ใหม่),
+  `docs/UPDATE.md`, `docs/SYSTEMS.md`, `docs/FILES.md`
+- อะไรเปลี่ยน:
+  - **update notice ย้ายจาก Firebase Firestore ไป GitHub Releases** — ของเดิม
+    ชี้ไปโปรเจกต์ `dracondex-app` ที่ในซอร์สเขียนกำกับไว้เองว่า
+    `TODO(maintainer): real Firebase project id` `parseGithubRelease()` ตรวจทุก
+    field: tag ต้องตรง `/^\d+(\.\d+){0,3}$/`, `html_url` ต้องอยู่ใต้
+    `https://github.com/LDKTC/App-DraconDex/releases/` (ตรึงทั้ง host และ path),
+    notes ตัดที่ 4000 ตัว; `openUpdateDownload()` ตรวจ prefix เดิมซ้ำแทน
+    `^https?://` เปล่าๆ
+  - **`x()` escape `'` เพิ่ม + เพิ่ม `xj()`** สำหรับค่าที่ส่งเป็น argument ของ
+    inline handler (`onclick="f(${xj(v)})"` ไม่มี quote ล้อม) — การ escape `'`
+    อย่างเดียวแก้เคสนี้ไม่ได้เพราะ HTML parser decode entity ก่อน JS parser อ่าน
+    แปลง ~30 จุดที่รับข้อมูลจาก network/ไฟล์ import/ข้อความอิสระ **รวม 3 จุดที่
+    เดิมแก้ด้วยมือแบบ `.replace(/'/g,"\\'")` ซึ่งจะพังใหม่ถ้าไม่แปลงพร้อมกัน**
+  - **`setting:get`/`setting:set` เป็น allowlist** เหลือ key เดียวที่ renderer
+    ใช้จริง (`versionLimit`) — เดิมเป็นช่อง K/V ทั่วไปที่อ่าน
+    `drive:refreshToken`/`drive:clientSecret`/`google:refreshToken`/`sync:anonKey` ได้
+  - **`sanitize.js` ใหม่** — Author เป็นที่เดียวที่เอา HTML ดิบที่เก็บไว้ไปใส่
+    `innerHTML` (เนื้อหามาจาก `.db` ที่ import หรือ vault ที่ sync มาได้)
+    กรองด้วย allowlist บน `DOMParser` normalize `tagName` เป็นตัวใหญ่ก่อนเทียบ
+    เพราะ SVG/MathML เป็น foreign content ที่ `tagName` เป็นตัวเล็ก
+  - **ชั้นจำกัดความเสียหาย** — `app.on('web-contents-created')` ใส่
+    `setWindowOpenHandler` (ปฏิเสธทุกกรณี) + `will-navigate` ให้ทุกหน้าต่าง
+    (เดิมมีแค่ webview guest ทำให้หน้าต่าง plugin ย้ายไป origin ระยะไกลแล้วยัง
+    ถือ `pluginApi` ได้), หน้าต่าง plugin ได้ `partition` แยกเหมือน panel,
+    ปฏิเสธ permission ทุกชนิด, และเพิ่ม CSP `<meta>` (ต้องเป็น meta tag เพราะ
+    หน้าโหลดแบบ `file://`) ที่ `connect-src 'none'` ตัดทางส่งข้อมูลออก
+  - **path/URL จาก renderer** — `importdock:add` รับเฉพาะ path ใต้ root ที่ผู้ใช้
+    เลือกผ่าน dialog จริง และคำนวณ `file_type` จากนามสกุลจริงฝั่ง main;
+    `db:importMergeFile` ผูกกับ path ที่ `db:pickImportFile` คืนมา;
+    `sync:setConfig` ต้องเป็น https (หรือ http เฉพาะ loopback)
+  - **`secret-store.js` ใหม่** — ห่อ credential ใน `app_setting` ด้วย
+    `safeStorage` (`enc:v1:` prefix) ค่าเก่าที่เป็น plaintext อ่านได้ปกติแล้ว
+    เขียนทับเป็นแบบเข้ารหัสเอง ไม่ต้อง login ใหม่ ถ้า OS ไม่มี keyring จะ
+    fallback เป็น plaintext แทนที่จะ login ไม่ได้
+  - i18n: เพิ่ม `syncErrBadUrl` ครบ 18 locale
+- ทำไม: รอบตรวจความปลอดภัยพบ chain ที่ต่อกันได้จริง — endpoint อัปเดตที่ไม่มี
+  เจ้าของ → แทรกโค้ดผ่าน inline handler → renderer ที่ถือ `window.api` ทั้งชุด →
+  อ่าน refresh token ของ Google ที่เก็บเป็น plaintext โดยไม่มี CSP หรือ
+  navigation guard คอยจำกัดผล ส่วนที่เหลือของแอปแน่นอยู่แล้ว (contextIsolation,
+  contextBridge ระบุครบ, SQL ผูก parameter, ไม่มี credential ในซอร์ส)
+- ยังไม่แก้ (ตั้งใจ): `--no-sandbox` ระดับ process, `clientSecret` ที่ยังส่งไป
+  ให้ renderer, งาน CI/workflow, inline handler ที่เหลืออีก ~58 จุด,
+  และการเซ็น/ปักหมุด hash ของโค้ด plugin
+- Doc ที่อัปเดต: `docs/UPDATE.md` (เขียนใหม่ทั้งไฟล์), `docs/SYSTEMS.md` §10.9 (ใหม่),
+  `docs/FILES.md` (`sanitize.js`, `secret-store.js`)
+
 ## 2026-08-12 — Plugin `dependencies` — ปลั๊กอินติดตั้งปลั๊กอินอื่นไปด้วยกัน (v4.8.0)
 - commit: uncommitted
 - ไฟล์ที่แก้: `electron/src/db/plugin-manifest.js`, `electron/src/db/plugin.js`,

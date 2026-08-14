@@ -82,7 +82,7 @@ function openCustomThemeModal(id = null){
       <button class="btn btn-s" onclick="importCustomPalette()">${t('customThemeImport')}</button>
       <button class="btn btn-s" onclick="exportCustomPalette()">${t('customThemeExport')}</button>
       <button class="btn btn-s" onclick="closeFloatingPanel('ctm-panel')">${t('cancel')}</button>
-      <button class="btn btn-p" onclick="saveCustomTheme(${id ? `'${id}'` : 'null'})">${t('save')}</button>
+      <button class="btn btn-p" onclick="saveCustomTheme(${id ? xj(id) : 'null'})">${t('save')}</button>
     </div>`, {width:640, height:560});
   ctmPaint();
 }
