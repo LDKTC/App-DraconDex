@@ -1,5 +1,5 @@
 'use strict';
-// The whole CREATE TABLE surface, as one SQL string. DATA FILE — it is long by
+// The whole CREATE TABLE surface, as SQL strings. DATA FILE — it is long by
 // nature and is exempt from the file-size split rules; adding a table here (or
 // to indexes.js/seed.js) changes schemaStamp(), which is what makes initDB's
 // "skip when already current" fast path safe.
@@ -7,7 +7,90 @@
 // (Originally: "Schema source, hoisted to module scope so schemaStamp() can
 // fingerprint it. Editing any of these three changes the stamp, which is what
 // makes the 'skip initDB when already current' fast path safe to add.")
-const DDL_SQL = `
+
+// ─── App-level schema (app.ddx) ─────────────────────────────────────────────
+// Tables that belong to the INSTALL, not to any one vault: preferences,
+// credentials and installed plugins. They live in their own database file so a
+// vault .ddx is a self-contained, shareable world and nothing else — handing
+// someone a Nexus must not hand them your Google refresh token.
+//
+// use_color is deliberately in BOTH this and VAULT_DDL_SQL, seeded identically
+// in each. Every vault table references it, so a vault needs its own copy to
+// stand alone; and the Welcome window has no vault open yet still has to render
+// vault colours AND run colorPicker() when creating one. The seed is a fixed
+// ordered list, so the sixteen base colours get the same ids on both sides.
+const APP_DDL_SQL = `
+    CREATE TABLE IF NOT EXISTS use_color (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      color_code TEXT UNIQUE NOT NULL,
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    INSERT OR IGNORE INTO use_color (color_code) VALUES
+      ('#6366f1'),('#8b5cf6'),('#ec4899'),('#f43f5e'),
+      ('#f97316'),('#eab308'),('#22c55e'),('#06b6d4'),
+      ('#3b82f6'),('#64748b'),('#a78bfa'),('#34d399'),
+      ('#fb923c'),('#f472b6'),('#38bdf8'),('#a3e635');
+
+    CREATE TABLE IF NOT EXISTS app_setting (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+
+    -- Plugins (v4.0.0 as "Github extensions", renamed v4.2.0 — see
+    -- migratePluginV42 in schema/migrations.js): a downloaded plugin owns its
+    -- own plg_<key>_<name> table(s), tracked here so src/db/plugin.js can
+    -- enforce ownership before any dynamic SQL touches a plugin-derived
+    -- identifier. table_name is the ONLY identifier ever spliced into a query
+    -- — always resolved by ?-bound lookup on (plugin_ref, local_name), never
+    -- reconstructed by string concatenation from renderer/plugin-window input.
+    CREATE TABLE IF NOT EXISTS plugin (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      plugin_key TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      version TEXT,
+      repo_host TEXT NOT NULL DEFAULT 'github',
+      repo_owner TEXT NOT NULL,
+      repo_name TEXT NOT NULL,
+      repo_ref TEXT NOT NULL DEFAULT 'main',
+      entry_html TEXT NOT NULL,
+      manifest_json TEXT NOT NULL,
+      installed_at TEXT NOT NULL DEFAULT (datetime('now')),
+      update_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS plugin_table (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      plugin_ref INTEGER NOT NULL REFERENCES plugin(id) ON DELETE CASCADE,
+      local_name TEXT NOT NULL,
+      table_name TEXT NOT NULL UNIQUE,
+      columns_json TEXT NOT NULL,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(plugin_ref, local_name)
+    );
+
+    -- One row per entry in a plugin manifest's "dependencies" array, resolved
+    -- at install time. manifest_json already holds the raw URLs, but "is this
+    -- dependency installed?" needs the plugin id a URL resolves to, and that
+    -- costs a network fetch — so the resolution is recorded here once and the
+    -- check stays local SQL afterwards. dep_key NULL means the URL could not
+    -- be resolved at install time (fail_code says why); such a row counts as
+    -- missing, so the plugin stays un-launchable until the user retries it.
+    -- (No backticks in this file — DDL_SQL is one template literal.)
+    CREATE TABLE IF NOT EXISTS plugin_dependency (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      plugin_ref INTEGER NOT NULL REFERENCES plugin(id) ON DELETE CASCADE,
+      dep_url TEXT NOT NULL,
+      dep_key TEXT,
+      dep_name TEXT,
+      fail_code TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(plugin_ref, dep_url)
+    );
+`;
+
+// ─── Vault-level schema (one <name>.ddx per Nexus) ──────────────────────────
+const VAULT_DDL_SQL = `
     CREATE TABLE IF NOT EXISTS use_color (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       color_code TEXT UNIQUE NOT NULL,
@@ -856,11 +939,6 @@ const DDL_SQL = `
       create_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE TABLE IF NOT EXISTS app_setting (
-      key TEXT PRIMARY KEY,
-      value TEXT
-    );
-
     -- Import Dock (Phase 18). Files imported from a folder, listed in the
     -- hub section. linker_key optionally binds a file to a nest entity
     -- (module_5, cobj_3, ...); use_as_image marks an image file as that
@@ -960,57 +1038,12 @@ const DDL_SQL = `
       UNIQUE(object_ref, template_ref)
     );
 
-    -- Plugins (v4.0.0 as "Github extensions", renamed v4.2.0 — see
-    -- migratePluginV42 in schema/migrations.js): a downloaded plugin owns its
-    -- own plg_<key>_<name> table(s), tracked here so src/db/plugin.js can
-    -- enforce ownership before any dynamic SQL touches a plugin-derived
-    -- identifier. table_name is the ONLY identifier ever spliced into a query
-    -- — always resolved by ?-bound lookup on (plugin_ref, local_name), never
-    -- reconstructed by string concatenation from renderer/plugin-window input.
-    CREATE TABLE IF NOT EXISTS plugin (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      plugin_key TEXT NOT NULL UNIQUE,
-      name TEXT NOT NULL,
-      version TEXT,
-      repo_host TEXT NOT NULL DEFAULT 'github',
-      repo_owner TEXT NOT NULL,
-      repo_name TEXT NOT NULL,
-      repo_ref TEXT NOT NULL DEFAULT 'main',
-      entry_html TEXT NOT NULL,
-      manifest_json TEXT NOT NULL,
-      installed_at TEXT NOT NULL DEFAULT (datetime('now')),
-      update_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS plugin_table (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      plugin_ref INTEGER NOT NULL REFERENCES plugin(id) ON DELETE CASCADE,
-      local_name TEXT NOT NULL,
-      table_name TEXT NOT NULL UNIQUE,
-      columns_json TEXT NOT NULL,
-      create_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(plugin_ref, local_name)
-    );
-
-    -- One row per entry in a plugin manifest's "dependencies" array, resolved
-    -- at install time. manifest_json already holds the raw URLs, but "is this
-    -- dependency installed?" needs the plugin id a URL resolves to, and that
-    -- costs a network fetch — so the resolution is recorded here once and the
-    -- check stays local SQL afterwards. dep_key NULL means the URL could not
-    -- be resolved at install time (fail_code says why); such a row counts as
-    -- missing, so the plugin stays un-launchable until the user retries it.
-    -- (No backticks in this file — DDL_SQL is one template literal.)
-    CREATE TABLE IF NOT EXISTS plugin_dependency (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      plugin_ref INTEGER NOT NULL REFERENCES plugin(id) ON DELETE CASCADE,
-      dep_url TEXT NOT NULL,
-      dep_key TEXT,
-      dep_name TEXT,
-      fail_code TEXT,
-      create_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(plugin_ref, dep_url)
-    );
 `;
 
 
-module.exports = { DDL_SQL };
+// DDL_SQL is the pre-split whole-schema string, kept for the one-time
+// split migration (src/db/split-migrate.js), which has to open a database
+// holding both halves at once.
+const DDL_SQL = APP_DDL_SQL + VAULT_DDL_SQL;
+
+module.exports = { APP_DDL_SQL, VAULT_DDL_SQL, DDL_SQL };

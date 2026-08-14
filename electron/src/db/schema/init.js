@@ -1,43 +1,104 @@
 'use strict';
-// Schema fingerprint + the one-time init path. schemaStamp() hashes the SQL
-// *and the source text* of every migration function, so any edit to them
-// invalidates the stamp and initDB re-runs its (idempotent) work once.
+// Schema fingerprints + the one-time init paths. A stamp hashes the SQL *and
+// the source text* of every migration function it covers, so any edit to them
+// invalidates the stamp and the (idempotent) init work re-runs once.
+//
+// v4.9.0: there are now TWO schemas and therefore two stamps — app.ddx
+// (preferences, credentials, plugins) and a per-Nexus vault .ddx. They are
+// separate database files with independent PRAGMA user_version fields, so the
+// two stamps never collide. initDB() remains as the single-file path both
+// halves still share until the vault split lands.
 const { _now, _t, hasTable, hasColumn, hasAnyMissingColumns } = require('../conn');
-const { DDL_SQL } = require('./ddl');
+const { APP_DDL_SQL, VAULT_DDL_SQL } = require('./ddl');
 const { INDEX_SQL } = require('./indexes');
 const { SEED_SYMBOLS } = require('./seed');
 const {
   migrateInlineColumns, migrateNexusV28, migrateMapV3, migrateTimelineV3,
   migrateWriterV27, migrateHeroV26, migratePluginV42, ensureIndexes,
 } = require('./migrations');
-const SCHEMA_EPOCH = 1;
+// Bumped to 2 by the app/vault schema split: every existing database re-runs
+// its (idempotent) init path once and re-stamps.
+const SCHEMA_EPOCH = 2;
+
+// user_version is a signed 32-bit field; take 4 bytes and force it positive
+// so 0 stays reserved for "never stamped".
+function stampOf(parts) {
+  const h = require('crypto').createHash('sha1').update(parts.join('\x00')).digest();
+  return (h.readUInt32BE(0) & 0x7fffffff) || 1;
+}
+
+// Each stamp covers ONLY what its own file contains. Adding a migration means
+// adding it to the matching list here, or an existing database never runs it.
+let _appStamp = null;
+function appSchemaStamp() {
+  if (_appStamp === null) {
+    _appStamp = stampOf([
+      String(SCHEMA_EPOCH), APP_DDL_SQL,
+      String(initAppDB), String(migratePluginV42),
+    ]);
+  }
+  return _appStamp;
+}
+
+let _vaultStamp = null;
+function vaultSchemaStamp() {
+  if (_vaultStamp === null) {
+    _vaultStamp = stampOf([
+      String(SCHEMA_EPOCH), VAULT_DDL_SQL, INDEX_SQL, SEED_SYMBOLS.join('\x01'),
+      String(initVaultDB), String(migrateInlineColumns), String(migrateNexusV28),
+      String(migrateMapV3), String(migrateTimelineV3), String(migrateWriterV27),
+      String(migrateHeroV26), String(ensureIndexes),
+    ]);
+  }
+  return _vaultStamp;
+}
+
+// The single-file stamp: a database holding BOTH halves (which is every
+// database until the vault split migration runs) must invalidate when either
+// half changes.
 let _schemaStamp = null;
 function schemaStamp() {
-  if (_schemaStamp !== null) return _schemaStamp;
-  const parts = [
-    String(SCHEMA_EPOCH), DDL_SQL, INDEX_SQL, SEED_SYMBOLS.join('\x01'),
-    String(initDB), String(migrateInlineColumns), String(migrateNexusV28),
-    String(migrateMapV3), String(migrateTimelineV3), String(migrateWriterV27),
-    String(migrateHeroV26), String(migratePluginV42), String(ensureIndexes),
-  ];
-  // user_version is a signed 32-bit field; take 4 bytes and force it positive
-  // so 0 stays reserved for "never stamped".
-  const h = require('crypto').createHash('sha1').update(parts.join('\x00')).digest();
-  _schemaStamp = (h.readUInt32BE(0) & 0x7fffffff) || 1;
+  if (_schemaStamp === null) {
+    _schemaStamp = stampOf([String(appSchemaStamp()), String(vaultSchemaStamp()), String(initDB)]);
+  }
   return _schemaStamp;
 }
 
-// Takes the open connection as an argument — it used to close over the `db`
-// module binding that now lives in conn.js. Every migration below already took
-// its connection this way. NOTE: this signature change alters String(initDB)
-// and therefore schemaStamp(), so the first launch after this change re-runs
-// the (idempotent) init path once and re-stamps.
-function initDB(db) {
+// ─── app.ddx ────────────────────────────────────────────────────────────────
+// Preferences, credentials and installed plugins. Deliberately tiny: no
+// indexes (verified — indexes.js has none for app_setting/plugin/plugin_table)
+// and no seed beyond use_color's sixteen base colours.
+//
+// ensureIndexes() must NEVER run here: INDEX_SQL is entirely vault-scoped and
+// `CREATE INDEX IF NOT EXISTS` still throws on a table that doesn't exist.
+function initAppDB(db) {
+  const want = appSchemaStamp();
+  const have = Number(db.prepare(`PRAGMA user_version`).get()?.user_version || 0);
+  if (have === want) { _t('initAppDB (skipped, stamp match)', _now()); return; }
+
+  // Must precede the DDL: it renames the pre-v4.2.0 `extension`/`extension_table`
+  // pair into `plugin`/`plugin_table`, and CREATE TABLE IF NOT EXISTS would
+  // otherwise create an empty `plugin` alongside the old data instead.
+  const tPlugin = _now();
+  migratePluginV42(db);
+  _t('plugin v4.2 rename', tPlugin);
+
+  const tDDL = _now();
+  db.exec(APP_DDL_SQL);
+  _t('app DDL exec', tDDL);
+
+  db.exec(`PRAGMA user_version = ${appSchemaStamp() | 0}`);
+}
+
+// ─── one vault .ddx ─────────────────────────────────────────────────────────
+// Everything a Nexus owns. Takes the open connection as an argument — every
+// migration already took its connection this way.
+function initVaultDB(db) {
   // Fast path: schema already matches this build. Everything below is idempotent,
   // so the only cost of a false miss is doing the work we'd have done anyway.
-  const want = schemaStamp();
+  const want = vaultSchemaStamp();
   const have = Number(db.prepare(`PRAGMA user_version`).get()?.user_version || 0);
-  if (have === want) { _t('initDB (skipped, stamp match)', _now()); return; }
+  if (have === want) { _t('initVaultDB (skipped, stamp match)', _now()); return; }
 
   const tLegacyProbe = _now();
   const hadWikiLinkTable = hasTable(db, 'wiki_link');
@@ -104,16 +165,9 @@ function initDB(db) {
   } catch (_) {}
   _t('legacy-nav probe', tLegacyProbe);
 
-  // Must precede the DDL: it renames the pre-v4.2.0 `extension`/`extension_table`
-  // pair into `plugin`/`plugin_table`, and CREATE TABLE IF NOT EXISTS below
-  // would otherwise create an empty `plugin` alongside the old data instead.
-  const tPlugin = _now();
-  migratePluginV42(db);
-  _t('plugin v4.2 rename', tPlugin);
-
   const tDDL = _now();
-  db.exec(DDL_SQL);
-  _t('DDL exec', tDDL);
+  db.exec(VAULT_DDL_SQL);
+  _t('vault DDL exec', tDDL);
 
   const tMigrations = _now();
   migrateInlineColumns(db);
@@ -133,10 +187,34 @@ function initDB(db) {
   // Stamped LAST, and deliberately not inside a transaction: if anything above
   // throws or the process is killed mid-upgrade, the stamp is never written and
   // the whole (idempotent) path simply re-runs on the next launch. Wrapping
-  // initDB in a transaction would also silently break migrateMapV3 /
+  // this in a transaction would also silently break migrateMapV3 /
   // migrateTimelineV3 / the legacy-nav drop, because PRAGMA foreign_keys is a
   // no-op inside a transaction.
+  db.exec(`PRAGMA user_version = ${vaultSchemaStamp() | 0}`);
+}
+
+// ─── the single-file path ───────────────────────────────────────────────────
+// Every database today still holds both halves, so getDB() calls this and it
+// runs both inits against the one connection. Each writes user_version as it
+// finishes, so this re-stamps with the combined value afterwards — otherwise
+// the next launch would see the vault stamp, miss, and redo the work forever.
+//
+// This function disappears once the vault split migration lands and getAppDB()
+// / getVaultDB() call initAppDB / initVaultDB directly.
+function initDB(db) {
+  const want = schemaStamp();
+  const have = Number(db.prepare(`PRAGMA user_version`).get()?.user_version || 0);
+  if (have === want) { _t('initDB (skipped, stamp match)', _now()); return; }
+
+  // Zero the stamp first so neither sub-init can take its own fast path: each
+  // writes its stamp when it finishes, and the second would otherwise be
+  // comparing against the first's value. (A hash collision between the two is
+  // vanishingly unlikely, but "vanishingly unlikely" here means silently
+  // skipping every vault migration, so it is not worth leaving to chance.)
+  db.exec(`PRAGMA user_version = 0`);
+  initAppDB(db);
+  initVaultDB(db);
   db.exec(`PRAGMA user_version = ${schemaStamp() | 0}`);
 }
 
-module.exports = { SCHEMA_EPOCH, schemaStamp, initDB };
+module.exports = { SCHEMA_EPOCH, schemaStamp, appSchemaStamp, vaultSchemaStamp, initDB, initAppDB, initVaultDB };
