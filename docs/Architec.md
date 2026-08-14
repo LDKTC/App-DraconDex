@@ -13,6 +13,7 @@
 │ Electron App (โปรดักชันหลัก)                                 │
 │  electron/main.js → preload.js → src/renderer/* (UI)        │
 │  electron/database.js → src/db/* (node-sqlite3-wasm)        │
+│  v4.9.0: app.ddx + หนึ่ง .ddx ต่อหนึ่ง Nexus — ดู docs/VAULTS.md │
 ├─────────────────────────────────────────────────────────────┤
 │ flutter/ (Flutter port — front-end แยก, DB schema ร่วม)      │
 └─────────────────────────────────────────────────────────────┘

@@ -163,7 +163,14 @@ Google OAuth + Drive API v3 โดยตรง         เซิร์ฟเว�
 - `PATCH upload/drive/v3/files/{id}?uploadType=media` — เขียนทับไฟล์เดิม
 - `GET drive/v3/files/{id}?alt=media` — ดาวน์โหลด
 - ไฟล์คงที่ 2 ชื่อ ไม่มีเวอร์ชันย้อนหลัง: `dracondex-layout-profile.json`,
-  `dracondex-backup.ddx`
+  `dracondex-backup.ddx` — **ตั้งแต่ v4.9.0 เปลี่ยนเป็น
+  `dracondex-backup-<vault>-<id>.ddx` หนึ่งไฟล์ต่อหนึ่ง Nexus** เพราะฐานข้อมูล
+  ถูกแยกเป็น `app.ddx` + หนึ่งไฟล์ต่อ vault (ดู `docs/VAULTS.md`) ตอน restore จะ
+  ลองชื่อของ vault นั้นก่อน แล้ว fallback ไปชื่อเดิมชื่อเดียว เพื่อให้ backup
+  เก่ายังกู้ได้. **`app.ddx` ไม่ถูกอัปโหลด** โดยตั้งใจ — ในนั้นมี refresh token
+  ที่เข้าถึง Drive บัญชีนี้เอง backup ที่กู้ credential ของตัวเองขึ้นมาบนเครื่อง
+  อื่นได้เป็นคำสัญญาที่ใหญ่กว่าคำว่า backup. timer auto-backup รายชั่วโมงยัง
+  ทำงานหน้าต่างเดียว (claim ผ่าน localStorage) ไม่ใช่ทุกหน้าต่างเหมือนเดิม
 - เพดานเตือน: `usage/limit >= 0.9` = near_full (เตือน), `>= 1` = full
   (บล็อกการสำรองข้อมูลตั้งแต่ต้น ก่อนเรียก API อัปโหลดใดๆ)
 

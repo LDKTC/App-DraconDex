@@ -286,6 +286,44 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 
 ---
 
+## Vault files + cloud seam + plugin dependencies — ไฟล์ใหม่ (2026-08-14, v4.9.0)
+
+รายละเอียดสถาปัตยกรรมอยู่ที่ `docs/VAULTS.md` (การแยกไฟล์) และ `docs/CLOUD.md`
+(ช่องเสียบ provider) — ตารางนี้บอกแค่ว่าไฟล์ไหนทำอะไร
+
+### electron/src/db/ (ใหม่)
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `vault-context.js` | `AsyncLocalStorage` ที่บอกว่า IPC call ปัจจุบันเป็นของ vault ไหน + แผนที่ `BrowserWindow.id → nexus id`. `requireNexusId()` fail closed |
+| `vaults.js` | ตาราง `nexus_file` ใน `app.ddx` — ทะเบียน vault ที่หน้า Welcome ใช้วาดรายการโดยไม่ต้องเปิดไฟล์ vault เลย |
+| `split-migrate.js` | migration ครั้งเดียว `novel-manager.ddx` → `app.ddx` + หนึ่งไฟล์ต่อ Nexus (copy-แล้ว-prune, temp-แล้ว-rename) |
+| `cloud.js` | registry + สัญญาของ cloud provider (ยังไม่ต่อ backend ใหม่) |
+| `cloud-drive.js` | adapter ครอบ `drive.js` เดิม ไม่ย้ายโค้ด |
+| `cloud-planned.js` | dropbox/onedrive/webdav/s3 — ตอบ `not_implemented` |
+
+### electron/src/renderer/ (ใหม่)
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `core/nexus-options.js` | เมนู ⋯ ต่อ Nexus บนหน้า Welcome — ทำสำเนา/ส่งออก/แชร์/เปิดในตัวจัดการไฟล์/ลบ + `nexusRowButtonsHtml()` ที่ `welcome.js` กับ `nexus.js` ใช้ร่วมกัน |
+| `cloud.js` | หน้า Setting → ข้อมูลแอป → พื้นที่เก็บข้อมูลบนคลาวด์ |
+
+### electron/test/ (ใหม่)
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `schema-split.test.mjs` | 6 ข้อ — ห้ามมี backtick ใน DDL string (บั๊กเดิมที่เกิดสองรอบ), การแบ่งตาราง app/vault, `INDEX_SQL` ต้องเป็น vault-only, และโมดูล app-level ห้ามเรียก `getDB()` |
+
+### ตารางใหม่
+
+- `nexus_file` (`app.ddx`) — ทะเบียน vault: ชื่อ, สี (เก็บเป็น code ไม่ใช่ FK),
+  `file_path`, จำนวนที่ cache ไว้, สถานะ missing
+- `plugin_dependency` (`app.ddx`) — ผล resolve ของ `dependencies` ในแต่ละ manifest
+  ตอนติดตั้ง ทำให้ถามว่า "dependency นี้ติดตั้งอยู่ไหม" ด้วย SQL ในเครื่องได้
+
+---
+
 ## v3 Module System — ไฟล์ใหม่ (2026-07-16)
 
 ระบบใหม่ทั้งหมด (Nexus nest tree, Hub, Builder, Module Inspector, 15
