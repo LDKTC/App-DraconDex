@@ -49,6 +49,9 @@ contextBridge.exposeInMainWorld('api', {
     create:  (n,m,c,fp)    => inv('nexus:create', n,m,c,fp),
     update:  (id,n,m,c)    => inv('nexus:update', id,n,m,c),
     delete:  (id)          => inv('nexus:delete', id),
+    defaultPath:  (name)   => inv('nexus:defaultPath', name),
+    pickLocation: (name)   => inv('nexus:pickLocation', name),
+    relink:       (id)     => inv('nexus:relink', id),
   },
   note: {
     getFolders:    (nx)           => inv('note:getFolders', nx),

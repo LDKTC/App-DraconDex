@@ -17,8 +17,9 @@ const { currentNexusId } = require('./vault-context');
 const {
   NEXUS_PROJECT_TABLES, listVaults, getVault, insertVault, insertVaultWithId,
   updateVaultMeta, removeVault, refreshVaultCounts, countVaultItems,
-  vaultDefaultPath, setVaultPath, vaultPathInUse,
+  vaultDefaultPath, vaultsDir, setVaultPath, vaultPathInUse,
 } = require('./vaults');
+const { openVaultProbe } = require('./conn');
 
 // Vault names used to be unique because of `nexus.name UNIQUE` inside the one
 // shared database. Each vault file now holds a single nexus row, so that
@@ -180,7 +181,36 @@ const deleteNexus = (id) => {
   return { blocked: false, count: 0, filePath };
 };
 
+// Points a registry row at a vault file the user located by hand, after the
+// old path stopped resolving. Validated before it is accepted: an arbitrary
+// .ddx must not be adoptable as a vault, and a file already registered to a
+// different Nexus must not be registered twice.
+function relinkNexusFile(id, filePath) {
+  if (!getVault(id)) return { ok: false, code: 'not_found' };
+  if (!fs.existsSync(filePath)) return { ok: false, code: 'file_missing' };
+  if (vaultPathInUse(filePath, id)) return { ok: false, code: 'already_registered' };
+
+  // Shape check: a vault file has the vault schema and exactly one nexus row.
+  let probe;
+  try { probe = openVaultProbe(filePath); }
+  catch (e) { return { ok: false, code: 'not_a_vault' }; }
+  try {
+    const rows = probe.prepare(`SELECT id, name FROM nexus`).all();
+    if (rows.length !== 1) return { ok: false, code: 'not_a_vault' };
+    closeVault(id);
+    setVaultPath(id, filePath);
+    // The file is the source of truth for its own name once it is relinked —
+    // it may have been renamed on the machine it came from.
+    updateVaultMeta(id, { name: rows[0].name, memo: getVault(id)?.memo ?? null, colorCode: getVault(id)?.color_code ?? null });
+    return { ok: true, filePath, name: rows[0].name };
+  } catch (e) {
+    return { ok: false, code: 'not_a_vault' };
+  } finally {
+    try { probe.close(); } catch (_) {}
+  }
+}
+
 module.exports = {
-  getNexuses, getNexus, createNexus, updateNexus, deleteNexus,
-  refreshVaultCounts, NEXUS_PROJECT_TABLES,
+  getNexuses, getNexus, createNexus, updateNexus, deleteNexus, relinkNexusFile,
+  vaultDefaultPath, vaultsDir, refreshVaultCounts, NEXUS_PROJECT_TABLES,
 };

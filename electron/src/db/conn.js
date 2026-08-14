@@ -379,6 +379,19 @@ function createVaultDB(nexusId, filePath) {
   return conn;
 }
 
+// A throwaway read-only handle for "is this file actually a vault?", used by
+// the relink flow. Deliberately does NOT run the init path — probing a file the
+// user picked must never write to it, least of all create tables in it.
+function openVaultProbe(filePath) {
+  if (!fs.existsSync(filePath)) throw new VaultFileMissingError(filePath);
+  if (!fs.existsSync(filePath + '-wal')) forceLegacyJournalMode(filePath);
+  const conn = adaptDb(new _RawDatabase(filePath));
+  conn.exec('PRAGMA busy_timeout = 5000');
+  const ok = ['nexus', 'module'].every((t) => hasTable(conn, t));
+  if (!ok) { try { conn.close(); } catch (_) {} throw new Error('not a vault file'); }
+  return conn;
+}
+
 function evictIdleVaults() {
   if (vaultDbs.size <= MAX_OPEN_VAULTS) return;
   const evictable = [...vaultDbs.entries()]
@@ -439,7 +452,7 @@ function hasAnyMissingColumns(conn, specs) {
 // call _now()/_t() for boot profiling and the has*() probes for their guards.
 module.exports = {
   adaptDb, getDB, getAppDB, getVaultDB, openDdx, dataDir,
-  createVaultDB, closeVault, closeAllVaults, pinVault, unpinVault,
+  createVaultDB, openVaultProbe, closeVault, closeAllVaults, pinVault, unpinVault,
   VaultFileMissingError, NoVaultError,
   perfLog, forceLegacyJournalMode,
   hasTable, hasColumn, hasAnyMissingColumns, _now, _t,

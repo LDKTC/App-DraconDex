@@ -13,6 +13,12 @@ const fs = require('fs');
 const path = require('path');
 const { getAppDB, getVaultDB, dataDir } = require('./conn');
 
+// The folder new vaults go in unless the user picks somewhere else. Exposed on
+// its own because the create form shows the DIRECTORY, not a filename: the
+// filename embeds the vault id, which does not exist until the registry row is
+// inserted, so a full path shown up front would name a file that never appears.
+const vaultsDir = () => path.join(dataDir(), 'vaults');
+
 // Where a new vault goes unless the user picks somewhere else. The id suffix
 // keeps two vaults with the same name from colliding, and keeps the filename
 // stable across a later rename.
@@ -21,7 +27,7 @@ function vaultDefaultPath(name, id) {
     .replace(/[\\/:*?"<>|]/g, '_')   // characters Windows forbids in a filename
     .replace(/\s+/g, '-')
     .slice(0, 60) || 'nexus';
-  return path.join(dataDir(), 'vaults', `${slug}-${id}.ddx`);
+  return path.join(vaultsDir(), `${slug}-${id}.ddx`);
 }
 
 // A vault whose file has gone (moved, deleted, drive unplugged) must not stop
@@ -123,7 +129,7 @@ function refreshVaultCounts(nexusId) {
 
 module.exports = {
   NEXUS_PROJECT_TABLES,
-  vaultDefaultPath, listVaults, getVault, insertVault, insertVaultWithId,
+  vaultDefaultPath, vaultsDir, listVaults, getVault, insertVault, insertVaultWithId,
   updateVaultMeta, setVaultPath, touchVaultOpened, removeVault, vaultPathInUse,
   countVaultItems, refreshVaultCounts,
 };

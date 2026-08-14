@@ -505,7 +505,40 @@ h('db:importModuleFile', async (nexusId, parentModuleId) => {
 // Nexus (vault)
 h('nexus:getAll', ()             => db.getNexuses());
 h('nexus:get',    (id)           => db.getNexus(id));
-h('nexus:create', (n,m,c,fp)     => db.createNexus(n,m,c,fp));
+// Where a vault file goes. The DEFAULT path is a pure string with no dialog —
+// that is what keeps the run-dracondex driver deterministic (a native
+// showSaveDialog would block the real-Electron driver forever, and
+// web-driver.mjs stubs dialogs to {canceled:true}). The dialog only ever opens
+// because the user clicked Change.
+const pickedVaultPaths = new Set();
+h('nexus:defaultPath', ()        => db.vaultsDir());
+h('nexus:pickLocation', async (name) => {
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+    title: 'Save Nexus As',
+    defaultPath: db.vaultDefaultPath(name || '', 0).replace(/-0\.ddx$/, '.ddx'),
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
+  });
+  if (result.canceled || !result.filePath) return { canceled: true };
+  const resolved = path.resolve(result.filePath);
+  pickedVaultPaths.add(resolved);
+  return { canceled: false, filePath: resolved };
+});
+// A path the renderer supplies is only honoured if a dialog produced it — the
+// same "a picker returned it or it doesn't exist" rule pickedImportDbPaths and
+// pickedImportRoots already apply. Anything else falls back to the default.
+h('nexus:create', (n,m,c,fp) => {
+  const chosen = fp && pickedVaultPaths.has(path.resolve(String(fp))) ? path.resolve(String(fp)) : null;
+  return db.createNexus(n, m, c, chosen);
+});
+// A vault whose file was moved or deleted: point the registry at it again.
+h('nexus:relink', async (id) => {
+  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
+    title: 'Locate Nexus File', properties: ['openFile'],
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
+  });
+  if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true };
+  return db.relinkNexusFile(id, result.filePaths[0]);
+});
 h('nexus:update', (id,n,m,c)     => db.updateNexus(id,n,m,c));
 h('nexus:delete', (id)           => db.deleteNexus(id));
 

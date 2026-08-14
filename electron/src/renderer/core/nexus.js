@@ -177,6 +177,7 @@ async function openNexusModal(id = null, { showGuideChoice = false } = {}) {
     <div class="fg"><label>${t('name')} *</label><input id="nx-name" value="${x(n?.name || '')}"></div>
     <div class="fg"><label>${t('memo')}</label><textarea id="nx-memo">${x(n?.memo || '')}</textarea></div>
     <div class="fg"><label>${t('color')}</label>${await colorPicker(n?.color)}</div>
+    ${n ? nexusFileRowHtml(n) : await nexusSaveLocationHtml()}
     ${!n && showGuideChoice ? `<div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="nx-guide" type="checkbox" checked> ${t('nexusTourOption')}</label></div>` : ''}
     <div class="mfoot">
       ${n ? `<button class="btn btn-d" onclick="delNexus(${id})">${t('delete')}</button>`
@@ -187,11 +188,66 @@ async function openNexusModal(id = null, { showGuideChoice = false } = {}) {
   setTimeout(() => q('#nx-name').focus(), 60);
 }
 
+// Where the vault file goes. Shown in every build, dev included, with the
+// default already filled in — the dialog only opens if the user clicks Change,
+// which is what keeps the run-dracondex driver able to create a Nexus without
+// a native dialog blocking it forever.
+async function nexusSaveLocationHtml() {
+  S._nexusSavePath = null;
+  // The FOLDER, not a filename: the filename embeds the vault id, which does
+  // not exist until the row is inserted, so showing a full path here would
+  // name a file that never appears. Once the user picks explicitly, the field
+  // shows exactly what they chose.
+  const def = await api.nexus.defaultPath();
+  return `
+    <div class="fg">
+      <label>${t('nexusSaveLocation')}</label>
+      <div class="sync-hint">${t('nexusSaveLocationHint')}</div>
+      <div class="sync-key-row">
+        <input id="nx-path" readonly value="${x(def)}" title="${x(def)}">
+        <button class="btn btn-s btn-sm" onclick="pickNexusLocation()">${t('nexusChangeLocation')}</button>
+      </div>
+    </div>`;
+}
+
+// Editing an existing vault shows where its file actually is — and offers
+// Locate when that file has gone missing.
+function nexusFileRowHtml(n) {
+  if (!n.file_path) return '';
+  return `
+    <div class="fg">
+      <label>${t('nexusSaveLocation')}</label>
+      <div class="sync-key-row">
+        <input readonly value="${x(n.file_path)}" title="${x(n.file_path)}">
+        ${n.missing ? `<button class="btn btn-d btn-sm" onclick="relinkNexusLocation(${n.id})">${t('nexusLocate')}</button>` : ''}
+      </div>
+      ${n.missing ? `<div class="sync-hint">${t('nexusFileMissing')}</div>` : ''}
+    </div>`;
+}
+
+async function pickNexusLocation() {
+  const r = await api.nexus.pickLocation(q('#nx-name')?.value.trim() || '');
+  if (!r || r.canceled) return;
+  S._nexusSavePath = r.filePath;
+  const el = q('#nx-path');
+  if (el) { el.value = r.filePath; el.title = r.filePath; }
+}
+
+async function relinkNexusLocation(id) {
+  const r = await api.nexus.relink(id);
+  if (r?.canceled) return;
+  if (!r?.ok) return toast(t('nexusRelinkFailed'), 'error');
+  closeModal();
+  await reloadNexuses();
+  toast(t('saved'), 'ok');
+  renderNexusHome();
+}
+
 async function createNexusSubmit() {
   const name = q('#nx-name').value.trim(); if (!name) return;
   S._guideAfterCreate = Boolean(q('#nx-guide')?.checked);
   try {
-    const newId = await api.nexus.create(name, q('#nx-memo').value.trim(), q('#sel-color').value || null);
+    const newId = await api.nexus.create(name, q('#nx-memo').value.trim(), q('#sel-color').value || null, S._nexusSavePath || null);
     closeModal();
     await reloadNexuses();
     toast(t('nexusCreated'), 'ok');
