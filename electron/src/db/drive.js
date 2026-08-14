@@ -15,6 +15,8 @@ const path = require('path');
 const { app } = require('electron');
 const { getAppSetting, setAppSetting } = require('./versions');
 const { getSecret, setSecret } = require('./secret-store');
+const { getAppDB } = require('./conn');
+const { currentNexusId } = require('./vault-context');
 const { exportDatabaseTo, importDatabaseMerge } = require('./import-merge');
 const { makePkcePair, makeState, runOAuthLoopback } = require('./oauth-loopback');
 
@@ -365,11 +367,20 @@ async function driveBackupNow(layoutJson) {
     done.layout = true;
   }
   if (backupDdx) {
+    // v4.9.0: "the database" is now app.ddx plus one file per Nexus, so a
+    // single appdata slot no longer covers it. This backs up the vault the
+    // window is currently in, under a name derived from that vault, so several
+    // vaults accumulate side by side instead of overwriting each other.
+    // app.ddx is NOT uploaded: it holds the OAuth refresh token that reaches
+    // this very Drive account, and a backup that can restore its own
+    // credentials onto another machine is a bigger promise than "backup".
+    // Restoring settings is a separate feature; the layout profile above
+    // already covers the part users actually miss.
     const tmpPath = path.join(os.tmpdir(), `dracondex-drive-backup-${Date.now()}.ddx`);
     try {
       await exportDatabaseTo(tmpPath);
       const bytes = fs.readFileSync(tmpPath);
-      const r = await driveUpsertFile(DDX_FILE, bytes, 'application/octet-stream');
+      const r = await driveUpsertFile(vaultBackupFileName(), bytes, 'application/octet-stream');
       if (!r.ok) return fail(r.code);
       done.ddx = true;
     } finally {
@@ -380,6 +391,16 @@ async function driveBackupNow(layoutJson) {
   setAppSetting('drive:lastBackupAt', now);
   pushBackupLog({ at: now, ok: true, layout: done.layout, ddx: done.ddx });
   return { ok: true, backedUpAt: now, ...done };
+}
+
+// One appdata file per vault. Falls back to the historical single name when
+// there is no vault context, so a pre-v4.9 backup is still found and restored.
+function vaultBackupFileName() {
+  const id = currentNexusId();
+  if (!id) return DDX_FILE;
+  const name = getAppDB().prepare(`SELECT name FROM nexus_file WHERE id=?`).get(id)?.name || `vault-${id}`;
+  const slug = String(name).replace(/[^A-Za-z0-9._-]+/g, '-').slice(0, 60) || `vault-${id}`;
+  return `dracondex-backup-${slug}-${id}.ddx`;
 }
 
 async function driveRestoreLayoutProfile() {
@@ -393,7 +414,10 @@ async function driveRestoreLayoutProfile() {
 // and-replace. Callers must word their confirm dialog as "merge," not
 // "overwrite."
 async function driveRestoreDatabase() {
-  const r = await driveDownloadFile(DDX_FILE);
+  // Prefer this vault's own backup; fall back to the pre-v4.9 single-file name
+  // so an older backup still restores.
+  let r = await driveDownloadFile(vaultBackupFileName());
+  if (!r.ok && vaultBackupFileName() !== DDX_FILE) r = await driveDownloadFile(DDX_FILE);
   if (!r.ok) return r;
   const tmpPath = path.join(os.tmpdir(), `dracondex-drive-restore-${Date.now()}.ddx`);
   try {

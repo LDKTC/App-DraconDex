@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./database');
 const { isSecretKey } = require('./src/db/secret-store');
-const { windowNexus, runWithVault } = require('./src/db/vault-context');
+const { windowNexus, runWithVault, currentNexusId } = require('./src/db/vault-context');
 
 // Data location per build flavor:
 // - portable exe (build:exe): PORTABLE_EXECUTABLE_DIR is set by the launcher
@@ -420,9 +420,11 @@ const h = (ch, fn) => ipcMain.handle(ch, async (event, ...a) => {
 });
 
 // DB import/export
+// Exports the OPEN VAULT, not "the database" — since v4.9.0 there isn't one.
 h('db:exportFile', async () => {
-  const defaultName = `novel-manager-backup-${new Date().toISOString().slice(0, 10)}.ddx`;
-  const result = await dialog.showSaveDialog({
+  const vaultName = (db.getNexus(currentNexusId())?.name || 'nexus').replace(/[\\/:*?"<>|]/g, '_');
+  const defaultName = `${vaultName}-backup-${new Date().toISOString().slice(0, 10)}.ddx`;
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Export Database',
     defaultPath: path.join(app.getPath('documents'), defaultName),
     filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
@@ -446,7 +448,7 @@ h('db:pickImportFile', async () => {
   // Accepts both the current .ddx format and legacy .db files (pre-v3.11,
   // or a v1/v2 export) — an old-shaped .db import is exactly the trigger
   // case for the Nexus Nest / Import DB choice modal (src/renderer/hub.js).
-  const result = await dialog.showOpenDialog({
+  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Import Database (.ddx / .db)',
     properties: ['openFile'],
     filters: [{ name: 'DraconDex / SQLite DB', extensions: ['ddx', 'db'] }],
@@ -469,7 +471,7 @@ h('db:importMergeFile', async (filePath) => {
 // (src/db/sync.js) under the hood (src/db/db-transfer.js).
 h('db:exportNexusFile', async (nexusId, nexusName) => {
   const defaultName = `${String(nexusName || 'nexus').replace(/[\\/:*?"<>|]/g, '_')}.json`;
-  const result = await dialog.showSaveDialog({
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Export Nexus', defaultPath: path.join(app.getPath('documents'), defaultName),
     filters: [{ name: 'DraconDex Nexus Snapshot', extensions: ['json'] }],
   });
@@ -477,7 +479,7 @@ h('db:exportNexusFile', async (nexusId, nexusName) => {
   return db.exportNexusFile(nexusId, result.filePath);
 });
 h('db:importNexusFile', async (nexusId) => {
-  const result = await dialog.showOpenDialog({
+  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Import Nexus', properties: ['openFile'],
     filters: [{ name: 'DraconDex Nexus Snapshot', extensions: ['json'] }],
   });
@@ -486,7 +488,7 @@ h('db:importNexusFile', async (nexusId) => {
 });
 h('db:exportModuleFile', async (nexusId, moduleId, moduleName) => {
   const defaultName = `${String(moduleName || 'module').replace(/[\\/:*?"<>|]/g, '_')}.json`;
-  const result = await dialog.showSaveDialog({
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Export Module', defaultPath: path.join(app.getPath('documents'), defaultName),
     filters: [{ name: 'DraconDex Module Snapshot', extensions: ['json'] }],
   });
@@ -494,7 +496,7 @@ h('db:exportModuleFile', async (nexusId, moduleId, moduleName) => {
   return db.exportModuleFile(nexusId, moduleId, result.filePath);
 });
 h('db:importModuleFile', async (nexusId, parentModuleId) => {
-  const result = await dialog.showOpenDialog({
+  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Import Module', properties: ['openFile'],
     filters: [{ name: 'DraconDex Module Snapshot', extensions: ['json'] }],
   });
