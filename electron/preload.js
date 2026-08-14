@@ -52,6 +52,14 @@ contextBridge.exposeInMainWorld('api', {
     defaultPath:  (name)   => inv('nexus:defaultPath', name),
     pickLocation: (name)   => inv('nexus:pickLocation', name),
     relink:       (id)     => inv('nexus:relink', id),
+    duplicate:    (id)     => inv('nexus:duplicate', id),
+    exportFile:   (id)     => inv('nexus:exportFile', id),
+    shareFile:    (id)     => inv('nexus:shareFile', id),
+    revealFile:   (id)     => inv('nexus:revealFile', id),
+  },
+  shell: {
+    revealPath:  (p)       => inv('shell:revealPath', p),
+    composeMail: (s2,b)    => inv('shell:composeMail', s2,b),
   },
   note: {
     getFolders:    (nx)           => inv('note:getFolders', nx),

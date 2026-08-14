@@ -17,7 +17,7 @@ const { currentNexusId } = require('./vault-context');
 const {
   NEXUS_PROJECT_TABLES, listVaults, getVault, insertVault, insertVaultWithId,
   updateVaultMeta, removeVault, refreshVaultCounts, countVaultItems,
-  vaultDefaultPath, vaultsDir, setVaultPath, vaultPathInUse,
+  vaultDefaultPath, vaultsDir, setVaultPath, vaultPathInUse, refreshOpenVaultCounts,
 } = require('./vaults');
 const { openVaultProbe } = require('./conn');
 
@@ -85,6 +85,7 @@ function backfillVaultRegistry() {
 
 const getNexuses = () => {
   backfillVaultRegistry();
+  refreshOpenVaultCounts();
   return listVaults().map((v) => ({
     id: v.id,
     name: v.name,
@@ -210,7 +211,74 @@ function relinkNexusFile(id, filePath) {
   }
 }
 
+// Copies a vault file and registers the copy as a new Nexus. The copy's own
+// `nexus` row is renumbered to the new registry id, because that id/row match
+// is the invariant every vault-scoped query relies on — two files carrying the
+// same nexus id would each look correct alone and collide in the registry.
+// Only six tables reference nexus(id) directly, so the renumber is a short
+// list rather than a graph walk.
+const NEXUS_REF_TABLES = ['note_folder', 'note', 'wiki_link', 'module', 'import_file', 'entity_relation'];
+
+function duplicateNexus(id) {
+  const src = getVault(id);
+  if (!src || !src.file_path) return { ok: false, code: 'not_found' };
+  if (!fs.existsSync(src.file_path)) return { ok: false, code: 'file_missing' };
+
+  // "<name> (copy)", then "(copy 2)", … — the registry enforces unique names.
+  let name = `${src.name} (copy)`;
+  for (let i = 2; ; i++) {
+    try { assertNameFree(name); break; }
+    catch (_) { name = `${src.name} (copy ${i})`; }
+    if (i > 50) return { ok: false, code: 'name_taken' };
+  }
+
+  const newId = insertVault({ name, memo: src.memo, colorCode: src.color_code, filePath: null });
+  const target = vaultDefaultPath(name, newId);
+  try {
+    fs.mkdirSync(require('path').dirname(target), { recursive: true });
+    // VACUUM INTO on the live source rather than copyFileSync: the source may
+    // be open and mid-transaction, and a torn copy would be a corrupt vault.
+    getVaultDB(id).prepare(`VACUUM INTO ?`).run(target);
+
+    const copy = createVaultDB(newId, target);
+    copy.transaction(() => {
+      copy.exec('PRAGMA defer_foreign_keys = ON');
+      copy.prepare(`UPDATE nexus SET id=?, name=? WHERE id=?`).run(newId, name, id);
+      for (const t of NEXUS_REF_TABLES) {
+        try { copy.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref=?`).run(newId, id); } catch (_) {}
+      }
+      for (const t of NEXUS_PROJECT_TABLES) {
+        try { copy.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref=?`).run(newId, id); } catch (_) {}
+      }
+    })();
+    setVaultPath(newId, target);
+    refreshVaultCounts(newId);
+    return { ok: true, id: newId, name, filePath: target };
+  } catch (e) {
+    closeVault(newId);
+    try { fs.rmSync(target, { force: true }); } catch (_) {}
+    removeVault(newId);
+    return { ok: false, code: 'copy_failed', error: String(e?.message || e) };
+  }
+}
+
+// Writes a standalone copy of a vault wherever the caller says. Used by both
+// Export (the user picks the path) and Share (a staging copy to hand over).
+function exportNexusVaultFile(id, targetPath) {
+  const v = getVault(id);
+  if (!v || !v.file_path) return { ok: false, code: 'not_found' };
+  if (!fs.existsSync(v.file_path)) return { ok: false, code: 'file_missing' };
+  try {
+    fs.rmSync(targetPath, { force: true });
+    getVaultDB(id).prepare(`VACUUM INTO ?`).run(targetPath);
+    return { ok: true, filePath: targetPath };
+  } catch (e) {
+    return { ok: false, code: 'copy_failed', error: String(e?.message || e) };
+  }
+}
+
 module.exports = {
   getNexuses, getNexus, createNexus, updateNexus, deleteNexus, relinkNexusFile,
+  duplicateNexus, exportNexusVaultFile,
   vaultDefaultPath, vaultsDir, refreshVaultCounts, NEXUS_PROJECT_TABLES,
 };

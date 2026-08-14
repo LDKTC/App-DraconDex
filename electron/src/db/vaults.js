@@ -11,7 +11,7 @@
 // is a copy-and-prune rather than a renumber.
 const fs = require('fs');
 const path = require('path');
-const { getAppDB, getVaultDB, dataDir } = require('./conn');
+const { getAppDB, getVaultDB, dataDir, openVaultIds } = require('./conn');
 
 // The folder new vaults go in unless the user picks somewhere else. Exposed on
 // its own because the create form shows the DIRECTORY, not a filename: the
@@ -127,8 +127,17 @@ function refreshVaultCounts(nexusId) {
   }
 }
 
+// Refreshes the cached counts of every vault that ALREADY has a connection —
+// free, because nothing is opened. Covers the case the window lifecycle alone
+// misses: an app window is open and editing a vault, the user opens the Welcome
+// window beside it, and that vault's count would otherwise be whatever it was
+// when the window opened.
+function refreshOpenVaultCounts() {
+  for (const id of openVaultIds()) refreshVaultCounts(id);
+}
+
 module.exports = {
-  NEXUS_PROJECT_TABLES,
+  NEXUS_PROJECT_TABLES, refreshOpenVaultCounts,
   vaultDefaultPath, vaultsDir, listVaults, getVault, insertVault, insertVaultWithId,
   updateVaultMeta, setVaultPath, touchVaultOpened, removeVault, vaultPathInUse,
   countVaultItems, refreshVaultCounts,

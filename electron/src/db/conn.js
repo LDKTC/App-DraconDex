@@ -413,6 +413,10 @@ function closeVault(nexusId) {
   return true;
 }
 
+// Which vaults have a live connection right now. Used to refresh their cached
+// item counts for free, without opening anything.
+const openVaultIds = () => [...vaultDbs.keys()];
+
 const pinVault = (nexusId) => pinnedVaults.add(Number(nexusId));
 const unpinVault = (nexusId) => pinnedVaults.delete(Number(nexusId));
 const closeAllVaults = () => { for (const id of [...vaultDbs.keys()]) closeVault(id); };
@@ -452,7 +456,7 @@ function hasAnyMissingColumns(conn, specs) {
 // call _now()/_t() for boot profiling and the has*() probes for their guards.
 module.exports = {
   adaptDb, getDB, getAppDB, getVaultDB, openDdx, dataDir,
-  createVaultDB, openVaultProbe, closeVault, closeAllVaults, pinVault, unpinVault,
+  createVaultDB, openVaultProbe, closeVault, closeAllVaults, pinVault, unpinVault, openVaultIds,
   VaultFileMissingError, NoVaultError,
   perfLog, forceLegacyJournalMode,
   hasTable, hasColumn, hasAnyMissingColumns, _now, _t,

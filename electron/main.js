@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, protocol, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
@@ -513,6 +513,8 @@ h('nexus:get',    (id)           => db.getNexus(id));
 // web-driver.mjs stubs dialogs to {canceled:true}). The dialog only ever opens
 // because the user clicked Change.
 const pickedVaultPaths = new Set();
+// Share copies this session produced, so shell:revealPath can accept them.
+const sharedVaultPaths = new Set();
 h('nexus:defaultPath', ()        => db.vaultsDir());
 h('nexus:pickLocation', async (name) => {
   const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
@@ -532,6 +534,75 @@ h('nexus:create', (n,m,c,fp) => {
   const chosen = fp && pickedVaultPaths.has(path.resolve(String(fp))) ? path.resolve(String(fp)) : null;
   return db.createNexus(n, m, c, chosen);
 });
+// ─── The Nexus ... menu (v4.9.0) ───────────────────────────────────────────
+// Duplicate / Export / Share / Open in Explorer. These are real file
+// operations now that a Nexus is a real file.
+h('nexus:duplicate', (id) => db.duplicateNexus(id));
+
+h('nexus:exportFile', async (id) => {
+  const n = db.getNexus(id);
+  if (!n) return { ok: false, code: 'not_found' };
+  const safe = String(n.name || 'nexus').replace(/[\\/:*?"<>|]/g, '_');
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+    title: 'Export Nexus', defaultPath: path.join(app.getPath('documents'), `${safe}.ddx`),
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  return db.exportNexusVaultFile(id, result.filePath);
+});
+
+// Share = "hand this file to a person". Windows gives Electron no way to
+// attach a file to the user's mail client, so this writes the copy and the
+// renderer offers the three things that DO work: reveal it (one drag into a
+// chat window), copy its path, or open a pre-filled mail draft to attach it to.
+// macOS gets the real native share sheet instead.
+h('nexus:shareFile', async (id) => {
+  const n = db.getNexus(id);
+  if (!n) return { ok: false, code: 'not_found' };
+  const safe = String(n.name || 'nexus').replace(/[\\/:*?"<>|]/g, '_');
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+    title: 'Share Nexus', defaultPath: path.join(app.getPath('desktop'), `${safe}.ddx`),
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  const out = db.exportNexusVaultFile(id, result.filePath);
+  if (!out.ok) return out;
+  sharedVaultPaths.add(path.resolve(out.filePath));
+  if (process.platform === 'darwin') {
+    try {
+      const { ShareMenu } = require('electron');
+      new ShareMenu({ filePaths: [out.filePath] }).popup({ window: BrowserWindow.getFocusedWindow() });
+      return { ...out, native: true };
+    } catch (_) { /* fall through to the modal */ }
+  }
+  return { ...out, native: false };
+});
+
+// Reveals a path the APP owns — resolved from the registry, never taken from
+// the renderer, so this cannot be pointed at an arbitrary file.
+h('nexus:revealFile', (id) => {
+  const n = db.getNexus(id);
+  if (!n?.file_path) return { ok: false, code: 'not_found' };
+  shell.showItemInFolder(n.file_path);
+  return { ok: true };
+});
+h('shell:revealPath', (p) => {
+  // Only paths this app produced: a registered vault file, or a share copy the
+  // save dialog just returned.
+  const known = db.getNexuses().some((n) => n.file_path && path.resolve(n.file_path) === path.resolve(String(p || '')));
+  if (!known && !sharedVaultPaths.has(path.resolve(String(p || '')))) return { ok: false, code: 'not_found' };
+  shell.showItemInFolder(String(p));
+  return { ok: true };
+});
+// mailto: only. openExternal hands a string to the OS shell handler, so an
+// unrestricted one is a new door out of the sandbox — file:, and on Windows
+// anything the shell will execute, must never reach it.
+h('shell:composeMail', (subject, body) => {
+  const url = `mailto:?subject=${encodeURIComponent(String(subject || ''))}&body=${encodeURIComponent(String(body || ''))}`;
+  shell.openExternal(url);
+  return { ok: true };
+});
+
 // A vault whose file was moved or deleted: point the registry at it again.
 h('nexus:relink', async (id) => {
   const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
