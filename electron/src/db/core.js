@@ -5,14 +5,15 @@
 // in src/db (and database.js) do `require('./core')`, so the public surface
 // stays exactly what it was.
 //
-//   conn.js               open/adapt the connection, statement cache, has*() probes
+//   conn.js               open/adapt connections, statement cache, has*() probes
+//   vault-context.js      which vault the current IPC call belongs to
 //   schema/ddl.js         CREATE TABLE …           (data)
 //   schema/indexes.js     CREATE INDEX …           (data)
 //   schema/seed.js        first-run seed rows      (data)
-//   schema/init.js        schemaStamp() + initDB()
+//   schema/init.js        schema stamps + initAppDB/initVaultDB/initDB
 //   schema/migrations.js  additive migrations + ensureIndexes()
 //   import-merge.js       export a copy / merge an external database in
-const { getDB, adaptDb, perfLog } = require('./conn');
+const { getDB, getAppDB, getVaultDB, adaptDb, perfLog } = require('./conn');
 const { exportDatabaseTo, importDatabaseMerge } = require('./import-merge');
 
-module.exports = { getDB, adaptDb, exportDatabaseTo, importDatabaseMerge, perfLog };
+module.exports = { getDB, getAppDB, getVaultDB, adaptDb, exportDatabaseTo, importDatabaseMerge, perfLog };

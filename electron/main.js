@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./database');
 const { isSecretKey } = require('./src/db/secret-store');
+const { windowNexus, runWithVault } = require('./src/db/vault-context');
 
 // Data location per build flavor:
 // - portable exe (build:exe): PORTABLE_EXECUTABLE_DIR is set by the launcher
@@ -87,6 +88,12 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
     },
   });
   hardenWebviewAttach(win.webContents);
+  // Which vault this window's IPC calls belong to. Registered before loadFile
+  // so the renderer's very first wave of calls already resolves.
+  if (bootstrapNexusId) {
+    windowNexus.set(win.id, Number(bootstrapNexusId));
+    win.on('closed', () => windowNexus.delete(win.id));
+  }
   if (bootstrapTabKey) {
     popupWindowIds.add(win.id);
     win.on('closed', () => popupWindowIds.delete(win.id));
@@ -357,9 +364,20 @@ function registerDisplayImageProtocol() {
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWelcomeWindow(); });
 
-const h = (ch, fn) => ipcMain.handle(ch, async (_, ...a) => {
+// The single choke point where every handler learns which vault it is for.
+// Vault-scoped db functions call getDB(), which reads the AsyncLocalStorage
+// store established here; app-level ones call getAppDB() and are unaffected.
+// See src/db/vault-context.js for why ALS and not a module-scoped variable —
+// short version: a handler that awaits (a file dialog, a network call) would
+// otherwise resume with whatever vault a DIFFERENT window set in the meantime,
+// and some of those paths wipe a nexus.
+//
+// The Welcome window has no entry in windowNexus, so its handlers run with a
+// null vault and any vault-scoped call fails loudly rather than picking one.
+const h = (ch, fn) => ipcMain.handle(ch, async (event, ...a) => {
+  const nexusId = windowNexus.get(BrowserWindow.fromWebContents(event.sender)?.id) ?? null;
   try {
-    return await fn(...a);
+    return await runWithVault(nexusId, () => fn(...a));
   } catch (err) {
     console.error(`IPC handler ${ch} error:`, err);
     throw err;

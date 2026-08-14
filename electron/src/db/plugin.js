@@ -19,7 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
-const { getDB } = require('./core');
+const { getAppDB } = require('./core');
 const {
   PLUGIN_TABLE_RE, FULL_TABLE_RE, MAX_FILE_BYTES,
   MANIFEST_NAMES, REF_CANDIDATES,
@@ -134,7 +134,7 @@ async function previewDependency(depUrl, selfId) {
   if (!valid.ok) return { url: depUrl, ok: false, code: 'bad_manifest' };
   if (depR.manifest.id === selfId) return { url: depUrl, ok: false, code: 'self_dependency' };
 
-  const installed = getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(depR.manifest.id);
+  const installed = getAppDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(depR.manifest.id);
   return {
     url: depUrl, ok: true,
     id: depR.manifest.id, name: depR.manifest.name, version: depR.manifest.version || null,
@@ -153,7 +153,7 @@ async function pluginPreview(url) {
   const valid = validateManifest(r.manifest);
   if (!valid.ok) return { ok: false, code: 'bad_manifest', error: valid.error };
 
-  const installed = getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(r.manifest.id);
+  const installed = getAppDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(r.manifest.id);
   const dependencies = [];
   for (const depUrl of manifestDependencies(r.manifest)) {
     dependencies.push(await previewDependency(depUrl, r.manifest.id));
@@ -191,7 +191,7 @@ async function pluginPreview(url) {
 // path — a dependency is a real, independently-valid plugin install, not a
 // special case.
 async function installResolvedPlugin(host, owner, repo, ref, manifest, deps = []) {
-  const db = getDB();
+  const db = getAppDB();
 
   // Fetch every declared file fully into memory before writing anything.
   const fileBuffers = {};
@@ -270,7 +270,7 @@ async function installDependency(depUrl, selfId) {
 
   const key = depR.manifest.id;
   const name = depR.manifest.name;
-  if (getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(key)) {
+  if (getAppDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(key)) {
     return { url: depUrl, key, name, failCode: null };
   }
 
@@ -295,7 +295,7 @@ async function pluginInstall(url) {
   const valid = validateManifest(manifest);
   if (!valid.ok) return { ok: false, code: 'bad_manifest', error: valid.error };
 
-  const db = getDB();
+  const db = getAppDB();
   if (db.prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(manifest.id)) {
     return { ok: false, code: 'already_installed' };
   }
@@ -326,7 +326,7 @@ async function pluginInstall(url) {
 // install-time check alone could never catch. Pure local SQL, no network, so
 // it is cheap enough to run on every list render and every launch.
 function pluginMissingDeps(pluginRowId) {
-  return getDB().prepare(`
+  return getAppDB().prepare(`
     SELECT dep_url AS url, dep_key AS key, dep_name AS name, fail_code AS failCode
     FROM plugin_dependency
     WHERE plugin_ref=?
@@ -342,7 +342,7 @@ function pluginMissingDeps(pluginRowId) {
 // The resolution is written back, so a row that failed with `network` earlier
 // becomes a proper key/name once it succeeds.
 async function pluginInstallDependency(pluginRowId, depUrl) {
-  const db = getDB();
+  const db = getAppDB();
   const self = db.prepare(`SELECT plugin_key FROM plugin WHERE id=?`).get(pluginRowId);
   if (!self) return { ok: false, code: 'not_found' };
   const row = db.prepare(`SELECT id, dep_url FROM plugin_dependency WHERE plugin_ref=? AND dep_url=?`)
@@ -357,7 +357,7 @@ async function pluginInstallDependency(pluginRowId, depUrl) {
 }
 
 function pluginUninstall(id) {
-  const db = getDB();
+  const db = getAppDB();
   const plugin = db.prepare(`SELECT * FROM plugin WHERE id=?`).get(id);
   if (!plugin) return { ok: false, code: 'not_found' };
   const tables = db.prepare(`SELECT table_name FROM plugin_table WHERE plugin_ref=?`).all(id);
@@ -383,7 +383,7 @@ function parseManifestJson(row) {
 }
 
 function pluginList() {
-  const db = getDB();
+  const db = getAppDB();
   const plugins = db.prepare(`
     SELECT id, plugin_key, name, version, repo_host, repo_owner, repo_name, repo_ref, entry_html, installed_at, manifest_json
     FROM plugin ORDER BY installed_at DESC
@@ -417,7 +417,7 @@ function pluginList() {
 }
 
 function pluginGetById(id) {
-  return getDB().prepare(`SELECT * FROM plugin WHERE id=?`).get(id) || null;
+  return getAppDB().prepare(`SELECT * FROM plugin WHERE id=?`).get(id) || null;
 }
 
 // Resolve the plugin that owns an on-disk path, used by main.js to decide
@@ -433,7 +433,7 @@ function resolvePluginPath(filePath) {
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
   const key = rel.split(path.sep)[0];
   if (!key) return null;
-  const row = getDB().prepare(`SELECT * FROM plugin WHERE plugin_key=?`).get(key) || null;
+  const row = getAppDB().prepare(`SELECT * FROM plugin WHERE plugin_key=?`).get(key) || null;
   if (!row) return null;
   return { row, relInPlugin: rel.split(path.sep).slice(1).join('/') };
 }
@@ -461,7 +461,7 @@ function pluginByOwnedPath(filePath) {
 // The allowlist gate for pluginapi:net:* . pluginId comes from the calling
 // webContents' own identity (main.js), never from an argument.
 function pluginNetAllowed(pluginId, url) {
-  const row = getDB().prepare(`SELECT manifest_json FROM plugin WHERE id=?`).get(pluginId);
+  const row = getAppDB().prepare(`SELECT manifest_json FROM plugin WHERE id=?`).get(pluginId);
   if (!row) return false;
   const manifest = parseManifestJson(row);
   return !!manifest && netOriginAllowed(manifest, url);
@@ -637,7 +637,7 @@ async function pluginOAuthAuthorize(pluginId, opts) {
 // ---------------------------------------------------------------------------
 function resolveOwnedTable(pluginId, localName) {
   if (!PLUGIN_TABLE_RE.test(String(localName || ''))) return null;
-  const row = getDB().prepare(`
+  const row = getAppDB().prepare(`
     SELECT table_name, columns_json FROM plugin_table WHERE plugin_ref=? AND local_name=?
   `).get(pluginId, localName);
   if (!row) return null;
@@ -664,7 +664,7 @@ function pluginApiQuery(pluginId, localName, filter) {
   validateRowKeys(f, t.columns);
   const keys = Object.keys(f);
   const where = keys.length ? `WHERE ${keys.map((k) => `${k}=?`).join(' AND ')}` : '';
-  return getDB().prepare(`SELECT * FROM ${t.tableName} ${where} ORDER BY id DESC`).all(...keys.map((k) => f[k]));
+  return getAppDB().prepare(`SELECT * FROM ${t.tableName} ${where} ORDER BY id DESC`).all(...keys.map((k) => f[k]));
 }
 
 function pluginApiInsert(pluginId, localName, row) {
@@ -674,12 +674,12 @@ function pluginApiInsert(pluginId, localName, row) {
   validateRowKeys(r, t.columns);
   const keys = Object.keys(r);
   if (!keys.length) {
-    const res = getDB().prepare(`INSERT INTO ${t.tableName} DEFAULT VALUES`).run();
+    const res = getAppDB().prepare(`INSERT INTO ${t.tableName} DEFAULT VALUES`).run();
     return { id: res.lastInsertRowid };
   }
   const cols = keys.join(', ');
   const qs = keys.map(() => '?').join(', ');
-  const res = getDB().prepare(`INSERT INTO ${t.tableName} (${cols}) VALUES (${qs})`).run(...keys.map((k) => r[k]));
+  const res = getAppDB().prepare(`INSERT INTO ${t.tableName} (${cols}) VALUES (${qs})`).run(...keys.map((k) => r[k]));
   return { id: res.lastInsertRowid };
 }
 
@@ -691,14 +691,14 @@ function pluginApiUpdate(pluginId, localName, rowId, row) {
   const keys = Object.keys(r);
   if (!keys.length) return { changes: 0 };
   const set = keys.map((k) => `${k}=?`).join(', ');
-  const res = getDB().prepare(`UPDATE ${t.tableName} SET ${set} WHERE id=?`).run(...keys.map((k) => r[k]), rowId);
+  const res = getAppDB().prepare(`UPDATE ${t.tableName} SET ${set} WHERE id=?`).run(...keys.map((k) => r[k]), rowId);
   return { changes: res.changes };
 }
 
 function pluginApiDelete(pluginId, localName, rowId) {
   const t = resolveOwnedTable(pluginId, localName);
   if (!t) throw new Error('not an owned table');
-  const res = getDB().prepare(`DELETE FROM ${t.tableName} WHERE id=?`).run(rowId);
+  const res = getAppDB().prepare(`DELETE FROM ${t.tableName} WHERE id=?`).run(rowId);
   return { changes: res.changes };
 }
 

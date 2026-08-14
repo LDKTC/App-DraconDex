@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { app } = require('electron');
+const { currentNexusId } = require('./vault-context');
 
 // Boot/query profiling, off unless DDX_PERF is set in the environment. The whole
 // data layer runs synchronously in the main process before the first paint, so
@@ -180,8 +181,6 @@ function adaptDb(rawDb) {
   return rawDb;
 }
 
-let db;
-
 // A sqlite file's header can declare WAL journal mode (bytes 18-19 = 2,2)
 // with no accompanying -wal sidecar on disk — a shape node-sqlite3-wasm
 // aborts hard trying to open, rather than throwing a catchable error. Forces
@@ -201,12 +200,89 @@ function forceLegacyJournalMode(filePath) {
   } catch (_) {}
 }
 
-function getDB() {
+// The directory every database file lives in by default. app.getPath('userData')
+// was pointed at <dataDir>/electron-user-data by main.js, so the data dir is one
+// level up.
+const dataDir = () => path.dirname(app.getPath('userData'));
+
+class VaultFileMissingError extends Error {
+  constructor(filePath) {
+    super(`vault file not found: ${filePath}`);
+    this.code = 'vault_file_missing';
+    this.filePath = filePath;
+  }
+}
+
+// The shared open procedure, lifted out of the old single-file getDB(). Every
+// database file — app.ddx and every vault .ddx — goes through exactly this.
+//
+// `create` is the important argument. new _RawDatabase(path) silently CREATES
+// an empty file, and the init below would then fill it with tables: a user
+// whose vault file got moved or deleted would open an empty vault where their
+// world used to be, with no error anywhere. So every caller but "make a new
+// vault" passes create:false and gets a VaultFileMissingError instead.
+function openDdx(filePath, { kind, create = false } = {}) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    if (!create) throw new VaultFileMissingError(filePath);
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (!create && !fs.existsSync(filePath)) throw new VaultFileMissingError(filePath);
+
+  // Must run for every file, including user-chosen locations on removable or
+  // network drives: node-sqlite3-wasm HARD-ABORTS (does not throw) on a
+  // WAL-declared header with no -wal sidecar.
+  if (fs.existsSync(filePath) && !fs.existsSync(filePath + '-wal')) forceLegacyJournalMode(filePath);
+  try { fs.rmSync(filePath + '.lock', { recursive: true, force: true }); } catch (_) {}
+
+  const tOpen = _now();
+  const conn = adaptDb(new _RawDatabase(filePath));
+  _t(`open ${kind}`, tOpen);
+
+  const tPragma = _now();
+  conn.exec("PRAGMA busy_timeout = 5000");
+  // journal_mode stays DELETE — see forceLegacyJournalMode above; WAL makes
+  // node-sqlite3-wasm hard-abort (not throw) when the -wal sidecar is missing.
+  conn.exec("PRAGMA journal_mode = DELETE");
+  conn.exec("PRAGMA foreign_keys = ON");
+  // Page cache (default 2 MB) and in-memory temp tables for GROUP BY / ORDER BY
+  // spills. Both are pure runtime tuning: no on-disk format change, no
+  // durability trade. Deliberately NOT setting synchronous=NORMAL — under
+  // rollback-journal mode that admits corruption on power loss, not just lost
+  // transactions, and wrapping writes in transactions gets the same win safely.
+  // Sized per kind now that several files can be open at once: the old flat
+  // 8 MB across five connections would be 40 MB of page cache.
+  conn.exec(`PRAGMA cache_size = ${kind === 'app' ? -2000 : -4000}`);
+  conn.exec("PRAGMA temp_store = MEMORY");
+  _t('pragmas', tPragma);
+
+  const tInit = _now();
+  // Required lazily: schema/init.js requires this file back (for _t/_now and
+  // the has*() probes), so a top-level require here would be a load-time
+  // cycle. Same pattern initDB itself uses for require('./wiki').
+  const init = require('./schema/init');
+  if (kind === 'app') init.initAppDB(conn);
+  else if (kind === 'vault') init.initVaultDB(conn);
+  else init.initDB(conn); // 'single' — the pre-split file holding both halves
+  _t(`init ${kind} (total)`, tInit);
+
+  // Only now — the init paths are the one place that issues DDL via prepare().run().
+  conn.setStatementCache(true);
+  return conn;
+}
+
+// ─── The registry ───────────────────────────────────────────────────────────
+// Until the vault split migration lands (step 4 of this work), getAppDB() and
+// getVaultDB() both resolve to the single legacy file, so nothing on disk
+// changes yet and the routing can be verified on its own.
+let db; // the legacy single file
+
+function getSingleDB() {
   if (!db) {
-    const dbDir = path.dirname(app.getPath('userData'));
-    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
-    const dbPath = path.join(dbDir, 'novel-manager.ddx');
-    const legacyDbPath = path.join(dbDir, 'novel-manager.db');
+    const dir = dataDir();
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const dbPath = path.join(dir, 'novel-manager.ddx');
+    const legacyDbPath = path.join(dir, 'novel-manager.db');
     if (!fs.existsSync(dbPath) && fs.existsSync(legacyDbPath)) {
       // v.3.11+: the app's own working file is renamed .db -> .ddx once, in
       // place (same file, no data copy) — non-destructive, no-op on every
@@ -217,35 +293,31 @@ function getDB() {
         if (fs.existsSync(legacyDbPath + '-shm')) fs.renameSync(legacyDbPath + '-shm', dbPath + '-shm');
       } catch (_) {}
     }
-    if (fs.existsSync(dbPath) && !fs.existsSync(dbPath + '-wal')) forceLegacyJournalMode(dbPath);
-    try { fs.rmSync(dbPath + '.lock', { recursive: true, force: true }); } catch (_) {}
-    const tOpen = _now();
-    db = adaptDb(new _RawDatabase(dbPath));
-    _t('open database', tOpen);
-    const tPragma = _now();
-    db.exec("PRAGMA busy_timeout = 5000");
-    // journal_mode stays DELETE — see forceLegacyJournalMode above; WAL makes
-    // node-sqlite3-wasm hard-abort (not throw) when the -wal sidecar is missing.
-    db.exec("PRAGMA journal_mode = DELETE");
-    db.exec("PRAGMA foreign_keys = ON");
-    // 8 MB page cache (default 2 MB) and in-memory temp tables for GROUP BY /
-    // ORDER BY spills. Both are pure runtime tuning: no on-disk format change,
-    // no durability trade. Deliberately NOT setting synchronous=NORMAL — under
-    // rollback-journal mode that admits corruption on power loss, not just lost
-    // transactions, and wrapping writes in transactions gets the same win safely.
-    db.exec("PRAGMA cache_size = -8000");
-    db.exec("PRAGMA temp_store = MEMORY");
-    _t('pragmas', tPragma);
-    const tInit = _now();
-    // Required lazily: schema/init.js requires this file back (for _t/_now and
-    // the has*() probes), so a top-level require here would be a load-time
-    // cycle. Same pattern initDB itself uses for require('./wiki').
-    require('./schema/init').initDB(db);
-    _t('initDB (total)', tInit);
-    // Only now — initDB is the one code path that issues DDL via prepare().run().
-    db.setStatementCache(true);
+    db = openDdx(dbPath, { kind: 'single', create: true });
   }
   return db;
+}
+
+// App-level tables: preferences, credentials, installed plugins. Never a vault.
+// Call this from anything that must work with no vault open — which includes
+// everything main.js touches outside an IPC handler.
+function getAppDB() {
+  return getSingleDB();
+}
+
+// One vault's tables. `nexusId` is accepted (and ignored) while every vault
+// still lives in the one file — passing it now means the ~30 call sites that
+// already have a nexus id are correct before the files actually split, rather
+// than being retrofitted afterwards.
+function getVaultDB(_nexusId) {
+  return getSingleDB();
+}
+
+// The ambient accessor the ~464 existing call sites keep using unchanged. It
+// resolves the vault from the AsyncLocalStorage context that main.js's h()
+// wrapper establishes per IPC call.
+function getDB() {
+  return getVaultDB(currentNexusId());
 }
 
 function hasTable(conn, tableName) {
@@ -268,6 +340,8 @@ function hasAnyMissingColumns(conn, specs) {
 // Exported for the schema/ files, which were carved out of this one: they still
 // call _now()/_t() for boot profiling and the has*() probes for their guards.
 module.exports = {
-  adaptDb, getDB, perfLog, forceLegacyJournalMode,
+  adaptDb, getDB, getAppDB, getVaultDB, openDdx, dataDir,
+  VaultFileMissingError,
+  perfLog, forceLegacyJournalMode,
   hasTable, hasColumn, hasAnyMissingColumns, _now, _t,
 };

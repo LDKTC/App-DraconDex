@@ -5,10 +5,14 @@
 // through the whitelisted ops below and records a new 'restore' version —
 // an existing version is never overwritten. Retention is app_setting
 // 'versionLimit' (default 50 per module), oldest rows pruned beyond it.
-const { getDB } = require('./core');
+// Two connections in one file, deliberately: app_setting belongs to the
+// INSTALL (getAppDB) while module_version belongs to whichever Nexus is open
+// (getDB). Mixing them up would put a vault's edit history in app.ddx, or a
+// user's preferences inside a vault file they then hand to someone else.
+const { getDB, getAppDB } = require('./core');
 
-const getAppSetting = (key) => getDB().prepare(`SELECT value FROM app_setting WHERE key=?`).get(key)?.value ?? null;
-const setAppSetting = (key, value) => getDB().prepare(`
+const getAppSetting = (key) => getAppDB().prepare(`SELECT value FROM app_setting WHERE key=?`).get(key)?.value ?? null;
+const setAppSetting = (key, value) => getAppDB().prepare(`
   INSERT INTO app_setting (key, value) VALUES (?,?)
   ON CONFLICT(key) DO UPDATE SET value=excluded.value
 `).run(key, String(value));
