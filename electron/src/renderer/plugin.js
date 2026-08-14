@@ -20,6 +20,8 @@ function pluginErrToast(r) {
     running: 'pluginErrRunning',
     not_found: 'pluginErrNotFound',
     dependency_failed: 'pluginErrDependencyFailed',
+    missing_dependency: 'pluginErrMissingDependency',
+    self_dependency: 'pluginErrDependencyFailed',
   };
   toast(t(map[r?.code] || 'pluginErrServer'), 'error');
 }
@@ -80,18 +82,47 @@ function pluginInstallFromOrgRepo(url) {
   pluginPreviewRun();
 }
 
+// v4.9.0 — the plugins this one declared but doesn't have. An install no
+// longer aborts over a dependency (docs/PLUGINS.md §1.8), so this block is
+// where an unmet requirement becomes visible and fixable: one Download button
+// per missing plugin, and Launch stays disabled until the list empties. It
+// also covers the case the install-time check never could — a dependency the
+// user uninstalled afterwards.
+function pluginDepsMissingHtml(p) {
+  const missing = p.missingDeps || [];
+  if (!missing.length) return '';
+  const items = missing.map((d) => {
+    // Resolved name when we have one, the raw URL when resolution failed —
+    // never nothing, so "what do I actually need" is always answerable.
+    const label = d.name
+      ? `${x(d.name)} <span class="sync-hint" data-no-i18n>${x(d.key)}</span>`
+      : `<span data-no-i18n>${x(d.url)}</span> <span class="sync-hint">(${t('pluginDepUnresolved')})</span>`;
+    return `<li>${label}
+      <button class="btn btn-s btn-sm" onclick="pluginInstallDepClick(${p.id},${xj(d.url)},this)">${t('pluginDepDownload')}</button>
+    </li>`;
+  }).join('');
+  return `<div class="plugin-dep-missing">
+    <div class="plugin-preview-warn">${t('pluginDepsMissing')}</div>
+    <ul class="plugin-preview-files">${items}</ul>
+  </div>`;
+}
+
 function pluginRowHtml(p, isRunning) {
   const at = p.repo_host === 'gitlab' ? 'GitLab' : 'GitHub';
+  const blocked = !!(p.missingDeps || []).length;
   return `
     <div class="sync-upload-row">
       <div>
         <b>${x(p.name)}</b> <span class="sync-hint">v${x(p.version || '—')}</span>
         <div class="sync-hint">${at} · ${x(p.repo_owner)}/${x(p.repo_name)}@${x(p.repo_ref)} · ${p.tables.length} ${t('pluginTablesLabel')}</div>
+        ${pluginDepsMissingHtml(p)}
       </div>
       <div class="sync-upload-actions">
         ${isRunning
           ? `<button class="btn btn-d btn-sm" onclick="pluginStopClick(${p.id})">${t('pluginStop')}</button>`
-          : `<button class="btn btn-s btn-sm" onclick="pluginLaunchClick(${p.id})">${t('pluginLaunch')}</button>`}
+          : blocked
+            ? `<button class="btn btn-s btn-sm" disabled title="${t('pluginLaunchBlocked')}">${t('pluginLaunch')}</button>`
+            : `<button class="btn btn-s btn-sm" onclick="pluginLaunchClick(${p.id})">${t('pluginLaunch')}</button>`}
         <button class="btn btn-d btn-sm" onclick="pluginUninstallClick(${p.id})">${t('delete')}</button>
       </div>
     </div>`;
@@ -263,6 +294,22 @@ async function pluginInstallClick() {
   toast(t('pluginInstalled'), 'ok');
   S.pluginUrlDraft = '';
   S.pluginPreview = null;
+  pluginRefreshSection();
+}
+
+// Download one missing dependency. The URL is only a lookup key here — the
+// main process re-checks it against the plugin's recorded plugin_dependency
+// rows before installing anything, so this is not a second install door.
+// Busy state is set on the clicked element rather than through syncBtnBusy,
+// which takes a selector and there is one of these buttons per dependency.
+async function pluginInstallDepClick(pluginId, url, btn) {
+  if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = t('syncWorking'); }
+  const r = await api.plugin.installDependency(pluginId, url);
+  if (!r?.ok) {
+    if (btn) { btn.disabled = false; if (btn.dataset.label) btn.textContent = btn.dataset.label; }
+    return pluginErrToast(r);
+  }
+  toast(t('pluginInstalled'), 'ok');
   pluginRefreshSection();
 }
 

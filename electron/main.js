@@ -729,6 +729,7 @@ h('plugin:list',      ()    => db.pluginList());
 h('plugin:listOrgRepos', () => db.pluginListOrgRepos());
 h('plugin:preview',   (url) => db.pluginPreview(url));
 h('plugin:install',   (url) => db.pluginInstall(url));
+h('plugin:installDependency', (id, url) => db.pluginInstallDependency(id, url));
 h('plugin:uninstall', (id) => {
   if (findPluginWindow(id)) return { ok: false, code: 'running' };
   return db.pluginUninstall(id);
@@ -736,6 +737,12 @@ h('plugin:uninstall', (id) => {
 h('plugin:launch', (id) => {
   const plugin = db.pluginGetById(id);
   if (!plugin) return { ok: false, code: 'not_found' };
+  // A plugin that declared a dependency it doesn't have would load into a
+  // half-working state and fail in its own code, with nothing to point the
+  // user at. Refuse here instead — the renderer already disables the button,
+  // so this is the backstop for a stale list or a direct api call.
+  const missing = db.pluginMissingDeps(id);
+  if (missing.length) return { ok: false, code: 'missing_dependency', missing };
   createPluginWindow(plugin);
   return { ok: true };
 });

@@ -991,6 +991,25 @@ const DDL_SQL = `
       create_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(plugin_ref, local_name)
     );
+
+    -- One row per entry in a plugin manifest's "dependencies" array, resolved
+    -- at install time. manifest_json already holds the raw URLs, but "is this
+    -- dependency installed?" needs the plugin id a URL resolves to, and that
+    -- costs a network fetch — so the resolution is recorded here once and the
+    -- check stays local SQL afterwards. dep_key NULL means the URL could not
+    -- be resolved at install time (fail_code says why); such a row counts as
+    -- missing, so the plugin stays un-launchable until the user retries it.
+    -- (No backticks in this file — DDL_SQL is one template literal.)
+    CREATE TABLE IF NOT EXISTS plugin_dependency (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      plugin_ref INTEGER NOT NULL REFERENCES plugin(id) ON DELETE CASCADE,
+      dep_url TEXT NOT NULL,
+      dep_key TEXT,
+      dep_name TEXT,
+      fail_code TEXT,
+      create_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(plugin_ref, dep_url)
+    );
 `;
 
 

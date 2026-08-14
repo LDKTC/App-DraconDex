@@ -223,6 +223,7 @@ contextBridge.exposeInMainWorld('api', {
     listOrgRepos: () => inv('plugin:listOrgRepos'),
     preview:   (url) => inv('plugin:preview', url),
     install:   (url) => inv('plugin:install', url),
+    installDependency: (id, url) => inv('plugin:installDependency', id, url),
     uninstall: (id)  => inv('plugin:uninstall', id),
     launch:    (id)  => inv('plugin:launch', id),
     stop:      (id)  => inv('plugin:stop', id),

@@ -21,7 +21,11 @@ async function loadPluginPanels() {
   try {
     const list = await api.plugin.list();
     S.pluginPanels = list
-      .filter((p) => Array.isArray(p.panels) && p.panels.length)
+      // A plugin missing a declared dependency contributes no panel button —
+      // same gate as plugin:launch. Opening its page would run a plugin whose
+      // requirements aren't met, with no way for the user to see why from the
+      // pane head; the Plugins settings page is where that's explained.
+      .filter((p) => Array.isArray(p.panels) && p.panels.length && !(p.missingDeps || []).length)
       .map((p) => ({ pluginKey: p.plugin_key, pluginName: p.name, dir: p.dir, contextKinds: p.contextKinds || [], panels: p.panels }));
   } catch (e) {
     // A plugin list that fails to load must not take the whole Nexus down —
