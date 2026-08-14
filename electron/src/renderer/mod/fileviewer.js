@@ -300,7 +300,11 @@ async function hydrateDisplayImages() {
   }
 }
 
-const displayImageUrl = (fileId) => `ddx-file://${fileId}`;
+// The vault id is part of the URL because the protocol handler in main.js is
+// not an IPC handler — it receives a bare Request with no calling window, so
+// it cannot infer which vault's import_file to look the id up in (v4.9.0, one
+// .ddx per Nexus). See registerDisplayImageProtocol.
+const displayImageUrl = (fileId) => `ddx-file://${S.nexus?.id ?? 0}-${fileId}`;
 
 // Collects every <img> that failed to load in this tick and resolves them
 // with a single readFiles round-trip. S.displayImageData only ever holds

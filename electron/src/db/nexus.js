@@ -11,11 +11,45 @@
 // Row shape is unchanged from before the split — {id, name, memo, color,
 // color_code, update_at, project_count} — plus file_path and missing, so
 // core/welcome.js and core/nexus.js keep their existing field names.
-const { getAppDB, getVaultDB } = require('./core');
+const fs = require('fs');
+const { getAppDB, getVaultDB, createVaultDB, closeVault } = require('./core');
+const { currentNexusId } = require('./vault-context');
 const {
   NEXUS_PROJECT_TABLES, listVaults, getVault, insertVault, insertVaultWithId,
   updateVaultMeta, removeVault, refreshVaultCounts, countVaultItems,
+  vaultDefaultPath, setVaultPath, vaultPathInUse,
 } = require('./vaults');
+
+// Vault names used to be unique because of `nexus.name UNIQUE` inside the one
+// shared database. Each vault file now holds a single nexus row, so that
+// constraint no longer says anything across vaults — the registry enforces it
+// instead. Thrown rather than returned because the renderer's
+// createNexusSubmit/saveNexus already turn any throw into the nexusNameTaken
+// toast.
+// A colour id chosen in the Welcome window is an app.ddx palette id; a colour
+// id chosen inside a vault is that vault's. They agree for the sixteen seeded
+// colours (same fixed ordered seed on both sides) but not for a custom one, so
+// the id is never carried across a file boundary — the CODE is, and this
+// resolves it to an id that is valid inside the target vault.
+function vaultColorId(vaultDb, colorCode) {
+  if (!colorCode) return null;
+  vaultDb.prepare(`INSERT OR IGNORE INTO use_color (color_code) VALUES (?)`).run(colorCode);
+  return vaultDb.prepare(`SELECT id FROM use_color WHERE color_code=?`).get(colorCode)?.id ?? null;
+}
+
+// Resolves whichever palette the caller was looking at into a colour code.
+function colorCodeOf(colorId) {
+  if (!colorId) return null;
+  const db = currentNexusId() ? getVaultDB(currentNexusId()) : getAppDB();
+  return db.prepare(`SELECT color_code FROM use_color WHERE id=?`).get(colorId)?.color_code ?? null;
+}
+
+function assertNameFree(name, exceptId = null) {
+  const clash = getAppDB()
+    .prepare(`SELECT id FROM nexus_file WHERE name=? COLLATE NOCASE AND id IS NOT ?`)
+    .get(name, exceptId);
+  if (clash) throw new Error('nexus name already in use');
+}
 
 // One-time seed of the registry from a pre-split database, where the `nexus`
 // table and app.ddx are still the same file. file_path stays NULL — "this
@@ -86,20 +120,28 @@ const getNexus = (id) => {
 // Writes the vault's own `nexus` row first (it is the data), then the registry
 // row (it is the index). The id is allocated from the registry up front so
 // both sides carry the same one.
-const createNexus = (name, memo, colorId) => {
-  const colorCode = colorId
-    ? getAppDB().prepare(`SELECT color_code FROM use_color WHERE id=?`).get(colorId)?.color_code ?? null
-    : null;
-  // Registry first, so AUTOINCREMENT hands out the id; the vault's own row then
-  // carries that same id. If writing the vault fails — a duplicate name hitting
-  // `nexus.name UNIQUE` is the normal case, surfaced to the user as
-  // nexusNameTaken — the registry row is rolled back so no phantom vault is
-  // left in the list.
+// `filePath` is where the user chose to keep this vault; omitted means the
+// default under <dataDir>/vaults/. The id comes from the registry first
+// (AUTOINCREMENT) because the filename embeds it and the vault's own `nexus`
+// row must carry the same value.
+const createNexus = (name, memo, colorId, filePath = null) => {
+  assertNameFree(name);
+  const colorCode = colorCodeOf(colorId);
+
   const id = insertVault({ name, memo: memo || null, colorCode, filePath: null });
+  const target = filePath || vaultDefaultPath(name, id);
+  if (vaultPathInUse(target, id)) { removeVault(id); throw new Error('vault file already registered'); }
+
   try {
-    getVaultDB(id).prepare(`INSERT INTO nexus (id, name, memo, color) VALUES (?,?,?,?)`)
-      .run(id, name, memo || null, colorId || null);
+    const vault = createVaultDB(id, target);
+    vault.prepare(`INSERT INTO nexus (id, name, memo, color) VALUES (?,?,?,?)`)
+      .run(id, name, memo || null, vaultColorId(vault, colorCode));
+    setVaultPath(id, target);
   } catch (e) {
+    // Leave nothing half-made: drop the connection, the file we just created,
+    // and the registry row, so the failure looks like it never happened.
+    closeVault(id);
+    try { fs.rmSync(target, { force: true }); } catch (_) {}
     removeVault(id);
     throw e;
   }
@@ -107,11 +149,11 @@ const createNexus = (name, memo, colorId) => {
 };
 
 const updateNexus = (id, name, memo, colorId) => {
-  const colorCode = colorId
-    ? getAppDB().prepare(`SELECT color_code FROM use_color WHERE id=?`).get(colorId)?.color_code ?? null
-    : null;
-  getVaultDB(id).prepare(`UPDATE nexus SET name=?, memo=?, color=?, update_at=datetime('now') WHERE id=?`)
-    .run(name, memo || null, colorId || null, id);
+  assertNameFree(name, id);
+  const colorCode = colorCodeOf(colorId);
+  const vault = getVaultDB(id);
+  vault.prepare(`UPDATE nexus SET name=?, memo=?, color=?, update_at=datetime('now') WHERE id=?`)
+    .run(name, memo || null, vaultColorId(vault, colorCode), id);
   updateVaultMeta(id, { name, memo: memo || null, colorCode });
 };
 
@@ -128,9 +170,14 @@ const deleteNexus = (id) => {
     count = getVault(id)?.project_count ?? 0;
   }
   if (count > 0) return { blocked: true, count };
-  try { getVaultDB(id).prepare(`DELETE FROM nexus WHERE id=?`).run(id); } catch (_) {}
+  // The file is the vault. Close the handle first (Windows will not unlink an
+  // open file), then delete it, then the registry row. The path is returned so
+  // the renderer can say what was removed from disk.
+  const filePath = getVault(id)?.file_path || null;
+  closeVault(id);
+  if (filePath) { try { fs.rmSync(filePath, { force: true }); } catch (_) {} }
   removeVault(id);
-  return { blocked: false, count: 0 };
+  return { blocked: false, count: 0, filePath };
 };
 
 module.exports = {

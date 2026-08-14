@@ -46,7 +46,7 @@ contextBridge.exposeInMainWorld('api', {
   nexus: {
     getAll:  ()            => inv('nexus:getAll'),
     get:     (id)          => inv('nexus:get', id),
-    create:  (n,m,c)       => inv('nexus:create', n,m,c),
+    create:  (n,m,c,fp)    => inv('nexus:create', n,m,c,fp),
     update:  (id,n,m,c)    => inv('nexus:update', id,n,m,c),
     delete:  (id)          => inv('nexus:delete', id),
   },

@@ -14,11 +14,19 @@ async function init() {
   // S.nexus, which is resolved in between. Each await here is a full IPC
   // round-trip plus a structured clone, and this is the critical path to first
   // paint — nothing between the original awaits read any of the S.* they set.
+  // Which window this is has to be settled BEFORE wave 1, not after: the
+  // Welcome window has no vault, and folder.getAll() is vault-scoped (v4.9.0 —
+  // each Nexus is its own .ddx file, so a vault-scoped call with no vault
+  // fails rather than quietly picking one). color.* stays in both waves: it
+  // reads use_color, which app.ddx carries its own copy of precisely so the
+  // Welcome window can draw vault colours and run colorPicker() when creating
+  // a vault.
+  S.isWelcome = new URLSearchParams(location.search).get('welcome') === '1';
   const [colors, recentColors, nexuses, folders, windowId] = await Promise.all([
     api.color.getAll(),
     api.color.getRecent(),
     api.nexus.getAll(),
-    api.folder.getAll(),
+    S.isWelcome ? Promise.resolve([]) : api.folder.getAll(),
     api.window.getId(),
   ]);
   S.colors = colors; S.recentColors = recentColors; S.nexuses = nexuses;
@@ -31,7 +39,6 @@ async function init() {
   // the module rail, the builder grid, nav/search/backup wiring — has nothing
   // to act on. Bail out here with just the chrome it does use (window buttons
   // + static labels), which is also what keeps it opening in ~one IPC wave.
-  S.isWelcome = new URLSearchParams(location.search).get('welcome') === '1';
   if (S.isWelcome) {
     document.body.classList.add('welcome-mode');
     // This window has one layout of its own and never renders a workspace

@@ -13,7 +13,11 @@
 //   schema/init.js        schema stamps + initAppDB/initVaultDB/initDB
 //   schema/migrations.js  additive migrations + ensureIndexes()
 //   import-merge.js       export a copy / merge an external database in
-const { getDB, getAppDB, getVaultDB, adaptDb, perfLog } = require('./conn');
+const { getDB, getAppDB, getVaultDB, createVaultDB, closeVault, closeAllVaults, pinVault, unpinVault, adaptDb, perfLog } = require('./conn');
 const { exportDatabaseTo, importDatabaseMerge } = require('./import-merge');
 
-module.exports = { getDB, getAppDB, getVaultDB, adaptDb, exportDatabaseTo, importDatabaseMerge, perfLog };
+module.exports = {
+  getDB, getAppDB, getVaultDB, createVaultDB,
+  closeVault, closeAllVaults, pinVault, unpinVault,
+  adaptDb, exportDatabaseTo, importDatabaseMerge, perfLog,
+};

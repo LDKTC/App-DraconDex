@@ -99,9 +99,18 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
     // correct the moment its window closes. Refreshed on open too, so a vault
     // whose file was edited elsewhere corrects itself on first use.
     try { db.refreshVaultCounts(nexusId); } catch (_) {}
+    // Pinned for as long as a window holds it, so conn.js's LRU can never
+    // close a vault out from under a live renderer.
+    db.pinVault(nexusId);
     win.on('closed', () => {
       windowNexus.delete(win.id);
       try { db.refreshVaultCounts(nexusId); } catch (_) {}
+      // Only unpin once NO window is left on this vault — two windows on one
+      // vault is a supported thing (window:openNexus).
+      if (![...windowNexus.values()].includes(nexusId)) {
+        db.unpinVault(nexusId);
+        db.closeVault(nexusId);
+      }
     });
   }
   if (bootstrapTabKey) {
@@ -342,15 +351,31 @@ app.whenReady().then(() => {
 // Imported files are NOT copied into the data dir — import_file.file_path is
 // the user's original absolute path, anywhere on disk (see importdock:add /
 // pickFolder below), so there is no directory prefix to sandbox against.
-// The URL therefore carries a row id, never a path: ddx-file://<importFileId>
-// is looked up in import_file and served only if it is a registered image.
-// A path in the URL would be an arbitrary-file-read hole; don't add one.
+// The URL therefore carries row ids, never a path: ddx-file://<nexusId>-<importFileId>
+// is looked up in that vault's import_file and served only if it is a
+// registered image. A path in the URL would be an arbitrary-file-read hole;
+// don't add one.
+//
+// The nexus id joined the URL in v4.9.0, when import_file moved into per-vault
+// files. This is NOT an IPC handler — it gets a bare Request, and every app
+// window shares the default session (only plugins get partitions), so there is
+// no calling window to infer a vault from. The URL has to say. The id is
+// validated against the registry and the lookup runs inside runWithVault, so a
+// forged nexus id can only reach a vault that actually exists, and only its
+// registered images.
 function registerDisplayImageProtocol() {
   if (!protocol) return;
   protocol.handle('ddx-file', async (req) => {
-    const id = Number(String(req.url).replace(/^ddx-file:(\/\/)?/, '').split(/[?#/]/)[0]);
-    if (!Number.isInteger(id) || id <= 0) return new Response(null, { status: 400 });
-    const f = db.getImportFile(id);
+    const raw = String(req.url).replace(/^ddx-file:(\/\/)?/, '').split(/[?#/]/)[0];
+    const [nexusPart, idPart] = raw.split('-');
+    const nexusId = Number(nexusPart);
+    const id = Number(idPart);
+    if (!Number.isInteger(nexusId) || nexusId <= 0 || !Number.isInteger(id) || id <= 0) {
+      return new Response(null, { status: 400 });
+    }
+    let f;
+    try { f = await runWithVault(nexusId, () => db.getImportFile(id)); }
+    catch (_) { return new Response(null, { status: 404 }); }
     const ext = (f?.file_type || '').toLowerCase();
     if (!f || !IMAGE_EXTS.has(ext)) return new Response(null, { status: 404 });
     try {
@@ -480,7 +505,7 @@ h('db:importModuleFile', async (nexusId, parentModuleId) => {
 // Nexus (vault)
 h('nexus:getAll', ()             => db.getNexuses());
 h('nexus:get',    (id)           => db.getNexus(id));
-h('nexus:create', (n,m,c)        => db.createNexus(n,m,c));
+h('nexus:create', (n,m,c,fp)     => db.createNexus(n,m,c,fp));
 h('nexus:update', (id,n,m,c)     => db.updateNexus(id,n,m,c));
 h('nexus:delete', (id)           => db.deleteNexus(id));
 

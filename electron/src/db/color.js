@@ -1,12 +1,32 @@
 'use strict';
-const { getDB } = require('./core');
+// The colour palette. Every vault file carries its own use_color table —
+// every vault table has `color INTEGER REFERENCES use_color(id)`, so the ids a
+// vault stores have to resolve inside that same file. app.ddx carries an
+// identically-seeded copy for one reason: the Welcome window has no vault open
+// and still has to run colorPicker() when creating one.
+//
+// Hence the rule below. Inside a vault, the palette IS that vault's — which is
+// what keeps every stored colour id valid within its own file. With no vault
+// (the Welcome window), it is app.ddx's. Crossing between the two is done by
+// COLOUR CODE, never by id: see vaultColorId() in nexus.js.
+const { getDB, getAppDB } = require('./core');
+const { currentNexusId } = require('./vault-context');
 
-const getColors = () => getDB().prepare(`SELECT * FROM use_color ORDER BY id`).all();
-const addColor = (code) => getDB().prepare(`INSERT OR IGNORE INTO use_color (color_code) VALUES (?)`).run(code);
-const markColorUsed = (id) => getDB().prepare(`UPDATE use_color SET update_at=datetime('now') WHERE id=?`).run(id);
-const getRecentColors = () => getDB().prepare(`SELECT * FROM use_color ORDER BY update_at DESC LIMIT 10`).all();
+const colorDB = () => (currentNexusId() ? getDB() : getAppDB());
+
+const getColors = () => colorDB().prepare(`SELECT * FROM use_color ORDER BY id`).all();
+const addColor = (code) => colorDB().prepare(`INSERT OR IGNORE INTO use_color (color_code) VALUES (?)`).run(code);
+const markColorUsed = (id) => colorDB().prepare(`UPDATE use_color SET update_at=datetime('now') WHERE id=?`).run(id);
+const getRecentColors = () => colorDB().prepare(`SELECT * FROM use_color ORDER BY update_at DESC LIMIT 10`).all();
 const deleteColor = (id) => {
-  const d = getDB();
+  const d = colorDB();
+  // The "is this colour still in use" check reads VAULT tables, which app.ddx
+  // does not have. With no vault open there is nothing in that file that can
+  // reference a colour, so there is nothing to protect.
+  if (!currentNexusId()) {
+    d.prepare(`DELETE FROM use_color WHERE id=?`).run(id);
+    return true;
+  }
   const used = d.prepare(`
     SELECT 1 FROM (
       SELECT project_color FROM project WHERE project_color=?
