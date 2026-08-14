@@ -28,7 +28,9 @@ things from scratch.** This file is a map, not a replacement for them.
 | How each system behaves (Director, Navigator, Hero, Writer, Scribe, Sage, Artisan, wikilinks, IDE shell) | `docs/SYSTEMS.md` |
 | What's in a specific file, line-by-line responsibilities | `docs/FILES.md` |
 | History of what changed and why, session to session | `docs/CHANGELOG.md` |
-| Google Drive backup (the app's one cloud feature) | `docs/DRIVE.md` |
+| Google Drive backup (the app's one connected cloud feature) | `docs/DRIVE.md` |
+| Per-Nexus `.ddx` files, vault routing, the split migration | `docs/VAULTS.md` |
+| The cloud-provider seam (nothing new connected yet) | `docs/CLOUD.md` |
 | Sandboxed plugin runtime (installed from a git repo link) | `docs/PLUGINS.md` |
 | Cloud Sync / Supabase Token Sync — **disabled since v4.5.0**, kept for history | `docs/SYNC.md` |
 | Update-check notice (not an auto-updater) | `docs/UPDATE.md` |
@@ -123,7 +125,9 @@ Renderer (electron/src/renderer/*.js, vanilla JS)
   wired via onclick="..."; shared components: openModal/closeModal, toast(),
   uiConfirm() (never native alert/confirm), colorPicker(), hashtagSelector()
 electron/src/db/*.js (main process)
-  node-sqlite3-wasm, single file novel-manager.db, one file per system
+  node-sqlite3-wasm; since v4.9.0 the store is app.ddx (settings, plugins,
+  the vault registry) PLUS one <name>-<id>.ddx per Nexus under vaults/ —
+  read docs/VAULTS.md before touching src/db/. One source file per system.
 ```
 
 **Two coexisting module systems**, both live and both real:
@@ -141,6 +145,14 @@ electron/src/db/*.js (main process)
    `hub.js`'s `KIND_MAIN_BUILDER` registry maps kind → renderer builder;
    `openModuleNode` dispatches kind → data loader. Full kind↔file↔IPC table
    lives in `docs/Architec.md` §1 — don't guess this mapping, look it up.
+
+**Vault files (v4.9.0).** `getDB()` is still what ~464 call sites in `src/db/`
+use, but it now resolves the *active vault* from an `AsyncLocalStorage` context
+that `main.js`'s `h()` wrapper sets per IPC call. App-level code
+(`plugin.js`, `app_setting`, anything main.js touches outside a handler) must
+use `getAppDB()` instead — `getDB()` with no vault throws rather than guessing.
+`docs/VAULTS.md` explains why ALS and not a module-scoped variable, and which
+delete ordering in the split migration is load-bearing.
 
 Data-dir selection (`electron/main.js`): dev (`npm start`) → `tmp-user-data/` (or
 `DRACONDEX_DATA_DIR` env override); portable build → next to the exe;

@@ -14,11 +14,19 @@ async function init() {
   // S.nexus, which is resolved in between. Each await here is a full IPC
   // round-trip plus a structured clone, and this is the critical path to first
   // paint — nothing between the original awaits read any of the S.* they set.
+  // Which window this is has to be settled BEFORE wave 1, not after: the
+  // Welcome window has no vault, and folder.getAll() is vault-scoped (v4.9.0 —
+  // each Nexus is its own .ddx file, so a vault-scoped call with no vault
+  // fails rather than quietly picking one). color.* stays in both waves: it
+  // reads use_color, which app.ddx carries its own copy of precisely so the
+  // Welcome window can draw vault colours and run colorPicker() when creating
+  // a vault.
+  S.isWelcome = new URLSearchParams(location.search).get('welcome') === '1';
   const [colors, recentColors, nexuses, folders, windowId] = await Promise.all([
     api.color.getAll(),
     api.color.getRecent(),
     api.nexus.getAll(),
-    api.folder.getAll(),
+    S.isWelcome ? Promise.resolve([]) : api.folder.getAll(),
     api.window.getId(),
   ]);
   S.colors = colors; S.recentColors = recentColors; S.nexuses = nexuses;
@@ -31,7 +39,12 @@ async function init() {
   // the module rail, the builder grid, nav/search/backup wiring — has nothing
   // to act on. Bail out here with just the chrome it does use (window buttons
   // + static labels), which is also what keeps it opening in ~one IPC wave.
-  S.isWelcome = new URLSearchParams(location.search).get('welcome') === '1';
+  // Registered BEFORE the welcome early-return, not after it. It used to sit at
+  // the bottom of init(), which the Welcome window never reaches — so a popup
+  // opened there (the Nexus ... menu, v4.9.0) was never dismissed by clicking
+  // away from it.
+  bindPopupDismiss();
+
   if (S.isWelcome) {
     document.body.classList.add('welcome-mode');
     // This window has one layout of its own and never renders a workspace
@@ -138,10 +151,6 @@ async function init() {
   bindWikilinkClicks();
   bindGlobalShortcuts();
   updateStatusBar();
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
-    document.querySelectorAll('.kind-popup').forEach(d => d.remove());
-  });
   bindSearch();
   initDriveAutoBackup(); // fire-and-forget — must not block first paint
   initVersionCheck();    // fire-and-forget — must not block first paint
@@ -149,6 +158,13 @@ async function init() {
 }
 
 // ═══ HELPERS ═══════════════════════════════════════════
+function bindPopupDismiss(){
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
+    document.querySelectorAll('.kind-popup').forEach(d => d.remove());
+  });
+}
+
 function removeLegacyDirectorProjectButton(){
   q('#nav-sidebar > .nav-btn.director-only[data-panel="projects"]')?.remove();
 }

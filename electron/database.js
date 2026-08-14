@@ -31,6 +31,7 @@ const drive     = require('./src/db/drive');
 const update    = require('./src/db/update');
 const plugin    = require('./src/db/plugin');
 const dbTransfer = require('./src/db/db-transfer');
+const cloud     = require('./src/db/cloud');
 
 module.exports = {
   ...core,
@@ -65,4 +66,5 @@ module.exports = {
   ...update,
   ...plugin,
   ...dbTransfer,
+  ...cloud,
 };

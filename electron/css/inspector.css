@@ -125,6 +125,10 @@
    (no dock-specific horizontal offset) instead of copying it verbatim. */
 .mm-section-label{font-size:calc(10.5px * var(--fsc,1));font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3);margin:2px 0 10px}
 .ctx-check{margin-left:auto;flex-shrink:0;color:var(--accent);font-weight:700}
+/* Per-vault actions on the Welcome list (core/nexus-options.js). Narrower than
+   the module context menu: five short verbs, no icons, no submenus. */
+.nexus-options-popup{width:210px;padding:6px}
+.kli-danger .kli-name{color:var(--danger)}
 /* "Create" row's hover submenu (openCreateSubmenu, hub.js) */
 .kli-submenu-parent{align-items:center}
 .kli-arrow{margin-left:auto;flex-shrink:0;color:var(--t3)}

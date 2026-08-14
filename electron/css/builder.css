@@ -154,6 +154,13 @@
 	font-size:calc(11.5px * var(--fsc,1));color:var(--t3);line-height:1.6}
 .plugin-preview-warn{font-size:calc(11px * var(--fsc,1));color:var(--danger);line-height:1.45;margin:4px 0 8px}
 .plugin-preview-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+/* Unmet dependencies on an INSTALLED plugin's row (v4.9.0). Reuses the
+   preview's warn/list type so a requirement reads the same before and after
+   install; the per-item Download button is what's new. */
+.plugin-dep-missing{margin-top:6px;padding-left:8px;border-left:2px solid var(--danger)}
+.plugin-dep-missing .plugin-preview-warn{margin:0 0 4px}
+.plugin-dep-missing .plugin-preview-files{margin:0;max-height:none}
+.plugin-dep-missing li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 0}
 
 /* Google Drive backup (Preferences panel "Backup" section) */
 .drive-bar{height:6px;border-radius:3px;background:var(--raised);overflow:hidden;margin:2px 0 8px}

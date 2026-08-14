@@ -190,6 +190,7 @@ async function driveRestoreDatabaseNow() {
 // only exists in renderer localStorage. Toggling arms/clears this interval
 // immediately; main-process drive.js stays purely reactive.
 // ---------------------------------------------------------------------------
+const DRIVE_AUTOBACKUP_OWNER = 'novel-manager-drive-autobackup-owner';
 let driveAutoBackupTimer = null;
 
 function driveApplyAutoBackupToggle(enabled) {
@@ -205,6 +206,15 @@ async function driveAutoBackupTick() {
 
 async function initDriveAutoBackup() {
   if (S.isPopup) return; // popup windows share the DB/process — must not run a second competing timer
+  // v4.9.0: with one .ddx per Nexus, every open vault window would otherwise
+  // run its own hourly timer and upload its own vault concurrently. Only the
+  // first window to claim the flag keeps a timer; it is released on unload so
+  // closing that window hands the job to another.
+  if (localStorage.getItem(DRIVE_AUTOBACKUP_OWNER) && localStorage.getItem(DRIVE_AUTOBACKUP_OWNER) !== String(S._windowId)) return;
+  localStorage.setItem(DRIVE_AUTOBACKUP_OWNER, String(S._windowId));
+  window.addEventListener('beforeunload', () => {
+    if (localStorage.getItem(DRIVE_AUTOBACKUP_OWNER) === String(S._windowId)) localStorage.removeItem(DRIVE_AUTOBACKUP_OWNER);
+  });
   const st = await api.drive.status();
   if (!st.connected || !st.autoBackup) return;
   driveAutoBackupTick(); // fire once immediately, fire-and-forget — must not block first paint

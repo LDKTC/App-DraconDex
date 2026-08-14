@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { app } = require('electron');
+const { currentNexusId } = require('./vault-context');
 
 // Boot/query profiling, off unless DDX_PERF is set in the environment. The whole
 // data layer runs synchronously in the main process before the first paint, so
@@ -180,8 +181,6 @@ function adaptDb(rawDb) {
   return rawDb;
 }
 
-let db;
-
 // A sqlite file's header can declare WAL journal mode (bytes 18-19 = 2,2)
 // with no accompanying -wal sidecar on disk — a shape node-sqlite3-wasm
 // aborts hard trying to open, rather than throwing a catchable error. Forces
@@ -201,51 +200,239 @@ function forceLegacyJournalMode(filePath) {
   } catch (_) {}
 }
 
-function getDB() {
-  if (!db) {
-    const dbDir = path.dirname(app.getPath('userData'));
-    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
-    const dbPath = path.join(dbDir, 'novel-manager.ddx');
-    const legacyDbPath = path.join(dbDir, 'novel-manager.db');
-    if (!fs.existsSync(dbPath) && fs.existsSync(legacyDbPath)) {
-      // v.3.11+: the app's own working file is renamed .db -> .ddx once, in
-      // place (same file, no data copy) — non-destructive, no-op on every
-      // later launch since dbPath already exists after the first rename.
-      try {
-        fs.renameSync(legacyDbPath, dbPath);
-        if (fs.existsSync(legacyDbPath + '-wal')) fs.renameSync(legacyDbPath + '-wal', dbPath + '-wal');
-        if (fs.existsSync(legacyDbPath + '-shm')) fs.renameSync(legacyDbPath + '-shm', dbPath + '-shm');
-      } catch (_) {}
-    }
-    if (fs.existsSync(dbPath) && !fs.existsSync(dbPath + '-wal')) forceLegacyJournalMode(dbPath);
-    try { fs.rmSync(dbPath + '.lock', { recursive: true, force: true }); } catch (_) {}
-    const tOpen = _now();
-    db = adaptDb(new _RawDatabase(dbPath));
-    _t('open database', tOpen);
-    const tPragma = _now();
-    db.exec("PRAGMA busy_timeout = 5000");
-    // journal_mode stays DELETE — see forceLegacyJournalMode above; WAL makes
-    // node-sqlite3-wasm hard-abort (not throw) when the -wal sidecar is missing.
-    db.exec("PRAGMA journal_mode = DELETE");
-    db.exec("PRAGMA foreign_keys = ON");
-    // 8 MB page cache (default 2 MB) and in-memory temp tables for GROUP BY /
-    // ORDER BY spills. Both are pure runtime tuning: no on-disk format change,
-    // no durability trade. Deliberately NOT setting synchronous=NORMAL — under
-    // rollback-journal mode that admits corruption on power loss, not just lost
-    // transactions, and wrapping writes in transactions gets the same win safely.
-    db.exec("PRAGMA cache_size = -8000");
-    db.exec("PRAGMA temp_store = MEMORY");
-    _t('pragmas', tPragma);
-    const tInit = _now();
-    // Required lazily: schema/init.js requires this file back (for _t/_now and
-    // the has*() probes), so a top-level require here would be a load-time
-    // cycle. Same pattern initDB itself uses for require('./wiki').
-    require('./schema/init').initDB(db);
-    _t('initDB (total)', tInit);
-    // Only now — initDB is the one code path that issues DDL via prepare().run().
-    db.setStatementCache(true);
+// The directory every database file lives in by default. app.getPath('userData')
+// was pointed at <dataDir>/electron-user-data by main.js, so the data dir is one
+// level up.
+const dataDir = () => path.dirname(app.getPath('userData'));
+
+class VaultFileMissingError extends Error {
+  constructor(filePath) {
+    super(`vault file not found: ${filePath}`);
+    this.code = 'vault_file_missing';
+    this.filePath = filePath;
   }
-  return db;
+}
+
+// The shared open procedure, lifted out of the old single-file getDB(). Every
+// database file — app.ddx and every vault .ddx — goes through exactly this.
+//
+// `create` is the important argument. new _RawDatabase(path) silently CREATES
+// an empty file, and the init below would then fill it with tables: a user
+// whose vault file got moved or deleted would open an empty vault where their
+// world used to be, with no error anywhere. So every caller but "make a new
+// vault" passes create:false and gets a VaultFileMissingError instead.
+// `register` is called with the live connection AFTER the pragmas but BEFORE
+// the init path. That ordering is load-bearing and easy to lose: initVaultDB's
+// wiki backfill calls rebuildWikiIndex(), which resolves its own connection
+// through getDB() — if the caller hasn't published this one yet, that reentrant
+// call opens a SECOND connection to the same file and re-enters init on it. The
+// original single-file getDB() assigned its module-level `db` before calling
+// initDB for exactly this reason.
+function openDdx(filePath, { kind, create = false, register = null } = {}) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    if (!create) throw new VaultFileMissingError(filePath);
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (!create && !fs.existsSync(filePath)) throw new VaultFileMissingError(filePath);
+
+  // Must run for every file, including user-chosen locations on removable or
+  // network drives: node-sqlite3-wasm HARD-ABORTS (does not throw) on a
+  // WAL-declared header with no -wal sidecar.
+  if (fs.existsSync(filePath) && !fs.existsSync(filePath + '-wal')) forceLegacyJournalMode(filePath);
+  try { fs.rmSync(filePath + '.lock', { recursive: true, force: true }); } catch (_) {}
+
+  const tOpen = _now();
+  const conn = adaptDb(new _RawDatabase(filePath));
+  _t(`open ${kind}`, tOpen);
+
+  const tPragma = _now();
+  conn.exec("PRAGMA busy_timeout = 5000");
+  // journal_mode stays DELETE — see forceLegacyJournalMode above; WAL makes
+  // node-sqlite3-wasm hard-abort (not throw) when the -wal sidecar is missing.
+  conn.exec("PRAGMA journal_mode = DELETE");
+  conn.exec("PRAGMA foreign_keys = ON");
+  // Page cache (default 2 MB) and in-memory temp tables for GROUP BY / ORDER BY
+  // spills. Both are pure runtime tuning: no on-disk format change, no
+  // durability trade. Deliberately NOT setting synchronous=NORMAL — under
+  // rollback-journal mode that admits corruption on power loss, not just lost
+  // transactions, and wrapping writes in transactions gets the same win safely.
+  // Sized per kind now that several files can be open at once: the old flat
+  // 8 MB across five connections would be 40 MB of page cache.
+  conn.exec(`PRAGMA cache_size = ${kind === 'app' ? -2000 : -4000}`);
+  conn.exec("PRAGMA temp_store = MEMORY");
+  _t('pragmas', tPragma);
+
+  if (register) register(conn);
+
+  const tInit = _now();
+  // Required lazily: schema/init.js requires this file back (for _t/_now and
+  // the has*() probes), so a top-level require here would be a load-time
+  // cycle. Same pattern initDB itself uses for require('./wiki').
+  const init = require('./schema/init');
+  if (kind === 'app') init.initAppDB(conn);
+  else if (kind === 'vault') init.initVaultDB(conn);
+  else init.initDB(conn); // 'single' — the pre-split file holding both halves
+  _t(`init ${kind} (total)`, tInit);
+
+  // Only now — the init paths are the one place that issues DDL via prepare().run().
+  conn.setStatementCache(true);
+  return conn;
+}
+
+// ─── The connection registry ────────────────────────────────────────────────
+const appPath = () => path.join(dataDir(), 'app.ddx');
+const legacyPath = () => path.join(dataDir(), 'novel-manager.ddx');
+
+let appDb = null;
+const vaultDbs = new Map(); // nexusId -> { conn, filePath, lastUsed }
+const pinnedVaults = new Set();
+const MAX_OPEN_VAULTS = 4;
+
+// The pre-v4.9 single file, opened normally. Only reachable during the split
+// bootstrap: it runs the full init path (including the wiki backfill) against a
+// properly published connection, so the file is schema-current before
+// split-migrate.js takes a scalpel to copies of it.
+function openLegacySingle() {
+  const dir = dataDir();
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const dbPath = legacyPath();
+  const legacyDotDb = path.join(dir, 'novel-manager.db');
+  if (!fs.existsSync(dbPath) && fs.existsSync(legacyDotDb)) {
+    // v.3.11+: the app's own working file is renamed .db -> .ddx once, in
+    // place (same file, no data copy) — non-destructive, no-op on every
+    // later launch since dbPath already exists after the first rename.
+    try {
+      fs.renameSync(legacyDotDb, dbPath);
+      if (fs.existsSync(legacyDotDb + '-wal')) fs.renameSync(legacyDotDb + '-wal', dbPath + '-wal');
+      if (fs.existsSync(legacyDotDb + '-shm')) fs.renameSync(legacyDotDb + '-shm', dbPath + '-shm');
+    } catch (_) {}
+  }
+  let conn = null;
+  openDdx(dbPath, { kind: 'single', create: true, register: (c) => { conn = c; } });
+  return conn;
+}
+
+// App-level tables: preferences, credentials, installed plugins, the vault
+// index. Never a vault. Call this from anything that must work with no vault
+// open — which includes everything main.js touches outside an IPC handler.
+function getAppDB() {
+  if (appDb) return appDb;
+  const dir = dataDir();
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  // The one-time split, gated on app.ddx's absence — its existence IS the
+  // "already migrated" marker, written last by the migration itself. A throw
+  // here propagates: booting into a half-split state would be far worse than
+  // failing to boot with the original file still intact.
+  if (!fs.existsSync(appPath()) && fs.existsSync(legacyPath())) {
+    const legacy = openLegacySingle();
+    try { legacy.close(); } catch (_) {}
+    require('./split-migrate').splitLegacyDatabase(dir);
+  }
+
+  openDdx(appPath(), { kind: 'app', create: true, register: (c) => { appDb = c; } });
+  return appDb;
+}
+
+// One vault's tables, resolved through the registry in app.ddx.
+//
+// The LRU exists because a user with twenty vaults must not end up with twenty
+// open sqlite handles; a vault bound to a live window is pinned and never
+// evicted regardless of how long it has been idle.
+function getVaultDB(nexusId) {
+  const id = Number(nexusId);
+  if (!Number.isFinite(id) || id <= 0) {
+    throw new NoVaultError(nexusId);
+  }
+  const hit = vaultDbs.get(id);
+  if (hit) { hit.lastUsed = Date.now(); return hit.conn; }
+
+  const row = getAppDB().prepare(`SELECT file_path FROM nexus_file WHERE id=?`).get(id);
+  if (!row) throw new NoVaultError(id);
+  // A NULL file_path is a registry row backfilled from a pre-split database
+  // that has not been split yet. That should be unreachable once getAppDB()
+  // has run, so treat it as the bug it would be rather than guessing a file.
+  if (!row.file_path) throw new NoVaultError(id);
+
+  let conn = null;
+  openDdx(row.file_path, {
+    kind: 'vault',
+    create: false,
+    register: (c) => { conn = c; vaultDbs.set(id, { conn: c, filePath: row.file_path, lastUsed: Date.now() }); },
+  });
+  evictIdleVaults();
+  return conn;
+}
+
+// Creates a brand-new vault file and registers its connection. The ONLY path
+// that passes create:true for a vault — everything else must fail loudly on a
+// missing file rather than mint an empty one.
+function createVaultDB(nexusId, filePath) {
+  const id = Number(nexusId);
+  let conn = null;
+  openDdx(filePath, {
+    kind: 'vault',
+    create: true,
+    register: (c) => { conn = c; vaultDbs.set(id, { conn: c, filePath, lastUsed: Date.now() }); },
+  });
+  return conn;
+}
+
+// A throwaway read-only handle for "is this file actually a vault?", used by
+// the relink flow. Deliberately does NOT run the init path — probing a file the
+// user picked must never write to it, least of all create tables in it.
+function openVaultProbe(filePath) {
+  if (!fs.existsSync(filePath)) throw new VaultFileMissingError(filePath);
+  if (!fs.existsSync(filePath + '-wal')) forceLegacyJournalMode(filePath);
+  const conn = adaptDb(new _RawDatabase(filePath));
+  conn.exec('PRAGMA busy_timeout = 5000');
+  const ok = ['nexus', 'module'].every((t) => hasTable(conn, t));
+  if (!ok) { try { conn.close(); } catch (_) {} throw new Error('not a vault file'); }
+  return conn;
+}
+
+function evictIdleVaults() {
+  if (vaultDbs.size <= MAX_OPEN_VAULTS) return;
+  const evictable = [...vaultDbs.entries()]
+    .filter(([id]) => !pinnedVaults.has(id))
+    .sort((a, b) => a[1].lastUsed - b[1].lastUsed);
+  while (vaultDbs.size > MAX_OPEN_VAULTS && evictable.length) {
+    const [id] = evictable.shift();
+    closeVault(id);
+  }
+}
+
+function closeVault(nexusId) {
+  const entry = vaultDbs.get(Number(nexusId));
+  if (!entry) return false;
+  vaultDbs.delete(Number(nexusId));
+  // adaptDb's close() flushes the statement cache first — without that the
+  // cached statements leak.
+  try { entry.conn.close(); } catch (_) {}
+  return true;
+}
+
+// Which vaults have a live connection right now. Used to refresh their cached
+// item counts for free, without opening anything.
+const openVaultIds = () => [...vaultDbs.keys()];
+
+const pinVault = (nexusId) => pinnedVaults.add(Number(nexusId));
+const unpinVault = (nexusId) => pinnedVaults.delete(Number(nexusId));
+const closeAllVaults = () => { for (const id of [...vaultDbs.keys()]) closeVault(id); };
+
+class NoVaultError extends Error {
+  constructor(id) {
+    super(`no vault for id ${id} — a vault-scoped call ran with no vault context, or the vault is not registered`);
+    this.code = 'no_vault';
+  }
+}
+
+// The ambient accessor the ~464 existing call sites keep using unchanged. It
+// resolves the vault from the AsyncLocalStorage context that main.js's h()
+// wrapper establishes per IPC call.
+function getDB() {
+  return getVaultDB(currentNexusId());
 }
 
 function hasTable(conn, tableName) {
@@ -268,6 +455,9 @@ function hasAnyMissingColumns(conn, specs) {
 // Exported for the schema/ files, which were carved out of this one: they still
 // call _now()/_t() for boot profiling and the has*() probes for their guards.
 module.exports = {
-  adaptDb, getDB, perfLog, forceLegacyJournalMode,
+  adaptDb, getDB, getAppDB, getVaultDB, openDdx, dataDir,
+  createVaultDB, openVaultProbe, closeVault, closeAllVaults, pinVault, unpinVault, openVaultIds,
+  VaultFileMissingError, NoVaultError,
+  perfLog, forceLegacyJournalMode,
   hasTable, hasColumn, hasAnyMissingColumns, _now, _t,
 };

@@ -19,6 +19,66 @@
 
 ---
 
+## 2026-08-14 — หนึ่ง Nexus = หนึ่งไฟล์ .ddx, dependency ปลั๊กอินบล็อกการเปิดใช้งาน, เมนู ⋯ ของ Nexus, ช่องเสียบ cloud storage (v4.9.0)
+- commit: `25b5be8`..`b04e90e` (9 commits)
+- ไฟล์ที่แก้: `electron/src/db/conn.js`, `electron/src/db/vault-context.js` (ใหม่),
+  `electron/src/db/vaults.js` (ใหม่), `electron/src/db/split-migrate.js` (ใหม่),
+  `electron/src/db/nexus.js`, `electron/src/db/color.js`, `electron/src/db/plugin.js`,
+  `electron/src/db/versions.js`, `electron/src/db/import-merge.js`, `electron/src/db/drive.js`,
+  `electron/src/db/sync.js`, `electron/src/db/secret-store.js`,
+  `electron/src/db/cloud.js` / `cloud-drive.js` / `cloud-planned.js` (ใหม่),
+  `electron/src/db/schema/ddl.js`, `electron/src/db/schema/init.js`,
+  `electron/main.js`, `electron/preload.js`, `electron/database.js`, `electron/index.html`,
+  `electron/src/renderer/core/nexus.js`, `core/nexus-options.js` (ใหม่), `core/welcome.js`,
+  `core/boot.js`, `core/setting-window.js`, `electron/src/renderer/cloud.js` (ใหม่),
+  `electron/src/renderer/plugin.js`, `pluginpanel.js`, `drive.js`, `mod/fileviewer.js`,
+  `electron/src/renderer/i18n.js`, `electron/css/components.css`, `builder.css`, `inspector.css`,
+  `electron/test/schema-split.test.mjs` (ใหม่)
+
+- **อะไรเปลี่ยน (1) — ฐานข้อมูลแยกเป็น `app.ddx` + หนึ่ง `.ddx` ต่อหนึ่ง Nexus**
+  เดิมทุก vault อยู่ไฟล์เดียว ตอนนี้ระดับแอป (preference, credential, ปลั๊กอิน,
+  ทะเบียน vault) อยู่ `app.ddx` ส่วนแต่ละ Nexus เป็นไฟล์ของตัวเองใน `vaults/`
+  ที่ผู้ใช้เลือกที่เก็บได้ทุก build. `getDB()` ยังเป็นตัวเดิมที่ ~464 จุดเรียก
+  โดย resolve vault ผ่าน `AsyncLocalStorage` ที่ `h()` ใน main.js ตั้งให้ต่อ
+  IPC call. migration ครั้งเดียวเป็น copy-แล้ว-prune, สร้างใน temp แล้ว rename
+  เข้าที่ (vault ก่อน, `app.ddx` ทีหลังสุดในฐานะ commit marker), เก็บไฟล์เดิมไว้
+  เป็น `novel-manager.ddx.bak`
+- **ทำไม:** เอาโลกใบเดียวใส่ USB / ส่งให้เพื่อน / แยกโฟลเดอร์ไม่ได้เลยตอนไฟล์
+  เดียว และการส่ง Nexus หนึ่งอันเท่ากับส่ง refresh token ของ Google Drive ไปด้วย
+
+- **อะไรเปลี่ยน (2) — dependency ปลั๊กอินที่ยังขาด บล็อก "เปิดใช้งาน" แทน "ติดตั้ง"**
+  ปลั๊กอินติดตั้งสำเร็จเสมอ, ผลของ dependency ถูกบันทึกในตาราง
+  `plugin_dependency` ใหม่, แถวในหน้า Setting ขึ้นบล็อกแดงพร้อมปุ่ม **ดาวน์โหลด**
+  ต่อ dependency หนึ่งตัว และ `plugin:launch` ปฏิเสธด้วย `missing_dependency`
+- **ทำไม:** ของเดิม abort ทั้งก้อนเพราะเน็ตหลุดชั่วคราวก็ได้ และไม่ช่วยอะไรเลย
+  กับกรณีผู้ใช้ถอน dependency ทีหลัง
+
+- **อะไรเปลี่ยน (3) — เมนู ⋯ ต่อ Nexus บนหน้า Welcome**
+  ทำสำเนา / ส่งออก / แชร์ / เปิดในตัวจัดการไฟล์ / ลบ — เป็น file operation จริง
+  ได้เพราะข้อ (1). แถมแก้บั๊ก: ตัวปิด popup เมื่อคลิกนอกพื้นที่ถูกลงทะเบียนที่
+  ท้าย `init()` ซึ่งหน้าต่าง Welcome ไม่เคยไปถึง
+
+- **อะไรเปลี่ยน (4) — ช่องเสียบ cloud storage (ยังไม่ต่อของใหม่)**
+  registry + contract ใน `src/db/cloud.js`, หน้า Setting → ข้อมูลแอป →
+  พื้นที่เก็บข้อมูลบนคลาวด์, Google Drive เข้ามาผ่าน adapter (โค้ดเดิมไม่ถูกแตะ),
+  Dropbox/OneDrive/WebDAV/S3 เป็น stub ที่ตอบ `not_implemented`
+- **ทำไม:** "ข้อมูลเป็นของคุณ" ครึ่งที่เป็น cloud ต้องแปลว่า "บัญชีของคุณ,
+  credential ของคุณ" — hard-code Google ไว้เป็นรูปร่างที่ผิดสำหรับเรื่องนั้น
+
+- **แก้บั๊กที่เจอจากการรันจริง:** backtick ใน SQL comment ปิด template literal
+  ของ `DDL_SQL` (เจอสองครั้ง — มี test กันไว้แล้ว), contract ของ cloud provider
+  ประกาศทั้ง `status: 'available'` และ `status()` แล้วเมธอดชนะเงียบๆ,
+  `.btn:disabled` ไม่มี style เลยทำให้ปุ่มที่ disable ดูเหมือนใช้ได้,
+  `sqlite_sequence` ไม่มี UNIQUE บน `name` จึง upsert ไม่ได้,
+  และ `openDdx` ที่ publish connection หลัง init ทำให้ wiki backfill เปิด handle
+  ที่สองไปไฟล์เดียวกัน
+
+- Doc ที่อัปเดต: `docs/VAULTS.md` (ใหม่ — สถาปัตยกรรมการแยกไฟล์ทั้งหมด),
+  `docs/PLUGINS.md` §1.8, `docs/CLOUD.md` (ใหม่), `docs/FILES.md`,
+  `docs/Architec.md`, `docs/DRIVE.md`
+
+---
+
 ## 2026-08-13 — Security hardening: ปิด chain RCE→ขโมย credential + ชั้นจำกัดความเสียหาย (v4.7.6)
 - commit: uncommitted
 - ไฟล์ที่แก้: `electron/main.js`, `electron/index.html`,

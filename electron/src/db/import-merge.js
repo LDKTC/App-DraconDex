@@ -9,10 +9,24 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { app } = require('electron');
-const { getDB, adaptDb, forceLegacyJournalMode, hasTable, hasColumn } = require('./conn');
+const { getDB, getAppDB, adaptDb, forceLegacyJournalMode, hasTable, hasColumn, dataDir } = require('./conn');
 const { NEXUS_PROJECT_TABLES } = require('./schema/migrations');
-const getDatabasePath = () => path.join(path.dirname(app.getPath('userData')), 'novel-manager.ddx');
-const exportDatabaseTo = async (targetPath) => { fs.copyFileSync(getDatabasePath(), targetPath); };
+
+// v4.9.0: "the database" is no longer one file. app.ddx holds preferences,
+// credentials and plugins; each Nexus is its own .ddx. Callers have to say
+// which they mean.
+const getAppDatabasePath = () => path.join(dataDir(), 'app.ddx');
+const getVaultPath = (nexusId) =>
+  getAppDB().prepare(`SELECT file_path FROM nexus_file WHERE id=?`).get(nexusId)?.file_path ?? null;
+
+// Exports the OPEN VAULT. VACUUM INTO rather than fs.copyFileSync: the source
+// is a live connection, and copying a SQLite file that may be mid-transaction
+// produces a torn snapshot. VACUUM INTO writes a consistent, already-compacted
+// database and needs no lock dance.
+const exportDatabaseTo = async (targetPath) => {
+  try { fs.rmSync(targetPath, { force: true }); } catch (_) {}
+  getDB().prepare(`VACUUM INTO ?`).run(targetPath);
+};
 
 function importDatabaseMerge(sourcePath) {
   const target = getDB();
@@ -56,14 +70,21 @@ function importDatabaseMerge(sourcePath) {
     }
 
     // Nexus vaults + Scribe notes (v2.8), matched by name/title.
+    //
+    // v4.9.0: the target is ONE vault file holding exactly one `nexus` row, so
+    // this no longer creates vaults. A source file may still hold several (a
+    // pre-split .ddx, or a whole-app backup), and every one of them folds into
+    // the vault the user chose to merge into — inserting a second `nexus` row
+    // here would break the one-row-per-file invariant the whole split rests on.
+    // To keep source vaults separate, import them as new Nexuses instead
+    // (Setting -> App Data -> Database).
     if (hasTable(source, 'nexus')) {
       const colorById = hasTable(source, 'use_color') ? source.prepare(`SELECT id, color_code FROM use_color`).all().reduce((m, r) => (m.set(r.id, r.color_code), m), new Map()) : new Map();
       const srcNexus = source.prepare(`SELECT id, name, memo, color FROM nexus`).all();
-      for (const n of srcNexus) {
-        summary.nexuses += target.prepare(`INSERT OR IGNORE INTO nexus (name, memo, color) VALUES (?, ?, (SELECT id FROM use_color WHERE color_code=?))`)
-          .run(n.name, n.memo, colorById.get(n.color) || null).changes;
-      }
-      const targetNexusByName = target.prepare(`SELECT id, name FROM nexus`).all().reduce((m, r) => (m.set(r.name, r.id), m), new Map());
+      const targetNexusId = target.prepare(`SELECT id FROM nexus ORDER BY id LIMIT 1`).get()?.id ?? null;
+      summary.nexuses = 0;      // nothing is created any more
+      summary.nexusesFolded = targetNexusId ? srcNexus.length : 0;
+      const targetNexusByName = new Map(srcNexus.map((n) => [n.name, targetNexusId]));
       const srcNexusName = new Map(srcNexus.map(n => [n.id, n.name]));
 
       if (hasTable(source, 'note_folder')) {
@@ -730,14 +751,15 @@ function importDatabaseMerge(sourcePath) {
       }
     }
 
-    // Merged projects arrive without nexus_ref; adopt them like the v2.8
-    // migration does so they don't vanish from every vault until restart.
-    let nx = target.prepare(`SELECT id FROM nexus ORDER BY id LIMIT 1`).get();
-    if (!nx) {
-      nx = { id: target.prepare(`INSERT INTO nexus (name) VALUES ('Nexus')`).run().lastInsertRowid };
-    }
-    for (const t of NEXUS_PROJECT_TABLES) {
-      target.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref IS NULL`).run(nx.id);
+    // Merged projects arrive without nexus_ref; adopt them into this vault's
+    // own row so they don't vanish until restart. No longer creates a `nexus`
+    // row when there isn't one: a vault file always has exactly one, and a
+    // target without it is not a vault, so there is nothing to adopt into.
+    const nx = target.prepare(`SELECT id FROM nexus ORDER BY id LIMIT 1`).get();
+    if (nx) {
+      for (const t of NEXUS_PROJECT_TABLES) {
+        target.prepare(`UPDATE ${t} SET nexus_ref=? WHERE nexus_ref IS NULL`).run(nx.id);
+      }
     }
 
   });
@@ -759,4 +781,4 @@ function importDatabaseMerge(sourcePath) {
   return summary;
 }
 
-module.exports = { getDatabasePath, exportDatabaseTo, importDatabaseMerge };
+module.exports = { getAppDatabasePath, getVaultPath, exportDatabaseTo, importDatabaseMerge };

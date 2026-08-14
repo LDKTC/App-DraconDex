@@ -1,7 +1,9 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, protocol, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
+const { isSecretKey } = require('./src/db/secret-store');
+const { windowNexus, runWithVault, currentNexusId } = require('./src/db/vault-context');
 
 // Data location per build flavor:
 // - portable exe (build:exe): PORTABLE_EXECUTABLE_DIR is set by the launcher
@@ -86,6 +88,31 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
     },
   });
   hardenWebviewAttach(win.webContents);
+  // Which vault this window's IPC calls belong to. Registered before loadFile
+  // so the renderer's very first wave of calls already resolves.
+  if (bootstrapNexusId) {
+    const nexusId = Number(bootstrapNexusId);
+    windowNexus.set(win.id, nexusId);
+    // The Welcome list's item count is a cached value in app.ddx, refreshed on
+    // the window lifecycle rather than on every module create/delete — those
+    // are hot paths, and "counts as of the last time this vault was open" is
+    // correct the moment its window closes. Refreshed on open too, so a vault
+    // whose file was edited elsewhere corrects itself on first use.
+    try { db.refreshVaultCounts(nexusId); } catch (_) {}
+    // Pinned for as long as a window holds it, so conn.js's LRU can never
+    // close a vault out from under a live renderer.
+    db.pinVault(nexusId);
+    win.on('closed', () => {
+      windowNexus.delete(win.id);
+      try { db.refreshVaultCounts(nexusId); } catch (_) {}
+      // Only unpin once NO window is left on this vault — two windows on one
+      // vault is a supported thing (window:openNexus).
+      if (![...windowNexus.values()].includes(nexusId)) {
+        db.unpinVault(nexusId);
+        db.closeVault(nexusId);
+      }
+    });
+  }
   if (bootstrapTabKey) {
     popupWindowIds.add(win.id);
     win.on('closed', () => popupWindowIds.delete(win.id));
@@ -324,15 +351,31 @@ app.whenReady().then(() => {
 // Imported files are NOT copied into the data dir — import_file.file_path is
 // the user's original absolute path, anywhere on disk (see importdock:add /
 // pickFolder below), so there is no directory prefix to sandbox against.
-// The URL therefore carries a row id, never a path: ddx-file://<importFileId>
-// is looked up in import_file and served only if it is a registered image.
-// A path in the URL would be an arbitrary-file-read hole; don't add one.
+// The URL therefore carries row ids, never a path: ddx-file://<nexusId>-<importFileId>
+// is looked up in that vault's import_file and served only if it is a
+// registered image. A path in the URL would be an arbitrary-file-read hole;
+// don't add one.
+//
+// The nexus id joined the URL in v4.9.0, when import_file moved into per-vault
+// files. This is NOT an IPC handler — it gets a bare Request, and every app
+// window shares the default session (only plugins get partitions), so there is
+// no calling window to infer a vault from. The URL has to say. The id is
+// validated against the registry and the lookup runs inside runWithVault, so a
+// forged nexus id can only reach a vault that actually exists, and only its
+// registered images.
 function registerDisplayImageProtocol() {
   if (!protocol) return;
   protocol.handle('ddx-file', async (req) => {
-    const id = Number(String(req.url).replace(/^ddx-file:(\/\/)?/, '').split(/[?#/]/)[0]);
-    if (!Number.isInteger(id) || id <= 0) return new Response(null, { status: 400 });
-    const f = db.getImportFile(id);
+    const raw = String(req.url).replace(/^ddx-file:(\/\/)?/, '').split(/[?#/]/)[0];
+    const [nexusPart, idPart] = raw.split('-');
+    const nexusId = Number(nexusPart);
+    const id = Number(idPart);
+    if (!Number.isInteger(nexusId) || nexusId <= 0 || !Number.isInteger(id) || id <= 0) {
+      return new Response(null, { status: 400 });
+    }
+    let f;
+    try { f = await runWithVault(nexusId, () => db.getImportFile(id)); }
+    catch (_) { return new Response(null, { status: 404 }); }
     const ext = (f?.file_type || '').toLowerCase();
     if (!f || !IMAGE_EXTS.has(ext)) return new Response(null, { status: 404 });
     try {
@@ -356,9 +399,20 @@ function registerDisplayImageProtocol() {
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWelcomeWindow(); });
 
-const h = (ch, fn) => ipcMain.handle(ch, async (_, ...a) => {
+// The single choke point where every handler learns which vault it is for.
+// Vault-scoped db functions call getDB(), which reads the AsyncLocalStorage
+// store established here; app-level ones call getAppDB() and are unaffected.
+// See src/db/vault-context.js for why ALS and not a module-scoped variable —
+// short version: a handler that awaits (a file dialog, a network call) would
+// otherwise resume with whatever vault a DIFFERENT window set in the meantime,
+// and some of those paths wipe a nexus.
+//
+// The Welcome window has no entry in windowNexus, so its handlers run with a
+// null vault and any vault-scoped call fails loudly rather than picking one.
+const h = (ch, fn) => ipcMain.handle(ch, async (event, ...a) => {
+  const nexusId = windowNexus.get(BrowserWindow.fromWebContents(event.sender)?.id) ?? null;
   try {
-    return await fn(...a);
+    return await runWithVault(nexusId, () => fn(...a));
   } catch (err) {
     console.error(`IPC handler ${ch} error:`, err);
     throw err;
@@ -366,9 +420,11 @@ const h = (ch, fn) => ipcMain.handle(ch, async (_, ...a) => {
 });
 
 // DB import/export
+// Exports the OPEN VAULT, not "the database" — since v4.9.0 there isn't one.
 h('db:exportFile', async () => {
-  const defaultName = `novel-manager-backup-${new Date().toISOString().slice(0, 10)}.ddx`;
-  const result = await dialog.showSaveDialog({
+  const vaultName = (db.getNexus(currentNexusId())?.name || 'nexus').replace(/[\\/:*?"<>|]/g, '_');
+  const defaultName = `${vaultName}-backup-${new Date().toISOString().slice(0, 10)}.ddx`;
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Export Database',
     defaultPath: path.join(app.getPath('documents'), defaultName),
     filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
@@ -392,7 +448,7 @@ h('db:pickImportFile', async () => {
   // Accepts both the current .ddx format and legacy .db files (pre-v3.11,
   // or a v1/v2 export) — an old-shaped .db import is exactly the trigger
   // case for the Nexus Nest / Import DB choice modal (src/renderer/hub.js).
-  const result = await dialog.showOpenDialog({
+  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Import Database (.ddx / .db)',
     properties: ['openFile'],
     filters: [{ name: 'DraconDex / SQLite DB', extensions: ['ddx', 'db'] }],
@@ -415,7 +471,7 @@ h('db:importMergeFile', async (filePath) => {
 // (src/db/sync.js) under the hood (src/db/db-transfer.js).
 h('db:exportNexusFile', async (nexusId, nexusName) => {
   const defaultName = `${String(nexusName || 'nexus').replace(/[\\/:*?"<>|]/g, '_')}.json`;
-  const result = await dialog.showSaveDialog({
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Export Nexus', defaultPath: path.join(app.getPath('documents'), defaultName),
     filters: [{ name: 'DraconDex Nexus Snapshot', extensions: ['json'] }],
   });
@@ -423,7 +479,7 @@ h('db:exportNexusFile', async (nexusId, nexusName) => {
   return db.exportNexusFile(nexusId, result.filePath);
 });
 h('db:importNexusFile', async (nexusId) => {
-  const result = await dialog.showOpenDialog({
+  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Import Nexus', properties: ['openFile'],
     filters: [{ name: 'DraconDex Nexus Snapshot', extensions: ['json'] }],
   });
@@ -432,7 +488,7 @@ h('db:importNexusFile', async (nexusId) => {
 });
 h('db:exportModuleFile', async (nexusId, moduleId, moduleName) => {
   const defaultName = `${String(moduleName || 'module').replace(/[\\/:*?"<>|]/g, '_')}.json`;
-  const result = await dialog.showSaveDialog({
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Export Module', defaultPath: path.join(app.getPath('documents'), defaultName),
     filters: [{ name: 'DraconDex Module Snapshot', extensions: ['json'] }],
   });
@@ -440,7 +496,7 @@ h('db:exportModuleFile', async (nexusId, moduleId, moduleName) => {
   return db.exportModuleFile(nexusId, moduleId, result.filePath);
 });
 h('db:importModuleFile', async (nexusId, parentModuleId) => {
-  const result = await dialog.showOpenDialog({
+  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Import Module', properties: ['openFile'],
     filters: [{ name: 'DraconDex Module Snapshot', extensions: ['json'] }],
   });
@@ -451,7 +507,111 @@ h('db:importModuleFile', async (nexusId, parentModuleId) => {
 // Nexus (vault)
 h('nexus:getAll', ()             => db.getNexuses());
 h('nexus:get',    (id)           => db.getNexus(id));
-h('nexus:create', (n,m,c)        => db.createNexus(n,m,c));
+// Where a vault file goes. The DEFAULT path is a pure string with no dialog —
+// that is what keeps the run-dracondex driver deterministic (a native
+// showSaveDialog would block the real-Electron driver forever, and
+// web-driver.mjs stubs dialogs to {canceled:true}). The dialog only ever opens
+// because the user clicked Change.
+const pickedVaultPaths = new Set();
+// Share copies this session produced, so shell:revealPath can accept them.
+const sharedVaultPaths = new Set();
+h('nexus:defaultPath', ()        => db.vaultsDir());
+h('nexus:pickLocation', async (name) => {
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+    title: 'Save Nexus As',
+    defaultPath: db.vaultDefaultPath(name || '', 0).replace(/-0\.ddx$/, '.ddx'),
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
+  });
+  if (result.canceled || !result.filePath) return { canceled: true };
+  const resolved = path.resolve(result.filePath);
+  pickedVaultPaths.add(resolved);
+  return { canceled: false, filePath: resolved };
+});
+// A path the renderer supplies is only honoured if a dialog produced it — the
+// same "a picker returned it or it doesn't exist" rule pickedImportDbPaths and
+// pickedImportRoots already apply. Anything else falls back to the default.
+h('nexus:create', (n,m,c,fp) => {
+  const chosen = fp && pickedVaultPaths.has(path.resolve(String(fp))) ? path.resolve(String(fp)) : null;
+  return db.createNexus(n, m, c, chosen);
+});
+// ─── The Nexus ... menu (v4.9.0) ───────────────────────────────────────────
+// Duplicate / Export / Share / Open in Explorer. These are real file
+// operations now that a Nexus is a real file.
+h('nexus:duplicate', (id) => db.duplicateNexus(id));
+
+h('nexus:exportFile', async (id) => {
+  const n = db.getNexus(id);
+  if (!n) return { ok: false, code: 'not_found' };
+  const safe = String(n.name || 'nexus').replace(/[\\/:*?"<>|]/g, '_');
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+    title: 'Export Nexus', defaultPath: path.join(app.getPath('documents'), `${safe}.ddx`),
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  return db.exportNexusVaultFile(id, result.filePath);
+});
+
+// Share = "hand this file to a person". Windows gives Electron no way to
+// attach a file to the user's mail client, so this writes the copy and the
+// renderer offers the three things that DO work: reveal it (one drag into a
+// chat window), copy its path, or open a pre-filled mail draft to attach it to.
+// macOS gets the real native share sheet instead.
+h('nexus:shareFile', async (id) => {
+  const n = db.getNexus(id);
+  if (!n) return { ok: false, code: 'not_found' };
+  const safe = String(n.name || 'nexus').replace(/[\\/:*?"<>|]/g, '_');
+  const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+    title: 'Share Nexus', defaultPath: path.join(app.getPath('desktop'), `${safe}.ddx`),
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  const out = db.exportNexusVaultFile(id, result.filePath);
+  if (!out.ok) return out;
+  sharedVaultPaths.add(path.resolve(out.filePath));
+  if (process.platform === 'darwin') {
+    try {
+      const { ShareMenu } = require('electron');
+      new ShareMenu({ filePaths: [out.filePath] }).popup({ window: BrowserWindow.getFocusedWindow() });
+      return { ...out, native: true };
+    } catch (_) { /* fall through to the modal */ }
+  }
+  return { ...out, native: false };
+});
+
+// Reveals a path the APP owns — resolved from the registry, never taken from
+// the renderer, so this cannot be pointed at an arbitrary file.
+h('nexus:revealFile', (id) => {
+  const n = db.getNexus(id);
+  if (!n?.file_path) return { ok: false, code: 'not_found' };
+  shell.showItemInFolder(n.file_path);
+  return { ok: true };
+});
+h('shell:revealPath', (p) => {
+  // Only paths this app produced: a registered vault file, or a share copy the
+  // save dialog just returned.
+  const known = db.getNexuses().some((n) => n.file_path && path.resolve(n.file_path) === path.resolve(String(p || '')));
+  if (!known && !sharedVaultPaths.has(path.resolve(String(p || '')))) return { ok: false, code: 'not_found' };
+  shell.showItemInFolder(String(p));
+  return { ok: true };
+});
+// mailto: only. openExternal hands a string to the OS shell handler, so an
+// unrestricted one is a new door out of the sandbox — file:, and on Windows
+// anything the shell will execute, must never reach it.
+h('shell:composeMail', (subject, body) => {
+  const url = `mailto:?subject=${encodeURIComponent(String(subject || ''))}&body=${encodeURIComponent(String(body || ''))}`;
+  shell.openExternal(url);
+  return { ok: true };
+});
+
+// A vault whose file was moved or deleted: point the registry at it again.
+h('nexus:relink', async (id) => {
+  const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
+    title: 'Locate Nexus File', properties: ['openFile'],
+    filters: [{ name: 'DraconDex Nexus', extensions: ['ddx'] }],
+  });
+  if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true };
+  return db.relinkNexusFile(id, result.filePaths[0]);
+});
 h('nexus:update', (id,n,m,c)     => db.updateNexus(id,n,m,c));
 h('nexus:delete', (id)           => db.deleteNexus(id));
 
@@ -681,8 +841,14 @@ h('versions:restore', (id)   => db.restoreVersion(id));
 // only one), so this is an allowlist rather than a denylist — a new secret
 // key added later is closed by default instead of open by default.
 const RENDERER_SETTING_KEYS = new Set(['versionLimit']);
-h('setting:get',      (k)    => (RENDERER_SETTING_KEYS.has(String(k)) ? db.getAppSetting(k) : null));
-h('setting:set',      (k,v)  => (RENDERER_SETTING_KEYS.has(String(k)) ? db.setAppSetting(k,v) : { ok: false }));
+// Two gates, not one. The allowlist is the rule; isSecretKey() is the backstop
+// that survives someone widening the allowlist later without noticing they
+// just handed the renderer a refresh token. Cloud-provider credentials are
+// keyed by provider id (cloud:<id>:refreshToken, …) and so cannot be
+// enumerated in a set — isSecretKey matches them by shape.
+const rendererSettingAllowed = (k) => RENDERER_SETTING_KEYS.has(String(k)) && !isSecretKey(k);
+h('setting:get',      (k)    => (rendererSettingAllowed(k) ? db.getAppSetting(k) : null));
+h('setting:set',      (k,v)  => (rendererSettingAllowed(k) ? db.setAppSetting(k,v) : { ok: false }));
 
 // Cloud sync — Token Sync (Supabase) — snapshot push/pull per vault slot
 h('sync:getConfig',     ()             => db.getSyncConfig());
@@ -714,6 +880,20 @@ h('drive:saveLayoutSlot',    (name,json) => db.driveSaveLayoutSlot(name,json));
 h('drive:restoreLayoutSlot', (id)        => db.driveRestoreLayoutSlot(id));
 h('drive:deleteLayoutSlot',  (id)        => db.driveDeleteLayoutSlot(id));
 
+// Cloud storage registry (v4.9.0) — the provider-agnostic surface. Google
+// Drive is reachable through BOTH this and the drive:* channels above: these
+// delegate to the same functions via src/db/cloud-drive.js, they do
+// not reimplement anything. Every other provider is a declared stub that
+// answers not_implemented; see src/db/cloud.js for the contract.
+h('cloud:listProviders',   ()        => db.cloudListProviders());
+h('cloud:setActive',       (id)      => db.cloudSetActive(id));
+h('cloud:setPrefs',        (id,p)    => db.cloudSetProviderPrefs(id,p));
+h('cloud:getConfig',       (id)      => db.cloudGetConfig(id));
+h('cloud:setConfig',       (id,cfg)  => db.cloudSetConfig(id,cfg));
+h('cloud:connect',         (id)      => db.cloudConnect(id));
+h('cloud:disconnect',      (id)      => db.cloudDisconnect(id));
+h('cloud:status',          (id)      => db.cloudStatus(id));
+
 // Firebase — app-update notice (read-only Firestore doc check, no auto-updater)
 h('update:check',        ()    => db.checkForUpdate());
 h('update:dismiss',      (v)   => db.dismissUpdate(v));
@@ -729,6 +909,7 @@ h('plugin:list',      ()    => db.pluginList());
 h('plugin:listOrgRepos', () => db.pluginListOrgRepos());
 h('plugin:preview',   (url) => db.pluginPreview(url));
 h('plugin:install',   (url) => db.pluginInstall(url));
+h('plugin:installDependency', (id, url) => db.pluginInstallDependency(id, url));
 h('plugin:uninstall', (id) => {
   if (findPluginWindow(id)) return { ok: false, code: 'running' };
   return db.pluginUninstall(id);
@@ -736,6 +917,12 @@ h('plugin:uninstall', (id) => {
 h('plugin:launch', (id) => {
   const plugin = db.pluginGetById(id);
   if (!plugin) return { ok: false, code: 'not_found' };
+  // A plugin that declared a dependency it doesn't have would load into a
+  // half-working state and fail in its own code, with nothing to point the
+  // user at. Refuse here instead — the renderer already disables the button,
+  // so this is the backstop for a stale list or a direct api call.
+  const missing = db.pluginMissingDeps(id);
+  if (missing.length) return { ok: false, code: 'missing_dependency', missing };
   createPluginWindow(plugin);
   return { ok: true };
 });

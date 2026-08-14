@@ -12,7 +12,13 @@
 // supabase/migrations/20260730000000_dracondex_token_sync.sql.
 const crypto = require('crypto');
 const { app } = require('electron');
-const { getDB } = require('./core');
+// getVaultDB(nexusId), not getDB(), in the three functions below. Each already
+// receives the nexus it operates on, and each is reachable from a handler that
+// awaits a file dialog or a network call BEFORE touching the database — so
+// resolving the vault from the explicit argument removes any dependence on the
+// ambient context surviving that await. applySnapshotCore in particular can
+// wipe a nexus; it must never be able to wipe the wrong one.
+const { getDB, getVaultDB } = require('./core');
 const { getAppSetting, setAppSetting } = require('./versions');
 const { getSecret, setSecret } = require('./secret-store');
 const { makePkcePair, runOAuthLoopback } = require('./oauth-loopback');
@@ -295,7 +301,7 @@ const dateKey = (d) => `${d.day}|${d.month}|${d.years}|${d.hour}|${d.minute}`;
 // substitution — a module import has nowhere sensible to put a vault-wide
 // note or an arbitrary-entity relation anyway.
 function serializeVault(nexusId, moduleIds = null) {
-  const db = getDB();
+  const db = getVaultDB(nexusId);
   const nexus = db.prepare(`
     SELECT n.name, n.memo, c.color_code AS colorCode
     FROM nexus n LEFT JOIN use_color c ON n.color = c.id WHERE n.id=?`).get(nexusId);
@@ -540,7 +546,7 @@ function serializeVault(nexusId, moduleIds = null) {
 // supporting WITH RECURSIVE. Used by exportModuleFile/importModuleFile
 // (src/db/db-transfer.js) to scope serializeVault to one module subtree.
 function collectModuleSubtreeIds(nexusId, moduleId) {
-  const db = getDB();
+  const db = getVaultDB(nexusId);
   const rows = db.prepare(`SELECT id, parent_id AS parentId FROM module WHERE nexus_ref=?`).all(nexusId);
   const byParent = new Map();
   for (const r of rows) {
@@ -596,7 +602,7 @@ function remapEntityKey(key, maps) {
 function applySnapshotCore(nexusId, payload, opts = {}) {
   const { wipe = false, updateNexusMeta = false, reparentRootTo = null } = opts;
   if (!validateSnapshot(payload)) return { ok: false, code: 'bad_snapshot' };
-  const db = getDB();
+  const db = getVaultDB(nexusId);
   const arr = (a) => (Array.isArray(a) ? a : []);
   const sect = (s) => (s && typeof s === 'object' ? s : {});
 

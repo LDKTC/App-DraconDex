@@ -19,7 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
-const { getDB } = require('./core');
+const { getAppDB } = require('./core');
 const {
   PLUGIN_TABLE_RE, FULL_TABLE_RE, MAX_FILE_BYTES,
   MANIFEST_NAMES, REF_CANDIDATES,
@@ -134,7 +134,7 @@ async function previewDependency(depUrl, selfId) {
   if (!valid.ok) return { url: depUrl, ok: false, code: 'bad_manifest' };
   if (depR.manifest.id === selfId) return { url: depUrl, ok: false, code: 'self_dependency' };
 
-  const installed = getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(depR.manifest.id);
+  const installed = getAppDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(depR.manifest.id);
   return {
     url: depUrl, ok: true,
     id: depR.manifest.id, name: depR.manifest.name, version: depR.manifest.version || null,
@@ -153,7 +153,7 @@ async function pluginPreview(url) {
   const valid = validateManifest(r.manifest);
   if (!valid.ok) return { ok: false, code: 'bad_manifest', error: valid.error };
 
-  const installed = getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(r.manifest.id);
+  const installed = getAppDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(r.manifest.id);
   const dependencies = [];
   for (const depUrl of manifestDependencies(r.manifest)) {
     dependencies.push(await previewDependency(depUrl, r.manifest.id));
@@ -190,8 +190,8 @@ async function pluginPreview(url) {
 // dependency of it) so both go through the exact same fetch/write/cleanup
 // path — a dependency is a real, independently-valid plugin install, not a
 // special case.
-async function installResolvedPlugin(host, owner, repo, ref, manifest) {
-  const db = getDB();
+async function installResolvedPlugin(host, owner, repo, ref, manifest, deps = []) {
+  const db = getAppDB();
 
   // Fetch every declared file fully into memory before writing anything.
   const fileBuffers = {};
@@ -229,6 +229,16 @@ async function installResolvedPlugin(host, owner, repo, ref, manifest) {
           VALUES (?,?,?,?)
         `).run(pluginRowId, t.name, tableName, JSON.stringify(t.columns));
       }
+
+      // Written in the same transaction as the plugin row so a plugin can
+      // never exist without its dependency record — that record is what
+      // pluginMissingDeps (and therefore the launch gate) reads.
+      for (const d of deps) {
+        db.prepare(`
+          INSERT INTO plugin_dependency (plugin_ref, dep_url, dep_key, dep_name, fail_code)
+          VALUES (?,?,?,?,?)
+        `).run(pluginRowId, d.url, d.key || null, d.name || null, d.failCode || null);
+      }
     })();
   } catch (e) {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
@@ -239,30 +249,39 @@ async function installResolvedPlugin(host, owner, repo, ref, manifest) {
 }
 
 // Resolves + validates one manifest-declared dependency and installs it if no
-// plugin with that id exists yet. Returns null on success (nothing to
-// report, including "already installed" — that is the common, expected case
-// once one AI plugin has pulled AI Native in for the others). Returns an
-// { ok:false, code:'dependency_failed', error } the caller should return
-// as-is otherwise.
+// plugin with that id exists yet. Always resolves to the row shape stored in
+// `plugin_dependency` — { url, key, name, failCode } — and never throws: a
+// dependency that can't be resolved or installed is a recorded failure, not
+// an aborted install (v4.9.0; before that a single bad dependency killed the
+// whole install with `dependency_failed`).
 //
-// Deliberately one level deep: this never looks at the dependency's own
-// manifest.dependencies, so a dependency chain can't form. A dependency that
-// resolves to the SAME id as the plugin being installed is rejected rather
-// than silently overwriting it — see previewDependency's self_dependency.
-async function installDependencyIfMissing(depUrl, selfId) {
+// `failCode` null means "the dependency is present" — either it was already
+// installed, or this call installed it. Anything else is why it isn't, and
+// the settings row turns that into a Download button.
+//
+// A dependency that resolves to the SAME id as the plugin being installed is
+// rejected rather than silently overwriting it — see previewDependency.
+async function installDependency(depUrl, selfId) {
   const depR = await resolveRepo(depUrl);
-  if (!depR.ok) return { ok: false, code: 'dependency_failed', error: `${depUrl}: ${depR.code}` };
+  if (!depR.ok) return { url: depUrl, key: null, name: null, failCode: depR.code };
   const valid = validateManifest(depR.manifest);
-  if (!valid.ok) return { ok: false, code: 'dependency_failed', error: `${depUrl}: ${valid.error}` };
-  if (depR.manifest.id === selfId) {
-    return { ok: false, code: 'dependency_failed', error: `${depUrl}: a plugin cannot depend on its own id (${depR.manifest.id})` };
+  if (!valid.ok) return { url: depUrl, key: null, name: null, failCode: 'bad_manifest' };
+  if (depR.manifest.id === selfId) return { url: depUrl, key: null, name: null, failCode: 'self_dependency' };
+
+  const key = depR.manifest.id;
+  const name = depR.manifest.name;
+  if (getAppDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(key)) {
+    return { url: depUrl, key, name, failCode: null };
   }
 
-  if (getDB().prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(depR.manifest.id)) return null;
-
-  const res = await installResolvedPlugin(depR.host, depR.owner, depR.repo, depR.ref, depR.manifest);
-  if (!res.ok) return { ok: false, code: 'dependency_failed', error: `${depUrl}: ${res.error || res.code}` };
-  return null;
+  // One level deep, as before: the dependency's OWN dependencies are recorded
+  // (so the user can see and fetch them) but never fetched here, which is what
+  // keeps a dependency chain from resolving itself recursively.
+  const nested = manifestDependencies(depR.manifest)
+    .map((u) => ({ url: u, key: null, name: null, failCode: 'unresolved' }));
+  const res = await installResolvedPlugin(depR.host, depR.owner, depR.repo, depR.ref, depR.manifest, nested);
+  if (!res.ok) return { url: depUrl, key, name, failCode: res.code || 'install_failed' };
+  return { url: depUrl, key, name, failCode: null };
 }
 
 // Takes the pasted URL and nothing else. Everything — repo coordinates, ref,
@@ -276,30 +295,69 @@ async function pluginInstall(url) {
   const valid = validateManifest(manifest);
   if (!valid.ok) return { ok: false, code: 'bad_manifest', error: valid.error };
 
-  const db = getDB();
+  const db = getAppDB();
   if (db.prepare(`SELECT id FROM plugin WHERE plugin_key=?`).get(manifest.id)) {
     return { ok: false, code: 'already_installed' };
   }
 
   // Dependencies land first, each individually skipped if already installed —
   // so by the time the plugin the user actually asked for is written, every
-  // plugin it declared as required is already there (this is the "auto pull
-  // AI Native the first time an AI plugin installs" path). A dependency
-  // failure aborts BEFORE this plugin is touched at all; any dependency that
-  // installed successfully before a later one failed is left in place rather
-  // than rolled back — it is a complete, independently valid plugin install,
-  // not a partial/corrupt one, and there's a decent chance it's exactly what
-  // another already-installed plugin also depends on.
+  // plugin it declared as required is usually already there (the "auto pull
+  // AI Native the first time an AI plugin installs" path).
+  //
+  // v4.9.0: a dependency that fails NO LONGER aborts this install. The
+  // outcome of every dependency is recorded alongside the plugin instead, and
+  // a plugin with an unmet dependency installs but cannot be launched until
+  // the user fetches what it needs (pluginMissingDeps + the Download button in
+  // the settings row). Aborting was worse in both directions: it blocked a
+  // perfectly good plugin over a transient network failure, and it did nothing
+  // at all for the case where a dependency is uninstalled later.
+  const deps = [];
   for (const depUrl of manifestDependencies(manifest)) {
-    const depErr = await installDependencyIfMissing(depUrl, manifest.id);
-    if (depErr) return depErr;
+    deps.push(await installDependency(depUrl, manifest.id));
   }
 
-  return installResolvedPlugin(host, owner, repo, ref, manifest);
+  return installResolvedPlugin(host, owner, repo, ref, manifest, deps);
+}
+
+// The dependency rows this plugin still needs: either the URL never resolved
+// (dep_key IS NULL) or it resolved to a plugin id that isn't installed right
+// now — which also covers "the user uninstalled it afterwards", the case the
+// install-time check alone could never catch. Pure local SQL, no network, so
+// it is cheap enough to run on every list render and every launch.
+function pluginMissingDeps(pluginRowId) {
+  return getAppDB().prepare(`
+    SELECT dep_url AS url, dep_key AS key, dep_name AS name, fail_code AS failCode
+    FROM plugin_dependency
+    WHERE plugin_ref=?
+      AND (dep_key IS NULL OR dep_key NOT IN (SELECT plugin_key FROM plugin))
+    ORDER BY id
+  `).all(pluginRowId);
+}
+
+// Installs ONE recorded dependency on demand — what the Download button on a
+// blocked plugin's row calls. The URL is not taken from the caller: it is
+// looked up in plugin_dependency by (plugin_ref, dep_url), so the renderer
+// cannot use this as a second, unvetted install door for an arbitrary repo.
+// The resolution is written back, so a row that failed with `network` earlier
+// becomes a proper key/name once it succeeds.
+async function pluginInstallDependency(pluginRowId, depUrl) {
+  const db = getAppDB();
+  const self = db.prepare(`SELECT plugin_key FROM plugin WHERE id=?`).get(pluginRowId);
+  if (!self) return { ok: false, code: 'not_found' };
+  const row = db.prepare(`SELECT id, dep_url FROM plugin_dependency WHERE plugin_ref=? AND dep_url=?`)
+    .get(pluginRowId, String(depUrl || ''));
+  if (!row) return { ok: false, code: 'not_found' };
+
+  const res = await installDependency(row.dep_url, self.plugin_key);
+  db.prepare(`UPDATE plugin_dependency SET dep_key=?, dep_name=?, fail_code=? WHERE id=?`)
+    .run(res.key, res.name, res.failCode, row.id);
+  if (res.failCode) return { ok: false, code: res.failCode };
+  return { ok: true, pluginKey: res.key };
 }
 
 function pluginUninstall(id) {
-  const db = getDB();
+  const db = getAppDB();
   const plugin = db.prepare(`SELECT * FROM plugin WHERE id=?`).get(id);
   if (!plugin) return { ok: false, code: 'not_found' };
   const tables = db.prepare(`SELECT table_name FROM plugin_table WHERE plugin_ref=?`).all(id);
@@ -325,16 +383,27 @@ function parseManifestJson(row) {
 }
 
 function pluginList() {
-  const db = getDB();
+  const db = getAppDB();
   const plugins = db.prepare(`
     SELECT id, plugin_key, name, version, repo_host, repo_owner, repo_name, repo_ref, entry_html, installed_at, manifest_json
     FROM plugin ORDER BY installed_at DESC
   `).all();
   const tables = db.prepare(`SELECT plugin_ref, local_name, columns_json FROM plugin_table`).all();
+  // Both dependency tables are read once and filtered in JS rather than
+  // per-plugin subqueries — same shape as `tables` above, and it keeps the
+  // "is this key installed?" test to a single Set built from the list we
+  // already have.
+  const deps = db.prepare(`SELECT plugin_ref, dep_url, dep_key, dep_name, fail_code FROM plugin_dependency`).all();
+  const installedKeys = new Set(plugins.map((p) => p.plugin_key));
   return plugins.map(({ manifest_json, ...p }) => {
     const manifest = parseManifestJson({ manifest_json });
     return {
       ...p,
+      // Everything this plugin declared but doesn't have. Non-empty means the
+      // renderer blocks Launch and offers a Download button per entry.
+      missingDeps: deps
+        .filter((d) => d.plugin_ref === p.id && (!d.dep_key || !installedKeys.has(d.dep_key)))
+        .map((d) => ({ url: d.dep_url, key: d.dep_key, name: d.dep_name, failCode: d.fail_code })),
       tables: tables.filter((t) => t.plugin_ref === p.id).map((t) => ({ localName: t.local_name, columns: JSON.parse(t.columns_json) })),
       // The renderer needs an absolute on-disk path to point a <webview> at.
       // It is composed here (not in the renderer) so the plugins root stays a
@@ -348,7 +417,7 @@ function pluginList() {
 }
 
 function pluginGetById(id) {
-  return getDB().prepare(`SELECT * FROM plugin WHERE id=?`).get(id) || null;
+  return getAppDB().prepare(`SELECT * FROM plugin WHERE id=?`).get(id) || null;
 }
 
 // Resolve the plugin that owns an on-disk path, used by main.js to decide
@@ -364,7 +433,7 @@ function resolvePluginPath(filePath) {
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
   const key = rel.split(path.sep)[0];
   if (!key) return null;
-  const row = getDB().prepare(`SELECT * FROM plugin WHERE plugin_key=?`).get(key) || null;
+  const row = getAppDB().prepare(`SELECT * FROM plugin WHERE plugin_key=?`).get(key) || null;
   if (!row) return null;
   return { row, relInPlugin: rel.split(path.sep).slice(1).join('/') };
 }
@@ -392,7 +461,7 @@ function pluginByOwnedPath(filePath) {
 // The allowlist gate for pluginapi:net:* . pluginId comes from the calling
 // webContents' own identity (main.js), never from an argument.
 function pluginNetAllowed(pluginId, url) {
-  const row = getDB().prepare(`SELECT manifest_json FROM plugin WHERE id=?`).get(pluginId);
+  const row = getAppDB().prepare(`SELECT manifest_json FROM plugin WHERE id=?`).get(pluginId);
   if (!row) return false;
   const manifest = parseManifestJson(row);
   return !!manifest && netOriginAllowed(manifest, url);
@@ -568,7 +637,7 @@ async function pluginOAuthAuthorize(pluginId, opts) {
 // ---------------------------------------------------------------------------
 function resolveOwnedTable(pluginId, localName) {
   if (!PLUGIN_TABLE_RE.test(String(localName || ''))) return null;
-  const row = getDB().prepare(`
+  const row = getAppDB().prepare(`
     SELECT table_name, columns_json FROM plugin_table WHERE plugin_ref=? AND local_name=?
   `).get(pluginId, localName);
   if (!row) return null;
@@ -595,7 +664,7 @@ function pluginApiQuery(pluginId, localName, filter) {
   validateRowKeys(f, t.columns);
   const keys = Object.keys(f);
   const where = keys.length ? `WHERE ${keys.map((k) => `${k}=?`).join(' AND ')}` : '';
-  return getDB().prepare(`SELECT * FROM ${t.tableName} ${where} ORDER BY id DESC`).all(...keys.map((k) => f[k]));
+  return getAppDB().prepare(`SELECT * FROM ${t.tableName} ${where} ORDER BY id DESC`).all(...keys.map((k) => f[k]));
 }
 
 function pluginApiInsert(pluginId, localName, row) {
@@ -605,12 +674,12 @@ function pluginApiInsert(pluginId, localName, row) {
   validateRowKeys(r, t.columns);
   const keys = Object.keys(r);
   if (!keys.length) {
-    const res = getDB().prepare(`INSERT INTO ${t.tableName} DEFAULT VALUES`).run();
+    const res = getAppDB().prepare(`INSERT INTO ${t.tableName} DEFAULT VALUES`).run();
     return { id: res.lastInsertRowid };
   }
   const cols = keys.join(', ');
   const qs = keys.map(() => '?').join(', ');
-  const res = getDB().prepare(`INSERT INTO ${t.tableName} (${cols}) VALUES (${qs})`).run(...keys.map((k) => r[k]));
+  const res = getAppDB().prepare(`INSERT INTO ${t.tableName} (${cols}) VALUES (${qs})`).run(...keys.map((k) => r[k]));
   return { id: res.lastInsertRowid };
 }
 
@@ -622,20 +691,20 @@ function pluginApiUpdate(pluginId, localName, rowId, row) {
   const keys = Object.keys(r);
   if (!keys.length) return { changes: 0 };
   const set = keys.map((k) => `${k}=?`).join(', ');
-  const res = getDB().prepare(`UPDATE ${t.tableName} SET ${set} WHERE id=?`).run(...keys.map((k) => r[k]), rowId);
+  const res = getAppDB().prepare(`UPDATE ${t.tableName} SET ${set} WHERE id=?`).run(...keys.map((k) => r[k]), rowId);
   return { changes: res.changes };
 }
 
 function pluginApiDelete(pluginId, localName, rowId) {
   const t = resolveOwnedTable(pluginId, localName);
   if (!t) throw new Error('not an owned table');
-  const res = getDB().prepare(`DELETE FROM ${t.tableName} WHERE id=?`).run(rowId);
+  const res = getAppDB().prepare(`DELETE FROM ${t.tableName} WHERE id=?`).run(rowId);
   return { changes: res.changes };
 }
 
 module.exports = {
   pluginList, pluginGetById, pluginPreview, pluginInstall, pluginUninstall,
-  pluginListOrgRepos,
+  pluginListOrgRepos, pluginMissingDeps, pluginInstallDependency,
   migratePluginDir, pluginByPanelPath, pluginByOwnedPath, pluginNetAllowed,
   pluginNetFetch, pluginNetStream, pluginOAuthAuthorize,
   pluginApiGetSchema, pluginApiQuery, pluginApiInsert, pluginApiUpdate, pluginApiDelete,

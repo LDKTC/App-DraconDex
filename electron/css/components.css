@@ -8,6 +8,13 @@
 	cursor:pointer;font-size:calc(13.5px * var(--fsc,1));font-weight:500;
 	transition:all var(--ease);font-family:inherit;
 }
+/* A disabled .btn had no styling at all, so it looked exactly like a live one
+   — both for the busy state syncBtnBusy sets and for a genuinely unavailable
+   action (e.g. Launch on a plugin missing a dependency). Same treatment
+   base.css already gives select:disabled. Pointer events stay ON (unlike
+   .bnav:disabled in builder.css) so the button's title= tooltip still explains
+   WHY it is unavailable. */
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-p{background:var(--button, var(--accent));color:var(--on-button)}
 .btn-p:hover{background:var(--accentH)}
 .btn-s{background:var(--raised);color:var(--t1);border:1px solid var(--border)}
