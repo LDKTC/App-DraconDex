@@ -23,6 +23,10 @@
 
 ## process 2, do clear after finished
 ### part 1 : Nav bar
-- [ ] btn, on active, แสดงแถบสีด้านข้างเป้นhighlight เพื่อให้รู้ว่าเป็น active 
-- [ ]  
+- [ ] btn, on active, เพิ่มการแสดงแถบสีhighlightด้านข้าง เพื่อให้รู้ว่าเป็น page ที่ active 
+- [ ] resizing feature, เมื่อขยายถึงจุดหนึ่ง ให้แสดง page name ของแต่ละbtn ตามด้านหลังชื่อ
+- [ ] ย้ายปุ่ม toggle hub จากบนtitle bar, ลงมาอยู่บนhub ด้านข้างช่องSearch, เมื่อ toggle hub off,app icon btn บน navbar จะเปลี่ยนเป้นปุ่มสำหรับ toggle on ทันที, และจะกลับเป็น icon เมื่อtoggle on อยู่
+### part 2 : Setting 
+- [ ] setting, เพิ่มpage "start up" แสดงอยู่ในsession "Workspace"
+    - [ ] start up, เพิ่มsetting choice, auto open latest nexus หรือ open welcome screenแบบเดิม.
 ----- 
