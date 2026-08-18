@@ -238,6 +238,9 @@ function applyLeftPanelState(){
   q('#title-tab-bar')?.classList.toggle('left-panel-collapsed', S.leftPanelCollapsed);
   q('#hub-toggle-btn')?.classList.toggle('active', !S.leftPanelCollapsed);
   q('#hub-toggle-btn')?.setAttribute('title', t('toggleHub'));
+  // process2 part1 #3: keep #nav-logo-btn's logo/expand-hub swap in sync on
+  // every path that reaches this function (toggle click, boot, workspace switch).
+  updateTopNavButton();
 }
 
 function setLeftPanelCollapsed(collapsed){
@@ -282,9 +285,13 @@ document.addEventListener('mouseup', () => {
 
 // Plan part1 #2: resizable nav rail, same drag pattern as startLeftPanelResize
 // above driving --nav instead of --sidebar. Clamp floor (34px) keeps the
-// fixed 20px .nav-btn .icon SVGs from clipping; ceiling (80px) is a sane cap.
+// fixed 20px .nav-btn .icon SVGs from clipping; ceiling (220px, raised from
+// 80px for process2 part1 #2) leaves room for the icon+label row below the
+// NAV_LABEL_THRESHOLD breakpoint.
+const NAV_LABEL_THRESHOLD = 110;
 function applyNavRailWidth() {
   document.documentElement.style.setProperty('--nav', S.navRailWidth + 'px');
+  q('#nav-sidebar')?.classList.toggle('nav-expanded', S.navRailWidth >= NAV_LABEL_THRESHOLD);
 }
 let navRailResizeState = null;
 function startNavRailResize(ev) {
@@ -295,7 +302,7 @@ function startNavRailResize(ev) {
 }
 document.addEventListener('mousemove', (ev) => {
   if (!navRailResizeState) return;
-  S.navRailWidth = Math.max(34, Math.min(80, navRailResizeState.startWidth + (ev.clientX - navRailResizeState.startX)));
+  S.navRailWidth = Math.max(34, Math.min(220, navRailResizeState.startWidth + (ev.clientX - navRailResizeState.startX)));
   applyNavRailWidth();
 });
 document.addEventListener('mouseup', () => {

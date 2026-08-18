@@ -50,7 +50,15 @@ const fakeElectron = {
     whenReady: () => new Promise(() => {}), // never create a BrowserWindow
     quit: () => {},
   },
-  BrowserWindow: class { static getAllWindows() { return []; } static getFocusedWindow() { return null; } static fromWebContents() { return null; } },
+  // Fixed non-null fake window (id 1) instead of null: since v4.9.0's
+  // per-vault ALS split (docs/VAULTS.md), main.js's h() wrapper resolves the
+  // active vault via windowNexus.get(BrowserWindow.fromWebContents(event.sender)?.id) —
+  // returning null here means every vault-scoped IPC call resolves to "no
+  // vault" and throws, since this harness's fake app.whenReady() never
+  // resolves and so main.js's real createWindow() (which populates
+  // windowNexus) never runs. See the windowNexus.set() call below, which
+  // seeds the same entry createWindow() would have for window id 1.
+  BrowserWindow: class { static getAllWindows() { return []; } static getFocusedWindow() { return null; } static fromWebContents() { return { id: 1 }; } },
   ipcMain: { handle: (ch, fn) => handlers.set(ch, fn) },
   dialog: { showSaveDialog: async () => ({ canceled: true }), showOpenDialog: async () => ({ canceled: true }) },
   Menu: { buildFromTemplate: () => ({}), setApplicationMenu: () => {} },
@@ -63,6 +71,21 @@ Module._load = function (request, ...rest) {
 };
 require(path.join(root, 'electron', 'main.js')); // registers all ~230 IPC handlers
 console.log(`[web-driver] ${handlers.size} IPC handlers registered`);
+
+// Seed the same window->vault mapping the real createWindow() would have set
+// for a ?nexus=<id> page, onto the fixed fake window id (1) above — without
+// this, every vault-scoped call (Hub/Nest tree, module CRUD, etc.) 404s with
+// "no vault" regardless of the ?nexus= query string on page.goto below.
+// require() here resolves through Node's module cache to the SAME
+// windowNexus instance main.js's own require('./src/db/vault-context') got,
+// since both resolve to the identical file path.
+{
+  const qNexusId = Number(new URLSearchParams(query).get('nexus')) || null;
+  if (qNexusId) {
+    const { windowNexus } = require(path.join(root, 'electron', 'src', 'db', 'vault-context.js'));
+    windowNexus.set(1, qNexusId);
+  }
+}
 
 // BigInt (lastInsertRowid) is not JSON-serializable across the page bridge.
 const sanitize = (v) => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === 'bigint' ? Number(x) : x)) ?? 'null');
@@ -108,7 +131,9 @@ await page.addInitScript(`
 `);
 
 await page.goto('file://' + path.join(root, 'electron', 'index.html') + (query ? `?${query}` : ''));
-await page.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body', { timeout: 15000 });
+// welcome=1 renders renderWelcomeWindow() instead of the nexus/hub chrome —
+// .welcome-hero/.welcome-wizard cover both its vault-list and first-run-wizard states.
+await page.waitForSelector('.module-item, #left-panel-inner .empty, #left-panel-inner .ph, #hub-body, .welcome-hero, .welcome-wizard', { timeout: 15000 });
 console.log('[web-driver] app ready');
 
 // ── Command loop (same vocabulary as driver.mjs) ───────────────────────────
@@ -120,8 +145,15 @@ for (const raw of commands) {
   try {
     switch (verb) {
       case 'ss': {
-        const file = path.join(dataDir, 'shots', `${rest || 'shot'}.png`);
-        await page.screenshot({ path: file });
+        // Optional `:: <selector>` crops to just that element (Playwright
+        // locator screenshot) — useful for inspecting small chrome like the
+        // nav rail at full resolution instead of a hard-to-read full-window shot.
+        const sepIdx = rest.indexOf(' :: ');
+        const name = sepIdx === -1 ? rest : rest.slice(0, sepIdx);
+        const sel = sepIdx === -1 ? null : rest.slice(sepIdx + 4).trim();
+        const file = path.join(dataDir, 'shots', `${name || 'shot'}.png`);
+        if (sel) await page.locator(sel).screenshot({ path: file });
+        else await page.screenshot({ path: file });
         console.log(`[ss] ${file}`);
         break;
       }

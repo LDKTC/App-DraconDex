@@ -4,6 +4,10 @@
 // ═══ NAV & VIEW ════════════════════════════════════════
 function bindNav() {
   q('#nav-logo-btn')?.addEventListener('click', () => {
+    // process2 part1 #3: while the hub is collapsed, the logo slot is the
+    // "expand hub" control (see nav.js's updateTopNavButton) — wins over
+    // every other branch below regardless of module/project/world state.
+    if(S.leftPanelCollapsed){ setLeftPanelCollapsed(false); return; }
     if(S.project) returnToProjectList();
     else if(S.world) goToNavigatorList();
     else if(S.game && S.activeModule === 'hero' && typeof goToGameList === 'function') goToGameList();
