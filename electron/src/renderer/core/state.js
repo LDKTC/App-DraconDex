@@ -241,13 +241,8 @@ const S = {
   // session-only, not persisted, consistent with other in-session accordion
   // Sets like scribeOpenFolders above).
   kindBrowserOpen:new Set(),
-  // Plan part2 §2: Kind Browser promoted to its own full page (nav-rail
-  // button) instead of a Hub accordion section — mutually exclusive with
-  // activeModuleNode/filePreview/sageHut below.
-  kindBrowserPage:false,
   // Plan part2 #New Workspace: Import Dock promoted to its own full page
-  // for Wyvern's View-set menu, same "own S.*Page flag" pattern as
-  // kindBrowserPage above — mutually exclusive with it and with
+  // for Wyvern's View-set menu — mutually exclusive with
   // activeModuleNode/filePreview/sageHut.
   importDockPage:false,
   // Plan part2 #New Workspace — Wyvern's drill-down browse position: an

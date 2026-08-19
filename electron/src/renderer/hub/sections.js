@@ -1,6 +1,6 @@
 // The Hub panel's accordion shell and its non-tree sections: Sage Hut rows,
-// the Kind Browser (modules grouped by kind, with its own page view) and the
-// import-choice modal that picks between 'import as nest' and 'import as DB'.
+// the Kind Browser (modules grouped by kind) and the import-choice modal
+// that picks between 'import as nest' and 'import as DB'.
 // ═══ HUB PANEL — accordion shell (Phase 2) + Nexus nest tree (Phase 3) ═
 function toggleHubSection(name) {
   S.hubOpen[name] = !S.hubOpen[name];
@@ -37,7 +37,7 @@ function buildHubHtml() {
   // startHubSectionResize (core/ui.js). With 0-1 open there's no pair to
   // redistribute between, so skip it and let flex:1 fill the space as before.
   const heights = S.hubSectionHeights || {};
-  const openCount = ['nest', 'sage', 'dock'].filter(k => S.hubOpen[k]).length;
+  const openCount = ['nest', 'kinds', 'sage', 'dock'].filter(k => S.hubOpen[k]).length;
   const h = (key) => openCount > 1 ? heights[key] : null;
   const sections = [
     { key: 'nest', html: buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
@@ -47,6 +47,11 @@ function buildHubHtml() {
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();quickCreateModule('collector',null)" title="${kindLabel('collector')}">${I[KIND_ICON.collector]}</button>
          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>
          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openNestOptionsPopup(this)" title="${t('nestOptionsTitle')}">${I.options}</button>`, h('nest')) },
+    // Plan process2 part1 #2: moved into the Hub panel as its own accordion
+    // section (was a standalone Builder-pane page) — see goToKindBrowserHub()
+    // below for why: this is what lets opening a module from this list keep
+    // the Hub showing "List Modules" instead of falling back to the tree.
+    { key: 'kinds', html: buildAccSection('kinds', t('kindBrowser'), buildKindBrowserHtml(), '', h('kinds')) },
     // Plan process1 part3 #1: the nav rail's standalone Sage button was
     // removed — this header action jumps straight into the same Sage Hut
     // analytics page (openSageTab, mod/sagehut.js) without needing to first
@@ -147,18 +152,19 @@ function toggleKindGroup(kind) {
   renderNexusHome();
 }
 
-// Plan part2 §2: promoted out of the Hub accordion into its own full page,
-// reached via a nav-rail button — same mutual-exclusion state (S.*Node/
-// S.filePreview/S.sageHut) goToNexusNestHub() already resets, plus its own
-// S.kindBrowserPage flag. buildKindBrowserHtml() itself is unchanged/reused
-// verbatim; only its container (accordion section vs standalone page) moved.
+// Plan process2 part1 #2: reverts "Plan part2 §2"'s earlier move (Kind
+// Browser promoted to its own full Builder page) — it's back in the Hub
+// accordion now, so this nav-rail button no longer opens a competing page
+// state; it just goes to Hub home (same reset as goToNexusNestHub()) and
+// expands the 'kinds' section, same persistence toggleHubSection() uses.
 function goToKindBrowserHub() {
   S.activeModuleNode = null;
   S.activeItemNode = null;
   S.filePreview = null;
   S.sageHut = null;
-  S.kindBrowserPage = true;
   S.importDockPage = false;
+  S.hubOpen.kinds = true;
+  localStorage.setItem(HUB_OPEN_KEY, JSON.stringify(S.hubOpen));
   renderNexusHome();
 }
 
@@ -177,17 +183,10 @@ function wrapPageView(innerHtml) {
   </div>`;
 }
 
-function buildKindBrowserPageHtml() {
-  return wrapPageView(`<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
-      <h2 style="margin:0;font-size:1.15em">${x(t('kindBrowser'))}</h2>
-      <div class="drafter-hint">${x(S.nexus.name)}</div>
-    </div>
-    <div class="acc-body" style="display:block">${buildKindBrowserHtml()}</div>`);
-}
-
 // Plan part2 #New Workspace: same "promoted out of the accordion into its
-// own full page" move as goToKindBrowserHub/buildKindBrowserPageHtml above
-// — Wyvern's View-set menu needs Import Dock as a standalone page (today
+// own full page" move goToKindBrowserHub used to make (Process 2 part1 #2
+// reverted that move for Kind Browser, but Import Dock's own page stays) —
+// Wyvern's View-set menu needs Import Dock as a standalone page (today
 // it's accordion-only), and this is the exact precedent to copy.
 // buildImportDockRows() (mod/fileviewer.js) is reused verbatim; only its
 // container moved.
@@ -196,7 +195,6 @@ function goToImportDockPage() {
   S.activeItemNode = null;
   S.filePreview = null;
   S.sageHut = null;
-  S.kindBrowserPage = false;
   S.importDockPage = true;
   renderNexusHome();
 }

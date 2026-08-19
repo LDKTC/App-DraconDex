@@ -132,7 +132,7 @@ function clearWorkspaceTabs() {
   S.world = null; S.game = null; S.write = null;
   S.scribeNote = null; S.scribeOpenFolders = new Set();
   S.moduleTree = []; S.activeModuleNode = null; S.moduleTabs = [];
-  S.builder = null; S.filePreview = null; S.sageHut = null; S.sageHutCache = null; S.kindBrowserPage = false; S.importDockPage = false; S.importFiles = undefined;
+  S.builder = null; S.filePreview = null; S.sageHut = null; S.sageHutCache = null; S.importDockPage = false; S.importFiles = undefined;
   S.wyvernBrowsePath = [];
   S.dragonBrowsePath = [];
   if (S.importDbMode) { S.importDbMode = false; api.setImportDbMode(false); }

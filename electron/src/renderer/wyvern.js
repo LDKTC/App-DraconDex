@@ -123,7 +123,7 @@ function wyvernDrillUp(index){
 // chrome-agnostic already); only the empty-state welcome fallback is
 // replaced with Wyvern's own drill-down browse view.
 function buildWyvernPageHtml(){
-  const somethingOpen = S.activeItemNode || S.activeModuleNode || S.filePreview || S.sageHut || S.kindBrowserPage || S.importDockPage;
+  const somethingOpen = S.activeItemNode || S.activeModuleNode || S.filePreview || S.sageHut || S.importDockPage;
   return somethingOpen ? buildBuilderPageHtml() : buildWyvernBrowseHtml();
 }
 // renderNexusPicker() (core/nexus.js) writes its actual pickable Nexus list

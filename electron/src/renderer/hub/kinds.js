@@ -136,13 +136,20 @@ function renderModuleRail() {
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
   const pinned = S.moduleTree.filter(m => m.pinned);
-  const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut && !S.kindBrowserPage && !S.importDockPage;
+  // Plan process2 part1 #2/#3: Kind Browser is a Hub accordion section now
+  // (hub/sections.js), not a competing top-level page state, so only
+  // whether the Hub is showing at all — not which button was last clicked —
+  // decides this highlight. The "List Modules" button below no longer
+  // carries its own active class: it's a plain shortcut into the Hub, same
+  // as the pinned-module buttons' onclick, and clicking it never moves the
+  // highlight by itself (only actually opening a module does, below).
+  const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut && !S.importDockPage;
   // Plan process1 part4 #2: the nav rail's own "+ create module" tool was
   // dropped — the Nexus Nest hub section already offers the same
   // openMajorModuleModal() both in its header (hub/sections.js) and its
   // empty state (nestEmptyHtml(), hub/tree.js), so this was a duplicate.
   let html = `<button class="nav-btn module-rail-tool${atHubHome ? ' active' : ''}" title="${t('nexusNest')}" onclick="goToNexusNestHub()">${I.home}<span class="nav-label">${t('nexusNest')}</span></button>
-    <button class="nav-btn module-rail-tool${S.kindBrowserPage ? ' active' : ''}" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()">${I.layer}<span class="nav-label">${t('kindBrowser')}</span></button>`;
+    <button class="nav-btn module-rail-tool" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()">${I.layer}<span class="nav-label">${t('kindBrowser')}</span></button>`;
   if (pinned.length) html += `<div class="rail-sep module-rail-tool"></div>`;
   for (const m of pinned) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
@@ -164,7 +171,6 @@ function goToNexusNestHub() {
   S.filePreview = null;
   S.sageHut = null;
   S.activeItemNode = null;
-  S.kindBrowserPage = false;
   S.importDockPage = false;
   // Wyvern (Plan part2 #New Workspace): jumping to Nexus Nest from the
   // View-set menu returns to the browse root rather than wherever the user

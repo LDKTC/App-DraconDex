@@ -70,7 +70,7 @@ function dragonDrillUp(index) {
 // same precedence chain, just named per-file since dragon.js has no other
 // reason to share state with wyvern.js.
 function dragonSomethingOpen() {
-  return !!(S.activeItemNode || S.activeModuleNode || S.filePreview || S.sageHut || S.kindBrowserPage || S.importDockPage);
+  return !!(S.activeItemNode || S.activeModuleNode || S.filePreview || S.sageHut || S.importDockPage);
 }
 function buildDragonCanvasHtml() {
   const list = dragonBrowseCurrentList();

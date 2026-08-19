@@ -70,13 +70,14 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
 	-webkit-app-region:no-drag;
 }
 .nav-btn:hover{color:var(--t1)}
-.nav-btn.active{background:var(--accent);color:var(--on-accent)}
-/* process 2 part1 #1: side highlight bar on the active button, in addition
-   to the accent fill above — sits just outside the button's own edge (70%
-   width, centered in the rail) facing the content side, so it reads even
-   when a pinned module's custom icon color competes with the fill. */
+/* process2 part1 #1: finishes an earlier, unfinished pass of this same item
+   (the bar existed but the background fill was never removed, and it sat on
+   the wrong edge) — active state is now the left-side bar alone, no fill;
+   the icon itself is tinted --accent so it still reads as "selected" even
+   against a pinned module's own custom icon color. */
+.nav-btn.active{color:var(--accent)}
 .nav-btn.active::after{
-	content:'';position:absolute;right:-5px;top:22%;bottom:22%;
+	content:'';position:absolute;left:-5px;top:22%;bottom:22%;
 	width:3px;border-radius:2px;background:var(--accent);
 }
 .nav-util{font-size:calc(15px * var(--fsc,1))}

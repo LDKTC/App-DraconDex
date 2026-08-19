@@ -24,13 +24,13 @@
 
 ### Process 2 
 #### part 1 : nexus hub structure 
-- [ ] Nav bar highlight bg remove only, only highlight bar displayed
-    - [ ] Nav bar highlight bar, will show as hub displayed เช่นการที่เปิด Nexus nest จะแสดง highlight ที่ Nexus nest btn บน navbar
-    - [ ] Nav bar highlight จะแสดงที่ฝั่ง ซ้ายของnavbar
-- [ ] "เรียกดูตามประเภท" btn, เมื่อกด จะเปลี่ยนจากการแสดง lists บน builder มาเป็นlist บน hubแทน 
-    - [ ] และเมื่อกดเปิด module ที่อยู่ใน hub ก็จะไม่เปลี่ยน hub กลับเป็น nexus nest, แต่จะยังใช้ browser by typesอยู่ 
-    - [ ] เปลี่ยนชื่อ "เรียกดูตามประเภท" เป็น "ลิสโมดูล" เพื่อความสั้น และกระชับขึ้น
-- [ ] เมื่อกดปุ่มบน navbar จะไม่เปลี่ยนตามปุ่มที่เปิดอีกต่อไปแล้ว จะเปลี่ยนเมื่อ เปิดmodule เท่านั้น
+- [x] Nav bar highlight bg remove only, only highlight bar displayed
+    - [x] Nav bar highlight bar, will show as hub displayed เช่นการที่เปิด Nexus nest จะแสดง highlight ที่ Nexus nest btn บน navbar
+    - [x] Nav bar highlight จะแสดงที่ฝั่ง ซ้ายของnavbar
+- [x] "เรียกดูตามประเภท" btn, เมื่อกด จะเปลี่ยนจากการแสดง lists บน builder มาเป็นlist บน hubแทน 
+    - [x] และเมื่อกดเปิด module ที่อยู่ใน hub ก็จะไม่เปลี่ยน hub กลับเป็น nexus nest, แต่จะยังใช้ browser by typesอยู่ 
+    - [x] เปลี่ยนชื่อ "เรียกดูตามประเภท" เป็น "ลิสโมดูล" เพื่อความสั้น และกระชับขึ้น
+- [x] เมื่อกดปุ่มบน navbar จะไม่เปลี่ยนตามปุ่มที่เปิดอีกต่อไปแล้ว จะเปลี่ยนเมื่อ เปิดmodule เท่านั้น
 #### part 2 : legacy module structure
 - [ ] import db views, legacy moduleจะไม่ถูกใช้อีกต่อไป และจะถูกนำออก, โดยlegacy module ทั้งหมดจะถูกแปลงเป็น Nexus module โดยจะconvert เป็น module ใน nexus nest
     - [ ] module convert จะเลือกconvert module และsubmoduleของlegacy ให้ matchกับ nexus nest moduleที่มีอยู่ทั้งหมด

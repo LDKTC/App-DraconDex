@@ -213,12 +213,13 @@ function renderNexusHome() {
 
 // The focused pane's page, from the global page mirrors — precedence:
 // item page > module > file preview > sage hut > vault welcome.
+// Plan process2 part1 #2: Kind Browser no longer has a page here — it moved
+// into the Hub panel as its own accordion section (hub/sections.js).
 function buildBuilderPageHtml() {
   return (S.activeItemNode && typeof buildItemPageHtml === 'function') ? buildItemPageHtml(S.activeItemNode)
     : S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode)
     : (S.filePreview && typeof buildFileViewerHtml === 'function') ? buildFileViewerHtml()
     : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
-    : (S.kindBrowserPage && typeof buildKindBrowserPageHtml === 'function') ? buildKindBrowserPageHtml()
     : (S.importDockPage && typeof buildImportDockPageHtml === 'function') ? buildImportDockPageHtml()
     : `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
