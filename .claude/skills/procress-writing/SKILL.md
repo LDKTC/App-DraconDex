@@ -41,10 +41,14 @@ Part N: ...` commits, which make better anchors than the historical
      line.
 
 2. **Parse the body**:
-   - A **part boundary** is a body line with zero leading whitespace,
-     non-blank, not starting with `-`, and not a `-----` line itself (e.g.
-     `part 1`, or `part 2 เพิ่มfeature`). It's plain text, never a `##`
-     heading.
+   - A **cycle heading** is a `### Process N` line — the outer grouping
+     label for this whole planning cycle. It's cosmetic bookkeeping, not
+     something to parse for content; carry its number forward when you
+     write the new skeleton in step 6 (increment N each time the plan is
+     cleared).
+   - A **part boundary** is a `#### part N :` line (four-hash heading,
+     trailing colon, e.g. `#### part 1 :`, or `#### part 2 เพิ่มfeature :`)
+     nested under the cycle heading.
    - A **checklist item** is any line matching `^\s*-\s*\[([ xX])\]\s*(.*)$`,
      at any indentation depth (real files nest 2-3 levels).
    - **Ignore** plain `-`-prefixed lines with no bracket at all — the file
@@ -106,9 +110,12 @@ Part N: ...` commits, which make better anchors than the historical
    replace everything strictly between them (keep the delimiters, never
    touch the header above the first one) with:
    ```
-   part 1
+   ### Process N
+   #### part 1 : 
    - [ ] 
    ```
+   where `N` is the previous cycle heading's number plus 1 (start at `1` if
+   none existed yet).
 
 7. **Chain into `version-update`.** Now that Plan.md is cleared and
    `procress.md` holds the write-up, invoke the `version-update` skill so
@@ -168,8 +175,9 @@ Part N: ...` commits, which make better anchors than the historical
 - Only bracketed `- [ ]`/`- [x]` lines count as checklist items for the
   completion check — plain `-`-prefixed prose sub-bullets never need
   brackets and never count either way.
-- `part N` lines are bare plain text, not markdown headings — don't look
-  for `##`.
+- `part N` lines are `#### part N :` markdown headings (four hashes,
+  trailing colon), nested under an outer `### Process N` cycle heading —
+  the cycle heading is just a label, never parsed for content.
 - Zero checkbox lines anywhere in the body means ask the user, not
   "nothing to check off so it's done."
 - Never edit the header block above the first `-----`, even though its
