@@ -19,6 +19,20 @@
 
 ---
 
+## 2026-08-19 — Plugin recommend list กรองด้วย `.dracondex` marker (Process 1 part 2)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/src/db/plugin.js`
+- อะไรเปลี่ยน: `pluginListOrgRepos()` (รายการ "install from @LDKTC" บนหน้า
+  Setting → ปลั๊กอิน) เดิมกรองแค่ `is_template`/`archived` ตอนนี้เพิ่มสองเงื่อนไข —
+  (1) ตัด `DraconDex-Plugin-Template` ออกด้วยชื่อ repo เสมอ และ (2) เหลือเฉพาะ
+  repo ที่มีไฟล์ `.dracondex` อยู่ที่ root จริง (เช็คผ่าน GitHub Contents API
+  ฟังก์ชันใหม่ `repoHasDracondexMarker()`) — เพิ่ม `.dracondex` marker file ให้
+  `DraconDex-Plugin-Template` และปลั๊กอินทั้ง 4 ตัวในบัญชี (`-Native`, `-Claude`,
+  `-Codex`, `-Ollama`) แล้วเป็นส่วนหนึ่งของงานนี้
+- ทำไม: Plan.md Process 1 part 2 — กันไม่ให้ repo สาธารณะอื่นที่ไม่เกี่ยวกับ
+  DraconDex เลยโผล่ในรายการแนะนำ และกันตัว template เองไม่ให้แนะนำกลับมาที่ผู้ใช้
+- Doc ที่อัปเดต: `docs/PLUGINS.md` §1.1b (ใหม่)
+
 ## 2026-08-14 — หนึ่ง Nexus = หนึ่งไฟล์ .ddx, dependency ปลั๊กอินบล็อกการเปิดใช้งาน, เมนู ⋯ ของ Nexus, ช่องเสียบ cloud storage (v4.9.0)
 - commit: `25b5be8`..`b04e90e` (9 commits)
 - ไฟล์ที่แก้: `electron/src/db/conn.js`, `electron/src/db/vault-context.js` (ใหม่),
