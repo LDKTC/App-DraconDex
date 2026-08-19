@@ -17,8 +17,8 @@
     - [ ] และเมื่อเป็น section head สุดท้ายในorder จะถูก align ที่ bottom ของ hub body ในทันที
     - [ ] section head order จะไม่มีทางถูกเปลี่ยน แม้ว่าจะมี section head collapseที่ orderอยู่ก่อน section head ที่เปิดอยู่, ลำดับ order ก็จะไม่ถูกเปลี่ยน เช่น importที่order อยู่ในลำดับที่ 3 ถูกเปิดอยู่ แต่ sageที่ orderในลำดับที่2 collapsedอยู่ ลำดับก็จะไม่มีการเปลี่ยน แต่ sageที่collapse ก็จะถูกดันขึ้นไปพร้อมกับ import และยังแสดงอยู่เหนือ import head แต่อยู่bottomของ nexus nest body ที่order 1 และกำลังเปิดอยู่
 #### part 4 : navbar
-- [ ] เมื่อขยาย navbar จนแสดง label, เพิ่มให้แสดงlabel ของ btn ทั้งหมดบน nav sidebar
-- [ ] create module btn, นำออก เพราะสามารถสร้างmoduleได้บน nexus nest section 
+- [x] เมื่อขยาย navbar จนแสดง label, เพิ่มให้แสดงlabel ของ btn ทั้งหมดบน nav sidebar
+- [x] create module btn, นำออก เพราะสามารถสร้างmoduleได้บน nexus nest section 
 #### part 5 : import dock
 - [x] เมื่อเปิดfile ที่import, ไม่ต้องรีเซ็ต import section, ให้แสดง อยู่ที่จุดเดิมของลิสที่เลื่อนดู
 

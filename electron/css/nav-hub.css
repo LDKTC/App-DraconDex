@@ -149,14 +149,14 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
 .mdot-anchor{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mdot{position:absolute;right:-3px;bottom:-3px;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--surface)}
 
-/* process 2 part1 #2: dragging #nav-sidebar-resize past NAV_LABEL_THRESHOLD
-   (core/ui.js) adds .nav-expanded to #nav-sidebar — only the dynamic v3 rail
-   items (home/kind-browser/create/pinned modules) switch from a centered
-   icon square to a left-aligned icon+label row; legacy nav-btns are
-   untouched and stay icon-only. */
+/* process 2 part1 #2 / process1 part4 #1: dragging #nav-sidebar-resize past
+   NAV_LABEL_THRESHOLD (core/ui.js) adds .nav-expanded to #nav-sidebar — every
+   .nav-btn (the dynamic v3 rail's .module-rail-item/.module-rail-tool items
+   AND the legacy static buttons in index.html) switches from a centered icon
+   square to a left-aligned icon+label row. .nav-logo-btn is a different
+   class, so the logo itself is unaffected. */
 .nav-label{display:none}
-#nav-sidebar.nav-expanded .nav-btn.module-rail-item,
-#nav-sidebar.nav-expanded .nav-btn.module-rail-tool{
+#nav-sidebar.nav-expanded .nav-btn{
 	width:calc(100% - 12px);aspect-ratio:auto;justify-content:flex-start;
 	gap:8px;padding:0 10px;
 }

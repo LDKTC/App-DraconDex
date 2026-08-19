@@ -24,7 +24,7 @@ function buildModuleSubNav(){
   let html = '';
   for(const [mod, cfg] of Object.entries(MODULE_SUBNAV)){
     for(const [tab, icon, key] of cfg.items){
-      html += `<button class="nav-btn ${mod}-sub" data-subtab="${tab}" data-i18n="${key}" style="display:none" onclick="${cfg.setter}('${tab}')">${I[icon]}</button>`;
+      html += `<button class="nav-btn ${mod}-sub" data-subtab="${tab}" data-i18n="${key}" style="display:none" onclick="${cfg.setter}('${tab}')">${I[icon]}<span class="nav-label"></span></button>`;
     }
   }
   if(anchor) anchor.insertAdjacentHTML('beforebegin', html);
@@ -41,7 +41,12 @@ function updateModuleSubNav(){
     document.querySelectorAll(`.nav-btn.${mod}-sub`).forEach(btn => {
       btn.style.display = show[mod] ? '' : 'none';
       btn.classList.toggle('active', !!show[mod] && btn.dataset.subtab === cur[mod]);
-      if(btn.dataset.i18n) btn.setAttribute('title', t(btn.dataset.i18n));
+      if(btn.dataset.i18n) {
+        const label = t(btn.dataset.i18n);
+        btn.setAttribute('title', label);
+        const labelEl = btn.querySelector('.nav-label');
+        if (labelEl) labelEl.textContent = label;
+      }
     });
   }
 }
