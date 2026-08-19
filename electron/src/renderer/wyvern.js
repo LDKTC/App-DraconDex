@@ -48,9 +48,10 @@ function wyvernCreateParentId(){
   return S.wyvernBrowsePath.length ? S.wyvernBrowsePath[S.wyvernBrowsePath.length - 1] : null;
 }
 
-// View-set menu: Nexus Nest / Sage Hut / Import Dock / Import DB — the 4
-// options featureplan.md names, each just launching the existing Drake
-// function for that view unchanged.
+// View-set menu: Nexus Nest / Sage Hut / Import Dock — each just launching
+// the existing Drake function for that view unchanged. The 4th "Import DB"
+// option (openImportDbHub) was removed with the legacy view's other entry
+// points (Plan process2 part2 #1.2).
 function openWyvernViewSetMenu(anchor){
   closeAllPopups();
   const pop = document.createElement('div');
@@ -59,7 +60,6 @@ function openWyvernViewSetMenu(anchor){
     <div class="kind-list-item" onclick="closeAllPopups();goToNexusNestHub()"><span class="kli-name">${x(t('nexusNest'))}</span></div>
     <div class="kind-list-item" onclick="closeAllPopups();openSageTab('dataSize')"><span class="kli-name">${x(t('sageHut'))}</span></div>
     <div class="kind-list-item" onclick="closeAllPopups();goToImportDockPage()"><span class="kli-name">${x(t('importDock'))}</span></div>
-    <div class="kind-list-item" onclick="closeAllPopups();openImportDbHub()"><span class="kli-name">${x(t('importDbHubTitle'))}</span></div>
   `;
   document.body.appendChild(pop);
   pop.addEventListener('click', e => e.stopPropagation());

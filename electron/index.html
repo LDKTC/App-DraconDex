@@ -253,18 +253,8 @@
     <!-- Plan process1 part3 #1: removed — Sage now opens from the Sage Hut
          hub section head's own action button (hub/sections.js) instead of
          a duplicate nav-rail entry. -->
-    <!-- Plan part2 §2: read-only view of legacy Director/Navigator/Hero/
-         Writer data imported via "Import as Import DB" — reuses the 4
-         legacy nav-btn/selectModule() panels above (normally hidden by
-         updateTopNavButton()'s regex, un-hidden only while S.importDbMode
-         is true) instead of a new panel of its own. -->
-    <button class="nav-btn nexus-only" id="btn-import-db-hub" title="Import DB view" style="display:none" onclick="openImportDbHub()">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-      <span class="nav-label">Import DB view</span>
-    </button>
+    <!-- Plan process2 part2 #1.2: the legacy "Import DB view" nav button
+         removed — openImportDbHub() (its only handler) no longer exists. -->
     <button class="nav-btn director-only" data-panel="projects" title="โปรเจกต์" style="display:none">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -407,6 +397,7 @@
   <script src="src/renderer/hub/menus.js"></script>
   <script src="src/renderer/hub/edit.js"></script>
   <script src="src/renderer/hub/open.js"></script>
+  <script src="src/renderer/hub/legacy-migrate.js"></script>
   <script src="src/renderer/inspector.js"></script>
   <script src="src/renderer/versions.js"></script>
   <script src="src/renderer/pluginpanel.js"></script>

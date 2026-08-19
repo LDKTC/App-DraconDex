@@ -1011,8 +1011,11 @@ ipcMain.handle('pluginapi:net:stream:abort', (event, streamId) => {
 ipcMain.handle('pluginapi:oauth:authorize', (event, opts) => db.pluginOAuthAuthorize(callerPluginId(event), opts));
 
 // Legacy -> v3 migration (v3 Phase 24)
-h('migrate:list',   (target,nx)          => db.listLegacyProjects(target,nx));
+h('migrate:list',           (target,nx)  => db.listLegacyProjects(target,nx));
 h('migrate:run',    (nx,target,id,ctx)   => db.migrateLegacy(nx,target,id,ctx));
+h('migrate:preview',        (nx)         => db.previewLegacyMigration(nx));
+h('migrate:getPromptSeen',  (nx)         => db.getLegacyPromptSeen(nx));
+h('migrate:setPromptSeen',  (nx)         => db.setLegacyPromptSeen(nx));
 
 // Sage Hut (v3 Phase 17) — vault analytics
 h('sagehut:stats',      (nx) => db.sageHutStats(nx));

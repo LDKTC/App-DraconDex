@@ -152,8 +152,9 @@ async function init() {
   bindGlobalShortcuts();
   updateStatusBar();
   bindSearch();
-  initDriveAutoBackup(); // fire-and-forget — must not block first paint
-  initVersionCheck();    // fire-and-forget — must not block first paint
+  initDriveAutoBackup();   // fire-and-forget — must not block first paint
+  initVersionCheck();      // fire-and-forget — must not block first paint
+  initLegacyDataCheck();   // fire-and-forget — must not block first paint
   window.__splash?.finish();
 }
 

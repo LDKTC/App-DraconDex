@@ -33,11 +33,11 @@
 - [x] เมื่อกดปุ่มบน navbar จะไม่เปลี่ยนตามปุ่มที่เปิดอีกต่อไปแล้ว จะเปลี่ยนเมื่อ เปิดmodule เท่านั้น
 #### part 2 : legacy module structure
 - [ ] import db views, legacy moduleจะไม่ถูกใช้อีกต่อไป และจะถูกนำออก, โดยlegacy module ทั้งหมดจะถูกแปลงเป็น Nexus module โดยจะconvert เป็น module ใน nexus nest
-    - [ ] module convert จะเลือกconvert module และsubmoduleของlegacy ให้ matchกับ nexus nest moduleที่มีอยู่ทั้งหมด
-    - [ ] import db views btn และbuilder ระบบทั้งหมดของ legacyจะถูกนำออกจากแอพ และไม่สามารถเปิดได้อีกต่อไป
-- [ ] ถ้าผู้ใช้มีไฟล์ ในLegacy module, เมื่ออัพเดตมาเวอร์ชั่นนี้ จะถามผู้ใช้ด้วยpopup message ว่าจะexport เป็น.ddx เพื่อรอimport มา convert เป็น nexus หรือให้ auto convert ให้เลย
-    - [ ] หากผู้ใช้เลือกauto convert, จะแสดงรายการเปรียบเทียบสองฝั่งว่า project และmodule จากlegacy จะกลายเป็นอะไรบ้างใน nexus nest, โดยจะแสดงเป็น lists ผู้ใช้เห็น
-        - [ ] ระบบ แสดงconvert lists จะนำไปใช้กับระบบ import db ของแอพด้วยเช่นกัน
+    - [x] module convert จะเลือกconvert module และsubmoduleของlegacy ให้ matchกับ nexus nest moduleที่มีอยู่ทั้งหมด
+    - [ ] import db views btn และbuilder ระบบทั้งหมดของ legacyจะถูกนำออกจากแอพ และไม่สามารถเปิดได้อีกต่อไป <!-- entry points removed + unopenable (verified); physical deletion of director.js/navigator/hero/writer.js + db/IPC counterparts deferred to a follow-up pass, per the build-first-delete-later scope confirmed for this round -->
+- [x] ถ้าผู้ใช้มีไฟล์ ในLegacy module, เมื่ออัพเดตมาเวอร์ชั่นนี้ จะถามผู้ใช้ด้วยpopup message ว่าจะexport เป็น.ddx เพื่อรอimport มา convert เป็น nexus หรือให้ auto convert ให้เลย
+    - [x] หากผู้ใช้เลือกauto convert, จะแสดงรายการเปรียบเทียบสองฝั่งว่า project และmodule จากlegacy จะกลายเป็นอะไรบ้างใน nexus nest, โดยจะแสดงเป็น lists ผู้ใช้เห็น
+        - [x] ระบบ แสดงconvert lists จะนำไปใช้กับระบบ import db ของแอพด้วยเช่นกัน
 
 ### Process 3
 #### part 1 : major-minor module knowledge update

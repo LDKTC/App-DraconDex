@@ -62,9 +62,10 @@ function buildHubHtml() {
         typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`, h('dock')) },
     // Plan part2 §2: this accordion section is removed — legacy import is
-    // now offered via the import-choice modal (openImportChoiceModal) that
-    // importDatabaseFile() (core.js) opens automatically after a merge
-    // brings in un-migrated legacy data, instead of a standing Hub section.
+    // now offered via the conversion preview (hub/legacy-migrate.js's
+    // openLegacyMigratePreviewModal) that importDatabaseFile() (core/views.js)
+    // opens automatically after a merge brings in un-migrated legacy data,
+    // instead of a standing Hub section.
   ];
   // Plan process1 part3 #3 (replaces the old Plan part1 #2 stable-sort):
   // section order (nest, sage, dock) never changes regardless of collapse
@@ -207,66 +208,11 @@ function buildImportDockPageHtml() {
     <div class="acc-body" style="display:block">${typeof buildImportDockRows === 'function' ? buildImportDockRows() : ''}</div>`);
 }
 
-// ═══ IMPORT-CHOICE MODAL (Plan part2 §2) ════════════════════════════════
-// Opens after importDatabaseFile() (core.js) merges in a file that carried
-// un-migrated legacy data (director/navigator/hero/writer projects, or
-// Scribe notes) — replaces the old always-on Hub "Legacy Import" accordion
-// with a one-time choice: convert everything into a real Nexus Nest module
-// tree (migrate_v3.js), or keep it as a read-only "Import DB" legacy view
-// (openImportDbHub, S.importDbMode).
-function openImportChoiceModal() {
-  openModal(t('importChoiceTitle'), `
-    <p class="drafter-hint">${t('importChoiceBody')}</p>
-    <div class="typegrid" style="grid-template-columns:1fr 1fr">
-      <div class="typecard" onclick="chooseImportAsNexusNest(this)">
-        <h5>${I.layer} ${t('importChoiceNestOption')}</h5><p>${t('importChoiceNestDesc')}</p>
-      </div>
-      <div class="typecard" onclick="chooseImportAsDb(this)">
-        <h5>${I.director} ${t('importChoiceDbOption')}</h5><p>${t('importChoiceDbDesc')}</p>
-      </div>
-    </div>`);
-}
-
-// Runs migrate_v3.js across every un-migrated row in every MIGRATE_TARGETS
-// source, threading batchCtx through so Navigator's classifiers/chroniclers
-// can fold into a Director connector created earlier in the same batch
-// (decision #6 — see migrate_v3.js's navigator target). IPC args are
-// serialized by value, so the mutated batchCtx has to come back from each
-// migrate:run response rather than staying a shared live reference.
-async function chooseImportAsNexusNest(cardEl) {
-  const nexusId = S.nexus?.id || S.nexuses?.[0]?.id;
-  if (!nexusId) { toast(t('nexusSelectFirst'), 'error'); return; }
-  if (cardEl) cardEl.style.pointerEvents = 'none';
-  const totals = { modules: 0, objects: 0, events: 0, chapters: 0, dialogues: 0, relations: 0 };
-  let firstOpenedId = null;
-  let batchCtx = {};
-  // Unbounded N×M migration — pointer-events:none alone left the modal looking
-  // frozen for the whole run.
-  setBusy('#modal-body', true);
-  try {
-    for (const tg of MIGRATE_TARGETS) {
-      const rows = await api.migrate.list(tg.id, nexusId);
-      for (const row of rows) {
-        const res = await api.migrate.run(nexusId, tg.id, row.id, batchCtx);
-        batchCtx = res.batchCtx || batchCtx;
-        const c = res.counts || {};
-        for (const k of Object.keys(totals)) totals[k] += c[k] || 0;
-        if (!firstOpenedId && res.id) firstOpenedId = res.id;
-      }
-    }
-  } finally {
-    setBusy('#modal-body', false);
-  }
-  closeModal();
-  toast(`${t('artMigrateDone')} — ${totals.modules} modules · ${totals.objects} objects · ${totals.events} events · ${totals.chapters} chapters · ${totals.dialogues} dialogues · ${totals.relations} relations`, 'ok');
-  if (S.nexus?.id === nexusId) {
-    await reloadModuleTree();
-    if (firstOpenedId) await openModuleNode(firstOpenedId);
-  }
-}
-
-function chooseImportAsDb() {
-  closeModal();
-  openImportDbHub();
-}
+// Plan process2 part2 #1.2: the old two-card "import choice" modal
+// (convert to Nexus Nest vs open the read-only legacy Import DB view) is
+// gone now that the legacy view has no entry point left to offer — a
+// database merge that brings in legacy-shaped data goes straight to the
+// comparison-list preview (hub/legacy-migrate.js's
+// openLegacyMigratePreviewModal), same as the boot-detected legacy-data
+// prompt flow. See importDatabaseFile() (core/views.js) for the call site.
 

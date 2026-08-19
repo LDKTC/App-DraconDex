@@ -38,7 +38,6 @@ function translateStaticChrome(){
   });
   q('#director-project-shortcut')?.setAttribute('title', t('projects'));
   q('#btn-import-db')?.setAttribute('title', t('importDb'));
-  q('#btn-import-db-hub')?.setAttribute('title', t('importDbHubTitle'));
   q('#btn-export-db')?.setAttribute('title', t('exportDb'));
   applyLeftPanelState();
   updateTopNavButton();

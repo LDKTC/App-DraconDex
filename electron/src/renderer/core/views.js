@@ -68,15 +68,15 @@ async function importDatabaseFile(){
     toast(t('importDbDone'),'ok');
     // Plan part2 §2: a merged file may carry un-migrated legacy-shaped data
     // (a v1/v2 file, or notes for a nexus that predates v3) — offer the
-    // Nexus Nest / Import DB choice instead of silently leaving it in its
-    // legacy tables with no way to act on it. That choice acts on an OPEN
-    // vault, which the Welcome window doesn't have; there the user opens the
+    // conversion preview instead of silently leaving it in its legacy
+    // tables with no way to act on it. That preview acts on an OPEN vault,
+    // which the Welcome window doesn't have; there the user opens the
     // imported vault first and gets the same prompt on the next import.
     if (S.isWelcome) return;
     const sm = res.summary || {};
     const hasLegacy = (sm.projects||0) + (sm.world_projects||0) + (sm.game_projects||0)
       + (sm.write_projects||0) + (sm.notes||0) > 0;
-    if (hasLegacy && typeof openImportChoiceModal === 'function') openImportChoiceModal();
+    if (hasLegacy && typeof openLegacyMigratePreviewModal === 'function') openLegacyMigratePreviewModal();
   }catch(e){
     toast(`${tr('Import ไม่สำเร็จ')}: ${e.message}`,'err');
   }

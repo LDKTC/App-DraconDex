@@ -185,6 +185,9 @@ contextBridge.exposeInMainWorld('api', {
   migrate: {
     list: (target,nx)         => inv('migrate:list', target,nx),
     run:  (nx,target,id,ctx)  => inv('migrate:run', nx,target,id,ctx),
+    preview:       (nx) => inv('migrate:preview', nx),
+    getPromptSeen: (nx) => inv('migrate:getPromptSeen', nx),
+    setPromptSeen: (nx) => inv('migrate:setPromptSeen', nx),
   },
   versions: {
     list:    (mref) => inv('versions:list', mref),
