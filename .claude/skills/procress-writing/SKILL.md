@@ -1,25 +1,35 @@
 ---
 name: procress-writing
-description: Once every checklist item in Plan.md is ticked [x], write a detailed roundup of what was actually built into procress.md (per-part write-up — files/functions touched, bugs found and fixed with root cause, deliberate simplifications, how it was verified), reset Plan.md's checklist body back to an empty template, then chain into version-update to bump package.json and commit + push the whole close-out. If anything in Plan.md is still unchecked, does nothing to any file — only reports which items remain. Use when the user wants to close out a finished plan ("ทำ procress.md", "เคลียร์ plan", "log the finished plan", "sync procress with what's done", "clear Plan.md"), or says they want to run/execute/close out "the plan I wrote down".
+description: Once every checklist item in Plan.md is ticked [x], write a detailed roundup of what was actually built into a fresh file under process/ (one file per finished cycle — per-part write-up with files/functions touched, bugs found and fixed with root cause, deliberate simplifications, how it was verified), reset Plan.md's checklist body back to an empty template, then chain into version-update to bump package.json and commit + push the whole close-out. If anything in Plan.md is still unchecked, does nothing to any file — only reports which items remain. Use when the user wants to close out a finished plan ("ทำ procress.md", "เคลียร์ plan", "log the finished plan", "sync procress with what's done", "clear Plan.md"), or says they want to run/execute/close out "the plan I wrote down".
 ---
 
-# procress-writing — log a finished Plan.md rollout into procress.md, then reset Plan.md
+# procress-writing — log a finished Plan.md rollout into process/, then reset Plan.md
 
 `Plan.md` is ephemeral and cycle-scoped: the user writes a checklist up
 front, ticks items off as they're built, and it gets wiped clean once
-everything's done. `procress.md` is permanent and append-only across the
-project's whole lifetime — it never gets truncated, only added to. This
-skill is the one that writes that permanent record and performs the wipe.
-It has no persisted state of its own — everything is re-derived fresh from
-`Plan.md`'s current content and git history each run, same rationale as
-`.claude/skills/version-update/SKILL.md` (which reads these two files as a
-finished/in-progress signal but never writes them — this skill is the one
-that actually produces the `**Part N complete**` line version-update looks
-for). Once the roundup is written and `Plan.md` is cleared, this skill also
-**chains into `version-update`'s Flow A** (bump-only, never commits there)
-and then commits + pushes the whole close-out itself (steps 7-10 below) —
-Flow A only touches `package.json`/`package-lock.json`; the commit-and-push
-step belongs to this skill, as the one that owns the full close-out moment.
+everything's done. `process/` is the permanent record across the project's
+whole lifetime — **one file per finished cycle**, never edited again once
+written (`process/process-N.md`, `N` = that cycle's own `### Process N`
+heading from `Plan.md`). This skill is the one that writes that file and
+performs the wipe. It has no persisted state of its own — everything is
+re-derived fresh from `Plan.md`'s current content and git history each run,
+same rationale as `.claude/skills/version-update/SKILL.md` (which reads
+`Plan.md` as a finished/in-progress signal but never writes it — this skill
+is the one that actually produces the `**Part N complete**` line
+version-update looks for). Once the roundup is written and `Plan.md` is
+cleared, this skill also **chains into `version-update`'s Flow A** (bump-only,
+never commits there) and then commits + pushes the whole close-out itself
+(steps 7-10 below) — Flow A only touches `package.json`/`package-lock.json`;
+the commit-and-push step belongs to this skill, as the one that owns the
+full close-out moment.
+
+`process/README.md` is a standing index — one line per file, newest last.
+This skill appends to it every run; nothing else in the repo should edit it.
+The pre-existing `process/round-01.md` … `process/round-17.md` are a
+one-time historical split of the old monolithic `procress.md` and use a
+different naming scheme (sequential round number, not tied to a `Process N`
+heading) — leave that naming as-is, it's legacy. Every file this skill
+writes from now on uses the `process-N.md` scheme described above.
 
 `version-update` also has a separate **Flow B**: a per-`part N` checkpoint
 that bumps *and* commits + pushes on its own, the moment a single part's
@@ -76,7 +86,7 @@ Part N: ...` commits, which make better anchors than the historical
      3. Last resort: the commit that first added the file
         (`git log --diff-filter=A --oneline -- Plan.md | tail -1`).
    - Gather `git log --oneline <anchor>..HEAD` and `git diff
-     <anchor>..HEAD -- . ':!Plan.md' ':!procress.md'`, plus always include
+     <anchor>..HEAD -- . ':!Plan.md' ':!process'`, plus always include
      uncommitted state (`git status --porcelain`, `git diff`, `git diff
      --staged`) — work may not be committed yet.
    - Read the actual diffs — function names, file paths, what a bug's real
@@ -86,25 +96,31 @@ Part N: ...` commits, which make better anchors than the historical
      Part-N items. Mention the out-of-scope changes to the user, don't fold
      them into the file.
 
-5. **Write `procress.md`.** If it doesn't exist yet, create it first with:
+5. **Write a new file, `process/process-N.md`** — `N` is this cycle's own
+   `### Process N` heading, read from `Plan.md` in step 2. Never write into
+   an existing file in `process/`; each cycle gets exactly one new file,
+   created once, here. Content:
    ```
-   # Process — Plan.md rollout roadmap
-
-   Roadmap breaking `Plan.md` into ordered, one-topic-at-a-time phases.
-   Status per item is tracked here; the matching checkbox in `Plan.md` is
-   ticked once a phase is verified working in the running app.
+   # Process N — <one-line summary of the whole cycle>
    ```
-   Then append one `## Part N — <title>` section per part found in
-   `Plan.md` (title = the free text after `part N` if present, else
-   derived from the part's first-level checklist label), each with a prose
-   overview plus per-item bullets carrying the real detail from step 4:
-   what was built, exact files/functions touched, bugs found and fixed
-   with root cause, deliberate simplifications, and how it was verified
-   (name `run-dracondex`/`app-run-tester` when that's genuinely how it was
+   Then one `## Part N — <title>` section per part found in `Plan.md`
+   (title = the free text after `part N` if present, else derived from the
+   part's first-level checklist label), each with a prose overview plus
+   per-item bullets carrying the real detail from step 4: what was built,
+   exact files/functions touched, bugs found and fixed with root cause,
+   deliberate simplifications, and how it was verified (name
+   `run-dracondex`/`app-run-tester` when that's genuinely how it was
    confirmed). Close each part's section with a `**Part N complete**`
    line. Once every part in this cycle has been written, also close with a
    final `` **`Plan.md` rollout complete** `` line — matching the existing
-   file's own convention exactly.
+   files' own convention exactly.
+
+   **Update `process/README.md`.** Append one line to its `## Rounds` list:
+   `` - [Process N](process-N.md) — <same one-line summary> ``. If
+   `process/README.md` doesn't exist yet (shouldn't happen after this
+   skill's first run, but guard anyway), create it with the same shape the
+   existing historical index uses — title, the standing intro paragraph,
+   `## Rounds`, one line per file.
 
 6. **Clear `Plan.md`.** Find the first and last `-----` line in the file;
    replace everything strictly between them (keep the delimiters, never
@@ -118,7 +134,8 @@ Part N: ...` commits, which make better anchors than the historical
    none existed yet).
 
 7. **Chain into `version-update`.** Now that Plan.md is cleared and
-   `procress.md` holds the write-up, invoke the `version-update` skill so
+   `process/process-N.md` holds the write-up, invoke the `version-update`
+   skill so
    the version bump for this cycle is part of the same close-out. Let it
    run its own classification (MAJOR/MINOR/PATCH, the Pre-gate,
    finished-vs-in-progress, escalation checks) exactly as documented in its
@@ -128,13 +145,13 @@ Part N: ...` commits, which make better anchors than the historical
    its behalf just to keep moving toward the commit.
 
 8. **Stage the cycle's files.** Add by name, never `git add -A`/`git add
-   -u`: `Plan.md`, `procress.md`, `package.json` and `package-lock.json`
-   (only if `version-update` actually bumped them — skip those two if it
-   reported "Pre"), plus whatever implementation files were part of the
-   diff gathered in step 4. Run `git status` first; if it shows other
-   dirty/untracked files unrelated to this plan's diff, leave them unstaged
-   and mention them to the user — don't sweep up work that isn't part of
-   this close-out.
+   -u`: `Plan.md`, `process/process-N.md` (the new file), `process/README.md`,
+   `package.json` and `package-lock.json` (only if `version-update` actually
+   bumped them — skip those two if it reported "Pre"), plus whatever
+   implementation files were part of the diff gathered in step 4. Run `git
+   status` first; if it shows other dirty/untracked files unrelated to this
+   plan's diff, leave them unstaged and mention them to the user — don't
+   sweep up work that isn't part of this close-out.
 
 9. **Commit**, message matching this repo's own convention (check recent
    `git log` for the exact style): `v.X.Y.Z — <one-line summary of what
@@ -156,9 +173,10 @@ Part N: ...` commits, which make better anchors than the historical
     to re-confirm the push itself. Do still surface a real push failure
     (rejected, no remote, auth error) rather than reporting success.
 
-11. **Report** what was written to `procress.md`, that `Plan.md` was
-    cleared, the `version-update` result (old → new version, or "Pre — no
-    bump"), the commit hash, and confirmation the push succeeded.
+11. **Report** what was written to `process/process-N.md` (and the
+    `process/README.md` line added), that `Plan.md` was cleared, the
+    `version-update` result (old → new version, or "Pre — no bump"), the
+    commit hash, and confirmation the push succeeded.
 
 ## Decision table — is this run a no-op?
 
@@ -168,7 +186,7 @@ Part N: ...` commits, which make better anchors than the historical
 | Zero checkbox lines at all (only prose bullets, or truly empty) | Do nothing; ask the user — don't declare "vacuously done" over an empty set |
 | Body already equals the empty skeleton | Report "nothing to do" |
 | Inconsistent nesting (parent checked, a child not, or vice versa) | Surface to the user, don't auto-resolve which one is truth |
-| Every checkbox line is `[x]`/`[X]`, at least one exists | Proceed: write `procress.md`, then clear `Plan.md` |
+| Every checkbox line is `[x]`/`[X]`, at least one exists | Proceed: write `process/process-N.md` + update `process/README.md`, then clear `Plan.md` |
 
 ## Gotchas
 
@@ -184,11 +202,11 @@ Part N: ...` commits, which make better anchors than the historical
   exact wording has drifted before (the one historical clear commit dropped
   a header line, but that was an incidental manual edit riding along in
   the same commit — not license for this skill to touch it).
-- All-or-nothing gate: no partial, mid-plan writes to `procress.md`. If
-  anything in `Plan.md` is unchecked, touch neither file.
+- All-or-nothing gate: no partial, mid-plan writes to `process/`. If
+  anything in `Plan.md` is unchecked, touch neither `Plan.md` nor `process/`.
 - Git-anchor search order for the fallback path: "plan clear" commit
   message first, then a structural empty-checklist scan, then the commit
-  that first added `Plan.md`. Always exclude `Plan.md`/`procress.md`
+  that first added `Plan.md`. Always exclude `Plan.md`/`process/`
   themselves from the gathered implementation diff — they aren't the
   implementation.
 - Prefer live session memory over git spelunking — only fall back to git
@@ -210,8 +228,10 @@ Part N: ...` commits, which make better anchors than the historical
   CLAUDE.md rule pre-authorizes a normally-risky action. That authorization
   is scoped to this skill's own close-out flow only; it isn't a license to
   push in unrelated contexts.
-- `procress.md` is append-only for the life of the project; `Plan.md` is
-  the only file this skill ever wipes.
+- `process/` files are write-once — a finished cycle's file is never
+  reopened or appended to by a later run; only `process/README.md` gets a
+  new line appended each time. `Plan.md` is the only file this skill ever
+  wipes.
 - The commit-value trailer (step 9) is computed fresh at commit time, not
   copied from anything `version-update` printed earlier in the session —
   its `a`/`b`/`c` counters shift with every commit that lands, including

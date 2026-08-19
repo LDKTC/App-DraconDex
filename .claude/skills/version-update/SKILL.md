@@ -1,6 +1,6 @@
 ---
 name: version-update
-description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default). Settles the y-vs-z "module or fix" call with an explicit test: a genuinely standalone new function/feature is a module (y) at any size, while merely editing an existing module or its data, or adding something that doesn't reach the app's behavior, is a fix (z) at any size — and anything that just extends what's already there is measured, staying a fix at or under 500 changed lines of app source and only becoming a candidate module past that. Uses a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/procress.md with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part checkpoint flow that also commits + pushes — either when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open, or (far more common day to day) when explicitly asked for a checkpoint mid-way through a still-unfinished Part N, in which case X.Y.Z stays at the last version that actually finished and only a per-part round counter -N advances (re-derived each time from prior "Part N:"-tagged commits, never just incremented blindly). Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
+description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default). Settles the y-vs-z "module or fix" call with an explicit test: a genuinely standalone new function/feature is a module (y) at any size, while merely editing an existing module or its data, or adding something that doesn't reach the app's behavior, is a fix (z) at any size — and anything that just extends what's already there is measured, staying a fix at or under 500 changed lines of app source and only becoming a candidate module past that. Uses a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/process/ with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part checkpoint flow that also commits + pushes — either when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open, or (far more common day to day) when explicitly asked for a checkpoint mid-way through a still-unfinished Part N, in which case X.Y.Z stays at the last version that actually finished and only a per-part round counter -N advances (re-derived each time from prior "Part N:"-tagged commits, never just incremented blindly). Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
 ---
 
 # version-update — bump package.json's version per DraconDex's x.y.z-n scheme
@@ -17,8 +17,9 @@ This skill has **two flows**, and picking the right one matters:
   `.claude/skills/procress-writing/SKILL.md` chains into once *the whole*
   `Plan.md` is finished (all parts, not just one). In Flow A this skill
   bumps the field and stops — the caller (`procress-writing`) is the one
-  that stages, commits, and pushes afterward, and it also writes
-  `procress.md` and resets `Plan.md` as part of that same close-out.
+  that stages, commits, and pushes afterward, and it also writes a new
+  `process/process-N.md` and resets `Plan.md` as part of that same
+  close-out.
 - **Flow B — part checkpoint, bumps *and* commits + pushes.** Triggers
   either when a single `part N` block in `Plan.md`'s body just had its last
   checklist item ticked (the **fully-finished** case), or when the user
@@ -66,7 +67,7 @@ This skill has **two flows**, and picking the right one matters:
    undersell what changed.
 
 4. **Pre gate**: does that diff touch *only* planning/write-up files
-   (`Plan.md`, `procress.md`, and similarly-purposed planning docs) with
+   (`Plan.md`, `process/`, and similarly-purposed planning docs) with
    zero changes to actual app source (`src/`, `electron/main.js`, `electron/preload.js`,
    `electron/database.js`, `style.css`, `electron/index.html`, `flutter/`, etc.)? If so:
    **stop here.** Report that this is a "Pre" commit — nothing in the app
@@ -76,8 +77,8 @@ This skill has **two flows**, and picking the right one matters:
    convention) — but never write that to `package.json`.
 
 5. If app source *is* touched, check `Plan.md` (checkbox list, "Part N"
-   sections) and `procress.md` (prose log, ending "Part N complete" when
-   done) for a finished/in-progress signal if they're relevant to this
+   sections) and `process/` (prose log per cycle, ending "Part N complete"
+   when done) for a finished/in-progress signal if they're relevant to this
    diff — an all-checked Part with a matching "complete" line is strong
    FINISHED evidence; a partially-checked Part is strong IN-PROGRESS
    evidence. Treat this as a hint, not an oracle — reconcile against the
@@ -90,7 +91,7 @@ This skill has **two flows**, and picking the right one matters:
    500-changed-line threshold). Default to PATCH when genuinely unsure.
 
 7. **Classify finished vs in-progress.** If it's not obvious from the diff
-   or the Plan.md/procress.md signal, ask the user directly rather than
+   or the Plan.md/process/ signal, ask the user directly rather than
    guess — this decision changes what ships in the version string.
 
 8. **Escalation check**: if the current version already has a `-N` suffix
@@ -161,8 +162,8 @@ case day to day, since most sessions only finish a slice of a part.)
    gathered in step 2. Run `git status` first; if it shows other
    dirty/untracked files clearly unrelated to this part's diff, leave them
    unstaged and mention them to the user rather than sweeping them in.
-   Never stage `procress.md` here — that file is only written at the full
-   plan close-out owned by `procress-writing`.
+   Never stage anything under `process/` here — that only gets written at
+   the full plan close-out owned by `procress-writing`.
 
 5. **Commit**, message format `v.X.Y.Z — Part N: <one-line summary of what
    that part shipped>`, matching this repo's `v.X.Y.Z — <summary>`
@@ -322,7 +323,7 @@ actual `package.json` version.
 
 | Signal in the diff | Classification |
 |---|---|
-| Diff touches only `Plan.md`/`procress.md`, no app source | **Pre** — no bump at all, see step 4 |
+| Diff touches only `Plan.md`/`process/`, no app source | **Pre** — no bump at all, see step 4 |
 | Restructures the module system, nav rail, or overall UI/UX architecture | **Major** — e.g. `2.7.3 → 3.0.0`, the collector→IDE-shell rework |
 | Adds or removes a whole module (own renderer + db + IPC + preload) or a major existing function | **Minor** |
 | Anything else — bug fix, CSS tweak, i18n key fix, small refactor, doc sync | **Patch** — the default when unsure |
@@ -373,7 +374,7 @@ git diff --shortstat --staged -- $paths   # staged
 ```
 
 Excluded from the count, deliberately: `package.json`, `package-lock.json`,
-`docs/`, `Plan.md`, `procress.md`, `.claude/`, and `electron/vendor/` — bookkeeping,
+`docs/`, `Plan.md`, `process/`, `.claude/`, and `electron/vendor/` — bookkeeping,
 documentation, and vendored third-party code aren't the change's own weight,
 and `package-lock.json` alone would swamp the number.
 
@@ -404,7 +405,7 @@ the round counter.
 | no `-N` suffix | FINISHED | bump the classified segment, reset lower segments to 0, no suffix |
 
 Worked examples:
-- `3.7.3`, a commit that only edits `Plan.md`/`procress.md` → **Pre**,
+- `3.7.3`, a commit that only edits `Plan.md`/`process/` → **Pre**,
   version stays `3.7.3`, no `npm version` call.
 - `3.7.3`, a self-contained bug fix, finished in one commit → `3.7.4`.
 - `3.7.3`, starting a multi-commit fix, not done yet → `3.7.4-1`.
@@ -449,7 +450,7 @@ Worked examples:
   the rest of the plan hasn't" — don't generalize Flow B's commit-and-push
   behavior back onto Flow A's ad-hoc bump requests.
 - A plan-only diff is **Pre**, not Patch — never fold "only touched
-  Plan.md/procress.md" into the PATCH default just because PATCH is the
+  Plan.md/process/" into the PATCH default just because PATCH is the
   fallback for ambiguous *app* changes. Pre means skip entirely (Flow A) or
   skip entirely with no commit (Flow B).
 - Mixed/dirty diffs spanning clearly unrelated systems: surface that to the
@@ -468,12 +469,12 @@ Worked examples:
   Patch, with the reason stated in the report.
 - Count changed lines as insertions + deletions of app source only, over the
   whole cycle since the anchor (including uncommitted work) — excluding
-  `package-lock.json`, `docs/`, `Plan.md`, `procress.md`, `.claude/`, and
+  `package-lock.json`, `docs/`, `Plan.md`, `process/`, `.claude/`, and
   `electron/vendor/`. Counting a lockfile or a doc sync into the threshold is the
   easiest way to accidentally promote a Patch to a Minor.
 - Malformed/unparseable current version field, or nothing changed since the
   anchor: stop and say so — don't guess, don't bump on an empty diff.
-- `Plan.md`/`procress.md` are a hint for finished/in-progress in Flow A, not
+- `Plan.md`/`process/` are a hint for finished/in-progress in Flow A, not
   ground truth — a change might not route through them at all. In Flow B,
   by contrast, the part's checklist state *is* the finished signal —
   decisive, not just a hint.
