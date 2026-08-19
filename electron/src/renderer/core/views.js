@@ -184,7 +184,17 @@ function renderNexusHome() {
   q('#main-inner')?.classList.remove('relation-main');
   if (!S.nexus) { const foot = q('#left-panel-foot'); if (foot) foot.innerHTML = ''; renderNexusPicker(); return; }
 
+  // Plan process1 part5 #1: buildHubHtml() rebuilds every accordion section
+  // (nest/sage/dock) from scratch on each call, which would otherwise reset
+  // each section's own scroll position — e.g. opening an imported file
+  // re-renders the whole hub and used to snap the Import Dock list back to
+  // its top. Carry each section's scrollTop across the rebuild by data-key.
+  const hubScroll = {};
+  q('#left-panel-inner')?.querySelectorAll('.acc-body[data-key]').forEach(el => { hubScroll[el.dataset.key] = el.scrollTop; });
   q('#left-panel-inner').innerHTML = buildHubHtml();
+  q('#left-panel-inner')?.querySelectorAll('.acc-body[data-key]').forEach(el => {
+    if (hubScroll[el.dataset.key] != null) el.scrollTop = hubScroll[el.dataset.key];
+  });
   q('#left-panel-foot').innerHTML = `
     <div class="ph nexus-vault-head">
       <h4 class="nexus-vault-name" onclick="toggleNexusSwitcher(event)" title="${t('nexusSwitch')}"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>

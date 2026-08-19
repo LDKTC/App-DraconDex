@@ -20,7 +20,7 @@
 - [ ] เมื่อขยาย navbar จนแสดง label, เพิ่มให้แสดงlabel ของ btn ทั้งหมดบน nav sidebar
 - [ ] create module btn, นำออก เพราะสามารถสร้างmoduleได้บน nexus nest section 
 #### part 5 : import dock
-- [ ] เมื่อเปิดfile ที่import, ไม่ต้องรีเซ็ต import section, ให้แสดง อยู่ที่จุดเดิมของลิสที่เลื่อนดู
+- [x] เมื่อเปิดfile ที่import, ไม่ต้องรีเซ็ต import section, ให้แสดง อยู่ที่จุดเดิมของลิสที่เลื่อนดู
 
 ### Process 2 
 #### part 1 : nexus hub structure 
