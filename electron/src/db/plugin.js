@@ -66,6 +66,22 @@ async function fetchBuffer(url) {
   return { ok: true, buffer };
 }
 
+// A repo opts into the recommend list below by carrying this file at its
+// root (docs/PLUGINS.md, DraconDex-Plugin-Template's README) — it is not
+// part of the install flow and is never fetched by resolveRepo/pluginInstall,
+// only checked for existence here. Any fetch failure (network, rate limit,
+// 404) is treated as "not a plugin repo" — fail closed, matching the rest of
+// this function's silent-advisory behavior.
+async function repoHasDracondexMarker(repoName) {
+  try {
+    const res = await fetch(`https://api.github.com/repos/LDKTC/${encodeURIComponent(repoName)}/contents/.dracondex`, {
+      headers: { 'User-Agent': 'DraconDex', Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    return res.ok;
+  } catch (e) { return false; }
+}
+
 // Plan part2 #5 — default "install from @LDKTC" list on the Plugin page, so
 // a user doesn't need to already have a repo URL in hand. Read-only and
 // advisory: on any failure the renderer just shows nothing rather than an
@@ -74,6 +90,12 @@ async function fetchBuffer(url) {
 // rejects requests with no User-Agent header, so this sets one explicitly.
 // The /users/:name/repos endpoint lists public repos for both org and user
 // accounts, so there's no need to know which kind of account LDKTC is.
+//
+// Process 1 part 2 — narrowed to repos that actually carry a `.dracondex`
+// marker file at their root (repoHasDracondexMarker above), and the plugin
+// template repo is excluded by name unconditionally: it also carries the
+// marker (so a freshly-forked plugin already has it), but recommending the
+// template itself back to the user would be nonsensical.
 async function pluginListOrgRepos() {
   let res;
   try {
@@ -86,10 +108,13 @@ async function pluginListOrgRepos() {
   let repos;
   try { repos = await res.json(); } catch (e) { return { ok: false }; }
   if (!Array.isArray(repos)) return { ok: false };
+  const candidates = repos.filter((repo) =>
+    !repo.is_template && !repo.archived && String(repo.name).toLowerCase() !== 'dracondex-plugin-template');
+  const marked = await Promise.all(candidates.map((repo) => repoHasDracondexMarker(repo.name)));
   return {
     ok: true,
-    repos: repos
-      .filter((repo) => !repo.is_template && !repo.archived)
+    repos: candidates
+      .filter((_, i) => marked[i])
       .map((repo) => ({ name: repo.name, description: repo.description || '', url: repo.clone_url, stars: repo.stargazers_count || 0 })),
   };
 }
