@@ -195,11 +195,15 @@ function renderNexusHome() {
   q('#left-panel-inner')?.querySelectorAll('.acc-body[data-key]').forEach(el => {
     if (hubScroll[el.dataset.key] != null) el.scrollTop = hubScroll[el.dataset.key];
   });
+  // Plan process1 part3 #2: the separate "switch nexus" ⇄ button was
+  // removed — clicking the nexus name itself already opens the same
+  // switcher (toggleNexusSwitcher, core/nexus.js), whose "more…" row
+  // reaches the same openWelcomeWindow() this button used to jump to
+  // directly, so the button was a pure duplicate.
   q('#left-panel-foot').innerHTML = `
     <div class="ph nexus-vault-head">
       <h4 class="nexus-vault-name" onclick="toggleNexusSwitcher(event)" title="${t('nexusSwitch')}"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
       ${CLOUD_SYNC_ENABLED ? `<button class="btn btn-s btn-sm" onclick="openSyncModal()" title="${t('syncTitle')}">☁</button>` : ''}
-      <button class="btn btn-s btn-sm" onclick="openWelcomeWindow()" title="${t('nexusSwitch')}">⇄</button>
     </div>`;
   // The whole main area is the builder pane grid (Phase 19) — the focused
   // pane shows the current page (built from the S.* page mirrors below),

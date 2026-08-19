@@ -11,11 +11,11 @@
     - [ ] โดยอันแรกสุดของpage จะมีปุ่ม check version และปุ่ม install ที่ซ่อนเอาไว้ จนกว่าจะตรวจสอบ แล้วเจอversionใหม่กว่า
     - [ ] ด้านล่างปุ่ม update จะมี auto-version check checkbox, ที่จะตรวจสอบversion แอปให้อัตโนมัติเมื่อเปิด แอปทุกครั้ง และจะแสดงปุ่ม icon download เป็นสีเขียวบน title bar ด้านข้างsetting เมื่อตรวจสอบพบ versionใหม่
 #### part 3 : hub
-- [ ] sage toggle hub section head, ย้าย sage btn จากnav bar มาไว้ทีsage hub selection head และต้องสามารถใช้ได้จริงด้วย
-- [ ] nexus title header, switch nexus btn, ให้นำออก เพราะตอนนี้มีระบบการเปลี่ยนnexus ด้วยการกดที่ชื่อ nexus แล้ว ทำให้ functionเกิดการซ้ำกัน
-- [ ] เมื่อsection Head บน hub collapsedอยู่, section head นั้นจะถูก align bottom ไปติดกับ section head ที่อยู่orderถัดไปทันที
-    - [ ] และเมื่อเป็น section head สุดท้ายในorder จะถูก align ที่ bottom ของ hub body ในทันที
-    - [ ] section head order จะไม่มีทางถูกเปลี่ยน แม้ว่าจะมี section head collapseที่ orderอยู่ก่อน section head ที่เปิดอยู่, ลำดับ order ก็จะไม่ถูกเปลี่ยน เช่น importที่order อยู่ในลำดับที่ 3 ถูกเปิดอยู่ แต่ sageที่ orderในลำดับที่2 collapsedอยู่ ลำดับก็จะไม่มีการเปลี่ยน แต่ sageที่collapse ก็จะถูกดันขึ้นไปพร้อมกับ import และยังแสดงอยู่เหนือ import head แต่อยู่bottomของ nexus nest body ที่order 1 และกำลังเปิดอยู่
+- [x] sage toggle hub section head, ย้าย sage btn จากnav bar มาไว้ทีsage hub selection head และต้องสามารถใช้ได้จริงด้วย
+- [x] nexus title header, switch nexus btn, ให้นำออก เพราะตอนนี้มีระบบการเปลี่ยนnexus ด้วยการกดที่ชื่อ nexus แล้ว ทำให้ functionเกิดการซ้ำกัน
+- [x] เมื่อsection Head บน hub collapsedอยู่, section head นั้นจะถูก align bottom ไปติดกับ section head ที่อยู่orderถัดไปทันที
+    - [x] และเมื่อเป็น section head สุดท้ายในorder จะถูก align ที่ bottom ของ hub body ในทันที
+    - [x] section head order จะไม่มีทางถูกเปลี่ยน แม้ว่าจะมี section head collapseที่ orderอยู่ก่อน section head ที่เปิดอยู่, ลำดับ order ก็จะไม่ถูกเปลี่ยน เช่น importที่order อยู่ในลำดับที่ 3 ถูกเปิดอยู่ แต่ sageที่ orderในลำดับที่2 collapsedอยู่ ลำดับก็จะไม่มีการเปลี่ยน แต่ sageที่collapse ก็จะถูกดันขึ้นไปพร้อมกับ import และยังแสดงอยู่เหนือ import head แต่อยู่bottomของ nexus nest body ที่order 1 และกำลังเปิดอยู่
 #### part 4 : navbar
 - [x] เมื่อขยาย navbar จนแสดง label, เพิ่มให้แสดงlabel ของ btn ทั้งหมดบน nav sidebar
 - [x] create module btn, นำออก เพราะสามารถสร้างmoduleได้บน nexus nest section 

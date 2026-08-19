@@ -239,19 +239,9 @@
       </svg>
       <span class="nav-label">Writer</span>
     </button>
-    <!-- Plan part2 #2: opens the same Sage Hut analytics the Hub's own
-         section opens (openSageTab, mod/sagehut.js, eager-loaded) instead
-         of the old whole-panel-swap legacy Sage page — no .sage-only
-         indicator twin needed since this never sets S.activeModule. -->
-    <button class="nav-btn nexus-only" title="Sage" style="display:none" onclick="openSageTab('dataSize')">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/>
-        <line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6" y1="20" x2="6" y2="14"/>
-        <line x1="2" y1="20" x2="22" y2="20"/>
-      </svg>
-      <span class="nav-label">Sage</span>
-    </button>
+    <!-- Plan process1 part3 #1: removed — Sage now opens from the Sage Hut
+         hub section head's own action button (hub/sections.js) instead of
+         a duplicate nav-rail entry. -->
     <!-- Plan part2 §2: read-only view of legacy Director/Navigator/Hero/
          Writer data imported via "Import as Import DB" — reuses the 4
          legacy nav-btn/selectModule() panels above (normally hidden by

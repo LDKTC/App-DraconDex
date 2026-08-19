@@ -47,7 +47,12 @@ function buildHubHtml() {
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();quickCreateModule('collector',null)" title="${kindLabel('collector')}">${I[KIND_ICON.collector]}</button>
          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>
          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openNestOptionsPopup(this)" title="${t('nestOptionsTitle')}">${I.options}</button>`, h('nest')) },
-    { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows(), '', h('sage')) },
+    // Plan process1 part3 #1: the nav rail's standalone Sage button was
+    // removed — this header action jumps straight into the same Sage Hut
+    // analytics page (openSageTab, mod/sagehut.js) without needing to first
+    // open the accordion section, exactly like the nav-rail button used to.
+    { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows(),
+        `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openSageTab('dataSize')" title="${t('sageHut')}">${I.sage}</button>`, h('sage')) },
     { key: 'dock', html: buildAccSection('dock', t('importDock'),
         typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`, h('dock')) },
@@ -56,12 +61,14 @@ function buildHubHtml() {
     // importDatabaseFile() (core.js) opens automatically after a merge
     // brings in un-migrated legacy data, instead of a standing Hub section.
   ];
-  // VS Code container-fold behavior (Plan part1 #2): toggled-off sections
-  // sink to the bottom, stacking against each other and against whatever
-  // sits below the hub (nexus-vault-head), while open sections keep their
-  // original relative order at the top. Array#sort is stable, so within
-  // each open/collapsed group the original order survives.
-  sections.sort((a, b) => (S.hubOpen[b.key] ? 1 : 0) - (S.hubOpen[a.key] ? 1 : 0));
+  // Plan process1 part3 #3 (replaces the old Plan part1 #2 stable-sort):
+  // section order (nest, sage, dock) never changes regardless of collapse
+  // state — no more grouping every collapsed section after every open one.
+  // #hub-body is a flex column where each open .acc-body is flex:1 and each
+  // collapsed one is display:none (nav-hub.css), so a collapsed section's
+  // head naturally sits flush against whatever follows it: pinned to the
+  // bottom of the preceding open section's body if something later is open,
+  // or to the very bottom of the hub body if it's the last section in order.
   // A resize handle only makes sense between two sections that are BOTH open
   // (a collapsed section takes no flex space, so there'd be nothing to drag
   // against) — checked in this post-sort order so e.g. Nest+Dock open with
