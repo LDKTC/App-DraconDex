@@ -51,12 +51,22 @@ function updateTopNavButton(){
   const logoBtn = q('#nav-logo-btn');
   const inModule = !!S.activeModule;
   if(logoBtn){
-    logoBtn.innerHTML = inModule
-      ? I.return
-      : `<img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex">`;
-    const title = !inModule ? 'DraconDex' : S.project ? tr('Back to project list') : S.world ? tr('Back to world list') : tr('Back to Nexus');
-    logoBtn.setAttribute('title', title);
-    logoBtn.classList.toggle('is-return', inModule);
+    // process2 part1 #3: a collapsed hub always wins the logo slot, even
+    // inside a legacy module — it's the app icon's only way back to expand
+    // #left-panel now that #hub-toggle-btn lives inside it (see views.js's
+    // #nav-logo-btn click handler for the matching click-priority change).
+    if(S.leftPanelCollapsed){
+      logoBtn.innerHTML = I.panelLeft;
+      logoBtn.setAttribute('title', t('toggleHub'));
+      logoBtn.classList.remove('is-return');
+    } else {
+      logoBtn.innerHTML = inModule
+        ? I.return
+        : `<img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex">`;
+      const title = !inModule ? 'DraconDex' : S.project ? tr('Back to project list') : S.world ? tr('Back to world list') : tr('Back to Nexus');
+      logoBtn.setAttribute('title', title);
+      logoBtn.classList.toggle('is-return', inModule);
+    }
   }
   document.querySelectorAll('.nav-btn.nexus-only').forEach(btn => {
     // Phase 1 (progress.md Section A): the rail's pinned tools are only

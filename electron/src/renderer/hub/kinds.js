@@ -137,16 +137,16 @@ function renderModuleRail() {
   if (!anchor) return;
   const pinned = S.moduleTree.filter(m => m.pinned);
   const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut && !S.kindBrowserPage && !S.importDockPage;
-  let html = `<button class="nav-btn module-rail-tool${atHubHome ? ' active' : ''}" title="${t('nexusNest')}" onclick="goToNexusNestHub()">${I.home}</button>
-    <button class="nav-btn module-rail-tool${S.kindBrowserPage ? ' active' : ''}" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()">${I.layer}</button>
+  let html = `<button class="nav-btn module-rail-tool${atHubHome ? ' active' : ''}" title="${t('nexusNest')}" onclick="goToNexusNestHub()">${I.home}<span class="nav-label">${t('nexusNest')}</span></button>
+    <button class="nav-btn module-rail-tool${S.kindBrowserPage ? ' active' : ''}" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()">${I.layer}<span class="nav-label">${t('kindBrowser')}</span></button>
     <div class="rail-sep module-rail-tool"></div>
-    <button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus}</button>`;
+    <button class="nav-btn create module-rail-tool" title="${t('createMajorModule')}" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus}<span class="nav-label">${t('createMajorModule')}</span></button>`;
   if (pinned.length) html += `<div class="rail-sep module-rail-tool"></div>`;
   for (const m of pinned) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
     const col = m.icon_color_code || m.color_code || '#6366f1';
     html += `<button class="nav-btn module-rail-item${active}" style="color:${x(col)}" title="${x(m.name)}" onclick="openModuleNode(${m.id})">
-      ${moduleIconHtml(m)}<span class="mdot" style="background:${x(m.color_code || '#6366f1')}"></span>
+      <span class="mdot-anchor">${moduleIconHtml(m)}<span class="mdot" style="background:${x(m.color_code || '#6366f1')}"></span></span><span class="nav-label">${x(m.name)}</span>
     </button>`;
   }
   anchor.insertAdjacentHTML('afterend', html);

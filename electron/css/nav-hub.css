@@ -61,6 +61,7 @@ body[data-theme="clearSun"] .brand-img{content:url('../../src/assets/brand/Draco
 body[data-theme="atEvening"] .brand-img{content:url('../../src/assets/brand/DraconDex_WhiteOut.png')}
 body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/DraconDex_WhiteOut.png')}
 .nav-btn{
+	position:relative;
 	width:70%;aspect-ratio:1;height:auto;border:none;
 	background:transparent; border-radius:var(--r);
 	cursor:pointer; color:var(--t2);
@@ -70,6 +71,14 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
 }
 .nav-btn:hover{color:var(--t1)}
 .nav-btn.active{background:var(--accent);color:var(--on-accent)}
+/* process 2 part1 #1: side highlight bar on the active button, in addition
+   to the accent fill above — sits just outside the button's own edge (70%
+   width, centered in the rail) facing the content side, so it reads even
+   when a pinned module's custom icon color competes with the fill. */
+.nav-btn.active::after{
+	content:'';position:absolute;right:-5px;top:22%;bottom:22%;
+	width:3px;border-radius:2px;background:var(--accent);
+}
 .nav-util{font-size:calc(15px * var(--fsc,1))}
 .nav-btn.director-only{display:none}
 /* Setting window → Workspace → Tool toggle (Plan part1 #Setting): user-
@@ -132,8 +141,30 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
 .hub-toggle.active{color:var(--t1);background:var(--raised)}
 
 .module-rail-tool.rail-sep{width:28px;height:0;border-top:1px solid var(--border);margin:5px 0}
-.nav-btn.module-rail-item{position:relative}
-.mdot{position:absolute;right:5px;bottom:5px;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--surface)}
+/* mdot anchors to this wrapper (not .nav-btn) so it stays glued to the icon
+   itself once .nav-expanded turns the button into a wide icon+label row —
+   otherwise the dot would drift to the far right edge of the button. Sized to
+   the icon's own footprint (not 100% of the button) so a wide expanded row
+   still leaves room for .nav-label to take the rest of the flex line. */
+.mdot-anchor{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mdot{position:absolute;right:-3px;bottom:-3px;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--surface)}
+
+/* process 2 part1 #2: dragging #nav-sidebar-resize past NAV_LABEL_THRESHOLD
+   (core/ui.js) adds .nav-expanded to #nav-sidebar — only the dynamic v3 rail
+   items (home/kind-browser/create/pinned modules) switch from a centered
+   icon square to a left-aligned icon+label row; legacy nav-btns are
+   untouched and stay icon-only. */
+.nav-label{display:none}
+#nav-sidebar.nav-expanded .nav-btn.module-rail-item,
+#nav-sidebar.nav-expanded .nav-btn.module-rail-tool{
+	width:calc(100% - 12px);aspect-ratio:auto;justify-content:flex-start;
+	gap:8px;padding:0 10px;
+}
+#nav-sidebar.nav-expanded .nav-label{
+	display:inline-block;flex:1;min-width:0;text-align:left;
+	overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+	font-size:calc(13px * var(--fsc,1));
+}
 
 .acc-head{
 	display:flex;align-items:center;gap:7px;padding:2px 10px;font-size:calc(10.5px * var(--fsc,1));font-weight:700;
