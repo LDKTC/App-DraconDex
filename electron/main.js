@@ -908,10 +908,12 @@ h('cloud:connect',         (id)      => db.cloudConnect(id));
 h('cloud:disconnect',      (id)      => db.cloudDisconnect(id));
 h('cloud:status',          (id)      => db.cloudStatus(id));
 
-// Firebase — app-update notice (read-only Firestore doc check, no auto-updater)
+// GitHub Releases — app-update notice (read-only, no auto-updater)
 h('update:check',        ()    => db.checkForUpdate());
 h('update:dismiss',      (v)   => db.dismissUpdate(v));
 h('update:openDownload', (url) => db.openUpdateDownload(url));
+h('update:getAutoCheck', ()    => db.getAutoCheck());
+h('update:setAutoCheck', (v)   => db.setAutoCheck(v));
 
 // Plugins — main-app-facing surface (preview/install/list/manage). The
 // pluginapi:table:* bridge plugin windows actually use is a SEPARATE surface

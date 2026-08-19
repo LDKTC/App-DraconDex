@@ -7,9 +7,9 @@
 - [x] module analys text ที่แสดง module หลักบนnexus, เปลี่ยนการแสดง major module แบบ "2" ที่เป็นเลขธรรมดา เป็น "2:144" โดยเลขด้านหลังเป็นจำนวนmodulทั้งหมดโดยรวม child major module ทั้งหมดในroot ของ nexusนั้น
 #### part 2 : setting
 - [x] plugin recommend, แสดงเฉพาะ repo ที่มี file .dracondex เท่านั้น และยกเว้น plugin template
-- [ ] version auto updater, ไม่จำเป็นต้อง login แล้ว, เพิ่มpages ในsection appdata "versions" ด้านในจะดึงข้อมูลของ releases จาก draconDex repo
-    - [ ] โดยอันแรกสุดของpage จะมีปุ่ม check version และปุ่ม install ที่ซ่อนเอาไว้ จนกว่าจะตรวจสอบ แล้วเจอversionใหม่กว่า
-    - [ ] ด้านล่างปุ่ม update จะมี auto-version check checkbox, ที่จะตรวจสอบversion แอปให้อัตโนมัติเมื่อเปิด แอปทุกครั้ง และจะแสดงปุ่ม icon download เป็นสีเขียวบน title bar ด้านข้างsetting เมื่อตรวจสอบพบ versionใหม่
+- [x] version auto updater, ไม่จำเป็นต้อง login แล้ว, เพิ่มpages ในsection appdata "versions" ด้านในจะดึงข้อมูลของ releases จาก draconDex repo
+    - [x] โดยอันแรกสุดของpage จะมีปุ่ม check version และปุ่ม install ที่ซ่อนเอาไว้ จนกว่าจะตรวจสอบ แล้วเจอversionใหม่กว่า
+    - [x] ด้านล่างปุ่ม update จะมี auto-version check checkbox, ที่จะตรวจสอบversion แอปให้อัตโนมัติเมื่อเปิด แอปทุกครั้ง และจะแสดงปุ่ม icon download เป็นสีเขียวบน title bar ด้านข้างsetting เมื่อตรวจสอบพบ versionใหม่
 #### part 3 : hub
 - [x] sage toggle hub section head, ย้าย sage btn จากnav bar มาไว้ทีsage hub selection head และต้องสามารถใช้ได้จริงด้วย
 - [x] nexus title header, switch nexus btn, ให้นำออก เพราะตอนนี้มีระบบการเปลี่ยนnexus ด้วยการกดที่ชื่อ nexus แล้ว ทำให้ functionเกิดการซ้ำกัน

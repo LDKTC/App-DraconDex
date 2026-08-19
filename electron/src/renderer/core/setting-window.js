@@ -15,8 +15,8 @@ const SETTING_GROUPS = {
   workspace: ['theme', 'textsize', 'tooltoggle', 'style', 'startup'],
   user: ['account', 'profile'],
   appdata: CLOUD_SYNC_ENABLED
-    ? ['tokensync', 'database', 'backup', 'cloudstorage']
-    : ['database', 'backup', 'cloudstorage'],
+    ? ['tokensync', 'database', 'backup', 'cloudstorage', 'versions']
+    : ['database', 'backup', 'cloudstorage', 'versions'],
   plugin: ['plugin', 'pluginsettings'],
 };
 const SETTING_GROUP_LABEL_KEY = {
@@ -28,7 +28,7 @@ const SETTING_PAGE_LABEL_KEY = {
   style: 'settingPageWorkspaceStyle', startup: 'settingPageStartup',
   account: 'settingPageAccount', profile: 'settingPageProfile',
   tokensync: 'settingPageTokenSync', database: 'settingPageDatabase', backup: 'prefs_backup',
-  cloudstorage: 'settingPageCloudStorage',
+  cloudstorage: 'settingPageCloudStorage', versions: 'settingPageVersions',
   plugin: 'prefs_plugin', pluginsettings: 'settingPagePluginSettings',
 };
 // Populated by each page's owning file at parse time — key is 'group.page'.

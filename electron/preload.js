@@ -238,6 +238,8 @@ contextBridge.exposeInMainWorld('api', {
     check:        ()    => inv('update:check'),
     dismiss:      (v)   => inv('update:dismiss', v),
     openDownload: (url) => inv('update:openDownload', url),
+    getAutoCheck: ()    => inv('update:getAutoCheck'),
+    setAutoCheck: (v)   => inv('update:setAutoCheck', v),
   },
   plugin: {
     list:      ()    => inv('plugin:list'),
