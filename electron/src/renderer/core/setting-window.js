@@ -12,7 +12,7 @@
 // openSettingWindow() already falls back to the group's first page if
 // S.settingPage is a stale id.
 const SETTING_GROUPS = {
-  workspace: ['theme', 'textsize', 'tooltoggle', 'style'],
+  workspace: ['theme', 'textsize', 'tooltoggle', 'style', 'startup'],
   user: ['account', 'profile'],
   appdata: CLOUD_SYNC_ENABLED
     ? ['tokensync', 'database', 'backup', 'cloudstorage']
@@ -25,7 +25,7 @@ const SETTING_GROUP_LABEL_KEY = {
 };
 const SETTING_PAGE_LABEL_KEY = {
   theme: 'theme', textsize: 'settingPageTextSize', tooltoggle: 'settingPageToolToggle',
-  style: 'settingPageWorkspaceStyle',
+  style: 'settingPageWorkspaceStyle', startup: 'settingPageStartup',
   account: 'settingPageAccount', profile: 'settingPageProfile',
   tokensync: 'settingPageTokenSync', database: 'settingPageDatabase', backup: 'prefs_backup',
   cloudstorage: 'settingPageCloudStorage',

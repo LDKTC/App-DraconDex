@@ -696,3 +696,64 @@ Files: `electron/src/renderer/core/{setting-window.js,settings.js,tool-toggle.js
 **Part 2 complete** — all 4 checklist groups (5 sub-items total) shipped and live-verified.
 
 **`Plan.md` rollout complete** — both parts of this cycle shipped and were live-verified via `run-dracondex`. No open follow-ups identified; the one judgment call worth flagging forward is the "4-5 rows depending on window size" spec for the module-name compare list, implemented as a CSS viewport-height clamp since the Setting window itself isn't user-resizable — revisit with a real resize-observer approach if the Setting window ever gains its own resize handle.
+
+---
+
+## Part 1 — UI style changes: btn/hub polish
+Files: `electron/css/{builder,components,inspector,layout,nav-hub,titlebar}.css`, `electron/src/renderer/builder.js`, `electron/src/renderer/core/state.js`, `electron/src/renderer/mod/sagehut.js`
+
+- [x] Btn — `.bpane-head .bnav` (builder pane nav buttons) reset to `border-radius:0;padding:0`. Icon-only buttons (`.btn-i:not(.btn-d)`) no longer background-highlight on hover, only the icon's own color changes — six hover rules across `components.css`/`layout.css`/`inspector.css`/`nav-hub.css`/`titlebar.css` dropped their `background:var(--hover)` half while keeping `color:var(--t1)`. `.btn-d` deliberately kept its red hover fill (a destructive-action cue, not decorative chrome).
+- [x] Forward/Backward — builder pane nav buttons swapped from `◀`/`▶` glyphs to real one-color SVG icons (new `I.chevronLeft`/`I.chevronRight` in `core/state.js`), wired in `builderPaneHeadHtml` (`builder.js`).
+- [x] Sage Hut header — added an invisible `visibility:hidden` spacer button next to the subtitle (`buildSageHutHtml`, `mod/sagehut.js`) so its header reserves the same height as every other page header that has real action buttons.
+- [x] Hub tree guide-line — **bug found and fixed**: each depth's dotted guide line was drawn from its OWN chevron center instead of its ancestor's, so it looked one step out of alignment with the arrow it should track. Fixed by shifting every `.li.indentN::after` `background-position` back one depth step (30.5/46.5/62.5/78.5/94.5px → 14.5/30.5/46.5/62.5/78.5px, `nav-hub.css`).
+- [x] Hub list rows — `border-radius:0`, scoped to `#hub-body .li` only (`.li` is a shared row primitive used 30+ places app-wide, so the reset stays local to the Nest tree/Sage Hut/Import Dock accordion).
+
+**Part 1 complete** — all 5 items shipped, `v.4.7.3`.
+
+## Part 2 — Builder tab system rework
+Files: `electron/src/renderer/builder.js`, `electron/src/renderer/hub/menus.js`, `electron/src/renderer/i18n.js`
+
+- [x] Tab system — `builderNavigate`'s normal-open path now REPLACES the pane's current active tab in place instead of always pushing a new one (mirrors the Sage Hut branch's own pre-existing replace-in-place trick). A new escape hatch, `openModuleInNewTab` (`hub/menus.js`), pushes the target's key into `pane.tabs` itself first so `builderNavigate` takes its "already includes" branch and switches to it instead of replacing — wired as a new "Open in new tab" context-menu item alongside the existing "Open in new window"/"Open in new pane".
+- [x] Split/close-pane buttons — removed from the always-visible pane header row, moved into a right-click context menu (`openBuilderPaneContextMenu`/`buildBuilderPaneContextMenuHtml`, new in `builder.js`) reusing the Nest tree's existing popup plumbing (`hub/popups.js`'s `closeAllPopups`/`positionPopupNear`/`positionSubmenuNear`/`ctxAnchor`) instead of a second one. "Separate pane" opens a hover submenu (`openBuilderSeparateSubmenu`) with the same ◫/⬓ split-direction choices the inline buttons used to offer, plus "Close pane" when the layout is actually split. Bound once in `ensureNodeElement` (survives re-renders, same lifecycle as its neighboring `ResizeObserver`).
+- [x] Empty tab strip — **bug found and fixed**: closing a pane's last tab called a bare `renderNexusHome()`, which left `S.activeModuleNode`/`filePreview`/`sageHut`/`activeItemNode` stale — the pane body kept showing the just-closed page's content even with an empty tab strip. Fixed by routing through `builderOpenPage(null)` instead, which clears all of those globals before rendering.
+- i18n: new context-menu item labels (`openInNewTab`, `separatePane`, `closePane`, etc.) added across all 18 locales.
+
+**Part 2 complete** — all 3 items shipped, `v.4.7.4`.
+
+## Part 3 — Setting window real-time state
+Files: `electron/src/renderer/core/{setting-window,settings,theme}.js`
+
+- [x] Selected-state real-time — **bug found and fixed**: `setUiSetting`/`deleteCustomTheme`/`duplicateTheme` all still guarded their refresh with `if(q('#prefs-panel'))` — checking for the OLD Preferences floating panel the Setting window had already replaced, so the guard silently skipped the refresh every time since `#prefs-panel` no longer exists. A checkmark/selected-state change only became visible after manually closing and reopening the window. Replaced all three call sites with an unconditional `renderSettingWindow()` (which already no-ops safely when the window isn't open).
+- [x] Language live-update — the Setting window's own title (baked in once via `openFloatingPanel`'s `data-no-i18n`, exempt from the auto-translate DOM walk) now re-renders explicitly inside `renderSettingWindow()` too, so switching language updates it immediately instead of only on next open.
+
+**Part 3 complete** — both items shipped, `v.4.7.5`.
+
+**`Plan.md` rollout complete** — 3 parts this cycle (procress 1), reconstructed from `git log`/`git show` on each part's own checkpoint commit (`b76a019`/`e7cc1bf`/`b316cca`) since this session didn't do the implementation itself. No open follow-ups identified.
+
+---
+
+## Part 1 — Nav bar
+Files: `electron/css/{nav-hub,titlebar}.css`, `electron/index.html`, `electron/src/renderer/core/nav.js`, `.claude/skills/run-dracondex/web-driver.mjs`
+
+- [x] Active-page side highlight — `.nav-btn.active` gets a side highlight bar alongside its existing accent-color fill, so the active rail button reads clearly even at a glance.
+- [x] Resize-to-labels — dragging `#nav-sidebar-resize` past 110px reveals each dynamic rail button's page name next to its icon (Home/Kind Browser/Create/pinned Major modules).
+- [x] Hub-toggle relocation — `#hub-toggle-btn` moved out of the title bar into the Hub's own search bar. `#nav-logo-btn` becomes the "expand hub" control whenever the hub is collapsed (`updateTopNavButton`, `core/nav.js`), taking priority over its existing logo/return-to-module swap — a collapsed hub now always wins the logo slot, even inside a legacy module, since that button is the only way back to expand `#left-panel` once the toggle itself lives inside it.
+- Test tooling folded in permanently alongside this round (same "make the harness capable, keep it" precedent as `dragto`/`rclick`/`upload` in earlier cycles): `web-driver.mjs` gained a window→vault mapping seed (`windowNexus.set`) so the harness can drive vault-scoped IPC via `?nexus=<id>` post the v4.9.0 per-vault split, a `ss <name> :: <selector>` cropped-screenshot verb, and a broadened boot-ready selector for `welcome=1` mode.
+
+**Part 1 complete** — all 3 items shipped, `v.4.9.1`, live-verified via `run-dracondex` (reconstructed from commit `109b738`'s own message/diff — prior session).
+
+## Part 2 — Settings: "Start up" page (Workspace group)
+Files: `electron/main.js`, `electron/src/db/{vaults,nexus}.js`, `electron/src/renderer/core/{setting-window,startup-settings}.js` (`startup-settings.js` new), `electron/index.html`, `electron/src/renderer/i18n.js`
+
+New Workspace-group Settings page letting the user choose between the existing always-show-Welcome-window behavior and auto-opening whichever Nexus vault was most recently opened, skipping the Welcome picker on launch.
+
+- [x] Setting choice — new `registerSettingPage('workspace', 'startup', …)` page (`core/startup-settings.js`), a two-button segmented choice (`.name-mode-seg` styling, reused from `nameModeSegHtml`) backed by a real `app_setting` DB key (`startupMode`, `'welcome'`|`'latest'`) rather than the usual `S.settings`/localStorage tier — `main.js`'s `app.whenReady()` has to read this before any renderer/window exists, so it can't live in per-machine UI-chrome state. Read/write goes through `api.setting.get/set('startupMode', …)`, the same generic `app_setting` door `versionLimit` already used, added to `RENDERER_SETTING_KEYS`'s allowlist.
+  - Wired the vault registry's already-defined-but-dead-code `touchVaultOpened(id)` (`src/db/vaults.js`, never called, not re-exported) into `createWindow()`'s existing `if (bootstrapNexusId)` block next to `db.refreshVaultCounts`, and re-exported it (plus `listVaults`, already destructured but unexported) through `src/db/nexus.js` so it reaches `db.*`. Every vault-open path (Welcome picker, `window:openNexus`, and the new auto-open-latest branch) funnels through `createWindow()`, so wiring it there covers all of them for free.
+  - `app.whenReady()` now branches on `db.getAppSetting('startupMode')`: `'latest'` filters `db.listVaults()` to non-missing rows with a `last_opened_at`, sorts by most recent, and opens that vault directly via the same `createWindow(nexusId)` path `window:openNexus` uses — skipping `createWelcomeWindow()` entirely. Falls through safely to Welcome when no vault has ever been opened (fresh install — Welcome's own first-run wizard then takes over) or the most-recent vault's file has gone missing.
+  - 4 new i18n keys (`settingPageStartup`, `settingStartupWelcome`, `settingStartupLatest`, `settingStartupHint`) added to all 18 locale blocks including `qd`.
+  - Style checker (`dracondex-module-style/check.mjs`): 0 errors, 56 warnings — matches the documented pre-existing baseline exactly, no new warnings introduced. File-arch checker (`check-arch.mjs`): 0 errors.
+  - Live-verified via `run-dracondex`: created a vault, selected "Auto open latest nexus" on the new page, confirmed the choice persisted (`api.setting.get('startupMode')` → `'latest'`); relaunched the app against the same data dir and confirmed the very first window opened directly at `?nexus=<id>` with no Welcome window at all; switched back to "Open welcome screen" and confirmed the next relaunch showed `?welcome=1` again; separately confirmed a vault-less data dir with `startupMode` pre-set to `'latest'` still falls back to Welcome safely instead of erroring.
+
+**Part 2 complete** — both items shipped and live-verified this session.
+
+**`Plan.md` rollout complete** — 2 parts this cycle (process 2). Part 1 reconstructed from its own checkpoint commit (`109b738`, prior session); Part 2 built and verified in this session. Out-of-scope work landed in the same commit window but unrelated to either process's checklist — not written up here: the v4.9.0 per-vault-file split (`app.ddx` + one `.ddx` per Nexus), plugin dependency gating, Cloud-storage provider seam, and the RCE→credential-theft security hardening pass. No open follow-ups identified for this cycle.

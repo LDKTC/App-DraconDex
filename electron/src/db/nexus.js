@@ -18,6 +18,7 @@ const {
   NEXUS_PROJECT_TABLES, listVaults, getVault, insertVault, insertVaultWithId,
   updateVaultMeta, removeVault, refreshVaultCounts, countVaultItems,
   vaultDefaultPath, vaultsDir, setVaultPath, vaultPathInUse, refreshOpenVaultCounts,
+  touchVaultOpened,
 } = require('./vaults');
 const { openVaultProbe } = require('./conn');
 
@@ -281,4 +282,5 @@ module.exports = {
   getNexuses, getNexus, createNexus, updateNexus, deleteNexus, relinkNexusFile,
   duplicateNexus, exportNexusVaultFile,
   vaultDefaultPath, vaultsDir, refreshVaultCounts, NEXUS_PROJECT_TABLES,
+  touchVaultOpened, listVaults,
 };

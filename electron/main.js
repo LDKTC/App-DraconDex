@@ -99,6 +99,7 @@ function createWindow(bootstrapNexusId, bootstrapTabKey) {
     // correct the moment its window closes. Refreshed on open too, so a vault
     // whose file was edited elsewhere corrects itself on first use.
     try { db.refreshVaultCounts(nexusId); } catch (_) {}
+    try { db.touchVaultOpened(nexusId); } catch (_) {}
     // Pinned for as long as a window holds it, so conn.js's LRU can never
     // close a vault out from under a live renderer.
     db.pinVault(nexusId);
@@ -345,6 +346,19 @@ app.whenReady().then(() => {
   // On-disk half of the v4.2.0 extensions -> plugins rename (the DB half is
   // migratePluginV42 in src/db/schema/migrations.js). Idempotent and silent.
   db.migratePluginDir();
+  // Start up setting (process 2 part 2): 'latest' skips the Welcome picker
+  // and opens straight into whichever vault was most recently opened, via
+  // the exact same createWindow(nexusId) path window:openNexus uses. Falls
+  // through to Welcome when no vault has ever been opened yet (fresh
+  // install — Welcome's own S.welcomeStep logic then runs the first-run
+  // wizard) or the most-recent vault's file has gone missing.
+  const startupMode = db.getAppSetting('startupMode');
+  if (startupMode === 'latest') {
+    const candidates = db.listVaults()
+      .filter((v) => !v.missing && v.last_opened_at)
+      .sort((a, b) => (b.last_opened_at > a.last_opened_at ? 1 : -1));
+    if (candidates.length) { createWindow(candidates[0].id); return; }
+  }
   createWelcomeWindow();
 });
 
@@ -840,7 +854,7 @@ h('versions:restore', (id)   => db.restoreVersion(id));
 // every api.setting.* call site passes a literal, and 'versionLimit' is the
 // only one), so this is an allowlist rather than a denylist — a new secret
 // key added later is closed by default instead of open by default.
-const RENDERER_SETTING_KEYS = new Set(['versionLimit']);
+const RENDERER_SETTING_KEYS = new Set(['versionLimit', 'startupMode']);
 // Two gates, not one. The allowlist is the rule; isSecretKey() is the backstop
 // that survives someone widening the allowlist later without noticing they
 // just handed the renderer a refresh token. Cloud-provider credentials are
