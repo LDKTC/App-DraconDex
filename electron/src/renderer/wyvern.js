@@ -86,20 +86,21 @@ function wyvernBrowseBreadcrumbHtml(){
 // module opens its detail page directly since there's nowhere to drill.
 // Collector is folder-only (no detail page at all, per KIND_MAIN_BUILDER)
 // so it always drills, never offers the separate "open" button.
-function wyvernBrowseCardHtml(m){
+function wyvernBrowseCardHtml(m, totalModules){
   const hasChildren = !!(m.children && m.children.length);
   const canOpen = m.kind !== 'collector';
   const primary = hasChildren || !canOpen ? `wyvernDrillInto(${m.id})` : `openModuleNode(${m.id})`;
   return `<div class="typecard" onclick="${primary}" oncontextmenu="openModuleContextMenu(event,${m.id})">
     <h5 style="color:${x(m.icon_color_code || m.color_code || '#6366f1')}" data-no-i18n>${moduleIconHtml(m)} ${x(m.name)}</h5>
-    <p data-no-i18n>${x(kindLabel(m.kind))}${hasChildren ? ` · ${m.children.length}` : ''}</p>
+    <p data-no-i18n>${x(kindLabel(m.kind))}${hasChildren ? ` · ${m.children.length}:${totalModules}` : ''}</p>
     ${hasChildren && canOpen ? `<button class="btn btn-s btn-sm" onclick="event.stopPropagation();openModuleNode(${m.id})">${t('open')}</button>` : ''}
   </div>`;
 }
 function buildWyvernBrowseHtml(){
   const list = wyvernBrowseCurrentList();
+  const totalModules = flattenModulesByKind(S.moduleTree).length;
   const body = list.length
-    ? `<div class="typegrid">${list.map(wyvernBrowseCardHtml).join('')}</div>`
+    ? `<div class="typegrid">${list.map(m => wyvernBrowseCardHtml(m, totalModules)).join('')}</div>`
     : `<div class="empty"><div class="ei">${I.layer}</div><h3>${t('nestEmpty')}</h3></div>`;
   return `<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
       <div class="wyvern-breadcrumb">${wyvernBrowseBreadcrumbHtml()}</div>

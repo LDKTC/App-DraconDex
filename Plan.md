@@ -4,7 +4,7 @@
 -----
 ### Process 1
 #### part 1 : nexus
-- [ ] module analys text ที่แสดง module หลักบนnexus, เปลี่ยนการแสดง major module แบบ "2" ที่เป็นเลขธรรมดา เป็น "2:144" โดยเลขด้านหลังเป็นจำนวนmodulทั้งหมดโดยรวม child major module ทั้งหมดในroot ของ nexusนั้น
+- [x] module analys text ที่แสดง module หลักบนnexus, เปลี่ยนการแสดง major module แบบ "2" ที่เป็นเลขธรรมดา เป็น "2:144" โดยเลขด้านหลังเป็นจำนวนmodulทั้งหมดโดยรวม child major module ทั้งหมดในroot ของ nexusนั้น
 #### part 2 : setting
 - [x] plugin recommend, แสดงเฉพาะ repo ที่มี file .dracondex เท่านั้น และยกเว้น plugin template
 - [ ] version auto updater, ไม่จำเป็นต้อง login แล้ว, เพิ่มpages ในsection appdata "versions" ด้านในจะดึงข้อมูลของ releases จาก draconDex repo
