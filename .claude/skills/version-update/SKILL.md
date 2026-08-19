@@ -1,6 +1,6 @@
 ---
 name: version-update
-description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default). Settles the y-vs-z "module or fix" call with an explicit test: a genuinely standalone new function/feature is a module (y) at any size, while merely editing an existing module or its data, or adding something that doesn't reach the app's behavior, is a fix (z) at any size — and anything that just extends what's already there is measured, staying a fix at or under 500 changed lines of app source and only becoming a candidate module past that. Uses a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (plan/design write-ups in Plan.md/process/ with no app code touched yet) and skips bumping entirely for those. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part checkpoint flow that also commits + pushes — either when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open, or (far more common day to day) when explicitly asked for a checkpoint mid-way through a still-unfinished Part N, in which case X.Y.Z stays at the last version that actually finished and only a per-part round counter -N advances (re-derived each time from prior "Part N:"-tagged commits, never just incremented blindly). Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
+description: Bump package.json's (and package-lock.json's mirrored) "version" field per DraconDex's own x.y.z-n scheme — x for a UI/UX or architecture overhaul, y for a whole module/major feature added or removed, z for everything else (bug fixes, small tweaks — the default). Settles the y-vs-z "module or fix" call with an explicit test: a genuinely standalone new function/feature is a module (y) at any size, while merely editing an existing module or its data, or adding something that doesn't reach the app's behavior, is a fix (z) at any size — and anything that just extends what's already there is measured, staying a fix at or under 500 changed lines of app source and only becoming a candidate module past that. Uses a -n suffix while that bump is still mid-flight across several commits (dropped once finished). Recognizes "Pre" commits (nothing in the diff reaches the app's runtime behavior — plan/design write-ups, docs, or a newly-added asset nothing references yet) and skips bumping `package.json` entirely for those, instead suggesting a numbered `v.X.Y.Z-n — <summary>` commit title (`X.Y.Z` a non-binding preview guess, `n` counting prior such commits since the last real bump, resetting once one lands) for the user to commit by hand. Has two flows: a bump-only flow for ad-hoc requests and as the final step procress-writing chains into (never commits there), and a part checkpoint flow that also commits + pushes — either when a single Part N in Plan.md's body just became fully checked while the rest of the plan is still open, or (far more common day to day) when explicitly asked for a checkpoint mid-way through a still-unfinished Part N, in which case X.Y.Z stays at the last version that actually finished and only a per-part round counter -N advances (re-derived each time from prior "Part N:"-tagged commits, never just incremented blindly). Every version-carrying commit also gets a computed "commit value" trailer line (`V.x.y.z-n a-b-c-dd/mm/yy` — commit round no. today, this month, and since this major version, plus today's date). Use when asked to "bump version", "update the version", "release this as vX.Y.Z", "อัปเดตเวอร์ชัน", "เพิ่มเลขเวอร์ชัน", "ขึ้นเวอร์ชันใหม่", after a commit/set of edits that should carry a version change, or right after a Part N in Plan.md gets its last checkbox ticked.
 ---
 
 # version-update — bump package.json's version per DraconDex's x.y.z-n scheme
@@ -66,15 +66,25 @@ This skill has **two flows**, and picking the right one matters:
    actual diff — don't classify from commit subjects alone, a message can
    undersell what changed.
 
-4. **Pre gate**: does that diff touch *only* planning/write-up files
-   (`Plan.md`, `process/`, and similarly-purposed planning docs) with
-   zero changes to actual app source (`src/`, `electron/main.js`, `electron/preload.js`,
-   `electron/database.js`, `style.css`, `electron/index.html`, `flutter/`, etc.)? If so:
-   **stop here.** Report that this is a "Pre" commit — nothing in the app
-   changed, so `package.json` stays untouched. You may mention, purely as
-   information for the user's own commit message, what version this plan
-   looks like it's preparing for (mirroring the existing `pre v.X.Y.Z`
-   convention) — but never write that to `package.json`.
+4. **Pre gate**: does every file in that diff fail to reach the app's actual
+   runtime behavior? Two ways a file qualifies:
+   - **Bookkeeping/planning/doc file** — `Plan.md`, `process/`, `docs/`,
+     `.claude/`, and similarly-purposed files. (This was the whole test
+     before — still the common case.)
+   - **A newly-added asset/resource** (image, font, other binary) that
+     nothing in this diff — and nothing already shipped — actually
+     imports/requires/references by path or filename yet. A png dropped
+     into `src/assets/` with no `<img>`/`url()`/`require()` pointing at it
+     anywhere is inert; it doesn't matter that `src/` is normally "app
+     source."
+
+   If **every** changed file qualifies (either way), this is a **Pre**
+   commit: `package.json` stays untouched — **stop here**, but first
+   compute the required `v.X.Y.Z-n` commit title per "Pre commits" below
+   and report it. If even one changed file reaches the app (edits an
+   *existing*, already-referenced file's behavior, or wires up a
+   previously-inert asset), this is **not** Pre — fall through to step 5
+   and classify normally.
 
 5. If app source *is* touched, check `Plan.md` (checkbox list, "Part N"
    sections) and `process/` (prose log per cycle, ending "Part N complete"
@@ -148,10 +158,10 @@ case day to day, since most sessions only finish a slice of a part.)
    checkpoint the way step 7 might for an ambiguous ad-hoc bump.
 
    If the Pre gate (step 4) fires — the accumulated diff really is
-   planning-doc-only — stop entirely: no version bump, no commit. A part
-   whose "finish" produced zero app-source changes isn't this flow's job;
-   leave it for the user to commit by hand in this repo's existing informal
-   `pre v.X.Y.Z` style.
+   non-functional — stop entirely: no version bump, no commit. A part
+   whose "finish" produced zero app-reaching changes isn't this flow's job;
+   report the numbered `v.X.Y.Z-n` title (see "Pre commits" below) for the
+   user to commit by hand.
 
 3. **Write the version** the same way as Flow A step 10 (`npm version
    <target> --no-git-tag-version`).
@@ -319,11 +329,70 @@ the MAJOR/MINOR/PATCH classification or the IN-PROGRESS/FINISHED decision,
 and a wrong `majorAnchor` heuristic only skews a display counter, not the
 actual `package.json` version.
 
+## Pre commits — the `v.X.Y.Z-n` numbered title
+
+A **Pre** commit (Flow A step 4) never touches `package.json` — but it still
+needs a commit title, and a bare "Pre" report isn't one. Every Pre commit's
+suggested title is `v.X.Y.Z-n — <one-line summary>`, where `X.Y.Z` is a
+**preview guess**, not a real version, and `n` counts how many Pre commits
+have already used that same guess since the last real bump. This replaces
+the old ad-hoc `pre v.X.Y.Z` convention (no counter, freely incremented by
+hand — real precedent in this repo's history: `pre v.4.9.3` then, later,
+`pre v.4.9.4`, for two unrelated doc-only commits that never should have
+consumed two different guesses).
+
+**Computing the target guess, `X.Y.Z`:**
+- Default: current `package.json` version with the patch segment `+1` —
+  the same "default to Patch when unsure" bias the rest of this skill
+  already uses. Current `4.9.2` → guess `4.9.3`.
+- Prefer an explicit label over the default when one exists: if `Plan.md`'s
+  current cycle (or the specific part this diff maps to) names a target
+  version directly — this repo's own historical convention, e.g. a
+  `procress`/`process` write-up section titled `Part 2 — New Workspace
+  (v4.1.0)` — use that instead of guessing patch+1.
+- This guess is **never binding**. It's a label for humans skimming `git
+  log`, not a commitment — the eventual *real* bump (whenever app source
+  actually changes) reclassifies fresh via the normal MAJOR/MINOR/PATCH
+  steps regardless of what any Pre commit guessed.
+
+**Computing `n`**, re-derived from git every time, never cached:
+```bash
+# anchor = Flow A step 2's anchor (the last commit that actually changed
+# package.json's version line) — same anchor already in hand from step 2.
+# target = the X.Y.Z guess computed above.
+priorPre=$(git log --oneline "$anchor..HEAD" --grep="^v\.$target-[0-9]\+" -E | wc -l)
+n=$(( priorPre + 1 ))
+```
+This naturally resets to `-1` the moment a *real* bump lands (a new commit
+changes `package.json`'s version line, moving the anchor forward) — no
+separate counter or marker file, same re-derive-from-git philosophy as
+every other counter in this skill.
+
+**Report**, don't commit — same as every other Flow A outcome: state the
+suggested title (`v.X.Y.Z-n — <summary>`) for the user to paste in
+themselves. Never write the guessed `X.Y.Z-n` to `package.json` — that
+field only ever holds a real, classified version.
+
+Worked example: current version `4.9.2` (no real app change since). A docs
+sync commit lands (`docs/` only) → guess `4.9.3`, no prior `v.4.9.3-`
+commits since the anchor → `v.4.9.3-1 — sync docs`. A second, unrelated
+doc-only commit lands before any real app change → same guess, one prior
+match → `v.4.9.3-2 — ...`. A real Patch-scale app change then lands and
+actually bumps `package.json` to `4.9.3` → the anchor moves to that commit,
+and the next Pre commit after *that* starts over at `v.4.9.4-1` (a fresh
+patch+1 guess off the new real `4.9.3`).
+
+**Mixed diffs.** The Pre gate (step 4) only fires when the *entire*
+accumulated diff since the anchor is non-functional. If real app-source
+changes and Pre-eligible changes are mixed together since the same anchor,
+the whole thing falls through to normal classification (step 5 onward) —
+this numbered scheme only applies to a diff that is Pre in full.
+
 ## Decision table — scope
 
 | Signal in the diff | Classification |
 |---|---|
-| Diff touches only `Plan.md`/`process/`, no app source | **Pre** — no bump at all, see step 4 |
+| Diff touches only `Plan.md`/`process/`/`docs/`/unwired new assets, no app source reached | **Pre** — no bump, suggest a numbered `v.X.Y.Z-n` title, see step 4 |
 | Restructures the module system, nav rail, or overall UI/UX architecture | **Major** — e.g. `2.7.3 → 3.0.0`, the collector→IDE-shell rework |
 | Adds or removes a whole module (own renderer + db + IPC + preload) or a major existing function | **Minor** |
 | Anything else — bug fix, CSS tweak, i18n key fix, small refactor, doc sync | **Patch** — the default when unsure |
@@ -406,7 +475,9 @@ the round counter.
 
 Worked examples:
 - `3.7.3`, a commit that only edits `Plan.md`/`process/` → **Pre**,
-  version stays `3.7.3`, no `npm version` call.
+  version stays `3.7.3`, no `npm version` call, suggested title
+  `v.3.7.4-1 — <summary>` (patch+1 guess, first Pre commit since anchor —
+  see "Pre commits" above).
 - `3.7.3`, a self-contained bug fix, finished in one commit → `3.7.4`.
 - `3.7.3`, starting a multi-commit fix, not done yet → `3.7.4-1`.
 - `3.7.4-1`, still not done → `3.7.4-2`.
@@ -449,10 +520,16 @@ Worked examples:
   the one deliberate exception, scoped tightly to "a single part finished,
   the rest of the plan hasn't" — don't generalize Flow B's commit-and-push
   behavior back onto Flow A's ad-hoc bump requests.
-- A plan-only diff is **Pre**, not Patch — never fold "only touched
-  Plan.md/process/" into the PATCH default just because PATCH is the
-  fallback for ambiguous *app* changes. Pre means skip entirely (Flow A) or
-  skip entirely with no commit (Flow B).
+- A non-functional diff is **Pre**, not Patch — never fold "doesn't reach
+  the app" into the PATCH default just because PATCH is the fallback for
+  ambiguous *app* changes. Pre means no bump either way, but it does mean
+  reporting the numbered `v.X.Y.Z-n` title (see "Pre commits" above) — that
+  step doesn't skip, only the `npm version` call does.
+- The Pre gate is broader than file path alone — a newly-added, not-yet-
+  wired asset under an otherwise-"app" directory (an unused png, an unused
+  font) is still Pre. Don't classify by directory prefix without checking
+  whether anything in the diff (or already-shipped code) actually
+  references the new file.
 - Mixed/dirty diffs spanning clearly unrelated systems: surface that to the
   user and ask what should count toward this bump, rather than silently
   picking the loudest change.

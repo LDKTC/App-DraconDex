@@ -18,9 +18,9 @@
     - [ ] section head order จะไม่มีทางถูกเปลี่ยน แม้ว่าจะมี section head collapseที่ orderอยู่ก่อน section head ที่เปิดอยู่, ลำดับ order ก็จะไม่ถูกเปลี่ยน เช่น importที่order อยู่ในลำดับที่ 3 ถูกเปิดอยู่ แต่ sageที่ orderในลำดับที่2 collapsedอยู่ ลำดับก็จะไม่มีการเปลี่ยน แต่ sageที่collapse ก็จะถูกดันขึ้นไปพร้อมกับ import และยังแสดงอยู่เหนือ import head แต่อยู่bottomของ nexus nest body ที่order 1 และกำลังเปิดอยู่
 #### part 4 : navbar
 - [ ] เมื่อขยาย navbar จนแสดง label, เพิ่มให้แสดงlabel ของ btn ทั้งหมดบน nav sidebar
-- [ ] create module btn, นำออก เพราะสามารถสร้างmoduleได้บน section hub
+- [ ] create module btn, นำออก เพราะสามารถสร้างmoduleได้บน nexus nest section 
 #### part 5 : import dock
-- [ ] เพิ่มcontext menu เมื่อclick ขวาที่import folder or file บน import section, เพิ่มmenu delete import เพื่อตัดการเชื่อมต่อ import folder or file ที่มีอยู่จาก nexus นี้
+- [ ] เมื่อเปิดfile ที่import, ไม่ต้องรีเซ็ต import section, ให้แสดง อยู่ที่จุดเดิมของลิสที่เลื่อนดู
 
 ### Process 2 
 #### part 1 : nexus hub structure 
@@ -48,5 +48,14 @@
 #### part 2 : context menu
 - [ ] เพิ่มmenu ปักหมุดใน context menu ของ major module ทุกอันโดนไม่สนว่าต้องเป็น main tree module หรือไม่
 - [ ] เพิ่มsub menuให้กับ "move to" ของmajor module โดยจะแสดง menu ของmoduleที่สามารถย้ายไปได้ในทันที โดยไม่ต้องclick ก่อน
-- [ ] 
+- [ ] menu create จะแสดงบนทุก major module
+    - [ ] menu create จะสร้าง moduleใหม่ เป็น child ของmodule ที่เปิด context menu นั้นๆ
+    - [ ] menu add minor module, นำออก เนื่องจากmenu create ได้ทำหน้าที่ในส่วนนั้นแทนแล้ว
+    - [ ] menu collector module, ย้ายไปอยู่บน menu create และแสดง label ว่า "create folder" 
+- [ ] เพิ่มmenu import module, และExport moduleด้านล่างของ menu create
+- [ ] เพิ่มmenu edit module, เมื่อopen context menuที่moduleใด
+    - [ ] นำปุ่มedit module, add minor module ออกจากmodule lists บนhub เมื่อfocus เพราะได้ย้ายเข้ามายังcontext menu แล้ว
+- [ ] context create module lists ที่จะแสดงขึ้นเมื่อclick ที่ใดก็ได้บนhub, จะไม่แสดงอีกต่อไปแล้ว
+- [ ] เพิ่มcontext menu เมื่อclick ขวาที่import folder or file บน import dock section, เพิ่มmenu delete import เพื่อตัดการเชื่อมต่อ import folder or file ที่มีอยู่จาก nexus นี้
+- [ ] menu delete ของcontext menu ควรเป็นสีแดงเพื่อความชัดเจนในอันตรายนี้
 -----
