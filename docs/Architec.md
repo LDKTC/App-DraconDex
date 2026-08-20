@@ -99,11 +99,21 @@ tree), **Sage Hut**, **Import Dock** (ไม่มี section โมดูลเ
   subtree ตัวเอง), inline rename, expand/collapse, chip ไอคอน+ป้าย kind
 - **สร้าง node ใหม่**: popup เลือก kind จากทั้ง 15 (`openKindPopup`) →
   `quickCreateModule` (classifier ต้องเลือก `cat_type` เพิ่มอีกขั้น)
-- **Context menu**: ปุ่ม **"Create" เปิด hover submenu** แสดง kind-list เดียว
-  กันแทนที่จะแบนราบอยู่บนสุดเมนูเหมือนเดิม (`openCreateSubmenu`/
-  `positionSubmenuNear`, Major เท่านั้น) / rename / duplicate (clone ทั้ง
-  subtree, reset pinned เป็น 0) / move to… / delete / pin-unpin (Major
-  เท่านั้น)
+- **Context menu** (`buildModuleContextMenuHtml`, ทุก Major module ไม่ว่าจะ
+  อยู่ลึกแค่ไหน — Process 3 Part 2 เอา `isMajor`/`parent_id==null` gate เดิม
+  ออกทั้งหมดแล้ว): Create (hover submenu, `openCreateSubmenu`/
+  `positionSubmenuNear`; แถวแรกของ submenu คือ "create folder" ที่สร้าง
+  Collector module โดยเฉพาะ ตามด้วย kind list ที่เหลือ 14 อัน) / Import
+  module / Export module / [เฉพาะ kind ≠ collector] open in new tab/window/
+  pane / Edit module / rename / duplicate (clone ทั้ง subtree, reset pinned
+  เป็น 0) / Move to (hover submenu เช่นกัน — `openMoveToSubmenu`, เดิมเป็น
+  click-swap-in-place) / delete (`.kli-danger` สีแดง) / pin-unpin. Import
+  Dock file row มี context menu ของตัวเอง (right-click) ที่มีแค่ "delete
+  import" แถวเดียว — unlink metadata เท่านั้น ไม่แตะไฟล์บนดิสก์
+  (`openImportFileContextMenu`, `mod/fileviewer.js`); folder row ยังไม่มี
+  (ไม่มี bulk-delete backend รองรับ). Right-click พื้นที่ว่างบน Hub ไม่เปิด
+  popup สร้าง module อีกต่อไป — เหลือแค่ปุ่ม "+" ที่ header ของ Nest section
+  กับปุ่ม CTA ตอน tree ว่าง
 - **ไอคอน/สี**: popup แบบ live-save ผ่าน `iconpicker.js`
 - **หน้า detail ของ module** (`buildModuleDetailHtml`): header (ชื่อ/kind
   chip/แท็ก/จำนวนลิงก์) + เนื้อหาตาม kind (`KIND_MAIN_BUILDER`) + Module

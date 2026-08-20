@@ -26,7 +26,6 @@ function bindNav() {
   q('#modal-close').addEventListener('click', closeModal);
   q('#modal-overlay').addEventListener('click', e=>{ if(e.target===q('#modal-overlay')) closeModal(); });
   bindModalEscape();
-  q('#left-panel-inner')?.addEventListener('contextmenu', onHubBackgroundContextMenu);
   q('#nav-sidebar')?.addEventListener('contextmenu', openNavSidebarContextMenu);
 }
 

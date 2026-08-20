@@ -1,12 +1,14 @@
-// Right-click context menus (hub background / nest row / nav sidebar), the
-// move-to list, pane-direction submenu, and the kind-picker popup that creates
-// a module instantly instead of opening the full form.
-// ═══ Right-click context menus (Nexus Hub bg / Nest row / Nav-sidebar) ═
-function onHubBackgroundContextMenu(ev) {
-  if (ev.target.closest('.li')) return; // a row handles its own contextmenu (see buildNestRow)
-  ev.preventDefault();
-  openKindPopup(null, ctxAnchor(ev));
-}
+// Right-click context menus (nest row / nav sidebar), the move-to list,
+// pane-direction submenu, and the kind-picker popup that creates a module
+// instantly instead of opening the full form.
+// ═══ Right-click context menus (Nest row / Nav-sidebar) ════════════════
+// Plan process3 part2: shared row-builder for the simple (non-submenu,
+// non-icon) context-menu rows — same shape as core/nexus-options.js's own
+// local row() helper, so every "row of text that closes the menu and runs
+// one action" in the app looks and behaves identically. Named ctxRow (not
+// row) to avoid shadowing buildNestOptionsPopupHtml's own local `row` below.
+const ctxRow = (onclick, label, cls = '') =>
+  `<div class="kind-list-item ${cls}" onclick="closeAllPopups();${onclick}"><span class="kli-name">${label}</span></div>`;
 
 function openModuleContextMenu(ev, id) {
   ev.preventDefault();
@@ -15,10 +17,9 @@ function openModuleContextMenu(ev, id) {
   S.ctxMenuPos = { x: ev.clientX, y: ev.clientY };
   const m = findModuleNode(id);
   if (!m) return;
-  const isMajor = m.parent_id == null;
   const pop = document.createElement('div');
   pop.className = 'kind-popup context-menu-popup';
-  pop.innerHTML = buildModuleContextMenuHtml(id, isMajor, !!m.pinned);
+  pop.innerHTML = buildModuleContextMenuHtml(id, !!m.pinned);
   document.body.appendChild(pop);
   pop.addEventListener('click', e => e.stopPropagation());
   positionPopupNear(pop, ctxAnchor(ev).getBoundingClientRect());
@@ -63,26 +64,24 @@ async function openModuleInNewPane(id, dir) {
   await builderFocusPane(newIdx, { kind: 'module', id });
 }
 
-function buildModuleContextMenuHtml(id, isMajor, pinned) {
+// Plan process3 part2: every module is "Major" now (the term no longer means
+// top-level-only, see Process 3 Part 1's rename) — Create/Import/Export/Pin
+// used to be gated behind parent_id==null and are now unconditional.
+function buildModuleContextMenuHtml(id, pinned) {
   let html = '';
-  if (isMajor) {
-    // The create-list used to sit inline at the top of the menu (every kind,
-    // always visible) — moved behind one "Create" row with a hover submenu
-    // instead, decluttering the menu the same way a native app's context
-    // menu nests a submenu rather than flattening every option.
-    // Plan part1 #5: auto-parent to the right-clicked module — this used to
-    // hardcode parentId=null regardless of which module's menu was open,
-    // always creating a new top-level sibling instead of a child of `id`.
-    html += `<div class="kind-list-item kli-submenu-parent" onmouseenter="openCreateSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
+  // The create-list used to sit inline at the top of the menu (every kind,
+  // always visible) — moved behind one "Create" row with a hover submenu
+  // instead, decluttering the menu the same way a native app's context
+  // menu nests a submenu rather than flattening every option.
+  // Plan part1 #5: auto-parent to the right-clicked module — this used to
+  // hardcode parentId=null regardless of which module's menu was open,
+  // always creating a new top-level sibling instead of a child of `id`.
+  html += `<div class="kind-list-item kli-submenu-parent" onmouseenter="openCreateSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
       <span class="kli-name">${x(t('create'))}</span><span class="kli-arrow">›</span>
     </div>
-      <div class="ctx-sep"></div>
-      <div class="kind-list-item" onclick="closeAllPopups();openMinorModuleModal(${id},ctxAnchor())"><span class="kli-name">${x(t('addMinorModule'))}</span></div>
-      <div class="kind-list-item" onclick="closeAllPopups();quickCreateModule('collector',${id})">
-        <span class="kicon" style="color:${x(KIND_COLOR.collector)}">${I[KIND_ICON.collector]}</span>
-        <span class="kli-text"><span class="kli-name">${x(kindLabel('collector'))}</span><span class="kli-desc">${t(KIND_DESC_KEY.collector)}</span></span>
-      </div>`;
-  }
+    ${ctxRow(`ctxImportModule(${id})`, x(t('settingDbImportModule')))}
+    ${ctxRow(`ctxExportModule(${id})`, x(t('settingDbExportModule')))}
+    <div class="ctx-sep"></div>`;
   // Plan part1 #3: modules with their own Builder page (any kind except the
   // pure-folder Collector, see KIND_MAIN_BUILDER) get "open in a new window"
   // and a hover "open in a new pane" direction submenu. The pane submenu is
@@ -100,21 +99,34 @@ function buildModuleContextMenuHtml(id, isMajor, pinned) {
     <div class="ctx-sep"></div>`;
   }
   html += `
-    <div class="kind-list-item" onclick="closeAllPopups();startRenameModule(${id})"><span class="kli-name">${x(t('rename'))}</span></div>
-    <div class="kind-list-item" onclick="closeAllPopups();duplicateModuleNode(${id})"><span class="kli-name">${x(t('duplicate'))}</span></div>
-    <div class="kind-list-item" onclick="openMoveToListInPlace(${id})"><span class="kli-name">${x(t('moveTo'))}</span></div>
-    <div class="kind-list-item" onclick="closeAllPopups();deleteModuleNode(${id})"><span class="kli-name">${x(t('delete'))}</span></div>`;
-  if (isMajor) {
-    html += `<div class="kind-list-item" onclick="closeAllPopups();toggleModulePin(${id})"><span class="kli-name">${x(pinned ? t('unpin') : t('pin'))}</span></div>`;
-  }
+    ${ctxRow(`openModuleEditModal(${id})`, x(t('moduleEdit')))}
+    ${ctxRow(`startRenameModule(${id})`, x(t('rename')))}
+    ${ctxRow(`duplicateModuleNode(${id})`, x(t('duplicate')))}
+    <div class="kind-list-item kli-submenu-parent" onmouseenter="openMoveToSubmenu(event,${id})" onmouseleave="scheduleCtxSubmenuClose()">
+      <span class="kli-name">${x(t('moveTo'))}</span><span class="kli-arrow">›</span>
+    </div>
+    <div class="ctx-sep"></div>
+    ${ctxRow(`deleteModuleNode(${id})`, x(t('delete')), 'kli-danger')}
+    <div class="ctx-sep"></div>
+    ${ctxRow(`toggleModulePin(${id})`, x(pinned ? t('unpin') : t('pin')))}`;
   return html;
 }
 
-function openMoveToListInPlace(id) {
-  const pop = document.querySelector('.kind-popup');
-  if (!pop) return;
-  pop.innerHTML = buildMoveToListHtml(id);
+async function ctxExportModule(id) {
+  const m = findModuleNode(id);
+  const r = await api.db.exportModuleFile(S.nexus.id, id, m?.name);
+  if (r.canceled) return;
+  if (!r.ok) return toast(t('driveErrServer'), 'error');
+  toast(t('settingDbExportOk'), 'ok');
 }
+async function ctxImportModule(id) {
+  const r = await api.db.importModuleFile(S.nexus.id, id);
+  if (r.canceled) return;
+  if (!r.ok) return toast(t('driveErrServer'), 'error');
+  toast(t('settingDbImportOk'), 'ok');
+  await reloadModuleTree();
+}
+
 function flattenModuleTree(nodes, depth, out) {
   out = out || [];
   for (const m of nodes) {
