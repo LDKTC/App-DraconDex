@@ -68,7 +68,7 @@ function buildImportFileRow(f, depth) {
   const chip = f.entity
     ? `<span class="dock-chip lk" data-no-i18n>→ ${x(f.entity.name)}</span>`
     : `<span class="dock-chip ghost">${t('notLinked')}</span>`;
-  return `<div class="li${indentCls}${S.filePreview?.id === f.id && !S.activeModuleNode ? ' sel' : ''}" onclick="openImportFile(${f.id})">
+  return `<div class="li${indentCls}${S.filePreview?.id === f.id && !S.activeModuleNode ? ' sel' : ''}" onclick="openImportFile(${f.id})" oncontextmenu="openImportFileContextMenu(event,${f.id})">
     <span class="dock-ficon dock-${x(f.file_type || 'file')}" data-no-i18n>▤</span>
     <span class="name" data-no-i18n>${x(f.file_name)}${f.use_as_image ? ' ★' : ''}</span>
     ${chip}
@@ -76,6 +76,22 @@ function buildImportFileRow(f, depth) {
       <button class="btn btn-g btn-i" onclick="event.stopPropagation();deleteImportFileRow(${f.id})" title="${t('delete')}">${I.delete}</button>
     </span>
   </div>`;
+}
+
+// Plan process3 part2: right-click "delete import" — unlinks this file's
+// metadata row from the Nexus without touching the file on disk (same
+// action as the row's own left-click delete button above; deleteImportFileRow
+// only ever does DELETE FROM import_file, see src/db/importdock.js).
+function openImportFileContextMenu(ev, id) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  closeAllPopups();
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup context-menu-popup';
+  pop.innerHTML = `<div class="kind-list-item kli-danger" onclick="closeAllPopups();deleteImportFileRow(${id})"><span class="kli-name">${x(t('delete'))}</span></div>`;
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  positionPopupNear(pop, ctxAnchor(ev).getBoundingClientRect());
 }
 
 function buildImportDockRows() {

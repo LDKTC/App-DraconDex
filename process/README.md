@@ -28,3 +28,6 @@ flagged here, not addressed by this roadmap.
 - [Round 15](round-15.md) — Part 1 — user manual test: fix part UI (hub toggle button, nav sidebar)
 - [Round 16](round-16.md) — Part 1 — UI style changes: btn/hub polish
 - [Round 17](round-17.md) — Part 1 — Nav bar
+- [Process 1](process-1.md) — Nexus module count badge, Settings polish, Hub head layout, navbar labels, Import Dock scroll fix
+- [Process 2](process-2.md) — Nexus Hub structure rework (Kind Browser into Hub, nav-rail highlight), legacy module system deleted
+- [Process 3](process-3.md) — Major/Minor terminology correction, Hub context-menu overhaul

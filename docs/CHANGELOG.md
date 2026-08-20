@@ -19,6 +19,38 @@
 
 ---
 
+## 2026-08-20 — Hub context-menu overhaul (Process 3 part 2)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/src/renderer/hub/menus.js`, `electron/src/renderer/hub/popups.js`,
+  `electron/src/renderer/hub/tree.js`, `electron/src/renderer/core/views.js`,
+  `electron/src/renderer/mod/fileviewer.js`, `electron/src/renderer/i18n.js`
+- อะไรเปลี่ยน: module context menu (`buildModuleContextMenuHtml`) เอา `isMajor`
+  gate เดิม (`parent_id==null`, ความหมาย pre-Process-3-Part-1 ของ "Major") ออก
+  ทั้งหมด — Create/Import module/Export module/Pin ตอนนี้ขึ้นทุก module ไม่ว่า
+  จะลึกแค่ไหน. เพิ่มแถว "Edit module" ใหม่, ลบแถว "Add Minor module" ออก (Create
+  ทำหน้าที่แทนแล้ว, auto-parent เป็น child ของ module ที่เปิดเมนูอยู่แล้วจากรอบ
+  ก่อน), ย้าย Collector เข้าไปใน Create submenu เป็นแถวแรกสุด label ใหม่ "create
+  folder" (`createFolder`, i18n key ใหม่ 18 locale — คีย์ใหม่คีย์เดียวของรอบนี้).
+  "Move to" เปลี่ยนจาก click-swap-in-place (`openMoveToListInPlace`, ลบทิ้ง) เป็น
+  hover flyout เหมือน Create (`openMoveToSubmenu`, ใช้ `buildMoveToListHtml`/
+  `positionSubmenuNear` เดิม). แถว Delete ได้ class `.kli-danger` (โทนแดงเดียวกับ
+  `core/nexus-options.js`'s delete row). ลบปุ่ม hover +/pencil บนแถว Nest tree
+  ออก (`.acts` span ใน `buildNestRow`) และลบ right-click popup สร้าง module บน
+  พื้นที่ว่างของ Hub (`onHubBackgroundContextMenu`, ปุ่ม + ที่ header ของ Nest
+  section กับปุ่ม CTA ตอน tree ว่างยังอยู่เหมือนเดิม). Import Dock file row เพิ่ม
+  right-click menu ของตัวเอง — แถวเดียว "ลบ" เรียก `deleteImportFileRow` เดิม
+  (unlink metadata, ไม่แตะไฟล์บนดิสก์); folder row ไม่ทำในรอบนี้ (ไม่มี
+  bulk-delete backend). Import/Export module ใช้ i18n key ที่มีอยู่แล้ว
+  (`settingDbImportModule`/`settingDbExportModule`) ผ่าน wrapper ใหม่
+  `ctxImportModule`/`ctxExportModule` ใน `hub/menus.js` (เรียก
+  `api.db.exportModuleFile`/`importModuleFile` ตรง ไม่ผ่าน Settings-page cache).
+- ทำไม: Process 3 Part 1 เปลี่ยนความหมาย "Major module" เป็นทุก module ไม่ว่า
+  ความลึก แต่ context menu ยังใช้ gate แบบเก่าอยู่ — ตามด้วยการปรับ workflow
+  สร้าง/ย้าย/ลบ module ให้เข้าถึงง่ายขึ้นจาก context menu เดียว แทนที่ปุ่มแยก
+  กระจายอยู่หลายที่ (Plan.md Process 3 part 2)
+- Doc ที่อัปเดต: `docs/Architec.md` §1.2 (Context menu — คำอธิบาย gate/แถวเมนู
+  ใหม่ทั้งหมด), `docs/FILES.md` (`mod/fileviewer.js` entry)
+
 ## 2026-08-19 — Plugin recommend list กรองด้วย `.dracondex` marker (Process 1 part 2)
 - commit: `uncommitted`
 - ไฟล์ที่แก้: `electron/src/db/plugin.js`

@@ -93,10 +93,6 @@ function buildNestRow(m, depth, parentId) {
       ? `<input id="rename-nest-${m.id}" class="rename-input" value="${x(m.name)}" onclick="event.stopPropagation()" onblur="saveModuleRename(${m.id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value=${x(JSON.stringify(m.name))};this.blur();}">`
       : `<span class="name" ondblclick="event.stopPropagation();cancelRowOpen();startRenameModule(${m.id})">${x(m.name)}</span>`}
     ${kindBadge}
-    <span class="acts">
-      <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMinorModuleModal(${m.id},this)" title="${t('addMinorModule')}">${I.plus}</button>
-      <button class="btn btn-g btn-i" onclick="event.stopPropagation();openModuleEditModal(${m.id})" title="${t('moduleEdit')}">${I.edit}</button>
-    </span>
   </div>${childrenHtml}${itemsHtml}`;
 }
 
