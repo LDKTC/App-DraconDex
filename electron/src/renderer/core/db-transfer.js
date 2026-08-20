@@ -9,7 +9,7 @@
 
 function settingDatabasePageHtml(){
   settingRefreshDatabaseSection();
-  return `<div class="settings-label">${t('settingDbNexusList')}</div><div id="setting-db-body">${t('syncWorking')}</div>`;
+  return `<div id="setting-db-legacy"></div><div class="settings-label">${t('settingDbNexusList')}</div><div id="setting-db-body">${t('syncWorking')}</div>`;
 }
 async function settingRefreshDatabaseSection(){
   const nexuses = await api.nexus.getAll();
@@ -20,6 +20,34 @@ async function settingRefreshDatabaseSection(){
     ? nexuses.map(settingDbNexusRowHtml).join('')
     : `<div class="modal-hint">${I.info}<span>${t('settingDbNoModules')}</span></div>`;
   if (S.settingDbExpandedNexus) settingDbLoadModules(S.settingDbExpandedNexus);
+  settingDbRefreshLegacyButton();
+}
+// Plan process2 part2 #2.1.1: manual re-entry point for a user who picked
+// "export" on the boot-time legacy prompt (or whose open vault has
+// un-migrated legacy data without ever having been prompted) — reuses the
+// same comparison-list preview the boot prompt and the Import DB merge flow
+// both open (hub/legacy-migrate.js), skipping straight past the export-or-
+// convert choice since clicking this button already is "convert."
+async function settingDbRefreshLegacyButton(){
+  const el = q('#setting-db-legacy');
+  if (!el) return;
+  if (!S.nexus) { el.innerHTML = ''; return; }
+  let hasLegacy = false;
+  for (const tg of MIGRATE_TARGETS) {
+    try { if ((await api.migrate.list(tg.id, S.nexus.id)).length) { hasLegacy = true; break; } }
+    catch (_) { /* keep checking the other targets */ }
+  }
+  if (!q('#setting-db-legacy')) return; // page switched while this was in flight
+  el.innerHTML = hasLegacy
+    ? `<button class="btn btn-p" style="margin-bottom:10px" onclick="settingDbConvertLegacyClick()">${t('settingDbConvertLegacy')}</button>`
+    : '';
+}
+function settingDbConvertLegacyClick(){
+  // .floating-panel sits at a higher z-index than #modal-overlay (150 vs
+  // 100, components.css) — openModal() alone would render behind this
+  // still-open Setting window, so close it first.
+  closeFloatingPanel('setting-window');
+  openLegacyMigratePreviewModal();
 }
 function settingDbNexusRowHtml(n){
   const expanded = S.settingDbExpandedNexus === n.id;

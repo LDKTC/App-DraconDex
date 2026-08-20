@@ -44,7 +44,7 @@ function parseFilterDef(ui) {
   return { groups };
 }
 
-// this module or its immediate children (2-level Major/Minor tree, no
+// this module or its immediate child modules (one level down only, no
 // recursion needed) — a local equivalent of quickswitch.js's qsDescendants,
 // inlined because quickswitch.js is lazy-loaded and viewer.js/connector.js
 // run much earlier in the app lifecycle.

@@ -1,6 +1,6 @@
 // The Hub panel's accordion shell and its non-tree sections: Sage Hut rows,
-// the Kind Browser (modules grouped by kind, with its own page view) and the
-// import-choice modal that picks between 'import as nest' and 'import as DB'.
+// the Kind Browser (modules grouped by kind) and the import-choice modal
+// that picks between 'import as nest' and 'import as DB'.
 // ═══ HUB PANEL — accordion shell (Phase 2) + Nexus nest tree (Phase 3) ═
 function toggleHubSection(name) {
   S.hubOpen[name] = !S.hubOpen[name];
@@ -37,7 +37,7 @@ function buildHubHtml() {
   // startHubSectionResize (core/ui.js). With 0-1 open there's no pair to
   // redistribute between, so skip it and let flex:1 fill the space as before.
   const heights = S.hubSectionHeights || {};
-  const openCount = ['nest', 'sage', 'dock'].filter(k => S.hubOpen[k]).length;
+  const openCount = ['nest', 'kinds', 'sage', 'dock'].filter(k => S.hubOpen[k]).length;
   const h = (key) => openCount > 1 ? heights[key] : null;
   const sections = [
     { key: 'nest', html: buildAccSection('nest', t('nexusNest'), buildNestTreeHtml(),
@@ -45,23 +45,36 @@ function buildHubHtml() {
         // needed — quickCreateModule already auto-names + enters inline
         // rename mode for every kind when called with no cat_type decision.
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();quickCreateModule('collector',null)" title="${kindLabel('collector')}">${I[KIND_ICON.collector]}</button>
-         <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMajorModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>
+         <button class="btn btn-g btn-i" onclick="event.stopPropagation();openMainModuleModal(this)" title="${t('createMajorModule')}">${I.plus}</button>
          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openNestOptionsPopup(this)" title="${t('nestOptionsTitle')}">${I.options}</button>`, h('nest')) },
-    { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows(), '', h('sage')) },
+    // Plan process2 part1 #2: moved into the Hub panel as its own accordion
+    // section (was a standalone Builder-pane page) — see goToKindBrowserHub()
+    // below for why: this is what lets opening a module from this list keep
+    // the Hub showing "List Modules" instead of falling back to the tree.
+    { key: 'kinds', html: buildAccSection('kinds', t('kindBrowser'), buildKindBrowserHtml(), '', h('kinds')) },
+    // Plan process1 part3 #1: the nav rail's standalone Sage button was
+    // removed — this header action jumps straight into the same Sage Hut
+    // analytics page (openSageTab, mod/sagehut.js) without needing to first
+    // open the accordion section, exactly like the nav-rail button used to.
+    { key: 'sage', html: buildAccSection('sage', t('sageHut'), buildSageHutRows(),
+        `<button class="btn btn-g btn-i" onclick="event.stopPropagation();openSageTab('dataSize')" title="${t('sageHut')}">${I.sage}</button>`, h('sage')) },
     { key: 'dock', html: buildAccSection('dock', t('importDock'),
         typeof buildImportDockRows === 'function' ? buildImportDockRows() : '',
         `<button class="btn btn-g btn-i" onclick="event.stopPropagation();importDockPickFolder()" title="${t('importFolder')}">${I.import}</button>`, h('dock')) },
     // Plan part2 §2: this accordion section is removed — legacy import is
-    // now offered via the import-choice modal (openImportChoiceModal) that
-    // importDatabaseFile() (core.js) opens automatically after a merge
-    // brings in un-migrated legacy data, instead of a standing Hub section.
+    // now offered via the conversion preview (hub/legacy-migrate.js's
+    // openLegacyMigratePreviewModal) that importDatabaseFile() (core/views.js)
+    // opens automatically after a merge brings in un-migrated legacy data,
+    // instead of a standing Hub section.
   ];
-  // VS Code container-fold behavior (Plan part1 #2): toggled-off sections
-  // sink to the bottom, stacking against each other and against whatever
-  // sits below the hub (nexus-vault-head), while open sections keep their
-  // original relative order at the top. Array#sort is stable, so within
-  // each open/collapsed group the original order survives.
-  sections.sort((a, b) => (S.hubOpen[b.key] ? 1 : 0) - (S.hubOpen[a.key] ? 1 : 0));
+  // Plan process1 part3 #3 (replaces the old Plan part1 #2 stable-sort):
+  // section order (nest, sage, dock) never changes regardless of collapse
+  // state — no more grouping every collapsed section after every open one.
+  // #hub-body is a flex column where each open .acc-body is flex:1 and each
+  // collapsed one is display:none (nav-hub.css), so a collapsed section's
+  // head naturally sits flush against whatever follows it: pinned to the
+  // bottom of the preceding open section's body if something later is open,
+  // or to the very bottom of the hub body if it's the last section in order.
   // A resize handle only makes sense between two sections that are BOTH open
   // (a collapsed section takes no flex space, so there'd be nothing to drag
   // against) — checked in this post-sort order so e.g. Nest+Dock open with
@@ -140,18 +153,19 @@ function toggleKindGroup(kind) {
   renderNexusHome();
 }
 
-// Plan part2 §2: promoted out of the Hub accordion into its own full page,
-// reached via a nav-rail button — same mutual-exclusion state (S.*Node/
-// S.filePreview/S.sageHut) goToNexusNestHub() already resets, plus its own
-// S.kindBrowserPage flag. buildKindBrowserHtml() itself is unchanged/reused
-// verbatim; only its container (accordion section vs standalone page) moved.
+// Plan process2 part1 #2: reverts "Plan part2 §2"'s earlier move (Kind
+// Browser promoted to its own full Builder page) — it's back in the Hub
+// accordion now, so this nav-rail button no longer opens a competing page
+// state; it just goes to Hub home (same reset as goToNexusNestHub()) and
+// expands the 'kinds' section, same persistence toggleHubSection() uses.
 function goToKindBrowserHub() {
   S.activeModuleNode = null;
   S.activeItemNode = null;
   S.filePreview = null;
   S.sageHut = null;
-  S.kindBrowserPage = true;
   S.importDockPage = false;
+  S.hubOpen.kinds = true;
+  localStorage.setItem(HUB_OPEN_KEY, JSON.stringify(S.hubOpen));
   renderNexusHome();
 }
 
@@ -170,17 +184,10 @@ function wrapPageView(innerHtml) {
   </div>`;
 }
 
-function buildKindBrowserPageHtml() {
-  return wrapPageView(`<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
-      <h2 style="margin:0;font-size:1.15em">${x(t('kindBrowser'))}</h2>
-      <div class="drafter-hint">${x(S.nexus.name)}</div>
-    </div>
-    <div class="acc-body" style="display:block">${buildKindBrowserHtml()}</div>`);
-}
-
 // Plan part2 #New Workspace: same "promoted out of the accordion into its
-// own full page" move as goToKindBrowserHub/buildKindBrowserPageHtml above
-// — Wyvern's View-set menu needs Import Dock as a standalone page (today
+// own full page" move goToKindBrowserHub used to make (Process 2 part1 #2
+// reverted that move for Kind Browser, but Import Dock's own page stays) —
+// Wyvern's View-set menu needs Import Dock as a standalone page (today
 // it's accordion-only), and this is the exact precedent to copy.
 // buildImportDockRows() (mod/fileviewer.js) is reused verbatim; only its
 // container moved.
@@ -189,7 +196,6 @@ function goToImportDockPage() {
   S.activeItemNode = null;
   S.filePreview = null;
   S.sageHut = null;
-  S.kindBrowserPage = false;
   S.importDockPage = true;
   renderNexusHome();
 }
@@ -202,66 +208,11 @@ function buildImportDockPageHtml() {
     <div class="acc-body" style="display:block">${typeof buildImportDockRows === 'function' ? buildImportDockRows() : ''}</div>`);
 }
 
-// ═══ IMPORT-CHOICE MODAL (Plan part2 §2) ════════════════════════════════
-// Opens after importDatabaseFile() (core.js) merges in a file that carried
-// un-migrated legacy data (director/navigator/hero/writer projects, or
-// Scribe notes) — replaces the old always-on Hub "Legacy Import" accordion
-// with a one-time choice: convert everything into a real Nexus Nest module
-// tree (migrate_v3.js), or keep it as a read-only "Import DB" legacy view
-// (openImportDbHub, S.importDbMode).
-function openImportChoiceModal() {
-  openModal(t('importChoiceTitle'), `
-    <p class="drafter-hint">${t('importChoiceBody')}</p>
-    <div class="typegrid" style="grid-template-columns:1fr 1fr">
-      <div class="typecard" onclick="chooseImportAsNexusNest(this)">
-        <h5>${I.layer} ${t('importChoiceNestOption')}</h5><p>${t('importChoiceNestDesc')}</p>
-      </div>
-      <div class="typecard" onclick="chooseImportAsDb(this)">
-        <h5>${I.director} ${t('importChoiceDbOption')}</h5><p>${t('importChoiceDbDesc')}</p>
-      </div>
-    </div>`);
-}
-
-// Runs migrate_v3.js across every un-migrated row in every MIGRATE_TARGETS
-// source, threading batchCtx through so Navigator's classifiers/chroniclers
-// can fold into a Director connector created earlier in the same batch
-// (decision #6 — see migrate_v3.js's navigator target). IPC args are
-// serialized by value, so the mutated batchCtx has to come back from each
-// migrate:run response rather than staying a shared live reference.
-async function chooseImportAsNexusNest(cardEl) {
-  const nexusId = S.nexus?.id || S.nexuses?.[0]?.id;
-  if (!nexusId) { toast(t('nexusSelectFirst'), 'error'); return; }
-  if (cardEl) cardEl.style.pointerEvents = 'none';
-  const totals = { modules: 0, objects: 0, events: 0, chapters: 0, dialogues: 0, relations: 0 };
-  let firstOpenedId = null;
-  let batchCtx = {};
-  // Unbounded N×M migration — pointer-events:none alone left the modal looking
-  // frozen for the whole run.
-  setBusy('#modal-body', true);
-  try {
-    for (const tg of MIGRATE_TARGETS) {
-      const rows = await api.migrate.list(tg.id, nexusId);
-      for (const row of rows) {
-        const res = await api.migrate.run(nexusId, tg.id, row.id, batchCtx);
-        batchCtx = res.batchCtx || batchCtx;
-        const c = res.counts || {};
-        for (const k of Object.keys(totals)) totals[k] += c[k] || 0;
-        if (!firstOpenedId && res.id) firstOpenedId = res.id;
-      }
-    }
-  } finally {
-    setBusy('#modal-body', false);
-  }
-  closeModal();
-  toast(`${t('artMigrateDone')} — ${totals.modules} modules · ${totals.objects} objects · ${totals.events} events · ${totals.chapters} chapters · ${totals.dialogues} dialogues · ${totals.relations} relations`, 'ok');
-  if (S.nexus?.id === nexusId) {
-    await reloadModuleTree();
-    if (firstOpenedId) await openModuleNode(firstOpenedId);
-  }
-}
-
-function chooseImportAsDb() {
-  closeModal();
-  openImportDbHub();
-}
+// Plan process2 part2 #1.2: the old two-card "import choice" modal
+// (convert to Nexus Nest vs open the read-only legacy Import DB view) is
+// gone now that the legacy view has no entry point left to offer — a
+// database merge that brings in legacy-shaped data goes straight to the
+// comparison-list preview (hub/legacy-migrate.js's
+// openLegacyMigratePreviewModal), same as the boot-detected legacy-data
+// prompt flow. See importDatabaseFile() (core/views.js) for the call site.
 

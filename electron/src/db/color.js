@@ -44,4 +44,11 @@ const deleteColor = (id) => {
   return true;
 };
 
-module.exports = { getColors, addColor, markColorUsed, getRecentColors, deleteColor };
+// The Symbols tab of iconpicker.js's module-icon picker — a small, generic,
+// user-extendable glyph collection (not owned by any one module kind).
+// Read-only here: nothing currently offers UI to add/edit symbols after
+// Navigator (its original owner) was deleted, Process 2 Part 2.
+const getSymbolCollection = () =>
+  getDB().prepare(`SELECT id, glyph, label FROM symbol_collection ORDER BY id`).all();
+
+module.exports = { getColors, addColor, markColorUsed, getRecentColors, deleteColor, getSymbolCollection };

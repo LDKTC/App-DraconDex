@@ -1,40 +1,12 @@
-// Module routing: selectModule() for the 7 legacy modules, the read-only
-// Import-DB entry point, openEntityByKey() (wikilink + quick-switch target
-// resolution), recent-entity tracking and the IDE status bar.
+// Module routing: selectModule() for the remaining always-on legacy module
+// (Scribe — Director/Navigator/Hero/Writer were physically deleted, Process
+// 2 Part 2), openEntityByKey() (wikilink + quick-switch target resolution),
+// recent-entity tracking and the IDE status bar.
 function selectModule(name) {
   if (!S.nexus) { toast(t('nexusSelectFirst'), 'error'); renderNexusHome(); return; }
   leaveBuilderGrid();
   S.activeModule = name;
-  if (name === 'director') {
-    S.view = 'projects';
-    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
-    q('.nav-btn[data-panel="projects"]')?.classList.add('active');
-    updateTopNavButton();
-    renderSidebar();
-    renderWelcome();
-  } else if (name === 'navigator') {
-    S.view = 'navigator';
-    S.world = null; S.worldChar = null; S.worldCat = null; S.worldMap = null; S.worldMapTl = null;
-    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
-    q('.nav-btn[data-panel="navigator"]')?.classList.add('active');
-    updateTopNavButton();
-    loadGroup('navigator').then(() => renderNavigatorView());
-  } else if (name === 'hero') {
-    S.view = 'hero';
-    S.game = null; S.gameTab = 'project';
-    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
-    q('.nav-btn[data-panel="hero"]')?.classList.add('active');
-    updateTopNavButton();
-    loadGroup('hero').then(() => renderHeroView());
-  } else if (name === 'writer') {
-    S.view = 'writer';
-    S.write = null; S.writeTab = 'project'; S.writeSeries = null; S.writeBook = null;
-    S.writeChapter = null; S.writeWikiChapter = null; S.writeNote = null;
-    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
-    q('.nav-btn[data-panel="writer"]')?.classList.add('active');
-    updateTopNavButton();
-    loadModule('src/renderer/writer.js').then(() => renderWriterView());
-  } else if (name === 'scribe') {
+  if (name === 'scribe') {
     S.view = 'scribe';
     S.scribeNote = null; S.scribeTab = 'notes';
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
@@ -42,21 +14,6 @@ function selectModule(name) {
     updateTopNavButton();
     loadModule('src/renderer/scribe.js').then(() => renderScribeView());
   }
-}
-
-// Plan part2 §2: entry point for the read-only "Import DB" legacy view —
-// reuses selectModule('director') unchanged, just with S.importDbMode
-// already set so updateTopNavButton() un-hides the 4 legacy nav buttons and
-// preload.js's inv() wrapper blocks any mutation IPC call while it's active.
-function openImportDbHub() {
-  S.importDbMode = true;
-  api.setImportDbMode(true);
-  // Whatever v3 module was open before switching into this legacy view stays
-  // pinned "active" (with its own icon) in the nav rail otherwise — nothing
-  // else clears S.activeModuleNode or repaints the rail on this path.
-  S.activeModuleNode = null;
-  selectModule('director');
-  renderModuleRail();
 }
 
 // ═══ ENTITY NAVIGATION ════════════════════════════════════
@@ -73,35 +30,14 @@ async function openEntityByKey(key) {
     updateTopNavButton();
     await loadModule('src/renderer/scribe.js');
     await selectNote(p.noteId);
-  } else if (p.kind === 'obj' || p.kind === 'proj') {
-    S.activeModule = 'director'; S.view = 'projects';
-    document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
-    q('.nav-btn[data-panel="projects"]')?.classList.add('active');
-    updateTopNavButton();
-    await selectProject(p.projectId);
-    if (p.kind === 'obj') { await selectCategory(p.categoryId); await selectObject(p.objectId); }
-  } else if (p.kind === 'world') {
-    const tabEntity = await api.world.get(p.worldId);
-    if (!tabEntity) return;
-    upsertEntityTab(tabEntity, 'world', 'navigator');
-    S.activeModule = 'navigator';
-    await switchEntityTab(`world-${p.worldId}`);
-  } else if (p.kind === 'game') {
-    const tabEntity = await api.game.get(p.gameId);
-    if (!tabEntity) return;
-    upsertEntityTab(tabEntity, 'game', 'hero');
-    S.activeModule = 'hero';
-    await switchEntityTab(`game-${p.gameId}`);
-  } else if (p.kind === 'write' || p.kind === 'wchp') {
-    const w = await api.write.getProject(p.writeId);
-    if (!w) return;
-    upsertEntityTab({ id: w.id, name: w.project_name, color_code: w.color_code }, 'write', 'writer');
-    S.activeModule = 'writer';
-    await switchEntityTab(`write-${p.writeId}`);
-    if (p.kind === 'wchp') {
-      S.writeSeries = p.seriesId; S.writeBook = p.bookId; S.writeChapter = p.chapterId;
-      await renderWriterView();
-    }
+  } else if (p.kind === 'obj' || p.kind === 'proj' || p.kind === 'world' || p.kind === 'game' || p.kind === 'write' || p.kind === 'wchp') {
+    // Director/Navigator/Hero/Writer's own views are gone (Process 2 Part 2)
+    // — a link into one of these kinds means the underlying legacy data was
+    // never converted to a Nexus module. The tables + migrate_v3.js are
+    // untouched, so surface the same conversion flow the boot prompt and
+    // Settings → Database use, rather than routing into a deleted renderer.
+    toast(t('legacyEntityUnconverted'), 'error');
+    if (typeof openLegacyMigratePreviewModal === 'function') openLegacyMigratePreviewModal();
   } else if (p.kind === 'module' || p.kind === 'bchp' || p.kind === 'chss' || p.kind === 'cobj') {
     S.activeModule = null; S.view = 'nexus';
     document.querySelectorAll('.nav-btn[data-panel]').forEach(b => b.classList.remove('active'));
@@ -151,13 +87,14 @@ function updateStatusBar(patch = {}) {
   const parts = [];
   if (S.nexus && st.vault !== false) parts.push(`<span class="sb-item sb-nexus" onclick="renderNexusHome()"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</span>`);
   // Breadcrumb + module-type badge for the focused v3 module (mockups /
-  // Section A status-bar spec): `Major › Minor` + `Major|Minor · Kind`.
+  // Section A status-bar spec): `Main › name` + `Major · Kind` (every module,
+  // main or nested, is a Major module — see Plan.md's Process 3 terminology).
   const mNode = (!S.activeModule && S.activeModuleNode) ? S.activeModuleNode : null;
   if (mNode && st.breadcrumb !== false) {
-    const major = mNode.parent_id != null && typeof moduleRootAncestor === 'function' ? moduleRootAncestor(mNode) : null;
-    const crumb = major ? `${x(major.name)} › <b>${x(mNode.name)}</b>` : `<b>${x(mNode.name)}</b>`;
+    const mainMod = mNode.parent_id != null && typeof moduleRootAncestor === 'function' ? moduleRootAncestor(mNode) : null;
+    const crumb = mainMod ? `${x(mainMod.name)} › <b>${x(mNode.name)}</b>` : `<b>${x(mNode.name)}</b>`;
     parts.push(`<span class="sb-item sb-crumb">${crumb}</span>`);
-    parts.push(`<span class="sb-badge" data-no-i18n>${mNode.parent_id != null ? 'Minor' : 'Major'} · ${x(kindLabel(mNode.kind))}</span>`);
+    parts.push(`<span class="sb-badge" data-no-i18n>Major · ${x(kindLabel(mNode.kind))}</span>`);
   }
   if (S.builder && S.builder.layoutTree.type === 'split' && S.view === 'nexus' && !S.activeModule) {
     parts.push(`<span class="sb-badge" data-no-i18n>Split ${collectPaneIndices(S.builder.layoutTree).length}</span>`);

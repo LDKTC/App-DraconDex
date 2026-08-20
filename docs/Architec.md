@@ -175,12 +175,12 @@ pane/pop-out เป็นหน้าต่างแยกได้ (Part 3)
   เหลือแค่ stub ว่าง) — เดิมมี transaction สร้างเองเฉพาะทาง ตอนนี้เปลี่ยนเป็น
   wizard ทีละขั้น เรียก IPC `module:create` / `classifier:createTemplate` /
   `author:createChapter` / `module:updateDescription` ตรงๆ ประกอบเทมเพลต
-  (Manager Major + Minor หลาย kind) ให้ผู้ใช้ทีละหน้า, ไม่มี backend เฉพาะ
+  (Manager เป็น Main module + child module หลาย kind) ให้ผู้ใช้ทีละหน้า, ไม่มี backend เฉพาะ
   แล้ว — Artisan ยังเป็นจุดเดียวที่เข้าถึงโมดูลเดิม 4 ตัวได้ (สร้างใหม่)
 - **Legacy migration** (`electron/src/db/migrate_v3.js`, Phase 24 — เข้าถึงจากลิสต์
   legacy ใน Artisan) — `migrateLegacy(nexusId, target, legacyId)` map
-  ข้อมูลเก่า 1 โปรเจกต์ (director/navigator/hero/writer) เป็น Manager Major
-  + Minor ที่ kind เหมาะสม (classifier/chronicler/locator/narrator/author/
+  ข้อมูลเก่า 1 โปรเจกต์ (director/navigator/hero/writer) เป็น Manager (Main module)
+  + child module ที่ kind เหมาะสม (classifier/chronicler/locator/narrator/author/
   drafter) ในทรานแซกชันเดียว **ไม่แตะข้อมูลต้นทางเลย** (non-destructive,
   lazy) — ผู้ใช้ลบของเก่าเองทีหลังถ้าพอใจผลลัพธ์
 

@@ -6,9 +6,10 @@
 // notes) onto a fresh top-level collector + real child module rows in the
 // Nexus nest. Original rows/data are never touched or deleted — the source
 // is only flagged (migrated_v3=1) so it stops being offered again. Triggered
-// from the "Import as Nexus Nest" choice in the import-choice modal
-// (src/renderer/hub.js openImportChoiceModal), which itself fires off the
-// Import DB nav button's file-merge flow.
+// either from the legacy-data boot prompt (src/renderer/hub/legacy-migrate.js)
+// or from the Import DB nav button's file-merge flow finding legacy-shaped
+// data (core/views.js's importDatabaseFile()) — both funnel into the same
+// comparison-list-preview-then-run flow in legacy-migrate.js.
 //
 // Every legacy object/event/map-area becomes a REAL typed content row
 // (classifier_object/classifier_template/classifier_attribute,
@@ -21,9 +22,12 @@
 // reverses it. Legacy colors need no conversion: `use_color` is a single
 // shared table referenced by both the legacy and v3 schemas, so a legacy
 // color id is already a valid v3 color id.
+const { app } = require('electron');
 const { getDB } = require('./core');
+const { getAppSetting, setAppSetting } = require('./versions');
 
 const LEGACY_TABLE = { director: 'project', navigator: 'world_project', hero: 'game_project', writer: 'write_project', scribe: 'note' };
+const LEGACY_PROMPT_SEEN_PREFIX = 'legacyPrompt:seen:';
 
 function migrateLegacy(nexusId, target, legacyId, batchCtx) {
   const d = getDB();
@@ -37,22 +41,28 @@ function migrateLegacy(nexusId, target, legacyId, batchCtx) {
   const chatscribe = require('./chatscribe');
   const counts = { modules: 0, objects: 0, events: 0, areas: 0, chapters: 0, dialogues: 0, relations: 0, wandererPins: 0, chatMessages: 0 };
 
+  // Plan process2 part2 #1.1: find-or-create keyed on (nexus_ref, parent_id,
+  // kind, name) — every module this migration creates now dedupes against
+  // whatever already exists in the Nexus (from an earlier migration batch,
+  // OR hand-built by the user before ever running one), not just the 3
+  // top-level wrapper cases a separate findOrCreateChild used to handle.
+  // Matching an existing module reuses its id and does NOT touch its own
+  // cat_type/color; only content rows (classifier_object, timeline_event,
+  // etc.), inserted by each call site after mkModule returns, actually add
+  // anything — so folding into an existing module only ever adds content,
+  // never overwrites the module's own fields.
   const mkModule = (parentId, name, kind, catType, color) => {
-    counts.modules++;
-    return module_.createModule({ nexus_ref: nexusId, parent_id: parentId, name, kind, cat_type: catType || null, color: color || null });
-  };
-
-  // Idempotent find-or-create for a named child module — used for the
-  // top-level "Director"/"Navigator"/"Hero"/"Writer" wrapper collector,
-  // Director's project_folder level, and Writer's series level, so
-  // importing multiple legacy projects across separate migrateLegacy calls
-  // doesn't create duplicate wrapper nodes.
-  const findOrCreateChild = (parentId, name, kind) => {
     const existing = d.prepare(
       `SELECT id FROM module WHERE nexus_ref=? AND parent_id IS ? AND kind=? AND name=?`
     ).get(nexusId, parentId, kind, name);
-    return existing ? existing.id : mkModule(parentId, name, kind);
+    if (existing) return existing.id;
+    counts.modules++;
+    return module_.createModule({ nexus_ref: nexusId, parent_id: parentId, name, kind, cat_type: catType || null, color: color || null });
   };
+  // findOrCreateChild is now just mkModule under its old, narrower name —
+  // kept as an alias so the wrapper/series/folder call sites below don't
+  // need touching, since mkModule already does find-or-create for everyone.
+  const findOrCreateChild = (parentId, name, kind) => mkModule(parentId, name, kind);
 
   // category: {name, color}; templates: [{id, description, attribute_type}];
   // objects: [{legacyId, name, color, note, values: [[legacyTemplateId, value], ...]}]
@@ -454,4 +464,80 @@ function listLegacyProjects(target, nexusId) {
   try { return d.prepare(sqls[target]).all(); } catch (_) { return []; }
 }
 
-module.exports = { migrateLegacy, listLegacyProjects };
+// Plan process2 part2 #1.1/#2.1: read-only, cheap-query preview of what
+// running migrateLegacy would do for every currently un-migrated legacy
+// project in this nexus — the "two-sided comparison list" shown before the
+// real conversion runs. Mirrors mkModule's own find-or-create lookup (one
+// level: the top-level wrapper collector, and one level deeper for the
+// project's own manager module) so "merges into existing" here is truthful
+// to what the real run will do — simulating the FULL recursive subtree the
+// way migrateLegacy itself builds it isn't practical without actually
+// running it, so nested content is summarized with COUNT(*) queries instead
+// of enumerated row-by-row.
+const WRAPPER_NAME = { director: 'Director', navigator: 'Navigator', hero: 'Hero', writer: 'Writer' };
+
+function summarizeLegacyProject(d, target, legacyId) {
+  const parts = [];
+  const add = (label, sql) => {
+    const n = d.prepare(sql).get(legacyId)?.n || 0;
+    if (n) parts.push(`${n} ${label}`);
+  };
+  if (target === 'director') {
+    add('categories', `SELECT COUNT(*) AS n FROM object_category WHERE project_id=?`);
+    add('timelines', `SELECT COUNT(*) AS n FROM timeline WHERE project_id=?`);
+    add('maps', `SELECT COUNT(*) AS n FROM map WHERE project_id=?`);
+  } else if (target === 'navigator') {
+    add('characters', `SELECT COUNT(*) AS n FROM world_character WHERE world_ref=?`);
+    add('categories', `SELECT COUNT(*) AS n FROM world_orig_category WHERE world_ref=?`);
+    add('timelines', `SELECT COUNT(*) AS n FROM world_timeline WHERE world_ref=?`);
+    add('maps', `SELECT COUNT(*) AS n FROM world_map WHERE world_ref=?`);
+  } else if (target === 'hero') {
+    add('characters', `SELECT COUNT(*) AS n FROM game_character WHERE game_ref=?`);
+    add('collections', `SELECT COUNT(*) AS n FROM game_collection WHERE game_ref=?`);
+    add('stories', `SELECT COUNT(*) AS n FROM game_story WHERE game_ref=?`);
+  } else if (target === 'writer') {
+    add('series', `SELECT COUNT(*) AS n FROM write_series WHERE project_id=?`);
+    add('notes', `SELECT COUNT(*) AS n FROM write_note WHERE project_id=?`);
+  }
+  return parts.join(' · ');
+}
+
+function previewLegacyMigration(nexusId) {
+  const d = getDB();
+  const out = [];
+  for (const target of ['director', 'navigator', 'hero', 'writer', 'scribe']) {
+    for (const row of listLegacyProjects(target, nexusId)) {
+      if (target === 'scribe') {
+        const existing = d.prepare(`SELECT id FROM module WHERE nexus_ref=? AND parent_id IS NULL AND kind='collector' AND name=?`).get(nexusId, 'Scribe');
+        out.push({ target, legacyId: row.id, legacyName: row.name, kind: 'collector', willMergeInto: existing ? 'Scribe' : null, willCreateNew: !existing, summary: '' });
+        continue;
+      }
+      const wrapperName = WRAPPER_NAME[target];
+      const wrapper = d.prepare(`SELECT id FROM module WHERE nexus_ref=? AND parent_id IS NULL AND kind='collector' AND name=?`).get(nexusId, wrapperName);
+      const manager = wrapper
+        ? d.prepare(`SELECT id FROM module WHERE nexus_ref=? AND parent_id=? AND kind='manager' AND name=?`).get(nexusId, wrapper.id, row.name)
+        : null;
+      out.push({
+        target, legacyId: row.id, legacyName: row.name, kind: 'manager',
+        willMergeInto: manager ? row.name : null, willCreateNew: !manager,
+        summary: summarizeLegacyProject(d, target, row.id),
+      });
+    }
+  }
+  return out;
+}
+
+// Plan process2 part2 #2: one-time-per-vault "have we already shown the
+// legacy-data prompt since upgrading to this version" gate, same shape as
+// src/db/update.js's SEEN_KEY/dismissUpdate but parameterized per-nexus
+// instead of global (app_setting lives in app.ddx, install-level — see
+// docs/VAULTS.md — so this correctly persists across which vault is open).
+function getLegacyPromptSeen(nexusId) {
+  return getAppSetting(`${LEGACY_PROMPT_SEEN_PREFIX}${nexusId}`) === app.getVersion();
+}
+function setLegacyPromptSeen(nexusId) {
+  setAppSetting(`${LEGACY_PROMPT_SEEN_PREFIX}${nexusId}`, app.getVersion());
+  return { ok: true };
+}
+
+module.exports = { migrateLegacy, listLegacyProjects, previewLegacyMigration, getLegacyPromptSeen, setLegacyPromptSeen };

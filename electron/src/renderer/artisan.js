@@ -15,7 +15,7 @@
 
 // ═══ v3 STRUCTURE TEMPLATES (Phase 23) ═════════════════════════════════
 // The four legacy fixed modules as built-in Nexus-nest templates: each
-// describes a Manager Major + pre-filled Minors, walked step-by-step by
+// describes a Manager (Main module) + pre-filled child modules, walked step-by-step by
 // the create wizard below (startArtisanWizard). Names run through t() at
 // call time — the rows become user data in the current language.
 function artisanV3Spec(target, name, colorId) {

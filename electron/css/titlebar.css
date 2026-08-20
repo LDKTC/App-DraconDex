@@ -11,6 +11,7 @@
 #window-frame.popup-mode #hub-toggle-btn,
 #window-frame.popup-mode #titlebar-vault,
 #window-frame.popup-mode #settings-menu-wrap,
+#window-frame.popup-mode #titlebar-update-btn,
 #window-frame.popup-mode #status-bar{display:none}
 #title-tab-bar{
 	height:38px;background:var(--bg);border-bottom:1px solid var(--border);
@@ -65,6 +66,18 @@
 }
 .title-tab-add:hover{color:var(--t1)}
 .title-drag{flex:1;height:100%;min-width:24px}
+/* Plan process1 part2 #1.2: green "update available" indicator next to the
+   settings gear — hidden by default, shown by update.js's
+   updateTitlebarIndicator() once a newer release is found. Uses the app's
+   existing --success token (same green as #toast.ok) rather than a new color. */
+.title-update-btn{
+	width:38px;height:34px;border:none;border-radius:var(--r);background:transparent;
+	color:var(--success);display:flex;align-items:center;justify-content:center;cursor:pointer;
+	-webkit-app-region:no-drag;flex-shrink:0;
+}
+.title-update-btn.hidden{display:none}
+.title-update-btn .icon{width:17px;height:17px}
+.title-update-btn:hover{background:var(--hover)}
 #settings-menu-wrap{
 	position:relative;height:100%;display:flex;align-items:center;flex-shrink:0;
 	-webkit-app-region:no-drag;

@@ -70,7 +70,7 @@ function dragonDrillUp(index) {
 // same precedence chain, just named per-file since dragon.js has no other
 // reason to share state with wyvern.js.
 function dragonSomethingOpen() {
-  return !!(S.activeItemNode || S.activeModuleNode || S.filePreview || S.sageHut || S.kindBrowserPage || S.importDockPage);
+  return !!(S.activeItemNode || S.activeModuleNode || S.filePreview || S.sageHut || S.importDockPage);
 }
 function buildDragonCanvasHtml() {
   const list = dragonBrowseCurrentList();
@@ -84,13 +84,14 @@ function buildDragonCanvasHtml() {
   const positions = list.map((m, i) => dragonNodePosition(m, i, layout));
   const maxX = Math.max(DRAGON_PAD * 2 + DRAGON_COL_W, ...positions.map(p => p.x + DRAGON_COL_W));
   const maxY = Math.max(DRAGON_PAD * 2 + DRAGON_ROW_H, ...positions.map(p => p.y + DRAGON_ROW_H));
+  const totalModules = flattenModulesByKind(S.moduleTree).length;
   const cards = list.map((m, i) => {
     const pos = positions[i];
     const hasChildren = !!(m.children && m.children.length);
     const canOpen = m.kind !== 'collector';
     return `<div class="typecard dragon-card" data-node="${m.id}" style="left:${pos.x}px;top:${pos.y}px" oncontextmenu="openModuleContextMenu(event,${m.id})">
       <h5 style="color:${x(m.icon_color_code || m.color_code || '#6366f1')}" data-no-i18n>${moduleIconHtml(m)} ${x(m.name)}</h5>
-      <p data-no-i18n>${x(kindLabel(m.kind))}${hasChildren ? ` · ${m.children.length}` : ''}</p>
+      <p data-no-i18n>${x(kindLabel(m.kind))}${hasChildren ? ` · ${m.children.length}:${totalModules}` : ''}</p>
       ${hasChildren && canOpen ? `<button class="btn btn-s btn-sm" onclick="event.stopPropagation();openModuleNode(${m.id})">${t('open')}</button>` : ''}
     </div>`;
   }).join('');

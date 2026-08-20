@@ -13,7 +13,6 @@ async function openModuleNode(id) {
   if (S.pluginPanel && S.pluginPanel.moduleId !== id) S.pluginPanel = null;
   S.activeModuleNode = m;
   S.activeItemNode = null;
-  S.kindBrowserPage = false;
   S.importDockPage = false;
   upsertModuleTab(id);
   updateStatusBar({ item: null, words: null, saveState: null });

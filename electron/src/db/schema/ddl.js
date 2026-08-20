@@ -788,10 +788,14 @@ const VAULT_DDL_SQL = `
       update_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    -- v3 module system (progress.md M1): Major/Minor tree living in the Nexus
+    -- v3 module system (progress.md M1): module tree living in the Nexus
     -- nest, independent of the legacy project/world_project/game_project/
-    -- write_project trees. parent_id NULL = Major (freely reorderable via
-    -- display_order), set = Minor (locked one level under its Major).
+    -- write_project trees. parent_id NULL = Main module (top-level, freely
+    -- reorderable via display_order), set = a nested module (locked one
+    -- level under its parent). Every row in this tree, at any depth
+    -- including the Main module itself, is a "Major module" — free-form
+    -- content living inside one (a classifier's objects, a locator's areas,
+    -- ...) is a "Minor element", a separate concept from this table.
     CREATE TABLE IF NOT EXISTS module (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,

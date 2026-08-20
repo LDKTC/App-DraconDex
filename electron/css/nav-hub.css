@@ -70,17 +70,17 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
 	-webkit-app-region:no-drag;
 }
 .nav-btn:hover{color:var(--t1)}
-.nav-btn.active{background:var(--accent);color:var(--on-accent)}
-/* process 2 part1 #1: side highlight bar on the active button, in addition
-   to the accent fill above — sits just outside the button's own edge (70%
-   width, centered in the rail) facing the content side, so it reads even
-   when a pinned module's custom icon color competes with the fill. */
+/* process2 part1 #1: finishes an earlier, unfinished pass of this same item
+   (the bar existed but the background fill was never removed, and it sat on
+   the wrong edge) — active state is now the left-side bar alone, no fill;
+   the icon itself is tinted --accent so it still reads as "selected" even
+   against a pinned module's own custom icon color. */
+.nav-btn.active{color:var(--accent)}
 .nav-btn.active::after{
-	content:'';position:absolute;right:-5px;top:22%;bottom:22%;
+	content:'';position:absolute;left:-5px;top:22%;bottom:22%;
 	width:3px;border-radius:2px;background:var(--accent);
 }
 .nav-util{font-size:calc(15px * var(--fsc,1))}
-.nav-btn.director-only{display:none}
 /* Setting window → Workspace → Tool toggle (Plan part1 #Setting): user-
    hidden "quick buttons" (import/export/hashtag/colors). !important because
    these buttons also carry visibility classes like .nexus-only that toggle
@@ -149,14 +149,14 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
 .mdot-anchor{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mdot{position:absolute;right:-3px;bottom:-3px;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--surface)}
 
-/* process 2 part1 #2: dragging #nav-sidebar-resize past NAV_LABEL_THRESHOLD
-   (core/ui.js) adds .nav-expanded to #nav-sidebar — only the dynamic v3 rail
-   items (home/kind-browser/create/pinned modules) switch from a centered
-   icon square to a left-aligned icon+label row; legacy nav-btns are
-   untouched and stay icon-only. */
+/* process 2 part1 #2 / process1 part4 #1: dragging #nav-sidebar-resize past
+   NAV_LABEL_THRESHOLD (core/ui.js) adds .nav-expanded to #nav-sidebar — every
+   .nav-btn (the dynamic v3 rail's .module-rail-item/.module-rail-tool items
+   AND the legacy static buttons in index.html) switches from a centered icon
+   square to a left-aligned icon+label row. .nav-logo-btn is a different
+   class, so the logo itself is unaffected. */
 .nav-label{display:none}
-#nav-sidebar.nav-expanded .nav-btn.module-rail-item,
-#nav-sidebar.nav-expanded .nav-btn.module-rail-tool{
+#nav-sidebar.nav-expanded .nav-btn{
 	width:calc(100% - 12px);aspect-ratio:auto;justify-content:flex-start;
 	gap:8px;padding:0 10px;
 }

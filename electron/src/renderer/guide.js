@@ -12,11 +12,17 @@
 
 // { sel, title, text } — title/text are i18n keys resolved with t().
 const GUIDE_STEPS = [
-  { sel: '.nav-btn.create.module-rail-tool', title: 'guideModuleTitle', text: 'guideModuleText' },
+  // Plan process1 part4 #2: the nav rail's own "+ create module" tool was
+  // removed (duplicate of the Nexus Nest section's own create button), so
+  // this step now points at that section header's create action instead.
+  { sel: '.acc-head[onclick*="nest"] button[onclick*="openMainModuleModal"]', title: 'guideModuleTitle', text: 'guideModuleText' },
   { sel: '.acc-head[onclick*="nest"]',       title: 'guideNestTitle',   text: 'guideNestText' },
   { sel: '.acc-head[onclick*="sage"]',       title: 'guideSageTitle',   text: 'guideSageText' },
   { sel: '#btn-import-db',                    title: 'guideBackupTitle', text: 'guideBackupText' },
-  { sel: '.nexus-vault-head button[onclick="openWelcomeWindow()"]', title: 'guideSwitchTitle', text: 'guideSwitchText' },
+  // Plan process1 part3 #2: the separate "switch nexus" ⇄ button was
+  // removed (duplicate of clicking the nexus name), so this step now
+  // points at the nexus name itself.
+  { sel: '.nexus-vault-name', title: 'guideSwitchTitle', text: 'guideSwitchText' },
 ];
 
 let _gSteps = [];

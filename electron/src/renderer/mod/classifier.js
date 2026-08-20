@@ -1,7 +1,7 @@
 'use strict';
 // ═══ Category "Classifier" (progress.md Phase 5, relation view + icon/
 // levelable/condition/display-type from Plan part5) ═══════════════════
-// Major-level kind, 4 views (Table · List + Detail (default) · Relation in
+// Major kind (any depth), 4 views (Table · List + Detail (default) · Relation in
 // Cat · Grid Collection). A Classifier module IS its category — objects
 // live directly under it (src/db/classifier.js, a parallel schema; see
 // progress.md Section C for why it doesn't reuse Director's object_*

@@ -1,10 +1,12 @@
 'use strict';
 // A read-only version-update notice, not an auto-updater. Reads this repo's
-// latest GitHub Release and offers it to a user logged into EITHER of this
-// app's two existing, independent Google logins (Cloud Sync's Supabase login,
-// sync.js, or Drive Backup's own login, drive.js — there is no unified account
-// system yet). Plain fetch() against the GitHub REST API, same style as
-// sync.js/drive.js. See docs/UPDATE.md.
+// latest GitHub Release and offers it to the user. Plain fetch() against the
+// GitHub REST API, same style as sync.js/drive.js. See docs/UPDATE.md.
+//
+// Plan process1 part2 #1: no longer gated behind either of this app's two
+// independent logins (Cloud Sync's Supabase login, Drive Backup's own login)
+// — a GitHub Releases check is public data, so there is no reason to require
+// login just to see whether a newer version exists.
 //
 // This used to read a Firestore doc under a project id that was never actually
 // registered (it carried a `TODO(maintainer): real Firebase project id`).
@@ -15,8 +17,6 @@
 // response shape: see parseGithubRelease below.
 const { app, shell } = require('electron');
 const { getAppSetting, setAppSetting } = require('./versions');
-const { syncAuthStatus } = require('./sync');
-const { driveStatus } = require('./drive');
 
 // This app's own canonical repo — every install reads the SAME release feed,
 // unlike sync:url/drive:clientId (per-deployment operator config), so this is
@@ -34,6 +34,7 @@ const NOTES_MAX = 4000;
 
 const IS_DEV = !app.isPackaged;
 const SEEN_KEY = 'update:seenVersion';
+const AUTO_CHECK_KEY = 'update:autoCheck';
 
 // ponytail: no in-process mock server (unlike sync-devserver.js/drive-
 // devserver.js) — one stateless public GET doesn't need one. Env-var forced
@@ -93,21 +94,21 @@ function isNewerVersion(remote, local) {
 
 async function checkForUpdate() {
   const current = app.getVersion();
-  let loggedIn = false;
-  try {
-    const [s, d] = await Promise.all([syncAuthStatus(), driveStatus()]);
-    loggedIn = !!(s.loggedIn || d.connected);
-  } catch (_) { /* treat as not logged in */ }
-  if (!loggedIn) return { ok: true, available: false };
-
   const latest = await fetchLatest();
-  if (!latest || !isNewerVersion(latest.version, current)) return { ok: true, available: false };
+  if (!latest || !isNewerVersion(latest.version, current)) return { ok: true, available: false, current };
 
   const dismissed = (getAppSetting(SEEN_KEY) || '') === latest.version;
   return { ok: true, available: true, dismissed, version: latest.version, notes: latest.notes, url: latest.url, current };
 }
 
 function dismissUpdate(version) { setAppSetting(SEEN_KEY, String(version || '')); return { ok: true }; }
+
+// Plan process1 part2 #1.2: on by default (unset/anything but the literal
+// '0' reads as enabled) — same getAppSetting boolean-as-string convention as
+// drive.js's own `drive:autoBackup` flag, checked once per app open by
+// initVersionCheck() (renderer/update.js) rather than on an interval.
+function getAutoCheck() { return getAppSetting(AUTO_CHECK_KEY) !== '0'; }
+function setAutoCheck(enabled) { setAppSetting(AUTO_CHECK_KEY, enabled ? '1' : '0'); return { ok: true }; }
 
 // The renderer passes the URL back in, so this re-checks it rather than
 // assuming it is the one checkForUpdate() handed out. A bare `^https?://`
@@ -120,4 +121,4 @@ function openUpdateDownload(url) {
   return { ok: true };
 }
 
-module.exports = { checkForUpdate, dismissUpdate, openUpdateDownload };
+module.exports = { checkForUpdate, dismissUpdate, openUpdateDownload, getAutoCheck, setAutoCheck };

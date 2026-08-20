@@ -1,41 +1,23 @@
-function autoExpand(el){
-  el.style.height = 'auto';
-  el.style.height = el.scrollHeight + 'px';
+// Date+time input row builder and reader — shared by Chronicler's event
+// modal (mod/chronicler.js) with the timeline domain, not Director-specific.
+function dateInputsHTML(prefix,ev,dayKey,mKey,yKey,hKey,minKey,onchangeFn=''){
+  const oc = onchangeFn ? ` onchange="${onchangeFn}"` : '';
+  return `<div class="date-row-inline">
+    <input id="${prefix}-d" class="date-inp" type="number" placeholder="DD" min="1" value="${ev?ev[dayKey]||'':''}"${oc}>
+    <span class="date-sep">/</span>
+    <input id="${prefix}-m" class="date-inp" type="number" placeholder="MM" min="1" value="${ev?ev[mKey]||'':''}"${oc}>
+    <span class="date-sep">/</span>
+    <input id="${prefix}-y" class="date-inp date-inp-y" type="number" placeholder="YYYY" value="${ev?ev[yKey]||'':''}"${oc}>
+    <input id="${prefix}-h" class="date-inp" type="number" placeholder="HH" min="0" max="23" value="${ev?ev[hKey]||0:0}"${oc}>
+    <span class="date-sep">:</span>
+    <input id="${prefix}-min" class="date-inp" type="number" placeholder="MM" min="0" max="59" value="${ev?ev[minKey]||0:0}"${oc}>
+  </div>`;
 }
-
-async function renderTimelineView(){
-  if(!S.project){
-    q('#left-panel-inner').innerHTML=`<div class="empty" style="padding:40px 10px"><div class="ei">${I.timeline}</div><p style="text-align:center">กรุณาเลือกโปรเจกต์ก่อน</p></div>`;
-    q('#main-inner').innerHTML=`<div class="empty" style="margin-top:80px"><div class="ei">${I.timeline}</div><h3>Timeline</h3><p>กรุณาเลือกโปรเจกต์ก่อน</p></div>`;
-    return;
-  }
-  const tls = await api.timeline.getAll(S.project.id);
-  let lh = `<div class="ph"><h4>Timeline</h4><button class="btn btn-g btn-i" onclick="openTimelineModal()">${I.plus}</button></div>`;
-  for(const t of tls){
-    const col=t.color_code||'#06b6d4', act=S.timeline?.id===t.id;
-    lh += `<div class="li ${act?'active':''}" onclick="selectTimeline(${t.id})">
-      <div class="dot" style="background:${col}"></div>
-      <span class="name">${x(t.line_name||'ไม่มีชื่อ')}</span>
-      <div class="acts">
-        <button class="btn btn-g btn-i" onclick="event.stopPropagation();openTimelineModal(${t.id})">${I.edit}</button>
-        <button class="btn btn-g btn-i" onclick="event.stopPropagation();delTimeline(${t.id})" style="color:var(--danger)">${I.delete}</button>
-      </div>
-    </div>`;
-  }
-  q('#left-panel-inner').innerHTML = lh;
-  if(!S.timeline){
-    q('#main-inner').innerHTML = tls.length
-      ? `<div class="empty" style="margin-top:80px"><div class="ei">${I.timeline}</div><h3>เลือก Timeline จากรายการ</h3></div>`
-      : `<div class="empty" style="margin-top:80px"><div class="ei">${I.timeline}</div><h3>ยังไม่มี Timeline</h3><button class="btn btn-p" onclick="openTimelineModal()">${I.plus} สร้าง Timeline</button></div>`;
-    return;
-  }
-  await renderTimelineDetail(S.timeline.id);
-}
-
-async function selectTimeline(id){
-  const tls = await api.timeline.getAll(S.project.id);
-  S.timeline = tls.find(t=>t.id===id)||null;
-  await renderTimelineView();
+async function getDateFromInputs(prefix){
+  const d=parseInt(q(`#${prefix}-d`).value)||0, m=parseInt(q(`#${prefix}-m`).value)||0, y=parseInt(q(`#${prefix}-y`).value)||0;
+  if(!d||!m||!y) return null;
+  const h=parseInt(q(`#${prefix}-h`).value)||0, min=parseInt(q(`#${prefix}-min`).value)||0;
+  return await api.timeline.getOrCreateDate(d,m,y,h,min);
 }
 
 // ── Shared graph builder (Chronicler, progress.md Phase 8, reuses this
@@ -71,136 +53,6 @@ function buildTimelineRulerSvg(minTs, maxTs, xFromTs, LINE_Y){
     cursor = byYear ? Date.UTC(d.getUTCFullYear()+1, 0, 1) : Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 1);
   }
   return svg;
-}
-
-function buildTimelineGraphHtml(evs, tlid, fallbackColor){
-  const col = fallbackColor || '#06b6d4';
-  const MARGIN=80, LINE_Y=180, CARD_W=120, SVG_H=400;
-  const n=evs.length;
-  const hostW=q('#main-inner')?.offsetWidth||900;
-  const trackW=Math.max(hostW, 900);
-  const usable=trackW-(2*MARGIN);
-  const graphState = timelineGraphState[tlid] ||= { scale:1, tx:0, yOffsets:{} };
-
-  const startTs = evs.map(ev=>timelineTsFromParts(ev.s_day,ev.s_month,ev.s_years,ev.s_hour,ev.s_minute));
-  const endTs = evs.map(ev=>timelineTsFromParts(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute));
-  const allTs = [];
-  for(let i=0;i<n;i++){
-    if(startTs[i]!==null) allTs.push(startTs[i]);
-    if(endTs[i]!==null) allTs.push(endTs[i]);
-  }
-  const minTs = allTs.length ? Math.min(...allTs) : 0;
-  const maxTs = allTs.length ? Math.max(...allTs) : 1;
-  const spanTs = Math.max(1, maxTs-minTs);
-  const xFromTs = (ts)=>{
-    if(ts===null) return MARGIN;
-    const ratio = (ts-minTs)/spanTs;
-    return MARGIN + (ratio*usable*graphState.scale);
-  };
-  const xs=evs.map((_,i)=>xFromTs(startTs[i]));
-
-  let svg = `<svg id="timeline-graph-svg" xmlns="http://www.w3.org/2000/svg" width="100%" height="${SVG_H}" viewBox="0 0 ${trackW} ${SVG_H}" data-min-ts="${minTs}" data-span-ts="${spanTs}" data-usable="${usable}" data-margin="${MARGIN}" data-line-y="${LINE_Y}" data-card-w="${CARD_W}" data-tlid="${tlid}">
-    <g id="timeline-graph-content" transform="translate(${graphState.tx},0)">
-    <line id="timeline-axis-line" x1="${MARGIN}" y1="${LINE_Y}" x2="${MARGIN + usable*graphState.scale}" y2="${LINE_Y}" stroke="var(--border)" stroke-width="8" stroke-linecap="round" opacity="0.75" style="cursor:crosshair"/>
-    ${buildTimelineRulerSvg(minTs, maxTs, xFromTs, LINE_Y)}`;
-  for(let i=0;i<n;i++){
-    const ev=evs[i], ec=ev.color_code||col, xi=xs[i];
-    const up=i%2===0, defaultBy=up?(LINE_Y-120):(LINE_Y+120);
-    const by=Math.max(36, Math.min(SVG_H-36, graphState.yOffsets[ev.id] ?? defaultBy));
-    const cardY=up?(by-68):(by+10);
-    const sTxt=fmtDate(ev.s_day,ev.s_month,ev.s_years,ev.s_hour,ev.s_minute);
-    const hasEnd=!!(ev.e_day&&ev.e_month&&ev.e_years);
-    const eTxt=hasEnd?fmtDate(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute):'';
-    const dateTxt=hasEnd?`${sTxt} - ${eTxt}`:sTxt;
-    let rangeSvg = '';
-    if(hasEnd){
-      let xe = xFromTs(endTs[i]);
-      let xStart = xi, xEnd = xe;
-      if(xEnd<xStart){ const t=xStart; xStart=xEnd; xEnd=t; }
-      const rw=Math.max(2, xEnd-xStart);
-      rangeSvg = `<rect data-event-range="${ev.id}" data-start-ts="${startTs[i]||''}" data-end-ts="${endTs[i]||''}" x="${xStart}" y="${LINE_Y-4}" width="${rw}" height="8" rx="4" fill="${ec}" opacity="0.28" style="pointer-events:none"/>`;
-    }
-    svg += `
-      ${rangeSvg}
-      <line data-event-stem="${ev.id}" data-start-ts="${startTs[i]||''}" x1="${xi}" y1="${LINE_Y}" x2="${xi}" y2="${by}" stroke="${ec}" stroke-width="2"/>
-      <circle data-event-dot="${ev.id}" data-start-ts="${startTs[i]||''}" cx="${xi}" cy="${LINE_Y}" r="6.5" fill="${ec}"/>
-      <circle data-event-node="${ev.id}" data-start-ts="${startTs[i]||''}" data-card-up="${up?'1':'0'}" cx="${xi}" cy="${by}" r="11" fill="${ec}" style="cursor:ns-resize"/>
-      <foreignObject data-event-card="${ev.id}" data-start-ts="${startTs[i]||''}" x="${xi-(CARD_W/2)}" y="${cardY}" width="${CARD_W}" height="64" style="cursor:pointer" onclick="openEventModal(${tlid},${ev.id})">
-        <div xmlns="http://www.w3.org/1999/xhtml" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${ec};border-radius:8px;padding:6px 8px;font-size:calc(12px * var(--fsc,1));line-height:1.3;overflow:hidden">
-          <div style="font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(ev.event_name||'ไม่มีชื่อ')}</div>
-          <div style="color:var(--t3);font-size:calc(10.5px * var(--fsc,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
-        </div>
-      </foreignObject>`;
-  }
-  svg += `</g></svg>`;
-  return `<div class="timeline-graph-board" id="timeline-graph-board">${svg}<div id="timeline-axis-tip" class="timeline-axis-tip hidden"></div></div>`;
-}
-
-async function renderTimelineDetail(tlid){
-  const tl=S.timeline, col=tl.color_code||'#06b6d4';
-  const allEvs = await api.timeline.getEvents(tlid);
-  const evs = allEvs.slice().sort((a,b)=>{
-    const ka=(a.s_years||0)*10000+(a.s_month||0)*100+(a.s_day||0);
-    const kb=(b.s_years||0)*10000+(b.s_month||0)*100+(b.s_day||0);
-    return ka-kb;
-  });
-
-  let h = `<div class="ch">
-    <div class="cdot" style="background:${col}"></div><h2>${x(tl.line_name||'ไม่มีชื่อ')}</h2>
-    <button class="btn btn-s btn-i" onclick="openTimelineModal(${tl.id})">${I.edit}</button>
-    <button class="btn btn-p" onclick="openEventModal(${tlid})" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))">${I.plus} เพิ่มเหตุการณ์</button>
-  </div>`;
-
-  if(!evs.length){
-    h += `<div class="empty"><div class="ei">${I.timeline}</div><h3>ยังไม่มีเหตุการณ์</h3>
-      <button class="btn btn-p" onclick="openEventModal(${tlid})">${I.plus} เพิ่มเหตุการณ์</button></div>`;
-  } else {
-    h += buildTimelineGraphHtml(evs, tlid, col);
-
-    const evtObtl = await api.relation.getOBTL(S.project.id);
-    h += `<div style="margin-top:24px">
-      <div class="ph"><h4>เหตุการณ์ทั้งหมด</h4><button class="btn btn-p" style="padding:6px 12px;font-size:calc(12.5px * var(--fsc,1))" onclick="openEventModal(${tlid})">${I.plus} เพิ่มเหตุการณ์</button></div>
-      <div class="objlist">`;
-    for(const ev of evs){
-      const ec=ev.color_code||col;
-      const sTxt=fmtDate(ev.s_day,ev.s_month,ev.s_years,ev.s_hour,ev.s_minute);
-      const hasEnd=!!(ev.e_day&&ev.e_month&&ev.e_years);
-      const eTxt=hasEnd?fmtDate(ev.e_day,ev.e_month,ev.e_years,ev.e_hour,ev.e_minute):'';
-      const dateTxt=hasEnd?`${sTxt} - ${eTxt}`:sTxt;
-      const evRels = evtObtl.filter(r=>r.event_id===ev.id);
-      h += `<div class="objrow" onclick="openEventModal(${tlid},${ev.id})">
-        <div class="odot" style="background:${ec}"></div>
-        <div style="flex:1;min-width:0">
-          <div class="oname">${x(ev.event_name||'ไม่มีชื่อ')}</div>
-          <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x(dateTxt)}</div>
-        </div>
-        <div class="acts">
-          <button class="btn btn-g btn-i" onclick="event.stopPropagation();openEventModal(${tlid},${ev.id})">${I.edit}</button>
-          <button class="btn btn-g btn-i" onclick="event.stopPropagation();delEvent(${ev.id},${tlid})" style="color:var(--danger)">${I.delete}</button>
-        </div>
-      </div>
-      <div class="objrow-story">
-        <textarea id="ev-story-${ev.id}" class="tl-story" placeholder="เขียนสตอรี่ที่เกิดขึ้นในเหตุการณ์นี้..." onclick="event.stopPropagation()" oninput="autoExpand(this)" onchange="saveEventStory(${ev.id})">${x(ev.story||'')}</textarea>
-        <div style="margin-top:8px">
-          <div class="tags-head" style="flex-direction:row;justify-content:space-between;align-items:center">
-            <span>Object ที่เกี่ยวข้องกับเหตุการณ์นี้</span>
-            <button class="btn btn-g btn-i" title="เพิ่มความสัมพันธ์ Object ↔ Event" onclick="event.stopPropagation();openEventRelModal(${tlid},${ev.id})">${I.plus}</button>
-          </div>
-          <div class="relation-mini-list">${evRels.length ? evRels.map(r=>`<div class="mini-rel-item">
-            <span class="mini-rel-dot" style="background:${x(r.color_code||'#8b9')}"></span>
-            <span class="mini-rel-kind">Object</span>
-            <span class="mini-rel-rel">${x(r.relation_name||'สัมพันธ์')}</span>
-            <span class="mini-rel-to">${x(r.from_cat)} / ${x(r.from_name)}</span>
-            <button class="btn btn-g btn-i" onclick="event.stopPropagation();delEventRel(${r.id},${tlid})" style="color:var(--danger)">${I.close}</button>
-          </div>`).join('') : `<div class="empty" style="padding:8px 0;font-size:calc(12px * var(--fsc,1))">ยังไม่มี Relation</div>`}</div>
-        </div>
-      </div>`;
-    }
-    h += `</div></div>`;
-  }
-  q('#main-inner').innerHTML = h;
-  document.querySelectorAll('.tl-story').forEach(ta => autoExpand(ta));
-  if(evs.length) bindTimelineGraphInteractions(tlid);
 }
 
 function applyTimelineGraphTransform(tlid){
@@ -377,27 +229,6 @@ function bindTimelineGraphInteractions(tlid){
     setTimeout(()=>{ movedNode = false; }, 0);
   }
 
-  svg.querySelectorAll('[data-event-node]').forEach(node => {
-    node.addEventListener('mousedown', e => {
-      if(e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      nodeDrag = { id: node.dataset.eventNode };
-      movedNode = false;
-    });
-    node.addEventListener('click', e => {
-      e.stopPropagation();
-      if(movedNode) return;
-      openEventModal(tlid, Number(node.dataset.eventNode));
-    });
-  });
-  svg.querySelectorAll('[data-event-card]').forEach(card => {
-    card.addEventListener('click', e => {
-      e.stopPropagation();
-      openEventModal(tlid, Number(card.dataset.eventCard));
-    });
-  });
-
   if(axis && tip){
     axis.addEventListener('mousemove', e => {
       const xWorld = svgX(e.clientX) - st.tx;
@@ -410,9 +241,3 @@ function bindTimelineGraphInteractions(tlid){
     axis.addEventListener('mouseleave', () => tip.classList.add('hidden'));
   }
 }
-
-// ═══ RELATION VIEW ═════════════════════════════════════
-const nodeState = {catView:{}, objView:{}, projectView:{}}; 
-const wbViewState = {catView:{}, objView:{}, projectView:{}};
-
-// Graph render helpers

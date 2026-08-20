@@ -1,7 +1,7 @@
 'use strict';
 // ═══ Project "Manager" (progress.md Phase 6) ══════════════════════════
-// A Major-level organizer kind that — unlike Collector — opens to browse
-// its Minor children: 4 views (Cards · List · Table · Recent). Children
+// A Major-kind organizer (any depth) that — unlike Collector — opens to
+// browse its child modules: 4 views (Cards · List · Table · Recent). Children
 // already come attached via api.module.getTree()'s `.children`, so the
 // only extra data this loads is the persisted view preference and a
 // per-child attribute count (Phase 4's module_attribute, generic across

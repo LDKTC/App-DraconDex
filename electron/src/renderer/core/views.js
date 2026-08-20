@@ -1,6 +1,8 @@
 // View plumbing: bindNav(), database import/export, loadModule() lazy script
-// loading, switchView() (the legacy panel router), and the Nexus home page
-// including the builder-pane page mirror it renders through.
+// loading, switchView() (routes the few remaining shared legacy-view panels
+// still reachable outside the v3 module tree — Scribe's legacy note view),
+// and the Nexus home page including the builder-pane page mirror it renders
+// through.
 // ═══ NAV & VIEW ════════════════════════════════════════
 function bindNav() {
   q('#nav-logo-btn')?.addEventListener('click', () => {
@@ -8,11 +10,7 @@ function bindNav() {
     // "expand hub" control (see nav.js's updateTopNavButton) — wins over
     // every other branch below regardless of module/project/world state.
     if(S.leftPanelCollapsed){ setLeftPanelCollapsed(false); return; }
-    if(S.project) returnToProjectList();
-    else if(S.world) goToNavigatorList();
-    else if(S.game && S.activeModule === 'hero' && typeof goToGameList === 'function') goToGameList();
-    else if(S.write && S.activeModule === 'writer' && typeof goToWriteList === 'function') goToWriteList();
-    else if(S.activeModule) returnToNexus();
+    if(S.activeModule) returnToNexus();
   });
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -56,27 +54,23 @@ async function importDatabaseFile(){
     // Refresh the Nexus list so vaults brought in by the merge are visible.
     // The Welcome window has no sidebar and no view to switch — its whole job
     // is that vault list, so it just re-renders itself with the new entries.
-    if(!S.isWelcome) await reloadSidebar();
     await reloadNexuses();
     S.colors = await api.color.getAll();
     S.recentColors = await api.color.getRecent();
     if(S.isWelcome) renderWelcomeWindow();
-    else {
-      if(S.project?.id) S.project = await api.project.get(S.project.id) || null;
-      switchView(S.view || 'projects');
-    }
+    else renderNexusHome();
     toast(t('importDbDone'),'ok');
     // Plan part2 §2: a merged file may carry un-migrated legacy-shaped data
     // (a v1/v2 file, or notes for a nexus that predates v3) — offer the
-    // Nexus Nest / Import DB choice instead of silently leaving it in its
-    // legacy tables with no way to act on it. That choice acts on an OPEN
-    // vault, which the Welcome window doesn't have; there the user opens the
+    // conversion preview instead of silently leaving it in its legacy
+    // tables with no way to act on it. That preview acts on an OPEN vault,
+    // which the Welcome window doesn't have; there the user opens the
     // imported vault first and gets the same prompt on the next import.
     if (S.isWelcome) return;
     const sm = res.summary || {};
     const hasLegacy = (sm.projects||0) + (sm.world_projects||0) + (sm.game_projects||0)
       + (sm.write_projects||0) + (sm.notes||0) > 0;
-    if (hasLegacy && typeof openImportChoiceModal === 'function') openImportChoiceModal();
+    if (hasLegacy && typeof openLegacyMigratePreviewModal === 'function') openLegacyMigratePreviewModal();
   }catch(e){
     toast(`${tr('Import ไม่สำเร็จ')}: ${e.message}`,'err');
   }
@@ -94,14 +88,12 @@ function loadModule(src) {
   });
 }
 
-// Konva (canvas) loader. Eager and global because four separate lazy modules
-// need it — map.js, relation.js, mod/{locator,wanderer}.js and
-// navigator/board.js — and it used to be copied verbatim into map.js AND
-// relation.js, so whichever loaded last silently won. Vendored copy only —
-// no CDN fallback, for the same reason as ensureD3() in relation.js: this
-// renderer holds the whole window.api IPC surface, so a remote <script>
-// (unpkg, no SRI) would hand that surface to a third party. vendor/ ships via
-// package.json build.files.
+// Konva (canvas) loader. Eager and global because map.js and
+// mod/{locator,wanderer}.js all need it, and it used to be copied verbatim
+// into more than one caller, so whichever loaded last silently won.
+// Vendored copy only — no CDN fallback: this renderer holds the whole
+// window.api IPC surface, so a remote <script> (unpkg, no SRI) would hand
+// that surface to a third party. vendor/ ships via package.json build.files.
 function ensureKonva(){
   if(window.Konva) return Promise.resolve();
   if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
@@ -117,45 +109,23 @@ function ensureKonva(){
     .finally(()=>{ window.__konvaLoading = false; });
 }
 
-// Lazy modules that were split into a folder (Plan part1). A dynamically
-// injected <script> is async — the browser gives no ordering guarantee within a
-// group — so every file in a group must be free of top-level reads of another
-// file's bindings, and callers must await the WHOLE group (Promise.all) before
-// calling its render entry. That holds today: the only top-level consts are
-// WORLD_TABS (navigator/shell.js) and the board/story canvas state, and each is
-// read from inside functions only.
-const LAZY_GROUPS = {
-  navigator: ['shell', 'sidebar', 'main', 'world', 'origcat', 'chars', 'cats', 'maps', 'board']
-    .map(f => `src/renderer/navigator/${f}.js`),
-  hero: ['shell', 'project', 'novel', 'story', 'tags', 'modals']
-    .map(f => `src/renderer/hero/${f}.js`),
-};
-// Unsplit modules fall through to their single file, so every lazy call site can
-// use the same helper regardless of whether that module is one file or nine.
+// Unsplit modules fall through to their single file — every lazy call site
+// can use the same helper regardless of whether that module is one file or
+// several (no module left uses more than one file now that Navigator/Hero's
+// folders are gone).
 function loadGroup(name) {
-  return Promise.all((LAZY_GROUPS[name] || [`src/renderer/${name}.js`]).map(loadModule));
+  return Promise.all([`src/renderer/${name}.js`].map(loadModule));
 }
 
 async function switchView(v) {
-  if (typeof closeRelNodeNote === 'function') closeRelNodeNote();
   if (konvaStage) {
     try { konvaStage.destroy(); } catch(e){}
     konvaStage = null;
   }
-  q('#main-inner')?.classList.toggle('relation-main', v === 'relation');
   if (v !== 'nexus') { leaveBuilderGrid(); const foot = q('#left-panel-foot'); if (foot) foot.innerHTML = ''; }
   updateTopNavButton();
   if      (v==='nexus')           renderNexusHome();
-  else if (v==='projects')        { if(S.project) renderProject(); else { renderSidebar(); renderWelcome(); } }
-  else if (v==='timeline')        { await loadModule('src/renderer/timeline.js'); renderTimelineView(); }
-  else if (v==='relation')        { await loadModule('src/renderer/relation.js'); renderRelationView(); }
-  else if (v==='map')             { await loadModule('src/renderer/map.js'); renderMapView(); }
-  else if (v==='hashtag')         { await loadModule('src/renderer/hashtag.js'); renderHashtagView(); }
-  else if (v==='project-hashtag') { await loadModule('src/renderer/hashtag.js'); renderProjectHashtagView(); }
   else if (v==='colors')          { await loadModule('src/renderer/hashtag.js'); q('#left-panel-inner').innerHTML=`<div class="ph"><h4>${t('colorPanel')}</h4></div>`; renderColorSettings(); }
-  else if (v==='navigator')       { await loadGroup('navigator'); renderNavigatorView(); }
-  else if (v==='hero')            { await loadGroup('hero'); renderHeroView(); }
-  else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
   else if (v==='scribe')          { await loadModule('src/renderer/scribe.js'); renderScribeView(); }
 }
 
@@ -184,12 +154,26 @@ function renderNexusHome() {
   q('#main-inner')?.classList.remove('relation-main');
   if (!S.nexus) { const foot = q('#left-panel-foot'); if (foot) foot.innerHTML = ''; renderNexusPicker(); return; }
 
+  // Plan process1 part5 #1: buildHubHtml() rebuilds every accordion section
+  // (nest/sage/dock) from scratch on each call, which would otherwise reset
+  // each section's own scroll position — e.g. opening an imported file
+  // re-renders the whole hub and used to snap the Import Dock list back to
+  // its top. Carry each section's scrollTop across the rebuild by data-key.
+  const hubScroll = {};
+  q('#left-panel-inner')?.querySelectorAll('.acc-body[data-key]').forEach(el => { hubScroll[el.dataset.key] = el.scrollTop; });
   q('#left-panel-inner').innerHTML = buildHubHtml();
+  q('#left-panel-inner')?.querySelectorAll('.acc-body[data-key]').forEach(el => {
+    if (hubScroll[el.dataset.key] != null) el.scrollTop = hubScroll[el.dataset.key];
+  });
+  // Plan process1 part3 #2: the separate "switch nexus" ⇄ button was
+  // removed — clicking the nexus name itself already opens the same
+  // switcher (toggleNexusSwitcher, core/nexus.js), whose "more…" row
+  // reaches the same openWelcomeWindow() this button used to jump to
+  // directly, so the button was a pure duplicate.
   q('#left-panel-foot').innerHTML = `
     <div class="ph nexus-vault-head">
       <h4 class="nexus-vault-name" onclick="toggleNexusSwitcher(event)" title="${t('nexusSwitch')}"><span class="nexus-vault-dot" style="${S.nexus.color_code ? `background:${x(S.nexus.color_code)}` : ''}"></span>${x(S.nexus.name)}</h4>
       ${CLOUD_SYNC_ENABLED ? `<button class="btn btn-s btn-sm" onclick="openSyncModal()" title="${t('syncTitle')}">☁</button>` : ''}
-      <button class="btn btn-s btn-sm" onclick="openWelcomeWindow()" title="${t('nexusSwitch')}">⇄</button>
     </div>`;
   // The whole main area is the builder pane grid (Phase 19) — the focused
   // pane shows the current page (built from the S.* page mirrors below),
@@ -199,12 +183,13 @@ function renderNexusHome() {
 
 // The focused pane's page, from the global page mirrors — precedence:
 // item page > module > file preview > sage hut > vault welcome.
+// Plan process2 part1 #2: Kind Browser no longer has a page here — it moved
+// into the Hub panel as its own accordion section (hub/sections.js).
 function buildBuilderPageHtml() {
   return (S.activeItemNode && typeof buildItemPageHtml === 'function') ? buildItemPageHtml(S.activeItemNode)
     : S.activeModuleNode ? buildModuleDetailHtml(S.activeModuleNode)
     : (S.filePreview && typeof buildFileViewerHtml === 'function') ? buildFileViewerHtml()
     : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
-    : (S.kindBrowserPage && typeof buildKindBrowserPageHtml === 'function') ? buildKindBrowserPageHtml()
     : (S.importDockPage && typeof buildImportDockPageHtml === 'function') ? buildImportDockPageHtml()
     : `<div class="empty" style="margin-top:80px">
     <div class="ei"><img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>

@@ -117,7 +117,6 @@ async function openItemNode(itemKind, moduleId, id) {
   S.activeModuleNode = null;
   S.filePreview = null;
   S.sageHut = null;
-  S.kindBrowserPage = false;
   S.importDockPage = false;
   if (typeof builderNavigate === 'function') builderNavigate({ kind: 'item', itemKind, moduleId, id });
   S.itemNodeCache.set(key, { name: reg.nameOf(item), color: m?.color_code || 'var(--accent)', badge: t(reg.badgeKey), icon: reg.icon() });

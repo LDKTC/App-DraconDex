@@ -17,8 +17,8 @@ function renderWyvernToolbar(){
   if (S.settings.workspaceStyle !== 'wyvern' || !S.nexus) { bar.classList.add('hidden'); bar.innerHTML = ''; return; }
   bar.classList.remove('hidden');
   // "Create module" only where featureplan.md scopes it — browsing/viewing
-  // the Nexus Nest itself, not while Sage Hut/Import Dock/Import DB is up.
-  const atNest = !S.sageHut && !S.importDockPage && !S.importDbMode;
+  // the Nexus Nest itself, not while Sage Hut/Import Dock is up.
+  const atNest = !S.sageHut && !S.importDockPage;
   bar.innerHTML = `
     <button class="nav-btn" onclick="event.stopPropagation();openWyvernViewSetMenu(this)" title="${t('wyvernViewSet')}">${I.layer}</button>
     <div class="wyvern-toolbar-sep"></div>
@@ -48,9 +48,10 @@ function wyvernCreateParentId(){
   return S.wyvernBrowsePath.length ? S.wyvernBrowsePath[S.wyvernBrowsePath.length - 1] : null;
 }
 
-// View-set menu: Nexus Nest / Sage Hut / Import Dock / Import DB — the 4
-// options featureplan.md names, each just launching the existing Drake
-// function for that view unchanged.
+// View-set menu: Nexus Nest / Sage Hut / Import Dock — each just launching
+// the existing Drake function for that view unchanged. The 4th "Import DB"
+// option (openImportDbHub) was removed with the legacy view's other entry
+// points (Plan process2 part2 #1.2).
 function openWyvernViewSetMenu(anchor){
   closeAllPopups();
   const pop = document.createElement('div');
@@ -59,7 +60,6 @@ function openWyvernViewSetMenu(anchor){
     <div class="kind-list-item" onclick="closeAllPopups();goToNexusNestHub()"><span class="kli-name">${x(t('nexusNest'))}</span></div>
     <div class="kind-list-item" onclick="closeAllPopups();openSageTab('dataSize')"><span class="kli-name">${x(t('sageHut'))}</span></div>
     <div class="kind-list-item" onclick="closeAllPopups();goToImportDockPage()"><span class="kli-name">${x(t('importDock'))}</span></div>
-    <div class="kind-list-item" onclick="closeAllPopups();openImportDbHub()"><span class="kli-name">${x(t('importDbHubTitle'))}</span></div>
   `;
   document.body.appendChild(pop);
   pop.addEventListener('click', e => e.stopPropagation());
@@ -86,20 +86,21 @@ function wyvernBrowseBreadcrumbHtml(){
 // module opens its detail page directly since there's nowhere to drill.
 // Collector is folder-only (no detail page at all, per KIND_MAIN_BUILDER)
 // so it always drills, never offers the separate "open" button.
-function wyvernBrowseCardHtml(m){
+function wyvernBrowseCardHtml(m, totalModules){
   const hasChildren = !!(m.children && m.children.length);
   const canOpen = m.kind !== 'collector';
   const primary = hasChildren || !canOpen ? `wyvernDrillInto(${m.id})` : `openModuleNode(${m.id})`;
   return `<div class="typecard" onclick="${primary}" oncontextmenu="openModuleContextMenu(event,${m.id})">
     <h5 style="color:${x(m.icon_color_code || m.color_code || '#6366f1')}" data-no-i18n>${moduleIconHtml(m)} ${x(m.name)}</h5>
-    <p data-no-i18n>${x(kindLabel(m.kind))}${hasChildren ? ` · ${m.children.length}` : ''}</p>
+    <p data-no-i18n>${x(kindLabel(m.kind))}${hasChildren ? ` · ${m.children.length}:${totalModules}` : ''}</p>
     ${hasChildren && canOpen ? `<button class="btn btn-s btn-sm" onclick="event.stopPropagation();openModuleNode(${m.id})">${t('open')}</button>` : ''}
   </div>`;
 }
 function buildWyvernBrowseHtml(){
   const list = wyvernBrowseCurrentList();
+  const totalModules = flattenModulesByKind(S.moduleTree).length;
   const body = list.length
-    ? `<div class="typegrid">${list.map(wyvernBrowseCardHtml).join('')}</div>`
+    ? `<div class="typegrid">${list.map(m => wyvernBrowseCardHtml(m, totalModules)).join('')}</div>`
     : `<div class="empty"><div class="ei">${I.layer}</div><h3>${t('nestEmpty')}</h3></div>`;
   return `<div class="detail-head module-head" style="border-left:4px solid var(--accent);padding-left:12px">
       <div class="wyvern-breadcrumb">${wyvernBrowseBreadcrumbHtml()}</div>
@@ -122,7 +123,7 @@ function wyvernDrillUp(index){
 // chrome-agnostic already); only the empty-state welcome fallback is
 // replaced with Wyvern's own drill-down browse view.
 function buildWyvernPageHtml(){
-  const somethingOpen = S.activeItemNode || S.activeModuleNode || S.filePreview || S.sageHut || S.kindBrowserPage || S.importDockPage;
+  const somethingOpen = S.activeItemNode || S.activeModuleNode || S.filePreview || S.sageHut || S.importDockPage;
   return somethingOpen ? buildBuilderPageHtml() : buildWyvernBrowseHtml();
 }
 // renderNexusPicker() (core/nexus.js) writes its actual pickable Nexus list
