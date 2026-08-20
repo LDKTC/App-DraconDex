@@ -1,6 +1,18 @@
 /* Shared components — buttons, form controls, the color grid, #modal, the
    modeless floating panel, the Preferences panel, setBusy(), the boot splash,
    uiPrompt/uiConfirm and the first-run guide coach-marks. */
+/* ICONS — base rule every inline <svg class="icon"> in the app relies on for
+   its size/stroke; component-scoped rules elsewhere override the size for
+   their own context. Restored (Process 4 part 1) after it was lost in the
+   legacy Director/Navigator/Hero/Writer CSS deletion (v.4.10.0) — without it
+   every icon fell back to the browser's default replaced-element size
+   instead of 1em, blowing up layout wherever an icon appears. */
+.icon{
+	width:1em;height:1em;
+	stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+	fill:none;display:inline-block;vertical-align:middle;
+	transition:transform var(--ease), stroke var(--ease);
+}
 /* BUTTONS */
 .btn{
 	display:inline-flex;align-items:center;gap:6px;
@@ -8,6 +20,7 @@
 	cursor:pointer;font-size:calc(13.5px * var(--fsc,1));font-weight:500;
 	transition:all var(--ease);font-family:inherit;
 }
+.btn .icon{width:14px;height:14px;margin-right:2px}
 /* A disabled .btn had no styling at all, so it looked exactly like a live one
    — both for the busy state syncBtnBusy sets and for a genuinely unavailable
    action (e.g. Launch on a plugin missing a dependency). Same treatment
@@ -24,6 +37,7 @@
 .btn-g{background:transparent;color:var(--t2)}
 .btn-g:hover{background:var(--hover);color:var(--t1)}
 .btn-i{padding:4px;width:28px;height:28px;justify-content:center;border-radius:var(--rs);font-size:calc(14px * var(--fsc,1))}
+.btn-i .icon{margin-right:0;width:15px;height:15px}
 /* Icon-only buttons highlight just the icon on hover, not their background —
    wins by source order (equal specificity) over whichever .btn-p/.btn-s/.btn-g
    hover rule it's paired with, without touching those shared rules (labeled

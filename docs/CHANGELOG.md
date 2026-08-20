@@ -19,6 +19,37 @@
 
 ---
 
+## 2026-08-20 — คืนค่า `.icon`/search-bar CSS ที่หายไปตอนลบ legacy modules (Process 4 part 1)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/css/components.css`, `electron/css/nav-hub.css`,
+  `electron/css/layout.css`, `electron/css/shared-carryover.css`
+- อะไรเปลี่ยน: v.4.10.0 (`c72411e`, ลบ Director/Navigator/Hero/Writer แบบ
+  physical) ลบไฟล์ `electron/css/legacy-tables.css` ทิ้งทั้งไฟล์ — แต่ไฟล์นั้น
+  ถือกฎ `.icon` แบบ generic ที่ทุก `<svg class="icon">` ในแอปพึ่งพาอยู่
+  (`width/height:1em`, `stroke:currentColor`, …) กับกฎ `#search-bar`/
+  `#search-input` ของกล่องค้นหาบน left panel ไว้ด้วย ไม่ใช่ rule เฉพาะโมดูล
+  legacy อย่างที่คิดตอนลบ — ผลคือ icon ทุกตัวในแอปพัง (ไม่มี width/height
+  กำหนดจาก CSS เลย ทำให้ browser fallback ไปใช้ขนาด replaced-element เริ่มต้น
+  ที่ใหญ่กว่าเดิมมาก) และกล่องค้นหากลายเป็น input เปล่าไม่มี style เพิ่ม
+  กลับมาแล้ว: `.icon` base rule + `.btn .icon`/`.btn-i .icon`
+  (`components.css`), `.ph .icon`/`.fhead .icon` (`layout.css`),
+  `.htag-item .icon` (`shared-carryover.css`), `.nav-logo-btn .icon`/
+  `.nav-btn .icon`/`.nav-btn .kicon-img-icon`/`.nav-btn:hover .icon`
+  (`nav-hub.css`), และ `#search-bar`/`#search-input`/`#search-input:focus`
+  (`nav-hub.css`). ตั้งใจไม่คืน `.nav-btn.active .icon{color:var(--on-accent)}`
+  เดิม — ขัดกับดีไซน์ active-state แบบ left-bar อย่างเดียวที่ทำไปหลังจากนั้น
+  (nav-hub.css คอมเมนต์ process2 part1 #1) — และไม่คืน rule เฉพาะโมดูล legacy
+  จริง ๆ (`.series-card-icon .icon`, `.sage-card-icon .icon` ฯลฯ) เพราะไม่มี
+  ใครเรียกใช้แล้ว
+- ทำไม: Plan.md Process 4 part 1 — บั๊กที่ผู้ใช้รายงานหลังอัปเดตแอป (navbar
+  label/pinned-module icon หาย, icon ใหญ่เกินจน layout เละ, search box ไม่มี
+  style) ทั้งหมดสืบไปที่ root cause เดียวกันคือ `.icon` base rule หาย —
+  ยืนยันด้วยการรันแอปจริงผ่าน `web-driver.mjs` (สร้าง Nexus + pin module):
+  ก่อนแก้ icon ทุกตัวจะเรนเดอร์โดยไม่มีขนาดกำกับ หลังแก้ nav rail ขยายแล้ว
+  แสดง label/icon ของ pinned module ถูกต้อง และกล่องค้นหามี border/background
+  ตามธีมแล้ว
+- Doc ที่อัปเดต: ไม่กระทบ doc อื่น (CSS-only, ไม่มี IPC/behavior ใหม่)
+
 ## 2026-08-20 — Hub context-menu overhaul (Process 3 part 2)
 - commit: `uncommitted`
 - ไฟล์ที่แก้: `electron/src/renderer/hub/menus.js`, `electron/src/renderer/hub/popups.js`,
