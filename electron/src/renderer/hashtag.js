@@ -1,80 +1,3 @@
-async function renderProjectHashtagView(){
-  if(!S.project){
-    q('#left-panel-inner').innerHTML=`<div class="empty" style="padding:40px 10px"><div class="ei">${I.hashtag}</div><p style="text-align:center">กรุณาเลือกโปรเจกต์ก่อน</p></div>`;
-    q('#main-inner').innerHTML=`<div class="empty" style="margin-top:80px"><div class="ei">${I.hashtag}</div><h3>Project Tags</h3><p>กรุณาเลือกโปรเจกต์ก่อน</p></div>`;
-    return;
-  }
-  const tags = await api.project.getAllUsedTags(S.project.id);
-  let lh = `<div class="ph"><h4>Project Tags</h4></div>`;
-  if(tags.length){
-    lh += tags.map(t => {
-      const col = t.color_code || '#6366f1';
-      const act = S.projectHashtagId === t.id;
-      return `<div class="li ${act?'active':''}" onclick="selectProjectHashtag(${t.id})">
-        <span class="hn" style="color:${col};font-weight:700">#${x(t.tag_name)}</span>
-      </div>`;
-    }).join('');
-  } else {
-    lh += `<div class="empty" style="padding:20px 10px"><p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);text-align:center">ยังไม่มี Tag ในโปรเจกต์นี้</p></div>`;
-  }
-  q('#left-panel-inner').innerHTML = lh;
-
-  if(!S.projectHashtagId || !tags.find(t=>t.id===S.projectHashtagId)){
-    q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px"><div class="ei">${I.hashtag}</div><h3>Project Tags</h3><p>เลือก Tag เพื่อดูรายการ Object และ Event ที่ใช้ Tag นี้</p></div>`;
-    return;
-  }
-  const tag = tags.find(t=>t.id===S.projectHashtagId);
-  const [objects, events] = await Promise.all([
-    api.hashtag.getObjectsByTag(S.projectHashtagId, S.project.id),
-    api.hashtag.getEventsByTag(S.projectHashtagId, S.project.id)
-  ]);
-  const col = tag?.color_code || '#6366f1';
-  const total = objects.length + events.length;
-  let h = `<div class="ch"><span class="hn" style="color:${col};font-size:1.4em;font-weight:700">#${x(tag?.tag_name||'')}</span>
-    <span style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-left:8px">${total} รายการ</span>
-  </div>`;
-  if(!total){
-    h += `<div class="empty"><div class="ei">${I.hashtag}</div><h3>ยังไม่มี Object หรือ Event ใช้ Tag นี้</h3></div>`;
-  } else {
-    if(objects.length){
-      h += `<div style="padding:4px 16px 2px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Objects (${objects.length})</div>`;
-      h += `<div class="objlist">`;
-      for(const o of objects){
-        const oc = o.color_code || '#6366f1';
-        h += `<div class="objrow" onclick="selectSearchObject(${o.project_id},${o.category_id},${o.id})">
-          <div class="odot" style="background:${oc}"></div>
-          <div style="flex:1;min-width:0">
-            <div class="oname">${x(o.name)}</div>
-            <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px">${x(o.category_name)}</div>
-          </div>
-        </div>`;
-      }
-      h += `</div>`;
-    }
-    if(events.length){
-      h += `<div style="padding:4px 16px 2px;font-size:calc(11px * var(--fsc,1));color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Events (${events.length})</div>`;
-      h += `<div class="objlist">`;
-      for(const e of events){
-        const ec = e.color_code || '#6366f1';
-        h += `<div class="objrow">
-          <div class="odot" style="background:${ec}"></div>
-          <div style="flex:1;min-width:0">
-            <div class="oname">${x(e.event_name||'Untitled Event')}</div>
-            <div style="font-size:calc(12px * var(--fsc,1));color:var(--t3);margin-top:2px">${x(e.line_name||'')}</div>
-          </div>
-        </div>`;
-      }
-      h += `</div>`;
-    }
-  }
-  q('#main-inner').innerHTML = h;
-}
-
-async function selectProjectHashtag(tagId){
-  S.projectHashtagId = tagId;
-  await renderProjectHashtagView();
-}
-
 async function renderHashtagView(){
   q('#left-panel-inner').innerHTML=`<div class="ph"><h4>ป้ายกำกับ</h4></div><div class="empty" style="padding:30px 10px"><div class="ei" style="font-size:calc(28px * var(--fsc,1));opacity:.3">🏷️</div></div>`;
   const tags=await api.hashtag.getAll();
@@ -90,6 +13,18 @@ async function renderHashtagView(){
   }
   q('#main-inner').innerHTML=h;
 }
+
+async function openHashtagModal(id=null){
+  const tag=id?(await api.hashtag.getAll()).find(t=>t.id===id):null;
+  openModal(tag?'✏️ แก้ไข Tag':'🏷️ Tag ใหม่',`
+    <div class="fg"><label>ชื่อ Tag *</label><input id="ht-n" value="${x(tag?.tag_name||'')}" placeholder="ชื่อ (ไม่ต้องใส่ #)"></div>
+    <div class="fg"><label>สี</label>${await colorPicker(tag?.tag_color)}</div>
+    <div class="mfoot">${tag?`<button class="btn btn-d" onclick="delHashtag(${id})">ลบ</button>`:''}<button class="btn btn-s" onclick="closeModal()">ยกเลิก</button><button class="btn btn-p" onclick="${tag?'saveHashtag('+id+')':'createHashtag()'}">${tag?'บันทึก':'สร้าง'}</button></div>`);
+  setTimeout(()=>q('#ht-n').focus(),60);
+}
+async function createHashtag(){ const n=q('#ht-n').value.trim(); if(!n) return; await api.hashtag.create(n,q('#sel-color').value||null); closeModal(); await renderHashtagView(); toast('สร้าง Tag เรียบร้อยแล้ว','ok'); }
+async function saveHashtag(id){ const n=q('#ht-n').value.trim(); if(!n) return; await api.hashtag.update(id,n,q('#sel-color').value||null); closeModal(); await renderHashtagView(); toast('บันทึกเรียบร้อยแล้ว','ok'); }
+async function delHashtag(id){ if(!await uiConfirm('ลบ Tag นี้?')) return; await api.hashtag.delete(id); closeModal(); await renderHashtagView(); toast('ลบเรียบร้อยแล้ว'); }
 
 // ═══ COLOR SETTINGS ════════════════════════════════════
 let _wheelHue=239, _wheelSat=86, _wheelLight=67, _wheelDragging=false;

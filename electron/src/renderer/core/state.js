@@ -198,20 +198,16 @@ function kindLabel(kind) {
 
 const S = {
   nexus:null, nexuses:[],
-  folders:[], projects:[], colors:[],
+  colors:[],
   recentColors:[],
   activeModule:null,
-  project:null, category:null, object:null,
-  timeline:null, relTab:0, map:null, mapAreaId:null, mapTool:'move',
-  descOpen:false, openFolders:new Set(),
+  // map/mapAreaId/mapTool are shared with Locator (mod/locator.js reuses
+  // map.js's board/area-list rendering against a module-owned map instead
+  // of a Director project's map list).
+  map:null, mapAreaId:null, mapTool:'move',
   view:'nexus',
-  catView:'list',
-  projectTabs:[],
-  activeProjectTabId:null,
   entityTabs:[],
   activeEntityTabKey:null,
-  npOpenFolders:new Set(),
-  projectHashtagId:null,
   settings:loadUiSettings(),
   relListHeight:null,
   leftPanelCollapsed:localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY) === '1',
@@ -220,15 +216,6 @@ const S = {
   navRailWidth:Number(localStorage.getItem(NAV_RAIL_WIDTH_KEY)) || 42,
   inspectorWidth:Number(localStorage.getItem(INSPECTOR_WIDTH_KEY)) || 290,
   pageViewWidth:Number(localStorage.getItem(PAGE_VIEW_WIDTH_KEY)) || null, // Plan part1 #2: null = fill pane (default)
-  // Navigator module state
-  world:null, worldTab:'original', worldChar:null, worldCat:null, worldMap:null, worldMapTl:null, worldHashtagId:null,
-  worldOrigCat:null, worldOrigObject:null, worldOrigCatView:'list', worldNovelOpen:new Set(),
-  worldCharCatFilter:{}, worldCatOpen:new Set(), worldMapTool:null,
-  // Hero module state
-  game:null, gameTab:'project', heroLevelOpen:new Set(),
-  // Writer module state
-  write:null, writeTab:'project', writeSeries:null, writeBook:null, writeChapter:null,
-  writeWikiChapter:null, writeNote:null, writeOpenProjects:new Set(),
   // Sage module state
   sageTab:'dataSize',
   // Artisan module state
@@ -266,13 +253,10 @@ const S = {
   // boot.js starts the wizard whenever the DB holds zero vaults, the same
   // condition the old welcome modal used.
   welcomeStep:null,
-  // Plan part2 §2: read-only "Import DB" legacy view — reuses the existing
-  // (normally hidden) Director/Navigator/Hero/Writer panels via
-  // selectModule(), gated read-only by installImportDbGuard() below.
-  importDbMode:false,
   // v3 module system state (Nexus nest hub — progress.md Phases 1-3). Additive
-  // alongside the legacy Director/Navigator/Hero/Writer/Scribe/Sage/Artisan
-  // modules; see progress.md Section C for the scoping decision.
+  // alongside the legacy Scribe/Sage/Artisan modules (Director/Navigator/
+  // Hero/Writer physically deleted, Process 2 Part 2); see progress.md
+  // Section C for the scoping decision.
   moduleTree:[], activeModuleNode:null, inspectorData:null,
   moduleTabs:[], renamingModuleId:null,
   // Plugin panels (v4.3.0, src/renderer/pluginpanel.js). pluginPanels is the

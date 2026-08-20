@@ -17,8 +17,8 @@ function renderWyvernToolbar(){
   if (S.settings.workspaceStyle !== 'wyvern' || !S.nexus) { bar.classList.add('hidden'); bar.innerHTML = ''; return; }
   bar.classList.remove('hidden');
   // "Create module" only where featureplan.md scopes it — browsing/viewing
-  // the Nexus Nest itself, not while Sage Hut/Import Dock/Import DB is up.
-  const atNest = !S.sageHut && !S.importDockPage && !S.importDbMode;
+  // the Nexus Nest itself, not while Sage Hut/Import Dock is up.
+  const atNest = !S.sageHut && !S.importDockPage;
   bar.innerHTML = `
     <button class="nav-btn" onclick="event.stopPropagation();openWyvernViewSetMenu(this)" title="${t('wyvernViewSet')}">${I.layer}</button>
     <div class="wyvern-toolbar-sep"></div>

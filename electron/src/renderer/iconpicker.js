@@ -31,7 +31,7 @@ const ICROP_CANVAS = 220;  // preview/crop canvas size
 const ICROP_OUTPUT = 128;  // stored icon size
 
 async function iconPicker(selIcon, selColorId, previewName, previewKind) {
-  const symbols = await api.world.getSymbolCollection();
+  const symbols = await api.color.getSymbolCollection();
   const selImg = selIcon && selIcon.startsWith('img:') ? selIcon.slice(4) : null;
   const selKey = selIcon && selIcon.startsWith('svg:') ? selIcon.slice(4) : (selIcon && !selIcon.startsWith('sym:') && !selImg ? selIcon : null);
   const selSym = selIcon && selIcon.startsWith('sym:') ? selIcon.slice(4) : null;

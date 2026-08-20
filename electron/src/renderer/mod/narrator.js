@@ -4,9 +4,9 @@
 // on a pannable/zoomable grid board, directed edges with arrowheads and
 // optional labels, and an embedded conversation editor for the selected
 // node. Interaction patterns (pointer-capture node drag, right-drag pan,
-// click-to-connect edges, center-to-center SVG edges) mirror the legacy
-// Hero story graph (src/renderer/hero.js renderHeroStory et al.); data
-// lives in the module-scoped story_* tables (src/db/narrator.js).
+// click-to-connect edges, center-to-center SVG edges) mirror the pattern
+// the deleted legacy Hero story graph once used; data lives in the
+// module-scoped story_* tables (src/db/narrator.js).
 
 const NARRATOR_VIEWS = ['board', 'routes', 'reader', 'dialogue'];
 const NARRATOR_VIEW_LABEL = { board: 'Board', routes: 'Routes', reader: 'Reader', dialogue: 'Dialogue' };

@@ -17,7 +17,7 @@ function buildAccSection(key, label, bodyHtml, actHtml = '', heightPx = null) {
 function nestEmptyHtml() {
   return `<div class="empty" style="padding:24px 10px">
     <p>${t('nestEmpty')}</p>
-    <button class="btn btn-p" style="margin-top:12px" onclick="event.stopPropagation();openMajorModuleModal(this)">${I.plus} ${t('createMajorModule')}</button>
+    <button class="btn btn-p" style="margin-top:12px" onclick="event.stopPropagation();openMainModuleModal(this)">${I.plus} ${t('createMajorModule')}</button>
   </div>`;
 }
 

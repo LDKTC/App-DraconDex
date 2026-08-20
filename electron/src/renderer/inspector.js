@@ -1,6 +1,7 @@
 'use strict';
 // ═══ Module Inspector (progress.md Phase 4) ═══════════════════════════
-// Docked right-side panel for the focused Major/Minor module: detail spec
+// Docked right-side panel for the focused module (a Major module, at any
+// depth): detail spec
 // (kind + free-text description, wikilink-aware), free-form attributes,
 // tag links, module links (outgoing/backlinks via the generic wiki_link
 // index — see src/db/wiki.js's `module_<id>` key kind), and a Version

@@ -125,17 +125,13 @@ async function reloadNexuses() {
 }
 
 function clearWorkspaceTabs() {
-  S.projectTabs = []; S.activeProjectTabId = null;
   S.entityTabs = []; S.activeEntityTabKey = null;
-  S.project = null; S.category = null; S.object = null;
-  S.timeline = null; S.map = null; S.mapAreaId = null;
-  S.world = null; S.game = null; S.write = null;
+  S.map = null; S.mapAreaId = null;
   S.scribeNote = null; S.scribeOpenFolders = new Set();
   S.moduleTree = []; S.activeModuleNode = null; S.moduleTabs = [];
   S.builder = null; S.filePreview = null; S.sageHut = null; S.sageHutCache = null; S.importDockPage = false; S.importFiles = undefined;
   S.wyvernBrowsePath = [];
   S.dragonBrowsePath = [];
-  if (S.importDbMode) { S.importDbMode = false; api.setImportDbMode(false); }
   if (typeof invalidateDisplayImages === 'function') invalidateDisplayImages();
   q('#main-inner')?.querySelectorAll(':scope > .bpane').forEach(el => el.remove());
   renderProjectTabs();
@@ -151,12 +147,11 @@ async function selectNexus(id) {
   // Same three-call wave as boot (Plan part2 #2.5): seeding the Nest items
   // here is what stops the first render firing one lazy fetch + one full
   // re-render per content module. Two sequential awaits became one.
-  const [projects, moduleTree, nestItems] = await Promise.all([
-    api.project.getAll(null, S.nexus.id),
+  const [moduleTree, nestItems] = await Promise.all([
     api.module.getTree(S.nexus.id),
     api.module.getNestItems(S.nexus.id),
   ]);
-  S.projects = projects; S.moduleTree = moduleTree;
+  S.moduleTree = moduleTree;
   seedNestItems(nestItems);
   renderNexusHome();
   renderModuleRail();

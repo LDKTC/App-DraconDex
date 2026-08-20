@@ -10,27 +10,22 @@ async function init() {
   // so the bar never advances on a timer. finish() is at the very bottom.
   window.__splash?.set(60);
   // Boot IPC in two waves instead of seven serial round-trips. Wave 1 is every
-  // call with no data dependency; only project.getAll/module.getTree need
-  // S.nexus, which is resolved in between. Each await here is a full IPC
-  // round-trip plus a structured clone, and this is the critical path to first
-  // paint — nothing between the original awaits read any of the S.* they set.
-  // Which window this is has to be settled BEFORE wave 1, not after: the
-  // Welcome window has no vault, and folder.getAll() is vault-scoped (v4.9.0 —
-  // each Nexus is its own .ddx file, so a vault-scoped call with no vault
-  // fails rather than quietly picking one). color.* stays in both waves: it
-  // reads use_color, which app.ddx carries its own copy of precisely so the
-  // Welcome window can draw vault colours and run colorPicker() when creating
-  // a vault.
+  // call with no data dependency; only module.getTree needs S.nexus, which is
+  // resolved in between. Each await here is a full IPC round-trip plus a
+  // structured clone, and this is the critical path to first paint — nothing
+  // between the original awaits read any of the S.* they set. color.* stays
+  // in both waves: it reads use_color, which app.ddx carries its own copy of
+  // precisely so the Welcome window can draw vault colours and run
+  // colorPicker() when creating a vault.
   S.isWelcome = new URLSearchParams(location.search).get('welcome') === '1';
-  const [colors, recentColors, nexuses, folders, windowId] = await Promise.all([
+  const [colors, recentColors, nexuses, windowId] = await Promise.all([
     api.color.getAll(),
     api.color.getRecent(),
     api.nexus.getAll(),
-    S.isWelcome ? Promise.resolve([]) : api.folder.getAll(),
     api.window.getId(),
   ]);
   S.colors = colors; S.recentColors = recentColors; S.nexuses = nexuses;
-  S.folders = folders; S._windowId = windowId;
+  S._windowId = windowId;
   // Longest single stall of the boot: that first await is what triggers
   // getDB() → open the SQLite file + run initDB() migrations in main.
   window.__splash?.set(80);
@@ -81,12 +76,11 @@ async function init() {
   // the first Nest render would fall back to one lazy list fetch (and one
   // full re-render) per content module, which is the boot path that storm
   // hurt most.
-  const [projects, moduleTree, nestItems] = await Promise.all([
-    api.project.getAll(null, S.nexus?.id ?? null),
+  const [moduleTree, nestItems] = await Promise.all([
     S.nexus ? api.module.getTree(S.nexus.id) : Promise.resolve([]),
     S.nexus ? api.module.getNestItems(S.nexus.id) : Promise.resolve({}),
   ]);
-  S.projects = projects; S.moduleTree = moduleTree;
+  S.moduleTree = moduleTree;
   seedNestItems(nestItems);
   window.__splash?.set(88);
   // Set before the first render below — builderPaneHeadHtml (builder.js)
@@ -104,8 +98,6 @@ async function init() {
   q('#left-panel-resize')?.setAttribute('title', t('resizePanel'));
   q('#nav-sidebar-resize')?.setAttribute('title', t('resizePanel'));
   observeUiLanguage();
-  removeLegacyDirectorProjectButton();
-  buildModuleSubNav();
   renderModuleRail();
   applyNavToggles();
   applyAreaScales();
@@ -164,10 +156,6 @@ function bindPopupDismiss(){
     document.querySelectorAll('.np-dropdown').forEach(d => d.style.display = 'none');
     document.querySelectorAll('.kind-popup').forEach(d => d.remove());
   });
-}
-
-function removeLegacyDirectorProjectButton(){
-  q('#nav-sidebar > .nav-btn.director-only[data-panel="projects"]')?.remove();
 }
 
 // Plan part2 #New Workspace — authoritative apply, re-confirming the early

@@ -127,7 +127,7 @@ async function reloadModuleTree() {
   if (S.view === 'nexus' && !S.activeModule) renderNexusHome();
 }
 
-// ═══ NAV RAIL — dynamic Major-module icon strip (Phase 1) ═════════════
+// ═══ NAV RAIL — dynamic Major-module icon strip (any depth, Phase 1) ══
 function renderModuleRail() {
   const rail = q('#nav-sidebar');
   if (!rail) return;
@@ -146,7 +146,7 @@ function renderModuleRail() {
   const atHubHome = !S.activeModuleNode && !S.filePreview && !S.sageHut && !S.importDockPage;
   // Plan process1 part4 #2: the nav rail's own "+ create module" tool was
   // dropped — the Nexus Nest hub section already offers the same
-  // openMajorModuleModal() both in its header (hub/sections.js) and its
+  // openMainModuleModal() both in its header (hub/sections.js) and its
   // empty state (nestEmptyHtml(), hub/tree.js), so this was a duplicate.
   let html = `<button class="nav-btn module-rail-tool${atHubHome ? ' active' : ''}" title="${t('nexusNest')}" onclick="goToNexusNestHub()">${I.home}<span class="nav-label">${t('nexusNest')}</span></button>
     <button class="nav-btn module-rail-tool" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()">${I.layer}<span class="nav-label">${t('kindBrowser')}</span></button>`;

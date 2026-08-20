@@ -81,7 +81,6 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
 	width:3px;border-radius:2px;background:var(--accent);
 }
 .nav-util{font-size:calc(15px * var(--fsc,1))}
-.nav-btn.director-only{display:none}
 /* Setting window → Workspace → Tool toggle (Plan part1 #Setting): user-
    hidden "quick buttons" (import/export/hashtag/colors). !important because
    these buttons also carry visibility classes like .nexus-only that toggle

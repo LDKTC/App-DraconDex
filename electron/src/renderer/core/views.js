@@ -1,6 +1,8 @@
 // View plumbing: bindNav(), database import/export, loadModule() lazy script
-// loading, switchView() (the legacy panel router), and the Nexus home page
-// including the builder-pane page mirror it renders through.
+// loading, switchView() (routes the few remaining shared legacy-view panels
+// still reachable outside the v3 module tree — Scribe's legacy note view),
+// and the Nexus home page including the builder-pane page mirror it renders
+// through.
 // ═══ NAV & VIEW ════════════════════════════════════════
 function bindNav() {
   q('#nav-logo-btn')?.addEventListener('click', () => {
@@ -8,11 +10,7 @@ function bindNav() {
     // "expand hub" control (see nav.js's updateTopNavButton) — wins over
     // every other branch below regardless of module/project/world state.
     if(S.leftPanelCollapsed){ setLeftPanelCollapsed(false); return; }
-    if(S.project) returnToProjectList();
-    else if(S.world) goToNavigatorList();
-    else if(S.game && S.activeModule === 'hero' && typeof goToGameList === 'function') goToGameList();
-    else if(S.write && S.activeModule === 'writer' && typeof goToWriteList === 'function') goToWriteList();
-    else if(S.activeModule) returnToNexus();
+    if(S.activeModule) returnToNexus();
   });
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -56,15 +54,11 @@ async function importDatabaseFile(){
     // Refresh the Nexus list so vaults brought in by the merge are visible.
     // The Welcome window has no sidebar and no view to switch — its whole job
     // is that vault list, so it just re-renders itself with the new entries.
-    if(!S.isWelcome) await reloadSidebar();
     await reloadNexuses();
     S.colors = await api.color.getAll();
     S.recentColors = await api.color.getRecent();
     if(S.isWelcome) renderWelcomeWindow();
-    else {
-      if(S.project?.id) S.project = await api.project.get(S.project.id) || null;
-      switchView(S.view || 'projects');
-    }
+    else renderNexusHome();
     toast(t('importDbDone'),'ok');
     // Plan part2 §2: a merged file may carry un-migrated legacy-shaped data
     // (a v1/v2 file, or notes for a nexus that predates v3) — offer the
@@ -94,14 +88,12 @@ function loadModule(src) {
   });
 }
 
-// Konva (canvas) loader. Eager and global because four separate lazy modules
-// need it — map.js, relation.js, mod/{locator,wanderer}.js and
-// navigator/board.js — and it used to be copied verbatim into map.js AND
-// relation.js, so whichever loaded last silently won. Vendored copy only —
-// no CDN fallback, for the same reason as ensureD3() in relation.js: this
-// renderer holds the whole window.api IPC surface, so a remote <script>
-// (unpkg, no SRI) would hand that surface to a third party. vendor/ ships via
-// package.json build.files.
+// Konva (canvas) loader. Eager and global because map.js and
+// mod/{locator,wanderer}.js all need it, and it used to be copied verbatim
+// into more than one caller, so whichever loaded last silently won.
+// Vendored copy only — no CDN fallback: this renderer holds the whole
+// window.api IPC surface, so a remote <script> (unpkg, no SRI) would hand
+// that surface to a third party. vendor/ ships via package.json build.files.
 function ensureKonva(){
   if(window.Konva) return Promise.resolve();
   if(window.__konvaLoading) return new Promise(resolve=>{ const iv=setInterval(()=>{ if(window.Konva){ clearInterval(iv); resolve(); } },50); });
@@ -117,45 +109,23 @@ function ensureKonva(){
     .finally(()=>{ window.__konvaLoading = false; });
 }
 
-// Lazy modules that were split into a folder (Plan part1). A dynamically
-// injected <script> is async — the browser gives no ordering guarantee within a
-// group — so every file in a group must be free of top-level reads of another
-// file's bindings, and callers must await the WHOLE group (Promise.all) before
-// calling its render entry. That holds today: the only top-level consts are
-// WORLD_TABS (navigator/shell.js) and the board/story canvas state, and each is
-// read from inside functions only.
-const LAZY_GROUPS = {
-  navigator: ['shell', 'sidebar', 'main', 'world', 'origcat', 'chars', 'cats', 'maps', 'board']
-    .map(f => `src/renderer/navigator/${f}.js`),
-  hero: ['shell', 'project', 'novel', 'story', 'tags', 'modals']
-    .map(f => `src/renderer/hero/${f}.js`),
-};
-// Unsplit modules fall through to their single file, so every lazy call site can
-// use the same helper regardless of whether that module is one file or nine.
+// Unsplit modules fall through to their single file — every lazy call site
+// can use the same helper regardless of whether that module is one file or
+// several (no module left uses more than one file now that Navigator/Hero's
+// folders are gone).
 function loadGroup(name) {
-  return Promise.all((LAZY_GROUPS[name] || [`src/renderer/${name}.js`]).map(loadModule));
+  return Promise.all([`src/renderer/${name}.js`].map(loadModule));
 }
 
 async function switchView(v) {
-  if (typeof closeRelNodeNote === 'function') closeRelNodeNote();
   if (konvaStage) {
     try { konvaStage.destroy(); } catch(e){}
     konvaStage = null;
   }
-  q('#main-inner')?.classList.toggle('relation-main', v === 'relation');
   if (v !== 'nexus') { leaveBuilderGrid(); const foot = q('#left-panel-foot'); if (foot) foot.innerHTML = ''; }
   updateTopNavButton();
   if      (v==='nexus')           renderNexusHome();
-  else if (v==='projects')        { if(S.project) renderProject(); else { renderSidebar(); renderWelcome(); } }
-  else if (v==='timeline')        { await loadModule('src/renderer/timeline.js'); renderTimelineView(); }
-  else if (v==='relation')        { await loadModule('src/renderer/relation.js'); renderRelationView(); }
-  else if (v==='map')             { await loadModule('src/renderer/map.js'); renderMapView(); }
-  else if (v==='hashtag')         { await loadModule('src/renderer/hashtag.js'); renderHashtagView(); }
-  else if (v==='project-hashtag') { await loadModule('src/renderer/hashtag.js'); renderProjectHashtagView(); }
   else if (v==='colors')          { await loadModule('src/renderer/hashtag.js'); q('#left-panel-inner').innerHTML=`<div class="ph"><h4>${t('colorPanel')}</h4></div>`; renderColorSettings(); }
-  else if (v==='navigator')       { await loadGroup('navigator'); renderNavigatorView(); }
-  else if (v==='hero')            { await loadGroup('hero'); renderHeroView(); }
-  else if (v==='writer')          { await loadModule('src/renderer/writer.js'); renderWriterView(); }
   else if (v==='scribe')          { await loadModule('src/renderer/scribe.js'); renderScribeView(); }
 }
 

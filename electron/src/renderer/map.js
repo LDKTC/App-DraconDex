@@ -1,19 +1,9 @@
-// These three were previously (and incorrectly) only defined in relation.js —
-// map.js's own markup calls them, so opening Map without having first
-// visited Relation left them undefined (ReferenceError on click).
-async function selectMap(id){
-  const maps = await api.map.getAll(S.project.id);
-  S.map = maps.find(m => m.id === id) || null;
-  S.mapAreaId = null;
-  await renderMapView();
-}
 // Locator (v3 Phase 7) reuses this whole renderer against a module-owned
-// map instead of a Director project's map list — same board, area list and
-// tools, just a different refresh target since there's no S.project there.
+// map instead of a legacy project's map list — same board, area list and
+// tools.
 function refreshMapHost(){
   if (S.activeModuleNode?.kind === 'locator' && typeof mountLocatorBoard === 'function') mountLocatorBoard();
   else if (S.activeModuleNode?.kind === 'wanderer' && typeof mountWandererBoard === 'function') mountWandererBoard();
-  else renderMapView();
 }
 function selectMapArea(id){ S.mapAreaId=id; refreshMapHost(); }
 function setMapTool(tool){ S.mapTool=tool; refreshMapHost(); }
@@ -99,49 +89,6 @@ function polygonCentroid(boundaryPts, fallbackPts){
   }
   const xs = fallbackPts.map(p=>p.x), ys = fallbackPts.map(p=>p.y);
   return { cx: (Math.min(...xs)+Math.max(...xs))/2, cy: (Math.min(...ys)+Math.max(...ys))/2 };
-}
-
-async function renderMapView(){
-  if(!S.project){
-    q('#left-panel-inner').innerHTML=`<div class="empty" style="padding:40px 10px"><div class="ei">${I.map}</div><p style="text-align:center">กรุณาเลือกโปรเจกต์ก่อน</p></div>`;
-    q('#main-inner').innerHTML=`<div class="empty" style="margin-top:80px"><div class="ei">${I.map}</div><h3>Mapping</h3><p>กรุณาเลือกโปรเจกต์ก่อน</p></div>`;
-    return;
-  }
-  await ensureKonva();
-  const maps = await api.map.getAll(S.project.id);
-  let lh = `<div class="ph"><h4>Map</h4><button class="btn btn-g btn-i" onclick="openMapModal()">${I.plus}</button></div>`;
-  for(const m of maps){
-    const col=m.color_code||'#06b6d4', act=S.map?.id===m.id;
-    lh += `<div class="li ${act?'active':''}" onclick="selectMap(${m.id})"><div class="dot" style="background:${col}"></div><span class="name">${x(m.map_name||'ไม่มีชื่อ')}</span><div class="acts"><button class="btn btn-g btn-i" onclick="event.stopPropagation();openMapModal(${m.id})">${I.edit}</button><button class="btn btn-g btn-i" onclick="event.stopPropagation();delMap(${m.id})" style="color:var(--danger)">${I.delete}</button></div></div>`;
-  }
-  if(!maps.length) lh += `<p style="font-size:calc(12px * var(--fsc,1));color:var(--t3);padding:10px 12px">ยังไม่มี Map</p>`;
-  q('#left-panel-inner').innerHTML = lh;
-
-  if(!S.map){
-    q('#main-inner').innerHTML = `<div class="empty" style="margin-top:80px"><div class="ei">${I.map}</div><h3>ยังไม่มี Map</h3><button class="btn btn-p" onclick="openMapModal()">${I.plus} สร้าง Map</button></div>`;
-    return;
-  }
-  const areas = await api.map.getAreas(S.map.id);
-  if(S.mapAreaId && !areas.find(a=>a.id===S.mapAreaId)) S.mapAreaId = null;
-  await Promise.all(areas.map(async a => {
-    mapState.pointsByArea[a.id] = await api.map.getPoints(a.id);
-  }));
-  let h = `<div class="ch"><h2>${x(S.map.map_name||'Map')}</h2><button class="btn btn-s btn-i" onclick="openMapModal(${S.map.id})">${I.edit}</button></div>
-  <div class="rel-toolbar">
-    <button class="btn btn-i ${S.mapTool==='create'?'btn-p':'btn-s'}" onclick="setMapTool('create')" title="Create point" aria-label="Create point">${I.plus}</button>
-    <button class="btn btn-i ${S.mapTool==='delete'?'btn-p':'btn-s'}" onclick="setMapTool('delete')" title="Delete point" aria-label="Delete point">${I.delete}</button>
-    <button class="btn btn-i ${S.mapTool==='move'?'btn-p':'btn-s'}" onclick="setMapTool('move')" title="Move point" aria-label="Move point">${I.move}</button>
-    <span style="font-size:calc(12px * var(--fsc,1));color:var(--t3)">ต้องเลือก Area ก่อนใช้ Tool</span>
-  </div>
-  <div id="map-board" class="map-whiteboard">
-    <div id="map-konva-container" style="width:100%; height:100%;"></div>
-  </div>
-  <div class="rel-underboard">
-    <div class="ph"><h4>Area</h4><div class="acts"><button class="btn btn-g" onclick="openMapAreaModal()">${I.plus} เพิ่ม Area</button></div></div>
-    <div class="map-area-list">${renderAreaList(areas)}</div>
-  </div>`;
-  q('#main-inner').innerHTML = h;
-  await renderMapBoard();
 }
 
 function getMapViewState(mapId){
@@ -456,18 +403,6 @@ async function renderMapBoard(){
 
   layer.batchDraw();
 }
-
-async function openMapModal(id=null){
-  let m=null;
-  if(id){ const maps=await api.map.getAll(S.project.id); m=maps.find(t=>t.id===id); }
-  openModal(m?'✏️ แก้ไข Map':'🧭 Map ใหม่',`
-    <div class="fg"><label>ชื่อ Map *</label><input id="map-n" value="${x(m?.map_name||'')}"></div>
-    <div class="fg"><label>สี</label>${await colorPicker(m?.color)}</div>
-    <div class="mfoot">${m?`<button class="btn btn-d" onclick="delMap(${id})">ลบ</button>`:''}<button class="btn btn-s" onclick="closeModal()">ยกเลิก</button><button class="btn btn-p" onclick="${m?'saveMap('+id+')':'createMap()'}">${m?'บันทึก':'สร้าง'}</button></div>`);
-}
-async function createMap(){ const n=q('#map-n').value.trim(); if(!n) return; const r=await api.map.create(S.project.id,n,q('#sel-color').value||null); closeModal(); const maps=await api.map.getAll(S.project.id); S.map=maps.find(t=>t.id===r.lastInsertRowid)||null; await renderMapView(); toast('สร้าง Map แล้ว','ok'); }
-async function saveMap(id){ const n=q('#map-n').value.trim(); if(!n) return; await api.map.update(id,n,q('#sel-color').value||null); closeModal(); const maps=await api.map.getAll(S.project.id); S.map=maps.find(t=>t.id===id)||null; await renderMapView(); toast('บันทึกแล้ว','ok'); }
-async function delMap(id){ if(!await uiConfirm('ลบ Map นี้?')) return; await api.map.delete(id); closeModal(); if(S.map?.id===id) S.map=null; S.mapAreaId=null; await renderMapView(); toast('ลบเรียบร้อยแล้ว'); }
 
 async function openMapAreaModal(id=null){
   if(!S.map) return;

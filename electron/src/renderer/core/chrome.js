@@ -20,23 +20,16 @@ function toggleSettingsMenu(force){
 function translateStaticChrome(){
   q('#settings-menu-btn')?.setAttribute('title', t('settings'));
   q('#layout-menu-btn')?.setAttribute('title', t('splitLayout'));
-  q('#new-project-tab')?.setAttribute('title', t('openProject'));
   q('#win-min')?.setAttribute('title', t('minimize'));
   q('#win-max')?.setAttribute('title', t('maximize'));
   q('#win-close')?.setAttribute('title', t('close'));
   // The hint is worth carrying here: with a vault open this box hands off to the
   // quick switcher, which otherwise has no discoverable entry point at all.
   q('#search-input')?.setAttribute('placeholder', `${t('search')} (Ctrl+P)`);
-  const worldTabTitleKeys = { 'original':'navigator', 'chars-cats':'worldCharsCats', 'maps-timeline':'worldMapTimelines', 'tags':'worldTags' };
   document.querySelectorAll('.nav-btn[data-panel]').forEach(btn => {
-    if(btn.dataset.worldtab){
-      btn.setAttribute('title', t(worldTabTitleKeys[btn.dataset.worldtab] || 'navigator'));
-      return;
-    }
-    const key = btn.dataset.panel === 'project-hashtag' ? 'hashtag' : btn.dataset.panel;
+    const key = btn.dataset.panel;
     if(L.en[key]) btn.setAttribute('title', t(key));
   });
-  q('#director-project-shortcut')?.setAttribute('title', t('projects'));
   q('#btn-import-db')?.setAttribute('title', t('importDb'));
   q('#btn-export-db')?.setAttribute('title', t('exportDb'));
   applyLeftPanelState();
@@ -117,8 +110,5 @@ function bindWindowChrome(){
   });
   q('#layout-menu')?.addEventListener('click', e => e.stopPropagation());
   document.addEventListener('click', () => toggleLayoutMenu(false));
-  q('#new-project-tab')?.addEventListener('click', () => {
-    returnToProjectList();
-  });
 }
 

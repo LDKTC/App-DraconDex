@@ -1,63 +1,16 @@
-/* Theme-harmonization compat layer — aliases that map the legacy modules'
+/* Theme-harmonization compat layer — aliases that map Sage/the module kinds'
    inline-styled class vocabulary onto the core .li/.ph/.btn tokens, plus the
-   Artisan create-from-template studio. */
-/* ════════════════════════════════════════════════════════════════
-   MODULE THEME HARMONIZATION
-   Navigator / Hero / Writer / Sage emit their own markup vocabulary
-   that previously had no styling (or used the undefined --bg2
-   variable). These rules dress that markup in the Director module's
-   design language so every module reads as one coherent theme.
-   ════════════════════════════════════════════════════════════════ */
-
-/* Legacy surface alias referenced by Hero/Navigator inline styles.
-   Must be declared on `body`, not `:root`: a custom property's var()
-   references resolve against the values live on the element where it's
-   declared, not lazily re-evaluated per descendant. --raised/--hover are
-   overridden on body[data-theme=X] (a descendant of :root) — aliasing from
-   :root would freeze --bg2 to :root's own base --raised forever, which was
-   exactly why folder-sec and other --bg2 consumers never changed color
-   across themes.
-   (--bg3 used to be declared alongside it here but nothing ever referenced
-   it — dropped rather than left as a token that looks available but isn't.) */
-body{ --bg2:var(--raised); }
-
-/* NOTE: this compat layer mirrors the core vocabulary above (.li / .ph / .btn /
-   .fg / .ctab). Twelve of its classes had zero consumers anywhere in src/ or
-   index.html and were removed: .panel-item, .ph-add, .detail-header,
-   .detail-actions, .section-head, .desc-card/-title/-content/-actions,
-   .tag-picker, .btn-xs, .modal-actions. Prefer the core classes for new markup;
-   what remains here is only what renderers actually use today. */
+   Artisan create-from-template studio. (Director/Navigator/Hero/Writer were
+   physically deleted, Process 2 Part 2 — the aliases only they used went
+   with them: .section, .detail-tabs/.tab-btn, .link-chip, .btn-danger,
+   .form-row, .pick-list/.pick-item, .novel-picker/.np-*, #game-tab-body/
+   #world-tab-body, and the body{--bg2} alias nothing else read.) */
 
 /* ── Detail / content headers → mirror .ch divider treatment ── */
 .detail-head{border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:16px}
 .detail-head h2{font-weight:700}
 
-/* ── Grouped sections (Writer) ── */
-.section{margin-bottom:18px}
-/* Inline-styled section titles in Hero/Navigator tabs */
-#game-tab-body h4,#world-tab-body h4{font-size:calc(12.5px * var(--fsc,1));font-weight:700;color:var(--t1)}
-
-/* ── Tabs (Writer series) → mirror .ctab pills ── */
-.detail-tabs{display:flex;gap:6px;flex-wrap:wrap}
-.tab-btn{
-	padding:5px 13px;border-radius:20px;border:1px solid var(--border);
-	background:transparent;color:var(--t2);cursor:pointer;
-	font-size:calc(12.5px * var(--fsc,1));font-weight:500;font-family:inherit;transition:all var(--ease);
-}
-.tab-btn:hover{background:var(--raised);color:var(--t1)}
-.tab-btn.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-
-/* ── Link chips (Writer/Navigator/Hero) → mirror .mini-rel-item ── */
-.link-chip{
-	display:inline-flex;align-items:center;gap:8px;
-	padding:7px 12px;margin:0 6px 6px 0;
-	background:var(--raised);border:1px solid var(--border);
-	border-radius:var(--r);font-size:calc(13px * var(--fsc,1));color:var(--t1);
-}
-.link-chip small{color:var(--t3);font-size:calc(11px * var(--fsc,1))}
-.link-chip .icon{width:14px;height:14px;color:var(--t2)}
-
-/* ── Tag chip (Writer) → mirror .htag-item / pill chips ── */
+/* ── Tag chip → mirror .htag-item / pill chips ── */
 .tag-chip{
 	display:inline-flex;align-items:center;gap:5px;
 	padding:5px 12px;border-radius:20px;border:1px solid var(--border);
@@ -67,10 +20,7 @@ body{ --bg2:var(--raised); }
 .tag-chip:hover{background:var(--raised);color:var(--t1)}
 .tag-chip.active,.tag-chip.selected{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 
-/* ── Small buttons (Writer) → match .btn tokens ──
-   .btn-xs was removed with the rest of the zero-consumer compat classes; it
-   shared the two .danger selector lists below with .btn-sm, so those were
-   trimmed rather than deleted. */
+/* ── Small buttons → match .btn tokens ── */
 .btn-sm{
 	display:inline-flex;align-items:center;gap:5px;
 	padding:5px 12px;border:1px solid var(--border);border-radius:var(--r);
@@ -80,71 +30,6 @@ body{ --bg2:var(--raised); }
 .btn-sm:hover{background:var(--hover)}
 .btn-sm.danger{color:var(--danger);border-color:transparent}
 .btn-sm.danger:hover{background:var(--danger);color:var(--on-danger);border-color:var(--danger)}
-
-/* ── Danger button alias used by Hero/Navigator modals → .btn-d ── */
-.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
-.btn-danger:hover{background:var(--danger);color:var(--on-danger)}
-
-/* ── Modal form rows (Hero/Navigator) & bare modal labels (Writer)
-      → mirror .fg form-group treatment ── */
-.form-row{margin-bottom:14px}
-.form-row label,#modal-body>label{
-	display:block;font-size:calc(11px * var(--fsc,1));color:var(--t3);margin-bottom:5px;
-	font-weight:600;text-transform:uppercase;letter-spacing:.05em;
-}
-.form-row input,.form-row textarea,.form-row select,
-#modal-body>label input,#modal-body>label textarea,#modal-body>label select{
-	width:100%;background:var(--bg);border:1px solid var(--border);
-	border-radius:var(--r);color:var(--t1);padding:8px 11px;
-	font-size:calc(13.5px * var(--fsc,1));font-family:inherit;outline:none;
-	transition:border-color var(--ease);
-}
-.form-row input:focus,.form-row textarea:focus,.form-row select:focus,
-#modal-body>label input:focus,#modal-body>label textarea:focus,#modal-body>label select:focus{
-	border-color:var(--accent);
-}
-.form-row textarea,#modal-body>label textarea{resize:vertical;min-height:72px}
-.form-row select option,#modal-body>label select option{background:var(--raised)}
-
-/* ── Pick lists in modals (Writer) → selectable rows ── */
-.pick-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
-.pick-item{
-	padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);
-	background:var(--raised);color:var(--t1);cursor:pointer;
-	font-size:calc(13px * var(--fsc,1));transition:all var(--ease);
-}
-.pick-item:hover{border-color:var(--accent);background:var(--hover)}
-
-/* ── Novel picker (folder-tree dropdown) ── */
-.novel-picker{position:relative;display:inline-flex}
-.np-btn{
-	display:flex;align-items:center;gap:6px;padding:4px 10px;
-	background:var(--raised);border:1px solid var(--border);border-radius:var(--rs);
-	color:var(--t1);cursor:pointer;font-size:calc(13px * var(--fsc,1));min-width:140px;
-	transition:border-color var(--ease);
-}
-.np-btn:hover{border-color:var(--accent)}
-.np-dropdown{
-	position:absolute;top:calc(100% + 4px);left:0;min-width:220px;
-	background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
-	box-shadow:0 6px 20px rgba(0,0,0,.3);z-index:200;
-	max-height:260px;overflow-y:auto;
-}
-.np-folder-head{
-	display:flex;align-items:center;gap:6px;padding:6px 10px;
-	font-size:calc(13px * var(--fsc,1));color:var(--t2);cursor:pointer;
-}
-.np-folder-head:hover{background:var(--hover)}
-.np-item{
-	display:block;padding:6px 12px 6px 30px;
-	font-size:calc(13px * var(--fsc,1));color:var(--t1);cursor:pointer;
-	white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.np-item.np-unfiled{padding-left:12px}
-.np-item:hover{background:var(--hover)}
-/* Inside a modal the dropdown flows in-place (modal-body clips absolute children) */
-#modal-body .novel-picker{display:block}
-#modal-body .np-dropdown{position:static;margin-top:4px;box-shadow:none;width:100%}
 
 
 /* ═══ ARTISAN (create-from-template studio) ═══════════ */

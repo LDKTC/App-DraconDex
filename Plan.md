@@ -32,19 +32,19 @@
     - [x] เปลี่ยนชื่อ "เรียกดูตามประเภท" เป็น "ลิสโมดูล" เพื่อความสั้น และกระชับขึ้น
 - [x] เมื่อกดปุ่มบน navbar จะไม่เปลี่ยนตามปุ่มที่เปิดอีกต่อไปแล้ว จะเปลี่ยนเมื่อ เปิดmodule เท่านั้น
 #### part 2 : legacy module structure
-- [ ] import db views, legacy moduleจะไม่ถูกใช้อีกต่อไป และจะถูกนำออก, โดยlegacy module ทั้งหมดจะถูกแปลงเป็น Nexus module โดยจะconvert เป็น module ใน nexus nest
+- [x] import db views, legacy moduleจะไม่ถูกใช้อีกต่อไป และจะถูกนำออก, โดยlegacy module ทั้งหมดจะถูกแปลงเป็น Nexus module โดยจะconvert เป็น module ใน nexus nest
     - [x] module convert จะเลือกconvert module และsubmoduleของlegacy ให้ matchกับ nexus nest moduleที่มีอยู่ทั้งหมด
-    - [ ] import db views btn และbuilder ระบบทั้งหมดของ legacyจะถูกนำออกจากแอพ และไม่สามารถเปิดได้อีกต่อไป <!-- entry points removed + unopenable (verified); physical deletion of director.js/navigator/hero/writer.js + db/IPC counterparts deferred to a follow-up pass, per the build-first-delete-later scope confirmed for this round -->
+    - [x] import db views btn และbuilder ระบบทั้งหมดของ legacyจะถูกนำออกจากแอพ และไม่สามารถเปิดได้อีกต่อไป <!-- director.js/navigator/hero/writer.js + db/IPC counterparts physically deleted (~5,600 lines renderer+db); main.js/preload.js IPC surface trimmed from 495→268 handlers; migrate_v3.js + the legacy tables themselves untouched, still power Settings→Database→"Convert legacy data" and the boot-time prompt indefinitely; a stray wikilink to un-migrated legacy data now toasts + opens the conversion preview instead of routing into a deleted renderer; verified live via web-driver.mjs -->
 - [x] ถ้าผู้ใช้มีไฟล์ ในLegacy module, เมื่ออัพเดตมาเวอร์ชั่นนี้ จะถามผู้ใช้ด้วยpopup message ว่าจะexport เป็น.ddx เพื่อรอimport มา convert เป็น nexus หรือให้ auto convert ให้เลย
     - [x] หากผู้ใช้เลือกauto convert, จะแสดงรายการเปรียบเทียบสองฝั่งว่า project และmodule จากlegacy จะกลายเป็นอะไรบ้างใน nexus nest, โดยจะแสดงเป็น lists ผู้ใช้เห็น
         - [x] ระบบ แสดงconvert lists จะนำไปใช้กับระบบ import db ของแอพด้วยเช่นกัน
 
 ### Process 3
 #### part 1 : major-minor module knowledge update
-- [ ] ตอนนี้ major module ถูกใช้เรียก main tree module โดยมี child module เป็น minor module ที่ถูกเรียก
-    - [ ] ตอนนี้ให้เปลี่ยนวิธีเรียกใหม่ เพราะเกิดความเข้าใจผิดมานาน ทำให้การสร้างfeature หรือfunctionต่างๆเกิดความคลาดเคลื่อนไปจากเป้าหมายที่ต้องการ
-    - [ ] อันเก่า "Major module" ถูกใช้เรียก module หน้าสุด: อันใหม่ "Main module", อันใหม่ "Major module" จะใช้เรียก module ทุกอัน รวมถึงmoduleที่เป็น child ของ main module และตัวmain moduleเองก็เช่นกัน, อันใหม่ "Minor element" จะใช้เรียก element ย่อยของทุกmajor module เช่น object ของ classifier, area ของ locator, event ของ Chronicler, และของ major อื่นๆ
-    - [ ] ปรับใช้ระบบชื่อนี้กับทุกส่วนของแอพ เพื่อให้ใช้มาตรฐานใหม่นี้ และจะได้ไม่เกิดความสับสน
+- [x] ตอนนี้ major module ถูกใช้เรียก main tree module โดยมี child module เป็น minor module ที่ถูกเรียก
+    - [x] ตอนนี้ให้เปลี่ยนวิธีเรียกใหม่ เพราะเกิดความเข้าใจผิดมานาน ทำให้การสร้างfeature หรือfunctionต่างๆเกิดความคลาดเคลื่อนไปจากเป้าหมายที่ต้องการ
+    - [x] อันเก่า "Major module" ถูกใช้เรียก module หน้าสุด: อันใหม่ "Main module", อันใหม่ "Major module" จะใช้เรียก module ทุกอัน รวมถึงmoduleที่เป็น child ของ main module และตัวmain moduleเองก็เช่นกัน, อันใหม่ "Minor element" จะใช้เรียก element ย่อยของทุกmajor module เช่น object ของ classifier, area ของ locator, event ของ Chronicler, และของ major อื่นๆ
+    - [x] ปรับใช้ระบบชื่อนี้กับทุกส่วนของแอพ เพื่อให้ใช้มาตรฐานใหม่นี้ และจะได้ไม่เกิดความสับสน <!-- i18n copy (7 keys × 18 locales) + openMajorModuleModal→openMainModuleModal rename + code comments (mod/manager.js, classifier.js, viewer.js, inspector.js, artisan.js, hub/kinds.js, schema/ddl.js, docs/Architec.md) reworded to the new Main/Major/Minor-element split. hub/menus.js's isMajor gate and Architec.md's "Major เท่านั้น" context-menu lines describe CURRENT gating behavior and are updated together with Part 2, which changes that behavior. Persisted settings keys nestShowMajorIcon/nestShowMinorIcon left unrenamed internally (label text only) to avoid a silent toggle-state reset for existing users. -->
 #### part 2 : context menu
 - [ ] เพิ่มmenu ปักหมุดใน context menu ของ major module ทุกอันโดนไม่สนว่าต้องเป็น main tree module หรือไม่
 - [ ] เพิ่มsub menuให้กับ "move to" ของmajor module โดยจะแสดง menu ของmoduleที่สามารถย้ายไปได้ในทันที โดยไม่ต้องclick ก่อน
