@@ -50,6 +50,7 @@
 	margin-bottom:4px;
 }
 .ph h4{font-size:calc(10px * var(--fsc,1));font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);flex:1}
+.ph .icon{width:14px;height:14px}
 
 /* LIST ITEM */
 .li{
@@ -122,6 +123,7 @@
 	font-weight:700;text-transform:uppercase;letter-spacing:.06em;
 }
 .fhead:hover{color:var(--t2)}
+.fhead .icon{width:13px;height:13px;margin-right:4px;display:inline-block}
 .ftgl{font-size:calc(9px * var(--fsc,1));transition:transform var(--ease)}
 .ftgl.open{transform:rotate(90deg)}
 .fchildren{padding-left:10px}
