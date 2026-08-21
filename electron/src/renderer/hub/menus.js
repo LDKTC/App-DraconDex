@@ -193,6 +193,47 @@ async function toggleNavPinAndRefresh(id) {
   if (pop) pop.innerHTML = buildNavPinListHtml();
 }
 
+// Plan process4 part2 #1: right-click menu on the rail's Hub quick-menu
+// buttons (Kind Browser/Sage Hut/Import Dock) to toggle which of them show
+// on the rail — Nexus Nest is the rail's home button and can't be toggled
+// off, so it's left out of this list entirely. Scoped to those buttons
+// (not the whole #nav-sidebar, which openNavSidebarContextMenu already owns
+// for module pinning) via stopPropagation so the two menus never collide.
+const HUB_QUICK_MENU_ITEMS = [
+  ['kinds', 'kindBrowser', 'layer'],
+  ['sage', 'sageHut', 'sage'],
+  ['dock', 'importDock', 'import'],
+];
+function openHubQuickMenuContextMenu(ev) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  closeAllPopups();
+  S.ctxMenuPos = { x: ev.clientX, y: ev.clientY };
+  const pop = document.createElement('div');
+  pop.className = 'kind-popup context-menu-popup hub-quickmenu-popup';
+  pop.innerHTML = buildHubQuickMenuToggleHtml();
+  document.body.appendChild(pop);
+  pop.addEventListener('click', e => e.stopPropagation());
+  positionPopupNear(pop, ctxAnchor(ev).getBoundingClientRect());
+}
+function buildHubQuickMenuToggleHtml() {
+  const hqt = S.settings.hubQuickToggles || {};
+  return HUB_QUICK_MENU_ITEMS.map(([key, labelKey, icon]) => `
+    <div class="kind-list-item" onclick="toggleHubQuickMenuAndRefresh('${key}')">
+      <span class="kicon">${I[icon]}</span>
+      <span class="kli-name">${x(t(labelKey))}</span>
+      <span class="ctx-check">${hqt[key] !== false ? '✓' : ''}</span>
+    </div>`).join('');
+}
+function toggleHubQuickMenuAndRefresh(key) {
+  const cur = (S.settings.hubQuickToggles || {})[key] !== false;
+  S.settings.hubQuickToggles = Object.assign({}, S.settings.hubQuickToggles, { [key]: !cur });
+  saveUiSettings();
+  renderModuleRail();
+  const pop = document.querySelector('.hub-quickmenu-popup');
+  if (pop) pop.innerHTML = buildHubQuickMenuToggleHtml();
+}
+
 // Nexus Nest display options popup (Plan part1 #2) — 4 toggles driven by
 // S.settings, same .kind-popup + positionPopupNear idiom as every other
 // popup in this file.

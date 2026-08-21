@@ -21,6 +21,12 @@ Director/Navigator/Hero/Writer (4 ใน 7 นี้) ถูกซ่อนแ�
 Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2) — Scribe/Sage/Artisan
 ยังเป็นปุ่มปกติ พฤติกรรมภายในของทั้ง 7 โมดูล (§3–§9 ด้านล่าง) ไม่เปลี่ยน
 
+> nav rail ของฝั่ง v3 (Nexus Nest hub) ตั้งแต่ Process 4 part 2 มีปุ่มลัด
+> Kind Browser/Sage Hut/Import Dock ต่อจาก Nexus Nest — คลิกขวาที่ปุ่มกลุ่มนี้
+> เปิด popup ติ๊กถูกสลับซ่อน/แสดงทีละปุ่ม (Nexus Nest เป็นปุ่ม home ปิดไม่ได้
+> จึงไม่อยู่ในลิสต์) ดูรายละเอียดไฟล์ที่ [FILES.md](FILES.md) หัวข้อ
+> "Process 4 part 2"
+
 > หมายเหตุ: `flutter/` เป็น front-end อีกตัว (Flutter port) ที่ใช้ schema เดียวกัน
 > แต่แยกโค้ดกันโดยสิ้นเชิง — เอกสารนี้ครอบคลุมเฉพาะฝั่ง Electron
 

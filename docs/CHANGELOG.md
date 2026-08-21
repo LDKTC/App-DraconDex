@@ -19,6 +19,32 @@
 
 ---
 
+## 2026-08-21 — Nav rail quick-menu toggle + navbar/left-panel resize fixes (Process 4 part 2)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/src/renderer/hub/kinds.js`, `electron/src/renderer/hub/menus.js`,
+  `electron/src/renderer/core/state.js`, `electron/src/renderer/core/ui.js`,
+  `electron/css/nav-hub.css`, `electron/css/layout.css`
+- อะไรเปลี่ยน:
+  1. Nav rail เพิ่มปุ่มลัด Sage Hut/Import Dock ต่อจาก Kind Browser เดิม
+     (เดิมเข้าได้แค่ผ่าน Hub accordion header) พร้อม context menu (คลิกขวา)
+     ใหม่ให้สลับซ่อน/แสดงทีละปุ่มในสาม — Nexus Nest เป็นปุ่ม home ไม่รวมอยู่
+     ในลิสต์ตามที่ระบุใน Plan.md — สถานะเก็บใน `S.settings.hubQuickToggles`
+     (localStorage tier เดียวกับ `navToggles`)
+  2. `#nav-sidebar.nav-expanded .nav-btn` (nav-hub.css) เปลี่ยน padding แนวตั้ง
+     จาก `0` ตายตัวเป็น `calc(var(--nav) * .07)` — เดิม resize navbar กว้างขึ้น
+     แล้วปุ่มไม่ขยายในแกน Y เพราะ padding แนวตั้งไม่เคยผูกกับความกว้าง rail เลย
+  3. `#left-panel` (layout.css) เดิมมี `transition:width var(--ease)` ค้างอยู่
+     ระหว่างลาก resize ทุก mousemove ที่ set `--sidebar` ใหม่จะไป restart
+     animation 150ms เดิม ทำให้ panel กระตุก/ไล่ตามเมาส์ไม่ทัน — แก้ด้วยคลาส
+     `panel-resizing` (`transition:none`) toggle ระหว่างลากจริงเท่านั้น พร้อม
+     เพิ่ม `body.resize-drag-active{user-select:none}` กัน text-selection
+     กระพริบ และขยาย clamp บนสุดจาก 480 เป็น 560px
+- ทำไม: Plan.md "Process 4 / part 2 : add and fix" ทั้ง 3 ข้อ
+- Doc ที่อัปเดต: `docs/FILES.md` (ตาราง `hub/` line count + ย่อหน้าใหม่ท้าย
+  หัวข้อ Wyvern/Dragon), `docs/SYSTEMS.md` §1 (หมายเหตุ nav rail quick-menu)
+
+---
+
 ## 2026-08-20 — คืนค่า `.icon`/search-bar CSS ที่หายไปตอนลบ legacy modules (Process 4 part 1)
 - commit: `uncommitted`
 - ไฟล์ที่แก้: `electron/css/components.css`, `electron/css/nav-hub.css`,

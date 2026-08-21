@@ -270,16 +270,20 @@ function startLeftPanelResize(ev) {
   ev.preventDefault();
   leftPanelResizeState = { startX: ev.clientX, startWidth: q('#left-panel').getBoundingClientRect().width };
   q('#left-panel-resize')?.classList.add('is-resizing');
+  q('#left-panel')?.classList.add('panel-resizing');
+  document.body.classList.add('resize-drag-active');
 }
 document.addEventListener('mousemove', (ev) => {
   if (!leftPanelResizeState) return;
-  S.leftPanelWidth = Math.max(200, Math.min(480, leftPanelResizeState.startWidth + (ev.clientX - leftPanelResizeState.startX)));
+  S.leftPanelWidth = Math.max(200, Math.min(560, leftPanelResizeState.startWidth + (ev.clientX - leftPanelResizeState.startX)));
   applyLeftPanelWidth();
 });
 document.addEventListener('mouseup', () => {
   if (!leftPanelResizeState) return;
   leftPanelResizeState = null;
   q('#left-panel-resize')?.classList.remove('is-resizing');
+  q('#left-panel')?.classList.remove('panel-resizing');
+  document.body.classList.remove('resize-drag-active');
   localStorage.setItem(LEFT_PANEL_WIDTH_KEY, String(S.leftPanelWidth));
 });
 
