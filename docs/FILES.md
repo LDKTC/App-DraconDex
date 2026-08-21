@@ -249,7 +249,7 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 
 | โฟลเดอร์ | เดิม | ไฟล์ใหม่ | โหลดแบบ |
 |---|---|---|---|
-| `hub/` | 1301 | `kinds.js` 164 · `sections.js` 220 · `tree.js` 277 · `popups.js` 112 · `menus.js` 277 · `edit.js` 159 · `open.js` 93 | eager (`<script>` 7 ตัว, `kinds.js` ก่อน) |
+| `hub/` | 1301 | `kinds.js` 192 · `sections.js` 220 · `tree.js` 277 · `popups.js` 112 · `menus.js` 350 · `edit.js` 159 · `open.js` 93 | eager (`<script>` 7 ตัว, `kinds.js` ก่อน) |
 | `navigator/` | 1807 | `shell.js` 78 · `sidebar.js` 138 · `electron/main.js` 144 · `world.js` 80 · `origcat.js` 358 · `chars.js` 253 · `cats.js` 97 · `maps.js` 293 · `board.js` 367 | lazy ผ่าน `loadGroup('navigator')` |
 | `hero/` | 1088 | `shell.js` 61 · `project.js` 255 · `novel.js` 76 · `story.js` 311 · `tags.js` 63 · `modals.js` 323 | lazy ผ่าน `loadGroup('hero')` |
 
@@ -593,6 +593,29 @@ hub/kinds.js` (`goToNexusNestHub()`/`atHubHome` clear `importDockPage`/
 เดิม + คีย์ใหม่รอบนี้ `settingPageWorkspaceStyle`/`workspaceStyleDrakeDesc`/
 `workspaceStyleWyvernDesc`/`workspaceStyleDragonDesc`/`settingWorkspaceApply`/
 `settingWorkspaceApplyConfirm` ครบ 18 locale)
+
+Process 4 part 2 (add and fix): `electron/src/renderer/hub/kinds.js`
+(`renderModuleRail()` เพิ่มปุ่ม rail ลัดสำหรับ Sage Hut/Import Dock ต่อจาก
+Kind Browser เดิม — เดิมเข้าได้แค่ผ่าน Hub accordion header เท่านั้น — แต่ละปุ่ม
+ผูก `oncontextmenu="openHubQuickMenuContextMenu(event)"` และซ่อนด้วยคลาส
+`tool-toggle-hidden` เดิมตาม `S.settings.hubQuickToggles`), `electron/src/renderer/
+hub/menus.js` (ใหม่ — `openHubQuickMenuContextMenu()`/`buildHubQuickMenuToggleHtml()`/
+`toggleHubQuickMenuAndRefresh()`: popup ติ๊กถูกสลับการแสดงผลปุ่มลัด 3 ปุ่มนี้บน
+nav rail, สโคปเฉพาะปุ่มกลุ่มนี้ผ่าน `stopPropagation` เพื่อไม่ชนกับ
+`openNavSidebarContextMenu()` เดิมที่ผูกกับทั้ง `#nav-sidebar`), `electron/src/renderer/
+core/state.js` (`loadUiSettings()` เพิ่ม default `hubQuickToggles`
+`{kinds:true,sage:true,dock:true}` — เก็บ tier เดียวกับ `navToggles`, ไม่มี
+`nexusNest` เพราะเป็นปุ่ม home ปิดไม่ได้), `electron/css/nav-hub.css`
+(`#nav-sidebar.nav-expanded .nav-btn` เปลี่ยน `padding:0 10px` เป็น
+`padding:calc(var(--nav) * .07) 10px` — เดิม padding แนวตั้งเป็น 0 ตายตัว ทำให้
+resize navbar กว้างขึ้นแล้วปุ่มไม่ขยายในแกน Y), `electron/src/renderer/core/ui.js`
+(`startLeftPanelResize()`/`mouseup` handler toggle คลาส `panel-resizing` บน
+`#left-panel` และ `resize-drag-active` บน `body` ระหว่างลาก, ขยาย clamp บนสุด
+จาก 480 เป็น 560px), `electron/css/layout.css` (`#left-panel.panel-resizing{
+transition:none}` — สาเหตุอาการกระตุกคือ `transition:width var(--ease)` เดิม
+วิ่งแข่งกับค่า `--sidebar` ใหม่ที่ set ทุก mousemove ระหว่างลาก ทำให้ panel ไล่
+ตามเมาส์ไม่ทัน; `body.resize-drag-active{user-select:none}` กัน text-selection
+กระพริบระหว่างลากผ่านชื่อ module/แถว tree)
 
 Process 5 part 1 (setting — workspace layout): `electron/src/renderer/i18n.js`
 (`settingPageWorkspaceStyle` เปลี่ยนค่าเป็นคำเดียวกับ `settingGroupWorkspace`

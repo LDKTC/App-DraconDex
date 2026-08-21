@@ -174,6 +174,11 @@ function loadUiSettings(){
   // visible behavior so nobody's UI silently changes on upgrade).
   const quickExtras = Object.assign({ theme: false, account: false, profile: false }, saved.quickExtras || {});
   const navToggles = Object.assign({ importDb: true, exportDb: true, hashtag: true, colors: true }, saved.navToggles || {});
+  // Nav-rail Hub quick-menu buttons (Plan process4 part2 #1) — kindBrowser/
+  // sage/dock shortcuts toggled from the rail's own right-click menu
+  // (hub/menus.js openHubQuickMenuContextMenu); Nexus Nest is the rail's
+  // home button and always shows, so it has no entry here.
+  const hubQuickToggles = Object.assign({ kinds: true, sage: true, dock: true }, saved.hubQuickToggles || {});
   const statusToggles = Object.assign({ vault: true, breadcrumb: true, words: true, saveState: true }, saved.statusToggles || {});
   const workspaceStyle = WORKSPACE_STYLE_OPTIONS.includes(saved.workspaceStyle) ? saved.workspaceStyle : 'drake';
   // Process 5 part1: per-style nav orientation, sanitized against the
@@ -189,7 +194,7 @@ function loadUiSettings(){
   // — client-only, same tier as the other UI-chrome prefs above (see Plan
   // part2 #New Workspace's Dragon section for why this isn't DB-backed).
   const dragonLayout = saved.dragonLayout && typeof saved.dragonLayout === 'object' ? saved.dragonLayout : {};
-  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, statusToggles, workspaceStyle, navOrientation, navHorizontalDisplay, dragonLayout };
+  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, hubQuickToggles, statusToggles, workspaceStyle, navOrientation, navHorizontalDisplay, dragonLayout };
 }
 
 // Kind display names (Phase 22): the Unique set (KIND_LABEL, locale-

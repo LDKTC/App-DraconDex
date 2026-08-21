@@ -148,8 +148,17 @@ function renderModuleRail() {
   // dropped — the Nexus Nest hub section already offers the same
   // openMainModuleModal() both in its header (hub/sections.js) and its
   // empty state (nestEmptyHtml(), hub/tree.js), so this was a duplicate.
+  // Plan process4 part2 #1: Sage Hut/Import Dock join Kind Browser as rail
+  // shortcuts (previously only reachable via the Hub accordion's own header
+  // icons), each individually hideable from the rail's right-click quick-menu
+  // toggle (hub/menus.js openHubQuickMenuContextMenu) — Nexus Nest is the
+  // rail's home button and stays out of that toggle list.
+  const hqt = S.settings.hubQuickToggles || {};
+  const hqtHidden = (key) => hqt[key] === false ? ' tool-toggle-hidden' : '';
   let html = `<button class="nav-btn module-rail-tool${atHubHome ? ' active' : ''}" title="${t('nexusNest')}" onclick="goToNexusNestHub()">${I.home}<span class="nav-label">${t('nexusNest')}</span></button>
-    <button class="nav-btn module-rail-tool" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()">${I.layer}<span class="nav-label">${t('kindBrowser')}</span></button>`;
+    <button class="nav-btn module-rail-tool${hqtHidden('kinds')}" title="${t('kindBrowser')}" onclick="goToKindBrowserHub()" oncontextmenu="openHubQuickMenuContextMenu(event)">${I.layer}<span class="nav-label">${t('kindBrowser')}</span></button>
+    <button class="nav-btn module-rail-tool${hqtHidden('sage')}" title="${t('sageHut')}" onclick="openSageTab('dataSize')" oncontextmenu="openHubQuickMenuContextMenu(event)">${I.sage}<span class="nav-label">${t('sageHut')}</span></button>
+    <button class="nav-btn module-rail-tool${hqtHidden('dock')}" title="${t('importDock')}" onclick="goToImportDockPage()" oncontextmenu="openHubQuickMenuContextMenu(event)">${I.import}<span class="nav-label">${t('importDock')}</span></button>`;
   if (pinned.length) html += `<div class="rail-sep module-rail-tool"></div>`;
   for (const m of pinned) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
