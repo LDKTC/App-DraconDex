@@ -21,11 +21,63 @@ body[data-workspace="wyvern"] #hub-toggle-btn,
 body[data-workspace="wyvern"] #titlebar-vault{display:none}
 
 #workspace-toolbar{
-	flex-direction:column;align-items:center;gap:4px;padding:8px 4px;
+	/* display:flex was missing here (Process5 part1 fix) — every other rule
+	   on this element (flex-direction/align-items/gap) was a silent no-op
+	   without it, so the toolbar was laying its buttons out via plain block
+	   flow the whole time rather than the flex column it was written for;
+	   only visually forgiving in the vertical case (block-level buttons
+	   still stack), but broke outright once horizontal mode (below) needed
+	   a real flex row. #nav-sidebar (nav-hub.css) already had this. */
+	display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;
 	width:var(--nav);flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);
 }
 #workspace-toolbar.hidden{display:none}
 .wyvern-toolbar-sep{width:70%;height:1px;background:var(--border);margin:2px 0}
+
+/* Horizontal nav orientation (Plan process5 part1) — #nav-sidebar (Drake/
+   Dragon) or #workspace-toolbar (Wyvern) gets reparented by
+   applyNavOrientation() (core/boot.js) from its normal #app-row slot into
+   #nav-toolbar-h (index.html), a slim strip directly under the title bar.
+   Same element/markup/onclick handlers throughout — this is a pure layout
+   swap, column -> row, nothing re-renders. #nav-toolbar-h carries no fixed
+   height of its own, so it collapses to 0 whenever nothing has been
+   reparented into it (vertical mode, the common case).
+   ID-based compound selectors below (not a shared class) deliberately —
+   #nav-sidebar/#workspace-toolbar's own base column-layout rules are ID
+   selectors too, so only an equal-or-higher-specificity ID selector can
+   reliably outrank them regardless of file/rule order. */
+#nav-toolbar-h{display:flex;flex-shrink:0;overflow:hidden}
+body[data-nav-orientation="horizontal"] #title-left-zone{width:var(--sidebar)}
+body[data-nav-orientation="horizontal"] #nav-sidebar-resize{display:none}
+body[data-nav-orientation="horizontal"] #nav-sidebar,
+body[data-nav-orientation="horizontal"] #workspace-toolbar{
+	flex-direction:row;width:auto;height:44px;padding:0 10px;gap:6px;
+	border-right:none;border-bottom:1px solid var(--border);
+}
+body[data-nav-orientation="horizontal"] #nav-sidebar-spacer,
+body[data-nav-orientation="horizontal"] .nav-logo-btn{display:none}
+body[data-nav-orientation="horizontal"] #nav-sidebar .nav-btn,
+body[data-nav-orientation="horizontal"] #workspace-toolbar .nav-btn{
+	width:auto;height:32px;aspect-ratio:auto;padding:0 10px;gap:6px;justify-content:center;
+}
+body[data-nav-orientation="horizontal"] .wyvern-toolbar-sep{width:1px;height:24px;margin:0 2px}
+/* Button display mode (icon/label/both) — only meaningful in horizontal
+   orientation; vertical mode keeps its existing width-driven .nav-expanded
+   behavior (nav-hub.css) untouched. 'both' matches the global .nav-label
+   default already being display:none, so only 'label' needs to force it
+   visible while also hiding the icon; 'icon' is the existing global default
+   and needs no override. */
+body[data-nav-orientation="horizontal"][data-nav-display="both"] #nav-sidebar .nav-label,
+body[data-nav-orientation="horizontal"][data-nav-display="both"] #workspace-toolbar .nav-label,
+body[data-nav-orientation="horizontal"][data-nav-display="label"] #nav-sidebar .nav-label,
+body[data-nav-orientation="horizontal"][data-nav-display="label"] #workspace-toolbar .nav-label{
+	display:inline-block;
+}
+body[data-nav-orientation="horizontal"][data-nav-display="label"] #nav-sidebar .nav-btn .icon,
+body[data-nav-orientation="horizontal"][data-nav-display="label"] #workspace-toolbar .nav-btn .icon,
+body[data-nav-orientation="horizontal"][data-nav-display="label"] #nav-sidebar .nav-btn .kicon-img-icon{
+	display:none;
+}
 
 /* Wyvern drill-down breadcrumb (replaces the docked Nest tree entirely).
    Reused verbatim by Dragon's own breadcrumb below — same markup/classes,

@@ -617,6 +617,71 @@ transition:none}` — สาเหตุอาการกระตุกคื�
 ตามเมาส์ไม่ทัน; `body.resize-drag-active{user-select:none}` กัน text-selection
 กระพริบระหว่างลากผ่านชื่อ module/แถว tree)
 
+Process 5 part 1 (setting — workspace layout): `electron/src/renderer/i18n.js`
+(`settingPageWorkspaceStyle` เปลี่ยนค่าเป็นคำเดียวกับ `settingGroupWorkspace`
+ทุก locale — หน้านี้ไม่ใช่แค่ "เลือกสไตล์" อีกต่อไป ตอนนี้มี layout controls ด้วย
+จึงสมเหตุสมผลที่จะเรียกสั้นๆ ว่า "Workspace"; คีย์ใหม่ 8 ตัว
+`settingWorkspaceLayout`/`settingNavOrientation`/`navOrientationVertical`/
+`navOrientationHorizontal`/`settingNavDisplay`/`navDisplayIcon`/`navDisplayLabel`/
+`navDisplayBoth` ครบ 18 locale), `electron/src/renderer/core/state.js`
+(`NAV_ORIENTATION_DEFAULT = {drake:'vertical',wyvern:'horizontal',dragon:'vertical'}`,
+`loadUiSettings()` เพิ่ม `navOrientation` — object ต่อ workspace style, sanitize
+กันค่าเพี้ยนด้วย default map ข้างบน — และ `navHorizontalDisplay`
+(`'icon'|'label'|'both'`, default `'both'`) แทนที่ `wyvernToolbarOrientation` เดิม
+ที่ไม่เคยถูกอ่านที่ไหนเลย — dead state ตั้งแต่เพิ่มเข้ามา), `electron/src/renderer/
+core/boot.js` (ใหม่ — `applyNavOrientation()`: **reparent** `#nav-sidebar`
+(Drake/Dragon) หรือ `#workspace-toolbar` (Wyvern — ดู wyvern.js ว่าทำไม Wyvern
+ไม่ใช้ `#nav-sidebar` เลย) ระหว่างตำแหน่งปกติใน `#app` row กับ `#nav-toolbar-h`
+(mount ใหม่ใต้ title bar, index.html) ตาม orientation ที่ตั้งไว้ — element/markup/
+onclick เดิมทุกอย่าง แค่ย้าย parent, เรียกซ้ำได้ทุกครั้งที่ผู้ใช้กดสลับใน Setting โดย
+ไม่ต้อง reload; เรียกจาก `applyWorkspaceStyle()` ท้ายฟังก์ชัน), `electron/index.html`
+(`#nav-toolbar-h` mount ใหม่ต่อจาก `</header>`, `#nav-sidebar`'s เดิม
+`<div style="flex:1">` ได้ id `nav-sidebar-spacer` เพื่อซ่อนใน horizontal mode,
+splash script (a3) เดา `data-nav-orientation`/`data-nav-display` แต่เนิ่นๆ
+เหมือน (a2) เดา `data-workspace` เดิม — กัน flash ก่อน JS จริงรัน),
+`electron/src/renderer/wyvern.js` (`renderWyvernToolbar()` เพิ่ม
+`<span class="nav-label">` ให้ทุกปุ่ม — เดิมไม่มี label เลย เพราะไม่เคยต้องรองรับ
+`both`/`label` display mode มาก่อน), `electron/src/renderer/core/workspace-style.js`
+(ใหม่ — `settingWorkspaceLayoutHtml()`/`setNavOrientation()`/
+`setNavHorizontalDisplay()`: 2 แถวปุ่มเลือก vertical/horizontal และ icon/label/both
+ต่อท้ายการ์ดเลือกสไตล์เดิม ใช้ `.settings-option`/`.settings-options` จาก
+titlebar.css ที่มีอยู่แล้วแต่ไม่เคยถูกใช้จริงมาก่อนรอบนี้), `electron/css/workspace.css`
+(bug fix ที่เจอระหว่างทำ — `#workspace-toolbar` ไม่เคยมี `display:flex` เลยตั้งแต่สร้าง
+Wyvern ขึ้นมา ทำให้ `flex-direction`/`align-items`/`gap` เป็น no-op ทั้งหมด เดิมไม่มี
+ใครสังเกตเพราะ vertical mode ปุ่มยัง stack ตามปกติของ block flow อยู่ดี แต่ horizontal
+mode ใหม่พังทันทีถ้าไม่แก้; ส่วน horizontal-mode CSS ใหม่ทั้งหมดใช้ compound ID
+selector (`body[data-nav-orientation="horizontal"] #nav-sidebar, ...
+#workspace-toolbar`) ไม่ใช่ class ร่วม เพราะต้อง specificity ชนะกฎ column เดิมที่
+เป็น ID selector เหมือนกัน)
+
+Process 5 part 2 (file database — export/import format): `electron/main.js`
+(`db:exportModuleFile` เปลี่ยนนามสกุลไฟล์จาก `.json` เป็น `.mdx` — เดิมชนกับ
+`db:exportNexusFile` ที่เป็น `.json` เหมือนกัน แยกไม่ออกว่าไฟล์ไหนคือ nexus/module;
+`db:importModuleFile` เดิมรับแค่ `.json` เปลี่ยนเป็นรับทั้ง `.mdx`/`.json`
+(ไฟล์เก่าที่ export ไว้ก่อนรอบนี้ยัง import ได้ปกติ); `db:pickImportFile` เพิ่ม
+`.mdx` เข้า filter เดิม (`.ddx`/`.db`); ใหม่ — `db:importModuleFileAt(nexusId,
+parentModuleId,filePath)`: import module เหมือน `db:importModuleFile` ทุก
+ประการ แต่รับไฟล์ที่ pick มาจาก `db:pickImportFile` แล้วแทนที่จะเปิด dialog เอง —
+ตรวจ path กับ allowlist `pickedImportDbPaths` ชุดเดียวกับ `db:importMergeFile`;
+`db:importMergeFile` เพิ่ม param `targetNexusId` (optional) ส่งต่อให้
+`db.importDatabaseMerge`), `electron/src/db/import-merge.js`
+(`importDatabaseMerge(sourcePath, targetNexusId)` — ถ้ามี `targetNexusId` ใช้
+`getVaultDB(targetNexusId)` แทน `getDB()` ambient เดิม, เพื่อ merge เข้า nexus ที่
+เพิ่งสร้างใหม่ได้โดยไม่ต้องเปลี่ยน active-vault ของ window จริง — ปลอดภัยเพราะ
+`getVaultDB` resolve ตรงจาก id ไม่พึ่ง AsyncLocalStorage context เหมือน
+`sync.js`'s `serializeVault`/`applySnapshotCore` อยู่แล้ว), `electron/preload.js`
+(`db.importMergeFile` รับ param ที่ 2 เพิ่ม, `db.importModuleFileAt` ใหม่),
+`electron/src/renderer/core/views.js` (`importDatabaseFile()` เดิม pick→confirm→
+merge ตรงๆ เปลี่ยนเป็น pick→**เลือกเป้าหมาย**→merge/import: ใหม่ —
+`openImportTargetChoiceModal(filePath,kind)` popup 2 ปุ่ม "นำเข้าสู่ Nexus นี้"/
+"สร้าง Nexus ใหม่" (แยก hint text ตาม kind `'nexus'|'module'`, กำหนดจากนามสกุล
+ไฟล์ที่ pick มา — `.mdx`→module, อื่นๆ→nexus), `importIntoCurrentNexus()`/
+`importAsNewNexus()` (สร้าง nexus เปล่าใหม่ก่อนด้วยชื่อจากชื่อไฟล์ แล้ว import
+เข้า id ใหม่นั้นโดยตรง — ไม่ใช่ adopt ไฟล์เดิมเป็น vault file จริง ซึ่งไม่มี
+mechanism รองรับอยู่แล้ว), `finishVaultMergeImport()` (logic เดิมของ
+`importDatabaseFile()` ก่อนแยก แค่รับ `targetNexusId` เพิ่ม), `toastImportError()`
+(shared helper กัน hardcoded-Thai literal ซ้ำ 3 จุด))
+
 ---
 
 ## electron/src/db/ — ชั้นฐานข้อมูล (รันใน main process)

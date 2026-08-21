@@ -90,7 +90,19 @@
     var workspace = ['drake','wyvern','dragon'].indexOf(qsWorkspace) !== -1 ? qsWorkspace
       : (['drake','wyvern','dragon'].indexOf(saved.workspaceStyle) !== -1 ? saved.workspaceStyle : 'drake');
     document.body.dataset.workspace = workspace;
-  }catch(e){ document.body.dataset.workspace = 'drake'; }
+    /* (a3) Nav orientation, early (Process 5 part1) — same reasoning as (a2)
+       above: a real reparent only happens once applyNavOrientation() (boot.js)
+       runs, but the CSS this attribute drives (workspace.css) needs to be
+       correct before first paint or a wide/tall #nav-sidebar in the wrong
+       axis flashes for a frame. Defaults mirror NAV_ORIENTATION_DEFAULT
+       (core/state.js) — keep the two in sync. */
+    var navOrientDefault = { drake:'vertical', wyvern:'horizontal', dragon:'vertical' };
+    var savedNavOrient = (saved.navOrientation || {})[workspace];
+    document.body.dataset.navOrientation = (savedNavOrient === 'horizontal' || savedNavOrient === 'vertical')
+      ? savedNavOrient : navOrientDefault[workspace];
+    document.body.dataset.navDisplay = ['icon','label','both'].indexOf(saved.navHorizontalDisplay) !== -1
+      ? saved.navHorizontalDisplay : 'both';
+  }catch(e){ document.body.dataset.workspace = 'drake'; document.body.dataset.navOrientation = 'vertical'; document.body.dataset.navDisplay = 'both'; }
 
   /* (b) Progress controller. Ticks come from real checkpoints — the script tags
      below, then init() in core.js — never a timer pretending to be progress. */
@@ -164,12 +176,17 @@
     <button class="window-btn close" id="win-close" title="Close">x</button>
   </div>
 </header>
+<!-- Process 5 part1: horizontal-nav mount — applyNavOrientation() (core/boot.js)
+     reparents #nav-sidebar (Drake/Dragon) or #workspace-toolbar (Wyvern) in
+     here when that style's orientation setting is 'horizontal'. Empty and
+     height:0 (workspace.css) the rest of the time. -->
+<div id="nav-toolbar-h"></div>
 <div id="app">
   <nav id="nav-sidebar">
     <button class="nav-logo-btn" id="nav-logo-btn" title="DraconDex">
       <img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex">
     </button>
-    <div style="flex:1"></div>
+    <div id="nav-sidebar-spacer" style="flex:1"></div>
     <button class="nav-btn nav-util" id="btn-import-db" title="Import DB">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
