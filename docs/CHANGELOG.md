@@ -19,6 +19,34 @@
 
 ---
 
+## 2026-08-21 — Restore Tags page + Builder tab-move backward-fill (Process 6 part 2)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/src/renderer/core/views.js`, `electron/src/renderer/builder.js`
+- อะไรเปลี่ยน:
+  1. **Tags page** — `switchView()` เดิมลบ branch `'hashtag'` ไปพร้อมกับ
+     `'project-hashtag'` ตอนลบ legacy Director/Navigator/Hero/Writer ทิ้ง
+     (v.4.10.0) ทั้งที่คนละเรื่อง — `renderHashtagView()`/backend
+     (`api.hashtag.*`) ไม่เคยถูกลบเลย มีแค่ทางเข้าหายไป กดปุ่ม nav-sidebar
+     "ป้ายกำกับ" แล้วไม่มีอะไรเกิดขึ้นเงียบๆ มาตลอด — เพิ่ม branch กลับเข้าไป
+     เหมือนเดิม (มีรูปแบบเดียวกับ branch `'colors'` — ไม่มี tab bar,
+     ไม่ผ่าน Builder grid)
+  2. **Builder tab-move-to-new-pane** — `builderMoveTabTo()` แยกพฤติกรรมออก
+     จาก `builderCloseTab()` แล้ว 2 จุด: fallback ของ active tab ใน source
+     pane เปลี่ยนจากสูตรตำแหน่ง (`tabs[idx]??tabs[idx-1]`) เป็น
+     `pickBackwardActiveTab()` ใหม่ — ไล่ `pane.history` (back/forward log
+     เดิม) ย้อนหลังหา tab ที่เพิ่งดูล่าสุดที่ยังอยู่จริง; และ source pane ที่
+     ว่างเปล่าหลังย้าย tab ออกไม่ปิด pane อัตโนมัติอีกต่อไป (เดิมเรียก
+     `builderCloseIfEmpty` เหมือนปิด tab) — ปล่อยให้ว่างอยู่แล้วเติม
+     `builderEmptyPaneHtml()` (helper ใหม่ ดึงมาจาก `buildBuilderPageHtml()`
+     เดิม) เข้า `.bpane-body` ตรงๆ ทันที ส่วนปิด tab สุดท้ายจริงๆ ยังปิด pane
+     เหมือนเดิมไม่แตะ
+- ทำไม: Process 6 part 2 ใน Plan.md — ข้อ 1 เป็นของหายจากการลบ legacy รอบก่อน,
+  ข้อ 2 เป็นพฤติกรรมที่ผู้ใช้อยากให้แยกจาก "ปิด tab" ให้ชัดเจน (ย้าย ≠ ปิด)
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` §4.4, `docs/Architec.md` §1.4,
+  `docs/FILES.md` หัวข้อ "Process 6 part 2" + คีย์ `hashtag.js`/`builder.js`
+
+---
+
 ## 2026-08-21 — Nav rail pin/resize/horizontal-layout/pinned-click fixes + themed scrollbar (Process 6 part 1)
 - commit: `uncommitted`
 - ไฟล์ที่แก้: `electron/index.html`, `electron/css/{base,nav-hub,workspace}.css`,

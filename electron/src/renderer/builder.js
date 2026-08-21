@@ -709,18 +709,43 @@ async function builderMoveTabTo(drag, paneIdx, targetKey, zone) {
 
   if (!crossPane) { renderNexusHome(); return; }
 
-  // Cross-pane: same active-tab fallback builderCloseTab already uses.
-  if (srcPane.active === drag.key) srcPane.active = srcPane.tabs[srcIdx] ?? srcPane.tabs[srcIdx - 1] ?? null;
+  // Cross-pane, Process 6 part 2: falls back to whatever this pane's own
+  // visit history says was open most recently before the moved tab, not
+  // just the tab that now happens to sit at the same array index —
+  // builderCloseTab's own fallback stays position-based (untouched, see
+  // pickBackwardActiveTab's own comment below for why the two diverge).
+  if (srcPane.active === drag.key) srcPane.active = pickBackwardActiveTab(srcPane, drag.key);
   dstPane.active = drag.key;
 
-  // Plan part1 #1: the source pane may now be empty — close it and correct
-  // the destination index for the renumbering that causes (dstPane's own
-  // object identity is unaffected, only its numeric index may shift down).
+  // Process 6 part 2: a tab MOVING to another pane no longer auto-closes
+  // the now-possibly-empty source pane the way builderCloseTab's own
+  // builderCloseIfEmpty call still does for an actual tab close — it's left
+  // open showing the same "waiting for a tab" placeholder a brand-new pane
+  // shows, so the user can drag/create a new tab into it. Only closing
+  // every tab in a pane (builderCloseTab) removes the pane itself.
   if (srcPane.tabs.length === 0) {
-    const removed = builderCloseIfEmpty(drag.paneIdx);
-    if (removed && drag.paneIdx < paneIdx) paneIdx--;
+    const srcBody = q(`#main-inner [data-pane="${drag.paneIdx}"] .bpane-body`);
+    if (srcBody) srcBody.innerHTML = builderEmptyPaneHtml();
   }
   await builderFocusPane(paneIdx, builderParseKey(drag.key));
+}
+
+// Process 6 part 2: picks the tab a pane should fall back to once
+// `excludeKey` leaves it — walks the pane's own history (Phase back/forward
+// log, chronological visit order) backwards so the most recently-open
+// still-present tab resurfaces, rather than builderCloseTab's simpler
+// position-based `tabs[idx] ?? tabs[idx-1]` (left as-is there — Plan.md only
+// asks for this on the move-to-another-pane path). Falls back to the last
+// tab in strip order if history has no usable entry (e.g. a pane that never
+// recorded a visit), and to null once the pane has no tabs left at all.
+function pickBackwardActiveTab(pane, excludeKey) {
+  // pane.history holds parsed refs (builderNavigate), not the string keys
+  // pane.tabs/pane.active use — re-derive the key to compare like-for-like.
+  for (let i = pane.history.length - 1; i >= 0; i--) {
+    const k = builderPageKey(pane.history[i]);
+    if (k !== excludeKey && pane.tabs.includes(k)) return k;
+  }
+  return pane.tabs[pane.tabs.length - 1] ?? null;
 }
 
 // Same-pane reorder only (Plan part1 #2) — inserts at the exact index the
@@ -874,6 +899,19 @@ function bindBuilderGridDrop() {
 
 // Best-effort static content for a pane whose DOM was wiped (e.g. after a
 // legacy view rewrote #main-inner). Interactions return when it's focused.
+// Process 6 part 2: the "waiting for a tab" placeholder — shared by
+// buildBuilderPageHtml's own default branch (core/views.js, a fresh/empty
+// nexus) and builderMoveTabTo below (a pane emptied by a tab moving OUT to
+// another pane, which no longer auto-closes the pane the way closing a tab
+// still does).
+function builderEmptyPaneHtml() {
+  return `<div class="empty" style="margin-top:80px">
+    <div class="ei"><img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
+    <h3>${x(S.nexus.name)}</h3>
+    <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
+  </div>`;
+}
+
 function builderStaticPageHtml(ref) {
   try {
     if (ref?.kind === 'module') {

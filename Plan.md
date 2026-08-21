@@ -41,11 +41,11 @@
     - [x] ถ้า pinned module นั้นไม่ใช้module collection, จะทำการเปิด moduleนั้น builder ด้วยเช่นกัน
 - [x] sliderของ app เมื่อมีcontentยาวกว่าขนาดจอ เป็นสีขาว, ช่วยปรับสีให้เข้า theme app    
 #### part 2 : module
-- [ ] เพิ่มหน้าtags ที่หายไปจากการลบ legacy, โดยปุ่มจะอยู่บน navbar เหมือนเดิม
-    - [ ] tags pages จะแสดงบนหน้าmain area แบบเดียวกับ color โดยจะไม่มีtabbar ด้านบน
-- [ ] เมื่อย้ายtabs ไปdock paneใหม่, module ที่ควรเปิดในpane เก่าก่อนที่tabจะถูกย้าย, ควรจะเป็น module ที่เหลืออยู่ในpaneนั้นที่เปิดก่อนหน้าในลำดับbackwards
-    - [ ] หากpaneนั้นที่ถูกดึงtabไป ไม่เหลือ tabsอยู่อีกแล้ว ให้แสดงเป็นหน้าจอdefaultเพื่อรอการสร้างtabจากผู้ใช้
-        - [ ] แต่หากเป็นกรณีClose tab จนไม่มีtabsในpaneแยกนั้นให้ปิดpaneนั้นเหมือนเดิม
+- [x] เพิ่มหน้าtags ที่หายไปจากการลบ legacy, โดยปุ่มจะอยู่บน navbar เหมือนเดิม
+    - [x] tags pages จะแสดงบนหน้าmain area แบบเดียวกับ color โดยจะไม่มีtabbar ด้านบน
+- [x] เมื่อย้ายtabs ไปdock paneใหม่, module ที่ควรเปิดในpane เก่าก่อนที่tabจะถูกย้าย, ควรจะเป็น module ที่เหลืออยู่ในpaneนั้นที่เปิดก่อนหน้าในลำดับbackwards
+    - [x] หากpaneนั้นที่ถูกดึงtabไป ไม่เหลือ tabsอยู่อีกแล้ว ให้แสดงเป็นหน้าจอdefaultเพื่อรอการสร้างtabจากผู้ใช้
+        - [x] แต่หากเป็นกรณีClose tab จนไม่มีtabsในpaneแยกนั้นให้ปิดpaneนั้นเหมือนเดิม
 
 ### Process 7
 #### part 1 : animating

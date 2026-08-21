@@ -323,11 +323,28 @@ Director, chapter ของ Writer) จะถูก parse + resolve ตอน sa
 - มีเครื่องมือ (เลือก/เพิ่มจุด/ย้าย) — ต้องเลือก area ก่อนใช้ tool
 
 ### 4.4 Tags / ป้ายกำกับ (electron/src/renderer/hashtag.js)
+> ⚠️ อัปเดตหลัง legacy deletion (v.4.10.0): ปุ่ม **Project Tags** เดิม (ดูแท็ก
+> ในโปรเจกต์ + object/event ที่ติดแท็ก — read-only) หายไปพร้อม Director ที่ถูกลบ
+> ทิ้งจริง — ไม่ใช่แค่ซ่อน — เพราะพึ่ง `S.project` ตรงๆ ไม่มีทางกลับมาแล้วนอกจาก
+> เขียนใหม่ ปุ่มที่เหลืออยู่คือ **ป้ายกำกับ global** เท่านั้น ซึ่งตอนนี้ไม่ใช่
+> "เครื่องมือระดับโปรเจกต์" อีกต่อไป (หัวข้อ §4 นี้) — เป็นปุ่ม `#nav-sidebar`
+> แบบ standalone (`data-panel="hashtag"`) ที่ใช้ได้เสมอไม่ว่าจะเปิด Director
+> project อยู่หรือไม่ — ดูรายละเอียดด้านล่าง
 - แท็กเป็น **global** (`hashtag` ตารางเดียวทั้งแอป) ผูกกับ project / object /
   event ผ่านตาราง mapping และโมดูลอื่นก็มี mapping ของตัวเอง
-  (world, world character, game, game character, game element)
-- rail มี 2 ปุ่ม: **Project Tags** (ดูแท็กที่ใช้ในโปรเจกต์ + รายการ object/event
-  ที่ติดแท็ก — read-only) และ **ป้ายกำกับ global** (ล่างสุด — เพิ่ม/แก้/ลบแท็กได้)
+  (world, world character, game, game character, game element, **v3 module**
+  ผ่าน `module_hashtag` — ตัวกรอง tag ใน `mod/viewer.js`/`core/pickers.js`
+  อ่านพูลเดียวกันนี้)
+- กดปุ่ม "ป้ายกำกับ" บน `#nav-sidebar` (หรือ Wyvern/Dragon ผ่าน
+  `wyvernGoToView('hashtag')`) → `switchView('hashtag')` → `renderHashtagView()`
+  (`electron/src/renderer/hashtag.js`) เขียนทั้ง `#left-panel-inner` (หัว
+  "ป้ายกำกับ") และ `#main-inner` (grid การ์ดแท็ก + ปุ่ม "+ เพิ่ม Tag") ตรงๆ —
+  ไม่มี tab bar, ไม่ผ่าน Builder split-pane เลย เหมือนหน้า "จัดการสี" (§4.5)
+  ทุกจุด (ทั้งคู่ผ่าน `leaveBuilderGrid()` ก่อนเขียนทับ `#main-inner`)
+- **Process 6 part 2**: ปุ่มนี้กดแล้วไม่ทำอะไรเลยเงียบๆ (ไม่ error) มาตั้งแต่
+  v.4.10.0 — `switchView()`'s `'hashtag'` branch หายไปตอนลบ legacy ทั้งที่
+  ตัวฟังก์ชัน/backend (`api.hashtag.*`) ไม่เคยถูกลบเลย เพิ่ม branch กลับเข้าไป
+  แล้ว ไม่ต้องแก้อะไรที่อื่น
 
 ### 4.5 จัดการสี (Colors)
 - ตาราง `use_color` ใช้ร่วมทุกโมดูล — panel มี color wheel + รายการชุดสี

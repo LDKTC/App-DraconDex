@@ -355,7 +355,7 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
 | `hub.js` | ~1240 (เดิมเอกสารว่า 781 — ตัวเลขนี้ตกค้างมาหลายรอบ ยังไม่ได้ sync เต็ม) | Nexus nest hub: module rail (+ `goToNexusNestHub` home button, ปุ่มแรกในแถบ ก่อน "+create"), accordion (Nest/Sage Hut/Import Dock — แต่ละ section มี `.acc-body` เลื่อนแยกกันเองผ่าน `#hub-body` flex layout, ดู style.css), nest tree drag-drop (โมดูลไหนก็ reparent ข้าม parent ได้ ไม่ล็อกเฉพาะ top-level แล้ว — `onNestDrop`), `buildNestRow`/`buildNestItemRow` เรนเดอร์ `.tree-chev-spacer` แทนที่ chevron ว่างเปล่าเมื่อแถวไม่มี child (Plan part1 #5 — กัน `.kicon` เลื่อนซ้ายไม่ตรงคอลัมน์กับแถวข้างเคียง), context menu (ปุ่ม "Create" เปิด hover submenu แทนการแสดง kind-list แบนราบเดิม — `openCreateSubmenu`/`positionSubmenuNear`)/rename/duplicate/move-to/pin/**"เปิดในแท็บใหม่"**+**"เปิดในหน้าต่างใหม่"**+**"เปิดใน Pane ใหม่ ▸"** (เฉพาะ module ที่มี Builder page เอง คือไม่ใช่ `collector` — `openModuleInNewTab`/`openModuleInNewWindow`/`openModuleInNewPane`/`openPaneDirectionSubmenu`/`buildPaneDirectionListHtml`, Plan part1 #3; `openModuleInNewTab` เพิ่มรอบ procress1 part2 #1 — push key เข้า `pane.tabs` เองก่อนเรียก `openModuleNode` เพื่อเลี่ยง replace-in-place ของ `builderNavigate`), icon popup, `buildModuleDetailHtml`, `wrapPageView` (ห่อ Sage Hut/Import Dock file-preview/Kind Browser ด้วย resize handle — Plan part1 #2). **Plan part2 #2.5**: `reloadModuleTree` ดึง `module:getNestItems` คู่กับ `getTree` แล้วเติมทั้ง `S.nestItems` ผ่าน `seedNestItems`/`seedNestItemsFor` (ทุกโมดูล content kind ได้ entry เสมอ — โมดูลว่างได้ `[]` — จึงไม่มีการ fetch lazy ทีละโมดูลตอนเรนเดอร์แรกอีก); `scheduleNestRender()` รวบ re-render ที่มาจาก path async (`ensureNestItemsLoaded`/`invalidateNestItems`/`closeStaleItemTabs`) เป็นครั้งเดียวต่อ microtask — `renderNexusHome()` เองยังเป็น sync ตามเดิม; `invalidateNestItems` ดึงลิสต์ครั้งเดียวแล้วส่งต่อให้ `closeStaleItemTabs` (เดิมดึงซ้ำ 2-3 รอบ) และเคลียร์ `S.sageHutCache` |
-| `builder.js` | ~660 | Editor-group shell — recursive split-pane layout tree (`builderSplitPane`/`builderClosePane`, ซ้อนได้ไม่จำกัดชั้น, Part 4), tab drag-reorder/cross-pane move/pop-out เป็นหน้าต่างแยก, toggle Module Inspector dock, auto-split เมื่อลาก tab ไปวางขอบ pane; `pruneStaleLayoutElements` กวาด DOM ที่หลงเหลือจาก legacy view (เช่น Scribe, Nexus picker — เขียนทับ `#main-inner.innerHTML` ตรงๆ) ออกก่อน re-render grid ทุกครั้ง กัน pane ค้างที่ปิดไม่ได้. **procress1 part2** (uncommitted): `builderNavigate` เปิด module/file/item ปกติ **แทนที่แท็บ active เดิม** แทนการ push แท็บใหม่เสมอ (replace-in-place ที่ index เดิม เหมือน Sage Hut sub-view branch ที่มีอยู่แล้ว — ต้องเปิดผ่าน context-menu "เปิดในแท็บใหม่"/`openModuleInNewTab` ถึงจะสะสมแท็บ); ปุ่ม split/close pane แบบ inline (◫/⬓/×) ใน `builderPaneHeadHtml` ถูกถอดออก ย้ายไปเป็น right-click context menu แทน (`openBuilderPaneContextMenu`/`buildBuilderPaneContextMenuHtml`/`openBuilderSeparateSubmenu` — เมนู "แยกส่วน Pane ▸" ซ้อน submenu split h/v เหมือนแพทเทิร์น `openPaneDirectionSubmenu` ใน hub/menus.js, "ปิด pane" เป็นรายการ top-level แยกเมื่อ pane ถูก split แล้ว; ผูก `oncontextmenu` ครั้งเดียวใน `ensureNodeElement` เหมือน ResizeObserver เดิม); `builderCloseTab` เมื่อปิดแท็บสุดท้ายของ pane เดี่ยว เรียก `builderOpenPage(null)` แทน `renderNexusHome()` ตรงๆ — เคลียร์ `S.activeModuleNode`/`filePreview`/`sageHut`/`activeItemNode` ก่อนเรนเดอร์ ไม่งั้นเนื้อหาเก่าค้างอยู่ทั้งที่แท็บว่างแล้ว |
+| `builder.js` | ~950 | Editor-group shell — recursive split-pane layout tree (`builderSplitPane`/`builderClosePane`, ซ้อนได้ไม่จำกัดชั้น, Part 4), tab drag-reorder/cross-pane move/pop-out เป็นหน้าต่างแยก, toggle Module Inspector dock, auto-split เมื่อลาก tab ไปวางขอบ pane; `pruneStaleLayoutElements` กวาด DOM ที่หลงเหลือจาก legacy view (เช่น Scribe, Nexus picker — เขียนทับ `#main-inner.innerHTML` ตรงๆ) ออกก่อน re-render grid ทุกครั้ง กัน pane ค้างที่ปิดไม่ได้. **procress1 part2** (uncommitted): `builderNavigate` เปิด module/file/item ปกติ **แทนที่แท็บ active เดิม** แทนการ push แท็บใหม่เสมอ (replace-in-place ที่ index เดิม เหมือน Sage Hut sub-view branch ที่มีอยู่แล้ว — ต้องเปิดผ่าน context-menu "เปิดในแท็บใหม่"/`openModuleInNewTab` ถึงจะสะสมแท็บ); ปุ่ม split/close pane แบบ inline (◫/⬓/×) ใน `builderPaneHeadHtml` ถูกถอดออก ย้ายไปเป็น right-click context menu แทน (`openBuilderPaneContextMenu`/`buildBuilderPaneContextMenuHtml`/`openBuilderSeparateSubmenu` — เมนู "แยกส่วน Pane ▸" ซ้อน submenu split h/v เหมือนแพทเทิร์น `openPaneDirectionSubmenu` ใน hub/menus.js, "ปิด pane" เป็นรายการ top-level แยกเมื่อ pane ถูก split แล้ว; ผูก `oncontextmenu` ครั้งเดียวใน `ensureNodeElement` เหมือน ResizeObserver เดิม); `builderCloseTab` เมื่อปิดแท็บสุดท้ายของ pane เดี่ยว เรียก `builderOpenPage(null)` แทน `renderNexusHome()` ตรงๆ — เคลียร์ `S.activeModuleNode`/`filePreview`/`sageHut`/`activeItemNode` ก่อนเรนเดอร์ ไม่งั้นเนื้อหาเก่าค้างอยู่ทั้งที่แท็บว่างแล้ว |
 | `inspector.js` | 212 | Module Inspector dock: description/แท็ก/แอตทริบิวต์/ลิงก์/ปุ่ม Version History; `loadInspectorData` เรียก `module:getInspector` ครั้งเดียวแทน 4 call ขนาน (Plan part2 #2.1) — คีย์ `{attrs,tags,links,ui}` เหมือนเดิมเพราะ hub.js/mod/classifier.js/mod/manager.js อ่าน (และแก้) `S.inspectorData` ตรงๆ |
 | `iconpicker.js` | 266 | Icon/Color picker ฝัง (ไอคอนแอป/symbol เดิม/อัปโหลด+crop วงกลม) |
 | `versions.js` | 78 | แผง Version History (แทน Inspector dock ชั่วคราวตอนเปิด) |
@@ -749,6 +749,39 @@ scrollbar ขาวของ Chromium ทันทีที่ content ยาว
 ไล่ตั้ง class ทีละจุด), `electron/src/renderer/i18n.js` (คีย์ใหม่
 `settingNavVerticalAlwaysLabel` ครบ 18 locale ต่อจาก `navDisplayBoth` เดิม)
 
+Process 6 part 2 (module): `electron/src/renderer/core/views.js` (`switchView()`
+เดิมลบ branch `'hashtag'` ไปพร้อมกับ `'project-hashtag'` ตอนลบ legacy
+Director/Navigator/Hero/Writer ทิ้ง (v.4.10.0) ทั้งที่คนละเรื่องกัน —
+`'project-hashtag'`/`renderProjectHashtagView` พึ่ง `S.project` (Director-only)
+จริงๆ ตายไปพร้อม Director สมควรแล้ว แต่ `'hashtag'`/`renderHashtagView` เป็นหน้า
+global ไม่พึ่ง Director เลย, ปุ่ม nav-sidebar เดิม (`data-panel="hashtag"`),
+backend (`api.hashtag.*`/`electron/src/db/hashtag.js`) และตัว
+`renderHashtagView()` เองก็รอดมาสมบูรณ์ — มีแค่ทางเข้าใน `switchView()` หายไป
+กดปุ่มแล้วไม่มีอะไรเกิดขึ้นเลยเงียบๆ (ไม่ error ไม่ partial-render) มาตั้งแต่
+v.4.10.0 จนตอนนี้ — เพิ่ม `else if (v==='hashtag') { await
+loadModule('src/renderer/hashtag.js'); renderHashtagView(); }` กลับเข้าไป
+ข้างๆ branch `'colors'` เดิม ไม่แตะไฟล์อื่นเลย; `buildBuilderPageHtml()`'s
+default-empty branch (เดิม inline markup โลโก้+ชื่อ nexus+memo) ย้ายไปเป็น
+`builderEmptyPaneHtml()` ใน builder.js แทน — Process 6 part 2's เรื่อง #2
+ด้านล่างต้องใช้ markup เดียวกันนี้เพื่อเติมใน pane ที่ tab ถูกย้ายออกจนว่างเปล่า
+เลยรวมเป็น helper เดียวกันแทนที่จะก็อปสอง), `electron/src/renderer/builder.js`
+(`builderMoveTabTo()` — ย้าย tab ข้าม pane เดิมมี 2 พฤติกรรมที่ Plan.md ต้องการ
+ให้แยกจาก `builderCloseTab()`: (1) fallback ของ active tab ใน source pane เดิม
+ใช้สูตรเดียวกับ `builderCloseTab` (`tabs[srcIdx] ?? tabs[srcIdx-1]` — อิง
+ตำแหน่งในแถว tab strip) เปลี่ยนเป็น `pickBackwardActiveTab(pane, excludeKey)`
+ใหม่ — ไล่ `pane.history` (ของเดิม back/forward log ที่เก็บ ref object ไม่ใช่
+string key ต้องแปลงผ่าน `builderPageKey()` ก่อนเทียบ) ย้อนหลังหา tab ที่เพิ่งเปิด
+ดูล่าสุดที่ยังอยู่ใน `pane.tabs` จริง แทนตำแหน่งเฉยๆ — ต่างกันชัดเจนตอนผู้ใช้
+สลับกลับไปดู tab เก่าก่อนย้าย tab อื่นออก (ยืนยันจริงผ่าน driver: เปิด A→B→C
+แบบแท็บใหม่ทั้งคู่ แล้วสลับกลับไป A, ย้าย A ออก — สูตรตำแหน่งเดิมจะได้ B (อยู่
+ติดกันหลัง splice) แต่สูตร history ใหม่ได้ C (ดูล่าสุดจริงก่อนสลับกลับ A));
+(2) source pane ที่ tabs ว่างเปล่าหลังย้าย tab ออก เดิมเรียก `builderCloseIfEmpty`
+ปิด pane ทิ้งอัตโนมัติเหมือน `builderCloseTab` ทำ — เอาออก ปล่อยให้ pane ว่างเปล่า
+ยังคงอยู่ (ไม่ merge ไปไหน) แล้วเติม `builderEmptyPaneHtml()` เข้า
+`.bpane-body` ของ pane นั้นตรงๆ ทันที (ไม่ต้องรอ focus) — ส่วน
+`builderCloseTab()` เองไม่แตะเลยตามที่ Plan.md ระบุชัดว่ากรณีปิด tab สุดท้ายจริงๆ
+ยังต้องปิด pane เหมือนเดิม — ยืนยันทั้งสองเคสแยกกันผ่าน driver แล้ว)
+
 ---
 
 ## electron/src/db/ — ชั้นฐานข้อมูล (รันใน main process)
@@ -950,10 +983,16 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   เครื่องมือ (`setMapTool` เลือก/เพิ่มจุด/ลบ), modal map/area, บันทึกจุดผ่าน
   `api.map.setPoints`
 
-### hashtag.js (140 บรรทัด)
-- หน้าแท็ก global (`renderHashtagView` — เพิ่ม/แก้), หน้า Project Tags
-  (`renderProjectHashtagView` — เลือกแท็กเพื่อดู object/event ที่ใช้) และหน้า
-  จัดการสี (`renderColorSettings` — wheel + ลบสี)
+### hashtag.js (75 บรรทัด)
+- หน้าแท็ก global (`renderHashtagView` — เพิ่ม/แก้/ลบผ่าน `openHashtagModal`) และหน้า
+  จัดการสี (`renderColorSettings` — wheel + ลบสี) เท่านั้น — `renderProjectHashtagView`
+  (หน้า Project Tags ของ Director) ถูกลบไปพร้อม legacy deletion (v.4.10.0)
+  เพราะพึ่ง `S.project`; **Process 6 part 2**: `renderHashtagView` เองรอดจากรอบ
+  ลบนั้นมาโดยไม่มีอะไรเรียกมันอีกเลย — `switchView()` (core/views.js) เสียกิ่ง
+  `'hashtag'` ไปตอนลบ `'project-hashtag'` ทิ้ง (คนละ branch แต่ลบพร้อมกัน) ทำให้
+  ปุ่ม nav-sidebar เดิม (`data-panel="hashtag"`) กดแล้วไม่ทำอะไรเลยตั้งแต่ v.4.10.0
+  — เพิ่ม branch กลับเข้า `switchView()` แล้ว ไม่แตะไฟล์นี้เลย (ของเดิมสมบูรณ์
+  อยู่แล้ว รวม backend `api.hashtag.*`/db/hashtag.js ที่ไม่เคยถูกลบ)
 
 ### navigator.js — Navigator (World)
 
