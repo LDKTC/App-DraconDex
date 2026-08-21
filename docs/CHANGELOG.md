@@ -19,6 +19,40 @@
 
 ---
 
+## 2026-08-21 — Workspace nav orientation + .mdx module export/import target choice (Process 5)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/index.html`, `electron/main.js`, `electron/preload.js`,
+  `electron/css/workspace.css`, `electron/src/db/import-merge.js`,
+  `electron/src/renderer/i18n.js`, `electron/src/renderer/wyvern.js`,
+  `electron/src/renderer/core/{state,boot,views,workspace-style}.js`
+- อะไรเปลี่ยน:
+  1. **part 1 (setting)** — Setting → Workspace หน้า "Workspace Style" เปลี่ยน
+     ชื่อเป็น "Workspace" เฉยๆ (ค่า i18n key `settingPageWorkspaceStyle` เท่ากับ
+     `settingGroupWorkspace` ทุก locale แล้ว) เพราะหน้านี้ตอนนี้มีมากกว่าแค่เลือก
+     สไตล์ — เพิ่ม layout controls ใหม่: nav orientation ต่อ workspace style
+     (vertical/horizontal, default Drake=vertical, Wyvern=horizontal,
+     Dragon=vertical, override ได้แบบ live ไม่ต้อง restart) และเมื่อ horizontal
+     เลือกได้เพิ่มว่าจะโชว์ icon/label/ทั้งคู่ — กลไกเบื้องหลังคือ
+     `applyNavOrientation()` (boot.js) **ย้าย parent** ของ `#nav-sidebar`/
+     `#workspace-toolbar` ระหว่าง `#app` row เดิมกับ `#nav-toolbar-h` (mount ใหม่
+     ใต้ title bar) — element/onclick เดิมทั้งหมด ไม่มีการ re-render ใหม่
+  2. **part 2 (file database)** — module export เปลี่ยนนามสกุลจาก `.json` เป็น
+     `.mdx` (เดิมชนกับ nexus snapshot export ที่เป็น `.json` เหมือนกัน แยกไม่ออก),
+     import `.ddx`/`.mdx` ตอนนี้ถามก่อนว่าจะนำเข้าสู่ Nexus ที่เปิดอยู่ หรือสร้าง
+     Nexus ใหม่แล้วนำเข้าเข้าไปแทน (เดิม merge เข้า vault ที่เปิดอยู่เสมอ ไม่มีทาง
+     เลือก) — "สร้างใหม่" คือสร้าง nexus เปล่าจริงๆ ก่อน (ชื่อจากชื่อไฟล์) แล้ว
+     import เข้า id นั้นตรงๆ ผ่าน `getVaultDB(targetNexusId)` แทน `getDB()` ambient
+     เดิม ไม่ใช่ adopt ไฟล์ภายนอกเป็น vault file จริง (ไม่มี mechanism รองรับ)
+  3. bug fix ที่เจอระหว่างทำ: `#workspace-toolbar` (Wyvern) ไม่เคยมี
+     `display:flex` เลยตั้งแต่สร้างขึ้นมา — `flex-direction`/`align-items`/`gap`
+     เป็น no-op มาตลอด เดิมไม่มีใครสังเกตเพราะ vertical mode ปุ่มยัง stack ตาม
+     block flow ปกติอยู่ดี แต่ horizontal mode ใหม่พังทันทีถ้าไม่แก้
+- ทำไม: Plan.md "Procress 5" ทั้ง 2 part
+- Doc ที่อัปเดต: `docs/FILES.md` (ย่อหน้าใหม่ "Process 5 part 1"/"Process 5
+  part 2"), `docs/SYSTEMS.md` §1 (หมายเหตุ nav orientation)
+
+---
+
 ## 2026-08-20 — คืนค่า `.icon`/search-bar CSS ที่หายไปตอนลบ legacy modules (Process 4 part 1)
 - commit: `uncommitted`
 - ไฟล์ที่แก้: `electron/css/components.css`, `electron/css/nav-hub.css`,

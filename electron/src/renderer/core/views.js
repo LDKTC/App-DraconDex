@@ -39,40 +39,104 @@ async function exportDatabaseFile(){
   }
 }
 
+// Shared by every step of the import-target-choice flow below — factored out
+// so the existing hardcoded-Thai error-toast literal stays a single
+// occurrence even though the error path now has three call sites instead of
+// the one exportDatabaseFile() above still inlines its own copy of.
+function toastImportError(e){
+  toast(`${tr('Import ไม่สำเร็จ')}: ${e.message}`,'err');
+}
 async function importDatabaseFile(){
   try{
-    // Pick first, then confirm, then merge. These used to be one IPC call, so
-    // the confirm had to run before the file dialog — the user was approving a
-    // merge before choosing what to merge. db:pickImportFile only opens the
-    // dialog; nothing is written until db:importMergeFile.
+    // Pick first, then choose a target, then merge/import. db:pickImportFile
+    // only opens the dialog; nothing is written until the user's choice below
+    // resolves into importMergeFile/importModuleFileAt.
     const picked = await api.db.pickImportFile();
     if(picked?.canceled) return;
-    if(!await uiConfirm(t('importDbConfirm'), { okText: t('apply'), cancelText: t('cancel'), danger:false })) return;
-    const res = await api.db.importMergeFile(picked.filePath);
-    if(res?.canceled) return;
-    // Refresh the Nexus list so vaults brought in by the merge are visible.
-    // The Welcome window has no sidebar and no view to switch — its whole job
-    // is that vault list, so it just re-renders itself with the new entries.
-    await reloadNexuses();
-    S.colors = await api.color.getAll();
-    S.recentColors = await api.color.getRecent();
-    if(S.isWelcome) renderWelcomeWindow();
-    else renderNexusHome();
-    toast(t('importDbDone'),'ok');
-    // Plan part2 §2: a merged file may carry un-migrated legacy-shaped data
-    // (a v1/v2 file, or notes for a nexus that predates v3) — offer the
-    // conversion preview instead of silently leaving it in its legacy
-    // tables with no way to act on it. That preview acts on an OPEN vault,
-    // which the Welcome window doesn't have; there the user opens the
-    // imported vault first and gets the same prompt on the next import.
-    if (S.isWelcome) return;
-    const sm = res.summary || {};
-    const hasLegacy = (sm.projects||0) + (sm.world_projects||0) + (sm.game_projects||0)
-      + (sm.write_projects||0) + (sm.notes||0) > 0;
-    if (hasLegacy && typeof openLegacyMigratePreviewModal === 'function') openLegacyMigratePreviewModal();
+    const ext = (picked.filePath.split('.').pop() || '').toLowerCase();
+    openImportTargetChoiceModal(picked.filePath, ext === 'mdx' ? 'module' : 'nexus');
   }catch(e){
-    toast(`${tr('Import ไม่สำเร็จ')}: ${e.message}`,'err');
+    toastImportError(e);
   }
+}
+
+// Plan process5 part2: importing a .ddx (nexus/vault) or .mdx (module) file
+// asks where it goes — into the currently open Nexus, or a brand new one —
+// instead of always silently merging into whatever's open (the only
+// behavior before this). Both branches funnel back through the exact same
+// db.importDatabaseMerge/db.importModuleFile underneath (see main.js's
+// db:importMergeFile/db:importModuleFileAt); "create new" just creates an
+// empty nexus first and targets that id explicitly instead of the window's
+// ambient current one — see import-merge.js's own comment on why that's safe.
+function openImportTargetChoiceModal(filePath, kind){
+  const fileName = filePath.split(/[\\/]/).pop();
+  openModal(t('importChooseTargetTitle'), `
+    <p class="modal-hint" data-no-i18n style="word-break:break-all">${x(fileName)}</p>
+    <p class="modal-hint">${t(kind === 'module' ? 'importChooseTargetHintModule' : 'importChooseTargetHintNexus')}</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      <button class="btn btn-p" ${S.nexus ? '' : 'disabled'} onclick="closeModal();importIntoCurrentNexus(${xj(filePath)},${xj(kind)})">${t('importIntoThisNexus')}${S.nexus ? ` — ${x(S.nexus.name)}` : ''}</button>
+      <button class="btn btn-s" onclick="closeModal();importAsNewNexus(${xj(filePath)},${xj(kind)})">${t('importAsNewNexus')}</button>
+    </div>`);
+}
+async function importIntoCurrentNexus(filePath, kind){
+  if (!S.nexus) return toast(t('nexusSelectFirst'), 'error');
+  try{
+    if (kind === 'module') {
+      const r = await api.db.importModuleFileAt(S.nexus.id, null, filePath);
+      if (!r?.ok) return toast(t('driveErrServer'), 'error');
+      await reloadModuleTree();
+      toast(t('settingDbImportOk'), 'ok');
+    } else {
+      await finishVaultMergeImport(filePath, null);
+    }
+  }catch(e){
+    toastImportError(e);
+  }
+}
+async function importAsNewNexus(filePath, kind){
+  const fileBase = filePath.split(/[\\/]/).pop().replace(/\.(ddx|mdx|db)$/i, '') || 'Imported Nexus';
+  try{
+    const newId = await api.nexus.create(fileBase, '', null, null);
+    await reloadNexuses();
+    if (kind === 'module') {
+      const r = await api.db.importModuleFileAt(newId, null, filePath);
+      if (!r?.ok) { toast(t('driveErrServer'), 'error'); return; }
+      toast(t('settingDbImportOk'), 'ok');
+      if (S.isWelcome) await welcomeOpenNexus(newId); else await selectNexus(newId);
+    } else {
+      await finishVaultMergeImport(filePath, newId);
+    }
+  }catch(e){
+    toast(t('nexusNameTaken'), 'error');
+  }
+}
+// Shared tail for both the "into current nexus" and "into a freshly created
+// one" vault-merge branches — identical to what importDatabaseFile() used to
+// do inline before the target choice existed.
+async function finishVaultMergeImport(filePath, targetNexusId){
+  const res = await api.db.importMergeFile(filePath, targetNexusId);
+  if(res?.canceled) return;
+  // Refresh the Nexus list so vaults brought in by the merge are visible.
+  // The Welcome window has no sidebar and no view to switch — its whole job
+  // is that vault list, so it just re-renders itself with the new entries.
+  await reloadNexuses();
+  S.colors = await api.color.getAll();
+  S.recentColors = await api.color.getRecent();
+  if (targetNexusId != null) { if (S.isWelcome) await welcomeOpenNexus(targetNexusId); else await selectNexus(targetNexusId); }
+  else if(S.isWelcome) renderWelcomeWindow();
+  else renderNexusHome();
+  toast(t('importDbDone'),'ok');
+  // Plan part2 §2: a merged file may carry un-migrated legacy-shaped data
+  // (a v1/v2 file, or notes for a nexus that predates v3) — offer the
+  // conversion preview instead of silently leaving it in its legacy
+  // tables with no way to act on it. That preview acts on an OPEN vault,
+  // which the Welcome window doesn't have; there the user opens the
+  // imported vault first and gets the same prompt on the next import.
+  if (S.isWelcome) return;
+  const sm = res.summary || {};
+  const hasLegacy = (sm.projects||0) + (sm.world_projects||0) + (sm.game_projects||0)
+    + (sm.write_projects||0) + (sm.notes||0) > 0;
+  if (hasLegacy && typeof openLegacyMigratePreviewModal === 'function') openLegacyMigratePreviewModal();
 }
 
 const _loadedModules = new Set();

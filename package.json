@@ -1,7 +1,7 @@
 {
   "name": "@ldktc/dracondex",
   "productName": "DraconDex",
-  "version": "4.10.2",
+  "version": "4.10.3",
   "description": "Novel data management app",
   "main": "electron/main.js",
   "license": "MIT",

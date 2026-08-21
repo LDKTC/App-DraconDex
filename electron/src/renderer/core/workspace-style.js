@@ -50,9 +50,53 @@ function settingWorkspaceStylePageHtml() {
   const pending = S.settingPendingWorkspace || S.settings.workspaceStyle;
   const dirty = pending !== S.settings.workspaceStyle;
   const cells = WORKSPACE_STYLE_OPTIONS.map(workspaceStyleCellHtml).join('');
+  // Layout controls apply to the CURRENTLY ACTIVE style (not a still-pending,
+  // unsaved pick) — hidden while a style switch is staged so it's never
+  // ambiguous which style's orientation the two rows below are for.
   return `<div class="settings-label">${t('settingPageWorkspaceStyle')}</div>
     <div class="prefs-theme-grid">${cells}</div>
-    ${dirty ? `<button class="btn btn-p" style="margin-top:14px" onclick="applyWorkspaceStyleChoice()">${t('settingWorkspaceApply')}</button>` : ''}`;
+    ${dirty ? `<button class="btn btn-p" style="margin-top:14px" onclick="applyWorkspaceStyleChoice()">${t('settingWorkspaceApply')}</button>` : settingWorkspaceLayoutHtml()}`;
+}
+
+// Process 5 part1 — nav orientation + (when horizontal) button display mode
+// for the currently active workspace style. Both apply live via
+// applyNavOrientation() (core/boot.js), no restart needed — unlike switching
+// the style itself above, which still requires Apply & Restart.
+function settingWorkspaceLayoutHtml() {
+  const style = S.settings.workspaceStyle;
+  const orient = (S.settings.navOrientation || {})[style] || NAV_ORIENTATION_DEFAULT[style] || 'vertical';
+  const display = S.settings.navHorizontalDisplay || 'both';
+  return `<div class="settings-label" style="margin-top:18px">${t('settingWorkspaceLayout')}</div>
+    <div class="settings-group">
+      <div class="settings-label-row"><span>${t('settingNavOrientation')}</span></div>
+      <div class="settings-options" style="grid-template-columns:repeat(2,1fr)">
+        <button class="settings-option${orient === 'vertical' ? ' active' : ''}" onclick="setNavOrientation('vertical')">${t('navOrientationVertical')}</button>
+        <button class="settings-option${orient === 'horizontal' ? ' active' : ''}" onclick="setNavOrientation('horizontal')">${t('navOrientationHorizontal')}</button>
+      </div>
+      ${orient === 'horizontal' ? `
+      <div class="settings-label-row" style="margin-top:10px"><span>${t('settingNavDisplay')}</span></div>
+      <div class="settings-options">
+        <button class="settings-option${display === 'icon' ? ' active' : ''}" onclick="setNavHorizontalDisplay('icon')">${t('navDisplayIcon')}</button>
+        <button class="settings-option${display === 'label' ? ' active' : ''}" onclick="setNavHorizontalDisplay('label')">${t('navDisplayLabel')}</button>
+        <button class="settings-option${display === 'both' ? ' active' : ''}" onclick="setNavHorizontalDisplay('both')">${t('navDisplayBoth')}</button>
+      </div>` : ''}
+    </div>`;
+}
+function setNavOrientation(orient) {
+  if (orient !== 'vertical' && orient !== 'horizontal') return;
+  const style = S.settings.workspaceStyle;
+  S.settings.navOrientation = Object.assign({}, S.settings.navOrientation, { [style]: orient });
+  saveUiSettings();
+  applyNavOrientation();
+  if (style === 'wyvern') renderWyvernToolbar(); else renderModuleRail();
+  renderSettingWindow();
+}
+function setNavHorizontalDisplay(mode) {
+  if (!['icon', 'label', 'both'].includes(mode)) return;
+  S.settings.navHorizontalDisplay = mode;
+  saveUiSettings();
+  applyNavOrientation();
+  renderSettingWindow();
 }
 function selectPendingWorkspaceStyle(style) {
   if (!WORKSPACE_STYLE_OPTIONS.includes(style)) return;

@@ -459,23 +459,32 @@ h('db:exportFile', async () => {
 const pickedImportDbPaths = new Set();
 
 h('db:pickImportFile', async () => {
-  // Accepts both the current .ddx format and legacy .db files (pre-v3.11,
-  // or a v1/v2 export) — an old-shaped .db import is exactly the trigger
-  // case for the Nexus Nest / Import DB choice modal (src/renderer/hub.js).
+  // Accepts the current .ddx vault format, legacy .db files (pre-v3.11, or a
+  // v1/v2 export — an old-shaped .db import is exactly the trigger case for
+  // the Nexus Nest / Import DB choice modal, src/renderer/hub.js), and .mdx
+  // module files (Plan process5 part2 — module export switched from a bare
+  // .json snapshot to its own .mdx extension so it reads unambiguously next
+  // to a .ddx vault export; the renderer branches on extension afterward,
+  // see importDatabaseFile() in core/views.js).
   const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
-    title: 'Import Database (.ddx / .db)',
+    title: 'Import Database (.ddx / .mdx / .db)',
     properties: ['openFile'],
-    filters: [{ name: 'DraconDex / SQLite DB', extensions: ['ddx', 'db'] }],
+    filters: [{ name: 'DraconDex File', extensions: ['ddx', 'mdx', 'db'] }],
   });
   if (result.canceled || !result.filePaths?.[0]) return { canceled: true };
   pickedImportDbPaths.add(path.resolve(result.filePaths[0]));
   return { canceled: false, filePath: result.filePaths[0] };
 });
 
-h('db:importMergeFile', async (filePath) => {
+// targetNexusId (Plan process5 part2, optional): merge into a specific nexus
+// instead of the calling window's currently-open one — the "create a new
+// Nexus" branch of the import-target choice (core/views.js) creates an empty
+// nexus first, then merges here into THAT id. See import-merge.js's own
+// comment on why passing an explicit id is safe regardless of what's open.
+h('db:importMergeFile', async (filePath, targetNexusId) => {
   if (!filePath) return { canceled: true };
   if (!pickedImportDbPaths.has(path.resolve(String(filePath)))) return { canceled: true };
-  const summary = db.importDatabaseMerge(filePath);
+  const summary = db.importDatabaseMerge(filePath, targetNexusId ?? null);
   return { canceled: false, summary };
 });
 
@@ -500,22 +509,37 @@ h('db:importNexusFile', async (nexusId) => {
   if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true };
   return db.importNexusFile(nexusId, result.filePaths[0]);
 });
+// .mdx, not .json (Plan process5 part2) — disambiguates a module-scoped
+// export from the Nexus snapshot export right above (both used to write a
+// bare .json, indistinguishable in a file picker/Downloads folder).
 h('db:exportModuleFile', async (nexusId, moduleId, moduleName) => {
-  const defaultName = `${String(moduleName || 'module').replace(/[\\/:*?"<>|]/g, '_')}.json`;
+  const defaultName = `${String(moduleName || 'module').replace(/[\\/:*?"<>|]/g, '_')}.mdx`;
   const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Export Module', defaultPath: path.join(app.getPath('documents'), defaultName),
-    filters: [{ name: 'DraconDex Module Snapshot', extensions: ['json'] }],
+    filters: [{ name: 'DraconDex Module File', extensions: ['mdx'] }],
   });
   if (result.canceled || !result.filePath) return { ok: false, canceled: true };
   return db.exportModuleFile(nexusId, moduleId, result.filePath);
 });
+// Accepts .json too — a module exported before this switched to .mdx is
+// still a valid snapshot in the same shape, only the extension changed.
 h('db:importModuleFile', async (nexusId, parentModuleId) => {
   const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
     title: 'Import Module', properties: ['openFile'],
-    filters: [{ name: 'DraconDex Module Snapshot', extensions: ['json'] }],
+    filters: [{ name: 'DraconDex Module File', extensions: ['mdx', 'json'] }],
   });
   if (result.canceled || !result.filePaths?.[0]) return { ok: false, canceled: true };
   return db.importModuleFile(nexusId, parentModuleId, result.filePaths[0]);
+});
+// Same underlying import as above, but for a file already picked through
+// db:pickImportFile's unified .ddx/.mdx/.db dialog (Plan process5 part2's
+// import-target-choice flow, core/views.js) instead of opening a second
+// dialog of its own — validated against the same picked-paths allowlist
+// db:importMergeFile uses, for the same reason (see pickedImportDbPaths above).
+h('db:importModuleFileAt', async (nexusId, parentModuleId, filePath) => {
+  if (!filePath) return { ok: false, canceled: true };
+  if (!pickedImportDbPaths.has(path.resolve(String(filePath)))) return { ok: false, canceled: true };
+  return db.importModuleFile(nexusId, parentModuleId, filePath);
 });
 
 // Nexus (vault)

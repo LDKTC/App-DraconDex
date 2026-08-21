@@ -16,16 +16,16 @@
 
 ### Procress 5
 #### part 1 : setting
-- [ ] workspace style pages, เปลี่ยนชื่อเป็น "workspace" เฉยๆ
-- [ ] workspace pages, เพิ่มฟรเจอร์ในการปรับแต่งlayoutเช่น
-    - [ ] navbar, drake default vertical, wywern default horizontal, dragon default vertical
-        - [ ] vertical, แบบปัจจุบัน
-        - [ ] horizontal สร้างแนวนอนไว้ที่title
-            - [ ] สามารถเลือกได้ว่าจะแสดง label/icon/ทั้งคู่
+- [x] workspace style pages, เปลี่ยนชื่อเป็น "workspace" เฉยๆ
+- [x] workspace pages, เพิ่มฟรเจอร์ในการปรับแต่งlayoutเช่น
+    - [x] navbar, drake default vertical, wywern default horizontal, dragon default vertical
+        - [x] vertical, แบบปัจจุบัน
+        - [x] horizontal สร้างแนวนอนไว้ที่title
+            - [x] สามารถเลือกได้ว่าจะแสดง label/icon/ทั้งคู่
 #### part 2 : file database
-- [ ] export, ปัจจุบัน export nexus จะออกเป็น .ddx
-    - [ ] export module, จะสร้างไฟล์ชื่อ .mdx แทนเพื่อแยกความสับสน
-- [ ] import, เมื่อนำเข้า import .ddx .mdx จะต้องถามUserว่าจะimportเข้า nexusนี้ หรือ สร้าง nexus ใหม่
+- [x] export, ปัจจุบัน export nexus จะออกเป็น .ddx
+    - [x] export module, จะสร้างไฟล์ชื่อ .mdx แทนเพื่อแยกความสับสน
+- [x] import, เมื่อนำเข้า import .ddx .mdx จะต้องถามUserว่าจะimportเข้า nexusนี้ หรือ สร้าง nexus ใหม่
 
 ### Process 6
 #### part 1 : 

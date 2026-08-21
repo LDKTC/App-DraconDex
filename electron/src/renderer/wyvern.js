@@ -20,14 +20,14 @@ function renderWyvernToolbar(){
   // the Nexus Nest itself, not while Sage Hut/Import Dock is up.
   const atNest = !S.sageHut && !S.importDockPage;
   bar.innerHTML = `
-    <button class="nav-btn" onclick="event.stopPropagation();openWyvernViewSetMenu(this)" title="${t('wyvernViewSet')}">${I.layer}</button>
+    <button class="nav-btn" onclick="event.stopPropagation();openWyvernViewSetMenu(this)" title="${t('wyvernViewSet')}">${I.layer}<span class="nav-label">${t('wyvernViewSet')}</span></button>
     <div class="wyvern-toolbar-sep"></div>
-    <button class="nav-btn" onclick="importDatabaseFile()" title="${t('importDb')}">${I.import}</button>
-    <button class="nav-btn" onclick="exportDatabaseFile()" title="${t('exportDb')}">${I.export}</button>
-    <button class="nav-btn" onclick="wyvernGoToView('hashtag')" title="${t('hashtag')}">${I.hashtag}</button>
-    <button class="nav-btn" onclick="wyvernGoToView('colors')" title="${t('colors')}">${I.colors}</button>
+    <button class="nav-btn" onclick="importDatabaseFile()" title="${t('importDb')}">${I.import}<span class="nav-label">${t('importDb')}</span></button>
+    <button class="nav-btn" onclick="exportDatabaseFile()" title="${t('exportDb')}">${I.export}<span class="nav-label">${t('exportDb')}</span></button>
+    <button class="nav-btn" onclick="wyvernGoToView('hashtag')" title="${t('hashtag')}">${I.hashtag}<span class="nav-label">${t('hashtag')}</span></button>
+    <button class="nav-btn" onclick="wyvernGoToView('colors')" title="${t('colors')}">${I.colors}<span class="nav-label">${t('colors')}</span></button>
     ${atNest ? `<div class="wyvern-toolbar-sep"></div>
-    <button class="nav-btn" onclick="event.stopPropagation();openKindPopup(wyvernCreateParentId(),this)" title="${t('createMajorModule')}">${I.plus}</button>` : ''}
+    <button class="nav-btn" onclick="event.stopPropagation();openKindPopup(wyvernCreateParentId(),this)" title="${t('createMajorModule')}">${I.plus}<span class="nav-label">${t('createMajorModule')}</span></button>` : ''}
   `;
 }
 

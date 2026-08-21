@@ -103,6 +103,12 @@ const UI_LANGUAGE_OPTIONS = ['en','ja','ko','th','zh','vi','id','es','pt','fr','
 // nobody's UI changes on upgrade; 'wyvern' (newcomer/simple) and 'dragon'
 // (expert/sandbox) are opt-in via Setting window -> Layout -> Workspace.
 const WORKSPACE_STYLE_OPTIONS = ['drake', 'wyvern', 'dragon'];
+// Process 5 part1: each workspace style's own default nav orientation —
+// Drake/Dragon default to vertical (today's rail), Wyvern defaults to
+// horizontal (its own toolbar was always meant to read as a top strip, see
+// wyvern.js) — user-overridable per style from Setting -> Workspace, see
+// applyNavOrientation() (core/boot.js).
+const NAV_ORIENTATION_DEFAULT = { drake: 'vertical', wyvern: 'horizontal', dragon: 'vertical' };
 const UI_SIZE_MIN = 50;
 const UI_SIZE_MAX = 200;
 const UI_SIZE_STEP = 5;
@@ -170,12 +176,20 @@ function loadUiSettings(){
   const navToggles = Object.assign({ importDb: true, exportDb: true, hashtag: true, colors: true }, saved.navToggles || {});
   const statusToggles = Object.assign({ vault: true, breadcrumb: true, words: true, saveState: true }, saved.statusToggles || {});
   const workspaceStyle = WORKSPACE_STYLE_OPTIONS.includes(saved.workspaceStyle) ? saved.workspaceStyle : 'drake';
-  const wyvernToolbarOrientation = saved.wyvernToolbarOrientation === 'horizontal' ? 'horizontal' : 'vertical';
+  // Process 5 part1: per-style nav orientation, sanitized against the
+  // default map so an unknown/missing style key or garbage value falls back
+  // cleanly rather than propagating into applyNavOrientation().
+  const navOrientation = {};
+  for (const st of WORKSPACE_STYLE_OPTIONS) {
+    const v = (saved.navOrientation || {})[st];
+    navOrientation[st] = (v === 'horizontal' || v === 'vertical') ? v : NAV_ORIENTATION_DEFAULT[st];
+  }
+  const navHorizontalDisplay = ['icon', 'label', 'both'].includes(saved.navHorizontalDisplay) ? saved.navHorizontalDisplay : 'both';
   // Dragon's drag-to-arrange positions ({nexusId: {parentKey: {moduleId: {x,y}}}})
   // — client-only, same tier as the other UI-chrome prefs above (see Plan
   // part2 #New Workspace's Dragon section for why this isn't DB-backed).
   const dragonLayout = saved.dragonLayout && typeof saved.dragonLayout === 'object' ? saved.dragonLayout : {};
-  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, statusToggles, workspaceStyle, wyvernToolbarOrientation, dragonLayout };
+  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, statusToggles, workspaceStyle, navOrientation, navHorizontalDisplay, dragonLayout };
 }
 
 // Kind display names (Phase 22): the Unique set (KIND_LABEL, locale-

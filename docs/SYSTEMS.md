@@ -21,6 +21,13 @@ Director/Navigator/Hero/Writer (4 ใน 7 นี้) ถูกซ่อนแ�
 Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2) — Scribe/Sage/Artisan
 ยังเป็นปุ่มปกติ พฤติกรรมภายในของทั้ง 7 โมดูล (§3–§9 ด้านล่าง) ไม่เปลี่ยน
 
+> ตั้งแต่ Process 5 part 1 แต่ละ workspace style (Drake/Wyvern/Dragon) มี nav
+> orientation ของตัวเอง — vertical (เดิม) หรือ horizontal (แถบใหม่ใต้ title bar,
+> `#nav-toolbar-h`) — ตั้งค่าได้จาก Setting → Workspace, default ต่อสไตล์คือ
+> Drake=vertical, Wyvern=horizontal, Dragon=vertical แต่ผู้ใช้เปลี่ยนได้แบบ live
+> ไม่ต้อง restart; horizontal mode เลือกได้เพิ่มว่าจะโชว์ icon/label/ทั้งคู่ ดู
+> รายละเอียดไฟล์ที่ [FILES.md](FILES.md) หัวข้อ "Process 5 part 1"
+
 > หมายเหตุ: `flutter/` เป็น front-end อีกตัว (Flutter port) ที่ใช้ schema เดียวกัน
 > แต่แยกโค้ดกันโดยสิ้นเชิง — เอกสารนี้ครอบคลุมเฉพาะฝั่ง Electron
 

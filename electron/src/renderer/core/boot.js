@@ -173,5 +173,39 @@ function applyWorkspaceStyle(){
   const qsWorkspace = new URLSearchParams(location.search).get('workspace');
   if (WORKSPACE_STYLE_OPTIONS.includes(qsWorkspace)) S.settings.workspaceStyle = qsWorkspace;
   document.body.dataset.workspace = S.settings.workspaceStyle;
+  applyNavOrientation();
+}
+
+// Process 5 part1 — the current workspace style's nav element (#nav-sidebar
+// for Drake/Dragon, #workspace-toolbar for Wyvern — see wyvern.js for why
+// Wyvern never uses #nav-sidebar at all) is REPARENTED between its normal
+// #app-row slot and #nav-toolbar-h (a slim strip under the title bar,
+// index.html) depending on the style's orientation setting. Same element,
+// same markup/onclick handlers/render functions throughout — only its
+// parent and a CSS row-vs-column layout change, so nothing downstream
+// (renderModuleRail/renderWyvernToolbar, the drag-resize handlers, etc.)
+// needs to know or care which orientation is active. Idempotent — safe to
+// call repeatedly as the user flips the Setting page's controls live, no
+// restart required (unlike switching workspace style itself, which still
+// goes through Apply & Restart's location.reload()).
+function applyNavOrientation(){
+  const style = S.settings.workspaceStyle;
+  const orient = (S.settings.navOrientation || {})[style] || NAV_ORIENTATION_DEFAULT[style] || 'vertical';
+  document.body.dataset.navOrientation = orient;
+  document.body.dataset.navDisplay = S.settings.navHorizontalDisplay || 'both';
+  const navEl = style === 'wyvern' ? q('#workspace-toolbar') : q('#nav-sidebar');
+  const mount = q('#nav-toolbar-h');
+  const appEl = q('#app');
+  if (!navEl || !mount || !appEl) return;
+  navEl.classList.remove('nav-expanded');
+  if (orient === 'horizontal') {
+    if (navEl.parentElement !== mount) mount.appendChild(navEl);
+  } else if (navEl.parentElement !== appEl) {
+    // Restore each element to its original #app-row position (index.html
+    // order): #nav-sidebar goes right before #nav-sidebar-resize,
+    // #workspace-toolbar goes right before #main-area.
+    const ref = style === 'wyvern' ? q('#main-area') : q('#nav-sidebar-resize');
+    appEl.insertBefore(navEl, ref || null);
+  }
 }
 

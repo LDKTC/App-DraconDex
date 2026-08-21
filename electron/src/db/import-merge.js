@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { app } = require('electron');
-const { getDB, getAppDB, adaptDb, forceLegacyJournalMode, hasTable, hasColumn, dataDir } = require('./conn');
+const { getDB, getVaultDB, getAppDB, adaptDb, forceLegacyJournalMode, hasTable, hasColumn, dataDir } = require('./conn');
 const { NEXUS_PROJECT_TABLES } = require('./schema/migrations');
 
 // v4.9.0: "the database" is no longer one file. app.ddx holds preferences,
@@ -28,8 +28,17 @@ const exportDatabaseTo = async (targetPath) => {
   getDB().prepare(`VACUUM INTO ?`).run(targetPath);
 };
 
-function importDatabaseMerge(sourcePath) {
-  const target = getDB();
+// targetNexusId (Plan process5 part2, optional): merge into a SPECIFIC vault
+// instead of the calling window's currently-open one — used by the "create a
+// new Nexus" import-target choice (core/views.js importIntoTargetNexus()),
+// which creates an empty nexus first and then needs to merge into THAT one
+// regardless of what the window itself has open. getVaultDB(id) resolves any
+// nexus explicitly, same as sync.js's serializeVault/applySnapshotCore do —
+// it does not depend on the AsyncLocalStorage vault context h() sets per
+// window (see src/db/vault-context.js), so this is safe to call for a nexus
+// that isn't the window's active one.
+function importDatabaseMerge(sourcePath, targetNexusId) {
+  const target = targetNexusId != null ? getVaultDB(targetNexusId) : getDB();
 
   // Read from a scratch copy, never the picked file itself — the user's own
   // file must come out untouched. WAL sidecars (if any) are copied along so

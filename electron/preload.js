@@ -6,11 +6,12 @@ contextBridge.exposeInMainWorld('api', {
   db: {
     exportFile: ()          => inv('db:exportFile'),
     pickImportFile: ()      => inv('db:pickImportFile'),
-    importMergeFile: (p)    => inv('db:importMergeFile', p),
+    importMergeFile: (p,targetNexusId)       => inv('db:importMergeFile', p,targetNexusId),
     exportNexusFile: (nexusId,name)          => inv('db:exportNexusFile', nexusId,name),
     importNexusFile: (nexusId)               => inv('db:importNexusFile', nexusId),
     exportModuleFile: (nexusId,modId,name)   => inv('db:exportModuleFile', nexusId,modId,name),
     importModuleFile: (nexusId,parentId)     => inv('db:importModuleFile', nexusId,parentId),
+    importModuleFileAt: (nexusId,parentId,filePath) => inv('db:importModuleFileAt', nexusId,parentId,filePath),
   },
   nexus: {
     getAll:  ()            => inv('nexus:getAll'),
