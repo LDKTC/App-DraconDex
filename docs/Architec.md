@@ -134,7 +134,7 @@ Dock ขวาของ module ที่โฟกัสอยู่: kind (read-
 ขาออก/backlink (ผ่าน `wiki_link` คีย์ `module_<id>`), ปุ่ม **Version
 History** (§1.5) ที่สลับทั้ง dock ไปแสดงประวัติแทน
 
-### 1.4 Builder (`electron/src/renderer/builder.js`, 618 บรรทัด — Phase 19, ขยายใหญ่
+### 1.4 Builder (`electron/src/renderer/builder.js`, ~950 บรรทัด — Phase 19, ขยายใหญ่
 ใน Part 4 เป็น recursive split-layout tree แทน grid 1/2/4 ตายตัวเดิม)
 
 Editor-group shell สไตล์ VS Code สำหรับพื้นที่หลัก — split ได้ตามใจ (แนวนอน/
@@ -157,6 +157,18 @@ pane/pop-out เป็นหน้าต่างแยกได้ (Part 3)
   Nexus home `ensureNodeElement` จะ `appendChild` โหนด `.bpane` ใหม่ทับ
   ลงไปโดยไม่เคลียร์ของเก่าออกก่อน — เดิมทำให้ content ของ legacy view
   ค้างอยู่ใต้ Builder pane ปิดไม่ได้ (บั๊กที่เจอชัดกับ Scribe)
+- **Process 6 part 2** — ย้าย tab ข้าม pane (`builderMoveTabTo`) กับปิด tab
+  จริง (`builderCloseTab`) ตอนนี้แยกพฤติกรรมกัน 2 จุดโดยเจตนา:
+  1. **fallback active tab ของ source pane**: ปิด tab ยังใช้สูตรตำแหน่งเดิม
+     (`tabs[idx] ?? tabs[idx-1]`) แต่ย้าย tab ข้าม pane เปลี่ยนไปใช้
+     `pickBackwardActiveTab(pane, excludeKey)` — ไล่ `pane.history` (ของเดิม
+     back/forward log ที่มีอยู่แล้ว) ย้อนหลังหา tab ที่เพิ่งดูล่าสุดที่ยังอยู่จริง
+     ไม่ใช่แค่ตำแหน่งเดิม
+  2. **source pane ว่างเปล่าหลังย้าย**: ปิด tab สุดท้ายยังปิด pane เหมือนเดิม
+     (`builderCloseIfEmpty`) แต่ย้าย tab ออกจนว่างไม่ปิด pane อีกต่อไป — ปล่อย
+     ให้ว่างอยู่แล้วเติม `builderEmptyPaneHtml()` (placeholder เดียวกับที่
+     `buildBuilderPageHtml()` ใช้เป็น default ตอนไม่มีอะไรเปิดอยู่เลย) เข้า
+     `.bpane-body` ตรงๆ ทันที รอผู้ใช้ลาก/สร้าง tab ใหม่เข้ามาเอง
 
 ### 1.5 ระบบร่วมของ v3
 

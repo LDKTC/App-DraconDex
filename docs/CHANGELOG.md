@@ -19,6 +19,96 @@
 
 ---
 
+## 2026-08-21 — Toggle animations + Workspace animation setting (Process 7 part 1)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/src/renderer/core/ui.js`, `electron/src/renderer/core/state.js`,
+  `electron/src/renderer/core/settings.js`, `electron/src/renderer/core/workspace-style.js`,
+  `electron/src/renderer/hub/sections.js`, `electron/src/renderer/hub/tree.js`,
+  `electron/src/renderer/builder.js`, `electron/css/components.css`,
+  `electron/css/tokens.css`, `electron/src/renderer/i18n.js`
+- อะไรเปลี่ยน: เพิ่ม animation ให้ 3 จุด toggle (Hub accordion section,
+  Nest tree module-list expand/collapse, Module Inspector dock) ผ่าน helper
+  กลางใหม่ 2 ตัวใน `core/ui.js` — `animateToggleOpen()` (CSS `animation` บน
+  node ที่เพิ่ง render สด) กับ `animateToggleCloseThenCommit()` (เล่น exit
+  animation บน node ที่ยังอยู่จริงก่อน แล้วค่อย flip state จริง — จำเป็นเพราะ
+  renderer ทั้งแอปเป็น full-innerHTML-rebuild ไม่มี vdom, CSS `transition`
+  ธรรมดาใช้ไม่ได้เลย). `buildNestRow()` ต้องห่อ children/items ด้วย
+  `<div class="nest-children" data-parent-id>` ใหม่ (เฉพาะตอนขยาย) เพื่อให้มี
+  element ให้จับตอน close. เพิ่ม setting ใหม่ `S.settings.animationsEnabled`
+  (default true) และ `S.settings.animationSpeed` (fast/normal/slow) พร้อม UI
+  ใหม่ใน Setting → Workspace → Workspace Style ต่อจาก Layout section
+- ทำไม: Process 7 part 1 ใน Plan.md — ขอ animation ให้ toggle ต่างๆ
+  พร้อม setting เปิด/ปิดและปรับความเร็วได้
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` (nav rail v3 callout block),
+  `docs/FILES.md` หัวข้อ "Process 7 part 1"
+
+---
+
+## 2026-08-21 — Restore Tags page + Builder tab-move backward-fill (Process 6 part 2)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/src/renderer/core/views.js`, `electron/src/renderer/builder.js`
+- อะไรเปลี่ยน:
+  1. **Tags page** — `switchView()` เดิมลบ branch `'hashtag'` ไปพร้อมกับ
+     `'project-hashtag'` ตอนลบ legacy Director/Navigator/Hero/Writer ทิ้ง
+     (v.4.10.0) ทั้งที่คนละเรื่อง — `renderHashtagView()`/backend
+     (`api.hashtag.*`) ไม่เคยถูกลบเลย มีแค่ทางเข้าหายไป กดปุ่ม nav-sidebar
+     "ป้ายกำกับ" แล้วไม่มีอะไรเกิดขึ้นเงียบๆ มาตลอด — เพิ่ม branch กลับเข้าไป
+     เหมือนเดิม (มีรูปแบบเดียวกับ branch `'colors'` — ไม่มี tab bar,
+     ไม่ผ่าน Builder grid)
+  2. **Builder tab-move-to-new-pane** — `builderMoveTabTo()` แยกพฤติกรรมออก
+     จาก `builderCloseTab()` แล้ว 2 จุด: fallback ของ active tab ใน source
+     pane เปลี่ยนจากสูตรตำแหน่ง (`tabs[idx]??tabs[idx-1]`) เป็น
+     `pickBackwardActiveTab()` ใหม่ — ไล่ `pane.history` (back/forward log
+     เดิม) ย้อนหลังหา tab ที่เพิ่งดูล่าสุดที่ยังอยู่จริง; และ source pane ที่
+     ว่างเปล่าหลังย้าย tab ออกไม่ปิด pane อัตโนมัติอีกต่อไป (เดิมเรียก
+     `builderCloseIfEmpty` เหมือนปิด tab) — ปล่อยให้ว่างอยู่แล้วเติม
+     `builderEmptyPaneHtml()` (helper ใหม่ ดึงมาจาก `buildBuilderPageHtml()`
+     เดิม) เข้า `.bpane-body` ตรงๆ ทันที ส่วนปิด tab สุดท้ายจริงๆ ยังปิด pane
+     เหมือนเดิมไม่แตะ
+- ทำไม: Process 6 part 2 ใน Plan.md — ข้อ 1 เป็นของหายจากการลบ legacy รอบก่อน,
+  ข้อ 2 เป็นพฤติกรรมที่ผู้ใช้อยากให้แยกจาก "ปิด tab" ให้ชัดเจน (ย้าย ≠ ปิด)
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` §4.4, `docs/Architec.md` §1.4,
+  `docs/FILES.md` หัวข้อ "Process 6 part 2" + คีย์ `hashtag.js`/`builder.js`
+
+---
+
+## 2026-08-21 — Nav rail pin/resize/horizontal-layout/pinned-click fixes + themed scrollbar (Process 6 part 1)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/index.html`, `electron/css/{base,nav-hub,workspace}.css`,
+  `electron/src/renderer/i18n.js`,
+  `electron/src/renderer/hub/{kinds,menus,open}.js`,
+  `electron/src/renderer/core/{state,ui,boot,workspace-style}.js`
+- อะไรเปลี่ยน:
+  1. **pin feature** — `renderModuleRail()`/`buildNavPinListHtml()` เดิมอ่านแค่
+     `S.moduleTree` (root-level array) ตรงๆ ทำให้ module ที่ pin ไว้ลึกกว่า
+     top-level (pin ได้ทุก depth มาตั้งแต่ Process 3 part 2) ไม่ขึ้น btn บน rail
+     เลย — เปลี่ยนเป็น walk ทั้งต้นไม้ผ่าน `flattenModuleTree` (helper เดิม)
+  2. **navbar resize Y-axis** — `#nav-sidebar.nav-expanded .nav-btn` padding
+     แนวตั้งเดิมผูกกับ `calc(var(--nav)*.07)` (บั๊กจาก Process 4 part 2) ทำให้
+     ลาก resize rail กว้างขึ้นแล้วปุ่มบวมในแกน Y ทั้งที่ลากแค่แกน X — เปลี่ยนเป็น
+     ค่าคงที่ `6px`; เพิ่ม toggle "แสดงป้ายชื่อเสมอ" ใหม่ใน Setting → Workspace
+     (เฉพาะ orientation vertical) — `S.settings.navVerticalAlwaysLabel`
+  3. **horizontal navbar** — เดิม `width:auto` (แคบแค่พอรับปุ่ม ไม่ยืดเต็ม
+     window) เปลี่ยนเป็น `width:100%`; เพิ่ม resize handle ของตัวเอง
+     (`#nav-toolbar-h-resize` ลาก drag ปรับ `--navh`) เหมือน vertical rail มี;
+     `.rail-sep`/`.nav-btn.active::after` เพิ่ม override ให้เข้ากับ row layout
+     (เดิม `.rail-sep` กลายเป็นเส้น 0 ความสูงที่มองไม่เห็นในโหมดนี้)
+  4. **pinned rail button click** — เดิมใช้ `openModuleNode` ตรงๆ (สำหรับ
+     collector คือ toggle เฉยๆ, module ที่ซ้อนลึกเป็น no-op เพราะ
+     `if(m.parent_id==null)` gate) — เปลี่ยนเป็น `openPinnedRailModule` ใหม่:
+     เปิด Hub section "Nest" เสมอ, ยุบทุก root branch อื่นเหลือแค่ branch ของ
+     module ที่ pin (only-one-list-open), focus ไปที่ module นั้น แล้วเปิด
+     builder ต่อถ้าไม่ใช่ kind `collector`
+  5. **scrollbar** — เพิ่ม `*::-webkit-scrollbar` default ใน `base.css` (เดิมมี
+     rule เฉพาะจุดแค่ 2-3 ที่ ที่เหลือ fallback เป็น scrollbar ขาวของ Chromium
+     ทันทีที่ content ยาวเกิน viewport)
+- ทำไม: Process 6 part 1 ใน Plan.md — พฤติกรรมทั้ง 5 ข้อเป็นบั๊ก/ของขาดที่ผู้ใช้
+  รายงานจากการใช้งานจริงหลัง Process 4-5
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` (nav rail note ใต้หัวเอกสาร), `docs/FILES.md`
+  หัวข้อ "Process 6 part 1" + แก้ตัวเลขบรรทัด `hub/`/`base.css`/`nav-hub.css`
+
+---
+
 ## 2026-08-21 — Workspace nav orientation + .mdx module export/import target choice (Process 5)
 - commit: `uncommitted`
 - ไฟล์ที่แก้: `electron/index.html`, `electron/main.js`, `electron/preload.js`,

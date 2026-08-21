@@ -47,11 +47,22 @@ body[data-workspace="wyvern"] #titlebar-vault{display:none}
    selectors too, so only an equal-or-higher-specificity ID selector can
    reliably outrank them regardless of file/rule order. */
 #nav-toolbar-h{display:flex;flex-shrink:0;overflow:hidden}
+/* Process 6 part 1: #nav-toolbar-h used to just be a row with the reparented
+   nav element as its only real child, sized to 44px by that element's own
+   fixed height — the mount itself never stretched to the window, and there
+   was no resize lever (#nav-sidebar-resize stays behind in #app, hidden
+   outright below). Switching to a column stacks the nav row above its own
+   resize handle (#nav-toolbar-h-resize, index.html — a static child that
+   survives applyNavOrientation()'s reparenting since that only ever
+   appendChild()s the nav element, never clears the mount) so dragging it
+   changes --navh the same way #nav-sidebar-resize drives --nav vertically. */
+body[data-nav-orientation="horizontal"] #nav-toolbar-h{flex-direction:column}
+body[data-nav-orientation="vertical"] #nav-toolbar-h-resize{display:none}
 body[data-nav-orientation="horizontal"] #title-left-zone{width:var(--sidebar)}
 body[data-nav-orientation="horizontal"] #nav-sidebar-resize{display:none}
 body[data-nav-orientation="horizontal"] #nav-sidebar,
 body[data-nav-orientation="horizontal"] #workspace-toolbar{
-	flex-direction:row;width:auto;height:44px;padding:0 10px;gap:6px;
+	flex-direction:row;width:100%;height:var(--navh,44px);padding:0 10px;gap:6px;
 	border-right:none;border-bottom:1px solid var(--border);
 }
 body[data-nav-orientation="horizontal"] #nav-sidebar-spacer,
@@ -61,6 +72,19 @@ body[data-nav-orientation="horizontal"] #workspace-toolbar .nav-btn{
 	width:auto;height:32px;aspect-ratio:auto;padding:0 10px;gap:6px;justify-content:center;
 }
 body[data-nav-orientation="horizontal"] .wyvern-toolbar-sep{width:1px;height:24px;margin:0 2px}
+/* .rail-sep (nav-hub.css) is a horizontal rule meant to divide a column of
+   STACKED buttons — in a horizontal row it needs to divide left-to-right
+   instead, same section boundary (Hub tools vs. pinned modules) just
+   rotated onto the other axis. */
+body[data-nav-orientation="horizontal"] .rail-sep{width:0;height:60%;border-top:none;border-left:1px solid var(--border);margin:0 5px}
+/* The active-module indicator bar (nav-hub.css .nav-btn.active::after) is
+   positioned for a vertical column (a bar on the button's left edge) — in a
+   horizontal row that reads as floating in empty space instead of marking
+   the selected button, so it moves to the bottom edge here to match the
+   row's own axis. */
+body[data-nav-orientation="horizontal"] .nav-btn.active::after{
+	left:22%;right:22%;top:auto;bottom:-4px;width:auto;height:3px;
+}
 /* Button display mode (icon/label/both) — only meaningful in horizontal
    orientation; vertical mode keeps its existing width-driven .nav-expanded
    behavior (nav-hub.css) untouched. 'both' matches the global .nav-label

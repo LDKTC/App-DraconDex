@@ -135,7 +135,12 @@ function renderModuleRail() {
   if (!S.nexus) return;
   const anchor = q('#nav-logo-btn');
   if (!anchor) return;
-  const pinned = S.moduleTree.filter(m => m.pinned);
+  // Process 6 part 1: pinning is unconditional at any depth since Process 3
+  // part 2 (buildModuleContextMenuHtml has no depth gate), but this used to
+  // read S.moduleTree directly — a shallow array of root nodes only — so a
+  // pinned nested module never made it onto the rail. flattenModuleTree
+  // (hub/menus.js) walks the whole tree instead.
+  const pinned = flattenModuleTree(S.moduleTree, 0).map(({ m }) => m).filter(m => m.pinned);
   // Plan process2 part1 #2/#3: Kind Browser is a Hub accordion section now
   // (hub/sections.js), not a competing top-level page state, so only
   // whether the Hub is showing at all — not which button was last clicked —
@@ -163,7 +168,7 @@ function renderModuleRail() {
   for (const m of pinned) {
     const active = S.activeModuleNode?.id === m.id ? ' active' : '';
     const col = m.icon_color_code || m.color_code || '#6366f1';
-    html += `<button class="nav-btn module-rail-item${active}" style="color:${x(col)}" title="${x(m.name)}" onclick="openModuleNode(${m.id})">
+    html += `<button class="nav-btn module-rail-item${active}" style="color:${x(col)}" title="${x(m.name)}" onclick="openPinnedRailModule(${m.id})">
       <span class="mdot-anchor">${moduleIconHtml(m)}<span class="mdot" style="background:${x(m.color_code || '#6366f1')}"></span></span><span class="nav-label">${x(m.name)}</span>
     </button>`;
   }

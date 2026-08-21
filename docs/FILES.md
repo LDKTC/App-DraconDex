@@ -207,9 +207,9 @@ App-DraconDex/
 |---|---|---|
 | `tokens.css` | 78 | `html`, `:root` custom properties ทั้งหมด |
 | `themes.css` | 569 | 32 ธีม (`body[data-theme=…]`) + สลับโลโก้ต่อธีม (**data file**) |
-| `base.css` | 39 | typography, การตัดบรรทัดภาษาไทย, `select`, ตัวคูณ UI scale |
+| `base.css` | 55 | typography, การตัดบรรทัดภาษาไทย, `select`, ตัวคูณ UI scale, scrollbar ธีมทั้งแอป (Process 6 part 1) |
 | `titlebar.css` | 148 | `#window-frame`, title/tab bar, เมนูตั้งค่า, ปุ่มหน้าต่าง |
-| `nav-hub.css` | 195 | nav rail, module rail, vault picker, Hub accordion, Nest tree |
+| `nav-hub.css` | 277 | nav rail, module rail, vault picker, Hub accordion, Nest tree |
 | `inspector.css` | 225 | Module Inspector + icon/kind picker + Classifier/Manager/Locator |
 | `editor.css` | 119 | mdeditor, markdown preview, quick switcher, status bar, Scribe graph |
 | `layout.css` | 224 | `#left-panel`, `#main-area`, `.ph`, `.li`, folder, project sidebar |
@@ -249,7 +249,7 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 
 | โฟลเดอร์ | เดิม | ไฟล์ใหม่ | โหลดแบบ |
 |---|---|---|---|
-| `hub/` | 1301 | `kinds.js` 192 · `sections.js` 220 · `tree.js` 277 · `popups.js` 112 · `menus.js` 350 · `edit.js` 159 · `open.js` 93 | eager (`<script>` 7 ตัว, `kinds.js` ก่อน) |
+| `hub/` | 1370 | `kinds.js` 197 · `sections.js` 218 · `tree.js` 277 · `popups.js` 144 · `menus.js` 353 · `edit.js` 161 · `open.js` 143 | eager (`<script>` 7 ตัว, `kinds.js` ก่อน) |
 | `navigator/` | 1807 | `shell.js` 78 · `sidebar.js` 138 · `electron/main.js` 144 · `world.js` 80 · `origcat.js` 358 · `chars.js` 253 · `cats.js` 97 · `maps.js` 293 · `board.js` 367 | lazy ผ่าน `loadGroup('navigator')` |
 | `hero/` | 1088 | `shell.js` 61 · `project.js` 255 · `novel.js` 76 · `story.js` 311 · `tags.js` 63 · `modals.js` 323 | lazy ผ่าน `loadGroup('hero')` |
 
@@ -355,7 +355,7 @@ module kinds) เพิ่มเข้ามาแบบ **additive** ควบ�
 | ไฟล์ | บรรทัด | รับผิดชอบ |
 |---|---|---|
 | `hub.js` | ~1240 (เดิมเอกสารว่า 781 — ตัวเลขนี้ตกค้างมาหลายรอบ ยังไม่ได้ sync เต็ม) | Nexus nest hub: module rail (+ `goToNexusNestHub` home button, ปุ่มแรกในแถบ ก่อน "+create"), accordion (Nest/Sage Hut/Import Dock — แต่ละ section มี `.acc-body` เลื่อนแยกกันเองผ่าน `#hub-body` flex layout, ดู style.css), nest tree drag-drop (โมดูลไหนก็ reparent ข้าม parent ได้ ไม่ล็อกเฉพาะ top-level แล้ว — `onNestDrop`), `buildNestRow`/`buildNestItemRow` เรนเดอร์ `.tree-chev-spacer` แทนที่ chevron ว่างเปล่าเมื่อแถวไม่มี child (Plan part1 #5 — กัน `.kicon` เลื่อนซ้ายไม่ตรงคอลัมน์กับแถวข้างเคียง), context menu (ปุ่ม "Create" เปิด hover submenu แทนการแสดง kind-list แบนราบเดิม — `openCreateSubmenu`/`positionSubmenuNear`)/rename/duplicate/move-to/pin/**"เปิดในแท็บใหม่"**+**"เปิดในหน้าต่างใหม่"**+**"เปิดใน Pane ใหม่ ▸"** (เฉพาะ module ที่มี Builder page เอง คือไม่ใช่ `collector` — `openModuleInNewTab`/`openModuleInNewWindow`/`openModuleInNewPane`/`openPaneDirectionSubmenu`/`buildPaneDirectionListHtml`, Plan part1 #3; `openModuleInNewTab` เพิ่มรอบ procress1 part2 #1 — push key เข้า `pane.tabs` เองก่อนเรียก `openModuleNode` เพื่อเลี่ยง replace-in-place ของ `builderNavigate`), icon popup, `buildModuleDetailHtml`, `wrapPageView` (ห่อ Sage Hut/Import Dock file-preview/Kind Browser ด้วย resize handle — Plan part1 #2). **Plan part2 #2.5**: `reloadModuleTree` ดึง `module:getNestItems` คู่กับ `getTree` แล้วเติมทั้ง `S.nestItems` ผ่าน `seedNestItems`/`seedNestItemsFor` (ทุกโมดูล content kind ได้ entry เสมอ — โมดูลว่างได้ `[]` — จึงไม่มีการ fetch lazy ทีละโมดูลตอนเรนเดอร์แรกอีก); `scheduleNestRender()` รวบ re-render ที่มาจาก path async (`ensureNestItemsLoaded`/`invalidateNestItems`/`closeStaleItemTabs`) เป็นครั้งเดียวต่อ microtask — `renderNexusHome()` เองยังเป็น sync ตามเดิม; `invalidateNestItems` ดึงลิสต์ครั้งเดียวแล้วส่งต่อให้ `closeStaleItemTabs` (เดิมดึงซ้ำ 2-3 รอบ) และเคลียร์ `S.sageHutCache` |
-| `builder.js` | ~660 | Editor-group shell — recursive split-pane layout tree (`builderSplitPane`/`builderClosePane`, ซ้อนได้ไม่จำกัดชั้น, Part 4), tab drag-reorder/cross-pane move/pop-out เป็นหน้าต่างแยก, toggle Module Inspector dock, auto-split เมื่อลาก tab ไปวางขอบ pane; `pruneStaleLayoutElements` กวาด DOM ที่หลงเหลือจาก legacy view (เช่น Scribe, Nexus picker — เขียนทับ `#main-inner.innerHTML` ตรงๆ) ออกก่อน re-render grid ทุกครั้ง กัน pane ค้างที่ปิดไม่ได้. **procress1 part2** (uncommitted): `builderNavigate` เปิด module/file/item ปกติ **แทนที่แท็บ active เดิม** แทนการ push แท็บใหม่เสมอ (replace-in-place ที่ index เดิม เหมือน Sage Hut sub-view branch ที่มีอยู่แล้ว — ต้องเปิดผ่าน context-menu "เปิดในแท็บใหม่"/`openModuleInNewTab` ถึงจะสะสมแท็บ); ปุ่ม split/close pane แบบ inline (◫/⬓/×) ใน `builderPaneHeadHtml` ถูกถอดออก ย้ายไปเป็น right-click context menu แทน (`openBuilderPaneContextMenu`/`buildBuilderPaneContextMenuHtml`/`openBuilderSeparateSubmenu` — เมนู "แยกส่วน Pane ▸" ซ้อน submenu split h/v เหมือนแพทเทิร์น `openPaneDirectionSubmenu` ใน hub/menus.js, "ปิด pane" เป็นรายการ top-level แยกเมื่อ pane ถูก split แล้ว; ผูก `oncontextmenu` ครั้งเดียวใน `ensureNodeElement` เหมือน ResizeObserver เดิม); `builderCloseTab` เมื่อปิดแท็บสุดท้ายของ pane เดี่ยว เรียก `builderOpenPage(null)` แทน `renderNexusHome()` ตรงๆ — เคลียร์ `S.activeModuleNode`/`filePreview`/`sageHut`/`activeItemNode` ก่อนเรนเดอร์ ไม่งั้นเนื้อหาเก่าค้างอยู่ทั้งที่แท็บว่างแล้ว |
+| `builder.js` | ~950 | Editor-group shell — recursive split-pane layout tree (`builderSplitPane`/`builderClosePane`, ซ้อนได้ไม่จำกัดชั้น, Part 4), tab drag-reorder/cross-pane move/pop-out เป็นหน้าต่างแยก, toggle Module Inspector dock, auto-split เมื่อลาก tab ไปวางขอบ pane; `pruneStaleLayoutElements` กวาด DOM ที่หลงเหลือจาก legacy view (เช่น Scribe, Nexus picker — เขียนทับ `#main-inner.innerHTML` ตรงๆ) ออกก่อน re-render grid ทุกครั้ง กัน pane ค้างที่ปิดไม่ได้. **procress1 part2** (uncommitted): `builderNavigate` เปิด module/file/item ปกติ **แทนที่แท็บ active เดิม** แทนการ push แท็บใหม่เสมอ (replace-in-place ที่ index เดิม เหมือน Sage Hut sub-view branch ที่มีอยู่แล้ว — ต้องเปิดผ่าน context-menu "เปิดในแท็บใหม่"/`openModuleInNewTab` ถึงจะสะสมแท็บ); ปุ่ม split/close pane แบบ inline (◫/⬓/×) ใน `builderPaneHeadHtml` ถูกถอดออก ย้ายไปเป็น right-click context menu แทน (`openBuilderPaneContextMenu`/`buildBuilderPaneContextMenuHtml`/`openBuilderSeparateSubmenu` — เมนู "แยกส่วน Pane ▸" ซ้อน submenu split h/v เหมือนแพทเทิร์น `openPaneDirectionSubmenu` ใน hub/menus.js, "ปิด pane" เป็นรายการ top-level แยกเมื่อ pane ถูก split แล้ว; ผูก `oncontextmenu` ครั้งเดียวใน `ensureNodeElement` เหมือน ResizeObserver เดิม); `builderCloseTab` เมื่อปิดแท็บสุดท้ายของ pane เดี่ยว เรียก `builderOpenPage(null)` แทน `renderNexusHome()` ตรงๆ — เคลียร์ `S.activeModuleNode`/`filePreview`/`sageHut`/`activeItemNode` ก่อนเรนเดอร์ ไม่งั้นเนื้อหาเก่าค้างอยู่ทั้งที่แท็บว่างแล้ว |
 | `inspector.js` | 212 | Module Inspector dock: description/แท็ก/แอตทริบิวต์/ลิงก์/ปุ่ม Version History; `loadInspectorData` เรียก `module:getInspector` ครั้งเดียวแทน 4 call ขนาน (Plan part2 #2.1) — คีย์ `{attrs,tags,links,ui}` เหมือนเดิมเพราะ hub.js/mod/classifier.js/mod/manager.js อ่าน (และแก้) `S.inspectorData` ตรงๆ |
 | `iconpicker.js` | 266 | Icon/Color picker ฝัง (ไอคอนแอป/symbol เดิม/อัปโหลด+crop วงกลม) |
 | `versions.js` | 78 | แผง Version History (แทน Inspector dock ชั่วคราวตอนเปิด) |
@@ -682,6 +682,147 @@ mechanism รองรับอยู่แล้ว), `finishVaultMergeImport()
 `importDatabaseFile()` ก่อนแยก แค่รับ `targetNexusId` เพิ่ม), `toastImportError()`
 (shared helper กัน hardcoded-Thai literal ซ้ำ 3 จุด))
 
+Process 6 part 1 (feature & fixing — navbar): `electron/src/renderer/hub/kinds.js`
+(`renderModuleRail()` เดิม `S.moduleTree.filter(m=>m.pinned)` อ่านแค่ root-level
+array ทำให้โมดูลที่ pin ไว้ลึกกว่า top-level (pin ได้จริงตั้งแต่ Process 3 part 2
+ที่เอา depth gate ออกจาก context menu แล้ว) ไม่ขึ้น btn บน rail เลย — เปลี่ยนเป็น
+`flattenModuleTree(S.moduleTree,0)` (helper เดิมใน hub/menus.js) แล้ว filter
+`.pinned` จาก list ที่ walk ทั้งต้นไม้แทน; rail button ของ pinned module เปลี่ยน
+`onclick` จาก `openModuleNode` ตรงๆ เป็น `openPinnedRailModule` ใหม่),
+`electron/src/renderer/hub/menus.js` (`buildNavPinListHtml()` — เมนู pin-list
+ของตัว rail เอง (right-click บน `#nav-sidebar`) เดิมก็ `.map` บน `S.moduleTree`
+ตรงๆ เหมือนกัน แก้เป็น `flattenModuleTree` ด้วย พร้อม indent ตาม depth แบบ
+เดียวกับ `buildMoveToListHtml`), `electron/src/renderer/hub/open.js`
+(`openModuleNode()` เดิม `if (m.kind==='collector'){if(m.parent_id==null)
+toggleMajorExpand(id);return}` — โมดูล collector ที่ซ้อนลึก (`parent_id!=null`)
+คลิกที่ตัวแถวเองไม่ทำอะไรเลย (chevron ข้างๆ ยัง toggle ได้ปกติ) เอา
+`if(m.parent_id==null)` gate ออก ให้ toggle ได้ทุก depth; ใหม่ —
+`focusModuleInNest(id)`/`openPinnedRailModule(id)`: การกดปุ่ม pinned บน rail
+ไม่ใช่แค่เรียก `openModuleNode` เฉยๆ อีกต่อไป — เปิด accordion section "Nest"
+เสมอ (`S.hubOpen.nest=true`), ยุบทุก root branch ใน `S.moduleTree` ยกเว้น
+branch ที่มี module เป้าหมายอยู่ (ผ่าน `moduleRootAncestor`, เดิมมีอยู่แล้วใน
+kinds.js), ไล่ขยาย ancestor chain ของ module เป้าหมายเอง แล้วค่อย fallthrough
+ไปเปิด builder ตามปกติ (ยกเว้น kind `collector` ที่ไม่มี builder — แค่
+focus/expand แล้ว render ใหม่ ไม่เรียก `openModuleNode` ซึ่งจะ toggle ปิดกลับ
+เพราะ branch เพิ่งถูกเปิดไป), `electron/css/nav-hub.css`
+(`#nav-sidebar.nav-expanded .nav-btn` — Process 4 part 2 เคยแก้ padding
+แนวตั้งจาก `0` เป็น `calc(var(--nav) * .07) 10px` ซึ่งกลายเป็นบั๊กตัวใหม่: ยิ่ง
+ลาก resize navbar กว้างขึ้น (`--nav` โต) padding แนวตั้งก็โตตามจนปุ่มบวมทั้ง
+แกน Y ทั้งที่ลากแค่แกน X — เปลี่ยนกลับเป็นค่าคงที่ `6px 10px` ไม่ผูกกับ `--nav`
+อีก), `electron/src/renderer/core/state.js` (`loadUiSettings()` เพิ่ม
+`navVerticalAlwaysLabel` boolean, sanitize `saved.navVerticalAlwaysLabel===true`),
+`electron/src/renderer/core/ui.js` (`applyNavRailWidth()` เพิ่มเงื่อนไข
+`S.settings.navVerticalAlwaysLabel` เข้าไปคู่กับ threshold เดิม — บังคับ
+`.nav-expanded` ค้างได้โดยไม่ต้องลาก rail ให้กว้างถึง `NAV_LABEL_THRESHOLD`;
+ใหม่ — `applyNavHorizontalHeight()`/`startNavHorizontalResize()`: resize
+handle ของ horizontal navbar เอง ลาก drag แนวตั้งเปลี่ยน `--navh` เหมือนที่
+`startNavRailResize` เปลี่ยน `--nav` ของ vertical, clamp 36–120px),
+`electron/src/renderer/core/workspace-style.js`
+(`settingWorkspaceLayoutHtml()` เดิมมีแค่ block `orient==='horizontal'`
+(display icon/label/both) ต่อท้าย orientation picker — เพิ่ม block คู่กัน
+`else` สำหรับ `orient==='vertical'`: togglerow "แสดงป้ายชื่อเสมอ" ผูก
+`toggleNavVerticalAlwaysLabel()` ใหม่ (ตั้งค่า + `saveUiSettings()` +
+`applyNavRailWidth()` + re-render)), `electron/src/renderer/core/boot.js`
+(`applyNavOrientation()` — reparent element เข้า `#nav-toolbar-h` เปลี่ยนจาก
+`appendChild` เป็น `insertBefore(navEl, mount.firstChild)` เพื่อให้
+`#nav-toolbar-h-resize` (child ใหม่ที่ index.html ใส่ไว้ล่วงหน้าใน mount)
+ค้างเป็น child สุดท้ายเสมอ ไม่ถูกแซงขึ้นไปอยู่บนแท่ง nav; boot เรียก
+`applyNavHorizontalHeight()` เพิ่มคู่กับ `applyNavRailWidth()` เดิม),
+`electron/index.html` (`#nav-toolbar-h` ใส่ `#nav-toolbar-h-resize` เป็น
+static child ตั้งแต่แรก — `.panel-resize-handle.panel-resize-handle-v` เดิม
+(ใช้ซ้ำจาก Hub section resize) ผูก `onmousedown="startNavHorizontalResize(event)"`),
+`electron/css/workspace.css` (`#nav-toolbar-h` เปลี่ยนเป็น
+`flex-direction:column` เฉพาะ `data-nav-orientation="horizontal"` ให้แท่ง
+navbar วางซ้อนบน resize handle แทนที่จะเป็น row เฉยๆ ที่ไม่มีที่ให้ handle;
+`#nav-sidebar`/`#workspace-toolbar` horizontal-mode เปลี่ยน `width:auto` เป็น
+`width:100%` (เดิมกว้างแค่พอรับปุ่ม ไม่ยืดเต็ม window) และ `height:44px` ตายตัว
+เปลี่ยนเป็น `height:var(--navh,44px)`; ใหม่ — `.rail-sep` override สำหรับ
+horizontal (เดิมเป็นเส้นแบ่งแนวนอนสำหรับ column ของปุ่มที่ซ้อนกัน พอมาอยู่ใน row
+กลับไม่มี override เลย กลายเป็นเส้น 0 ความสูงที่มองไม่เห็น — เปลี่ยนเป็นเส้นแบ่ง
+แนวตั้งแทน) และ `.nav-btn.active::after` override (แถบ indicator เดิมอยู่ขอบซ้าย
+เหมาะกับ column, ย้ายไปขอบล่างสำหรับ row)), `electron/css/base.css` (ใหม่ —
+`*::-webkit-scrollbar`/`-track`/`-thumb`/`-thumb:hover`/`-corner` ธีมทุก
+scrollbar ในแอปที่ไม่มี rule เฉพาะของตัวเองเป็น default (เดิมมีแค่ 2-3 จุดที่ตั้ง
+scrollbar เอง เช่น `.relation-main`/`.tag-suggestions` ที่เหลือ fallback เป็น
+scrollbar ขาวของ Chromium ทันทีที่ content ยาวเกิน viewport — ใช้แพทเทิร์น
+เดียวกับ `select` ด้านบนในไฟล์นี้ที่ theme element เปล่าเป็น default แทนการ
+ไล่ตั้ง class ทีละจุด), `electron/src/renderer/i18n.js` (คีย์ใหม่
+`settingNavVerticalAlwaysLabel` ครบ 18 locale ต่อจาก `navDisplayBoth` เดิม)
+
+Process 6 part 2 (module): `electron/src/renderer/core/views.js` (`switchView()`
+เดิมลบ branch `'hashtag'` ไปพร้อมกับ `'project-hashtag'` ตอนลบ legacy
+Director/Navigator/Hero/Writer ทิ้ง (v.4.10.0) ทั้งที่คนละเรื่องกัน —
+`'project-hashtag'`/`renderProjectHashtagView` พึ่ง `S.project` (Director-only)
+จริงๆ ตายไปพร้อม Director สมควรแล้ว แต่ `'hashtag'`/`renderHashtagView` เป็นหน้า
+global ไม่พึ่ง Director เลย, ปุ่ม nav-sidebar เดิม (`data-panel="hashtag"`),
+backend (`api.hashtag.*`/`electron/src/db/hashtag.js`) และตัว
+`renderHashtagView()` เองก็รอดมาสมบูรณ์ — มีแค่ทางเข้าใน `switchView()` หายไป
+กดปุ่มแล้วไม่มีอะไรเกิดขึ้นเลยเงียบๆ (ไม่ error ไม่ partial-render) มาตั้งแต่
+v.4.10.0 จนตอนนี้ — เพิ่ม `else if (v==='hashtag') { await
+loadModule('src/renderer/hashtag.js'); renderHashtagView(); }` กลับเข้าไป
+ข้างๆ branch `'colors'` เดิม ไม่แตะไฟล์อื่นเลย; `buildBuilderPageHtml()`'s
+default-empty branch (เดิม inline markup โลโก้+ชื่อ nexus+memo) ย้ายไปเป็น
+`builderEmptyPaneHtml()` ใน builder.js แทน — Process 6 part 2's เรื่อง #2
+ด้านล่างต้องใช้ markup เดียวกันนี้เพื่อเติมใน pane ที่ tab ถูกย้ายออกจนว่างเปล่า
+เลยรวมเป็น helper เดียวกันแทนที่จะก็อปสอง), `electron/src/renderer/builder.js`
+(`builderMoveTabTo()` — ย้าย tab ข้าม pane เดิมมี 2 พฤติกรรมที่ Plan.md ต้องการ
+ให้แยกจาก `builderCloseTab()`: (1) fallback ของ active tab ใน source pane เดิม
+ใช้สูตรเดียวกับ `builderCloseTab` (`tabs[srcIdx] ?? tabs[srcIdx-1]` — อิง
+ตำแหน่งในแถว tab strip) เปลี่ยนเป็น `pickBackwardActiveTab(pane, excludeKey)`
+ใหม่ — ไล่ `pane.history` (ของเดิม back/forward log ที่เก็บ ref object ไม่ใช่
+string key ต้องแปลงผ่าน `builderPageKey()` ก่อนเทียบ) ย้อนหลังหา tab ที่เพิ่งเปิด
+ดูล่าสุดที่ยังอยู่ใน `pane.tabs` จริง แทนตำแหน่งเฉยๆ — ต่างกันชัดเจนตอนผู้ใช้
+สลับกลับไปดู tab เก่าก่อนย้าย tab อื่นออก (ยืนยันจริงผ่าน driver: เปิด A→B→C
+แบบแท็บใหม่ทั้งคู่ แล้วสลับกลับไป A, ย้าย A ออก — สูตรตำแหน่งเดิมจะได้ B (อยู่
+ติดกันหลัง splice) แต่สูตร history ใหม่ได้ C (ดูล่าสุดจริงก่อนสลับกลับ A));
+(2) source pane ที่ tabs ว่างเปล่าหลังย้าย tab ออก เดิมเรียก `builderCloseIfEmpty`
+ปิด pane ทิ้งอัตโนมัติเหมือน `builderCloseTab` ทำ — เอาออก ปล่อยให้ pane ว่างเปล่า
+ยังคงอยู่ (ไม่ merge ไปไหน) แล้วเติม `builderEmptyPaneHtml()` เข้า
+`.bpane-body` ของ pane นั้นตรงๆ ทันที (ไม่ต้องรอ focus) — ส่วน
+`builderCloseTab()` เองไม่แตะเลยตามที่ Plan.md ระบุชัดว่ากรณีปิด tab สุดท้ายจริงๆ
+ยังต้องปิด pane เหมือนเดิม — ยืนยันทั้งสองเคสแยกกันผ่าน driver แล้ว)
+
+Process 7 part 1 (animating): renderer ทั้งแอปไม่มี framework/vdom — ทุกหน้าคือ
+`.innerHTML =` string ทับใหม่ทั้งก้อน ทำให้ CSS `transition` ธรรมดาบน element
+ที่ toggle ไม่มีวันทำงาน (node "ก่อนหน้า" ถูกทำลายทิ้งไปแล้วก่อนที่ browser จะ
+ทัน interpolate อะไร) — เพิ่ม helper กลาง 2 ตัวใน `electron/src/renderer/core/ui.js`:
+`animateToggleOpen(el)` (เติม class `.anim-toggle-in` — ใช้ CSS `animation` ไม่ใช่
+`transition` เพราะ `animation` เล่นจาก keyframe `from` ได้เสมอไม่ว่า class จะถูกเติม
+ตอนไหน แม้ node เพิ่งถูกสร้างขึ้นมา tick เดียวกันนั้นเอง) และ
+`animateToggleCloseThenCommit(el, commit)` (เติม class `.anim-toggle-out` ให้
+node ที่ **ยังอยู่จริงในตอนนั้น** ก่อน แล้วรอ `animationend` (มี `setTimeout`
+safety-net กันเหตุการณ์ไม่ยิง) ค่อยเรียก `commit` — ตัวการ flip state จริง +
+`renderNexusHome()` ที่จะซ่อน/ลบ element นั้นไปทีหลัง — เพราะไม่มีทางอนิเมท node
+ที่ถูกลบไปแล้วได้เลย) ใช้ทั้งคู่ใน 3 จุดตาม Plan.md: `toggleHubSection()`/
+`toggleMajorExpand()` (`electron/src/renderer/hub/sections.js`, อนิเมท
+`.acc-body[data-key]`/`.nest-children[data-parent-id]`) และ
+`toggleModuleInspector()` (`electron/src/renderer/builder.js`, อนิเมท
+`.module-inspector`). `toggleMajorExpand`'s เป้าหมายต้องมี markup เพิ่ม —
+`buildNestRow()` (`electron/src/renderer/hub/tree.js`) เดิมปล่อย
+children/content-item ของโมดูลเป็น string sibling เปล่าๆไม่มี wrapper ครอบ
+(อนิเมทไม่ได้เลยเพราะไม่มี element ให้จับ) — ห่อด้วย
+`<div class="nest-children" data-parent-id="${m.id}">` เฉพาะตอนขยายอยู่ (ตอน
+collapsed ยังคง omit ทั้งก้อนเหมือนเดิมทุกจุด ไม่กระทบ logic เดิม) — CSS ใหม่:
+`.anim-toggle-in`/`.anim-toggle-out` + `@keyframes animToggleIn/animToggleOut`
+(fade+translateY เล็กน้อย ใช้ร่วมกันทั้ง 3 เป้าหมายเพราะเป็น element คนละ
+ระบบกันโดยสิ้นเชิง) ใน `electron/css/components.css`, token `--anim-dur`
+(default `.15s`) ใน `electron/css/tokens.css` เขียนทับสดจาก setting ใหม่โดย
+`applyUiSettings()` (`electron/src/renderer/core/settings.js`) — Setting ใหม่:
+`S.settings.animationsEnabled` (boolean, default true) และ
+`S.settings.animationSpeed` (`'fast'|'normal'|'slow'`, default `'normal'`,
+map เป็น ms จริงผ่าน `ANIM_SPEED_MS` constant ใหม่ใน `core/state.js`:
+`{fast:100,normal:150,slow:300}`) — UI ใหม่ `settingWorkspaceAnimationHtml()`
+(`electron/src/renderer/core/workspace-style.js`) ต่อจาก Layout section เดิม
+ในหน้า Workspace Style: togglerow on/off + (โชว์เฉพาะตอนเปิดอยู่ แพทเทิร์น
+"reveal เมื่อเกี่ยวข้อง" เดียวกับแถว display-mode ของ horizontal ด้านบน) ปุ่ม
+preset 3 ตัว (Fast/Normal/Slow) แบบเดียวกับ `.settings-options` ของ nav
+orientation/display — ยืนยันผ่าน driver จริงแล้วทั้ง 3 จุด: open animation
+เล่นแน่นอน (state flip ทันทีตอนเปิด), close animation หน่วง state flip จริง
+จนกว่า animation จะจบ (เช็คที่ +60ms state ยังไม่เปลี่ยน มี `.anim-toggle-out`
+ค้างอยู่, +400ms state เปลี่ยนแล้วและ element หายจริง), หน้า setting render
+ถูกต้อง (default on + ปุ่ม speed โชว์), ปิด toggle แล้วปุ่ม speed หายและทั้ง 3
+toggle กลายเป็น instant ไม่มี delay/animation class เลย
+
 ---
 
 ## electron/src/db/ — ชั้นฐานข้อมูล (รันใน main process)
@@ -883,10 +1024,16 @@ render เป็น HTML string ลง `#left-panel-inner` / `#main-inner`
   เครื่องมือ (`setMapTool` เลือก/เพิ่มจุด/ลบ), modal map/area, บันทึกจุดผ่าน
   `api.map.setPoints`
 
-### hashtag.js (140 บรรทัด)
-- หน้าแท็ก global (`renderHashtagView` — เพิ่ม/แก้), หน้า Project Tags
-  (`renderProjectHashtagView` — เลือกแท็กเพื่อดู object/event ที่ใช้) และหน้า
-  จัดการสี (`renderColorSettings` — wheel + ลบสี)
+### hashtag.js (75 บรรทัด)
+- หน้าแท็ก global (`renderHashtagView` — เพิ่ม/แก้/ลบผ่าน `openHashtagModal`) และหน้า
+  จัดการสี (`renderColorSettings` — wheel + ลบสี) เท่านั้น — `renderProjectHashtagView`
+  (หน้า Project Tags ของ Director) ถูกลบไปพร้อม legacy deletion (v.4.10.0)
+  เพราะพึ่ง `S.project`; **Process 6 part 2**: `renderHashtagView` เองรอดจากรอบ
+  ลบนั้นมาโดยไม่มีอะไรเรียกมันอีกเลย — `switchView()` (core/views.js) เสียกิ่ง
+  `'hashtag'` ไปตอนลบ `'project-hashtag'` ทิ้ง (คนละ branch แต่ลบพร้อมกัน) ทำให้
+  ปุ่ม nav-sidebar เดิม (`data-panel="hashtag"`) กดแล้วไม่ทำอะไรเลยตั้งแต่ v.4.10.0
+  — เพิ่ม branch กลับเข้า `switchView()` แล้ว ไม่แตะไฟล์นี้เลย (ของเดิมสมบูรณ์
+  อยู่แล้ว รวม backend `api.hashtag.*`/db/hashtag.js ที่ไม่เคยถูกลบ)
 
 ### navigator.js — Navigator (World)
 

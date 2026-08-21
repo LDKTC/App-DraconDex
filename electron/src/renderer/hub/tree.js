@@ -73,6 +73,12 @@ function buildNestRow(m, depth, parentId) {
   // menu) — a content item can never be dragged out of its owning module.
   const itemsHtml = (nestShowItems && isContentKind && !collapsed && Array.isArray(itemRows))
     ? itemRows.map(it => buildNestItemRow(it, m.kind, m.id, depth + 1)).join('') : '';
+  // Process 7 part 1: wraps the module's own children/items together so
+  // toggleMajorExpand (hub/sections.js) has a live element to animate the
+  // CLOSE transition against — childrenHtml/itemsHtml are both already ''
+  // when collapsed, so this wrapper only exists in the DOM while expanded,
+  // exactly the state a close animation needs to run FROM.
+  const childrenWrap = collapsed ? '' : `<div class="nest-children" data-parent-id="${m.id}">${childrenHtml}${itemsHtml}</div>`;
   const showMajorIcon = S.settings.nestShowMajorIcon !== false;
   const kindBadge = S.settings.nestSignatureMode === 'icon'
     ? `<span class="kind kind-icon" data-no-i18n>${I[KIND_ICON[m.kind]] || I.layer}</span>`
@@ -93,7 +99,7 @@ function buildNestRow(m, depth, parentId) {
       ? `<input id="rename-nest-${m.id}" class="rename-input" value="${x(m.name)}" onclick="event.stopPropagation()" onblur="saveModuleRename(${m.id},this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value=${x(JSON.stringify(m.name))};this.blur();}">`
       : `<span class="name" ondblclick="event.stopPropagation();cancelRowOpen();startRenameModule(${m.id})">${x(m.name)}</span>`}
     ${kindBadge}
-  </div>${childrenHtml}${itemsHtml}`;
+  </div>${childrenWrap}`;
 }
 
 // Leaf row for one content item (Plan part4) — see buildNestRow's own

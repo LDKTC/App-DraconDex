@@ -95,8 +95,10 @@ async function init() {
   applyLeftPanelState();
   applyLeftPanelWidth();
   applyNavRailWidth();
+  applyNavHorizontalHeight();
   q('#left-panel-resize')?.setAttribute('title', t('resizePanel'));
   q('#nav-sidebar-resize')?.setAttribute('title', t('resizePanel'));
+  q('#nav-toolbar-h-resize')?.setAttribute('title', t('resizePanel'));
   observeUiLanguage();
   renderModuleRail();
   applyNavToggles();
@@ -199,7 +201,10 @@ function applyNavOrientation(){
   if (!navEl || !mount || !appEl) return;
   navEl.classList.remove('nav-expanded');
   if (orient === 'horizontal') {
-    if (navEl.parentElement !== mount) mount.appendChild(navEl);
+    // insertBefore(navEl, mount.firstChild) rather than appendChild — the
+    // mount's static #nav-toolbar-h-resize handle (index.html) needs to stay
+    // the LAST child so it sits at the bar's bottom edge, not floating above it.
+    if (navEl.parentElement !== mount) mount.insertBefore(navEl, mount.firstChild);
   } else if (navEl.parentElement !== appEl) {
     // Restore each element to its original #app-row position (index.html
     // order): #nav-sidebar goes right before #nav-sidebar-resize,

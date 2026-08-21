@@ -55,7 +55,7 @@ function settingWorkspaceStylePageHtml() {
   // ambiguous which style's orientation the two rows below are for.
   return `<div class="settings-label">${t('settingPageWorkspaceStyle')}</div>
     <div class="prefs-theme-grid">${cells}</div>
-    ${dirty ? `<button class="btn btn-p" style="margin-top:14px" onclick="applyWorkspaceStyleChoice()">${t('settingWorkspaceApply')}</button>` : settingWorkspaceLayoutHtml()}`;
+    ${dirty ? `<button class="btn btn-p" style="margin-top:14px" onclick="applyWorkspaceStyleChoice()">${t('settingWorkspaceApply')}</button>` : settingWorkspaceLayoutHtml() + settingWorkspaceAnimationHtml()}`;
 }
 
 // Process 5 part1 — nav orientation + (when horizontal) button display mode
@@ -79,8 +79,52 @@ function settingWorkspaceLayoutHtml() {
         <button class="settings-option${display === 'icon' ? ' active' : ''}" onclick="setNavHorizontalDisplay('icon')">${t('navDisplayIcon')}</button>
         <button class="settings-option${display === 'label' ? ' active' : ''}" onclick="setNavHorizontalDisplay('label')">${t('navDisplayLabel')}</button>
         <button class="settings-option${display === 'both' ? ' active' : ''}" onclick="setNavHorizontalDisplay('both')">${t('navDisplayBoth')}</button>
+      </div>` : `
+      <div class="togglerow" style="margin-top:10px" onclick="toggleNavVerticalAlwaysLabel()"><span class="tg${S.settings.navVerticalAlwaysLabel ? ' on' : ''}"></span>${t('settingNavVerticalAlwaysLabel')}</div>`}
+    </div>`;
+}
+// Process 7 part 1 — enable/disable the Hub accordion / Nest module-list /
+// Module Inspector toggle animations (core/ui.js's animateToggleOpen()/
+// animateToggleCloseThenCommit()), default ON, plus an "advanced" speed
+// preset only shown while enabled (same "reveal only when relevant" idiom
+// as Layout's own horizontal-only display-mode row above).
+function settingWorkspaceAnimationHtml() {
+  const on = S.settings.animationsEnabled !== false;
+  const speed = S.settings.animationSpeed || 'normal';
+  return `<div class="settings-label" style="margin-top:18px">${t('settingWorkspaceAnimation')}</div>
+    <div class="settings-group">
+      <div class="togglerow" onclick="toggleAnimationsEnabled()"><span class="tg${on ? ' on' : ''}"></span>${t('settingAnimShow')}</div>
+      ${on ? `
+      <div class="settings-label-row" style="margin-top:10px"><span>${t('settingAnimSpeedAdvanced')}</span></div>
+      <div class="settings-options" style="grid-template-columns:repeat(3,1fr)">
+        <button class="settings-option${speed === 'fast' ? ' active' : ''}" onclick="setAnimationSpeed('fast')">${t('animSpeedFast')}</button>
+        <button class="settings-option${speed === 'normal' ? ' active' : ''}" onclick="setAnimationSpeed('normal')">${t('animSpeedNormal')}</button>
+        <button class="settings-option${speed === 'slow' ? ' active' : ''}" onclick="setAnimationSpeed('slow')">${t('animSpeedSlow')}</button>
       </div>` : ''}
     </div>`;
+}
+function toggleAnimationsEnabled() {
+  S.settings.animationsEnabled = !(S.settings.animationsEnabled !== false);
+  saveUiSettings();
+  renderSettingWindow();
+}
+function setAnimationSpeed(speed) {
+  if (!['fast', 'normal', 'slow'].includes(speed)) return;
+  S.settings.animationSpeed = speed;
+  saveUiSettings();
+  applyUiSettings();
+  renderSettingWindow();
+}
+
+// Process 6 part 1: vertical-only advanced customization — normally the
+// icon+label row only turns on once the user drags the rail past
+// NAV_LABEL_THRESHOLD (core/ui.js); this pins it on regardless of the
+// dragged width, without affecting horizontal mode's own display setting.
+function toggleNavVerticalAlwaysLabel() {
+  S.settings.navVerticalAlwaysLabel = !S.settings.navVerticalAlwaysLabel;
+  saveUiSettings();
+  applyNavRailWidth();
+  renderSettingWindow();
 }
 function setNavOrientation(orient) {
   if (orient !== 'vertical' && orient !== 'horizontal') return;

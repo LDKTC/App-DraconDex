@@ -188,6 +188,7 @@ async function switchView(v) {
   if (v !== 'nexus') { leaveBuilderGrid(); const foot = q('#left-panel-foot'); if (foot) foot.innerHTML = ''; }
   updateTopNavButton();
   if      (v==='nexus')           renderNexusHome();
+  else if (v==='hashtag')         { await loadModule('src/renderer/hashtag.js'); renderHashtagView(); }
   else if (v==='colors')          { await loadModule('src/renderer/hashtag.js'); q('#left-panel-inner').innerHTML=`<div class="ph"><h4>${t('colorPanel')}</h4></div>`; renderColorSettings(); }
   else if (v==='scribe')          { await loadModule('src/renderer/scribe.js'); renderScribeView(); }
 }
@@ -254,11 +255,7 @@ function buildBuilderPageHtml() {
     : (S.filePreview && typeof buildFileViewerHtml === 'function') ? buildFileViewerHtml()
     : (S.sageHut && typeof buildSageHutHtml === 'function') ? buildSageHutHtml()
     : (S.importDockPage && typeof buildImportDockPageHtml === 'function') ? buildImportDockPageHtml()
-    : `<div class="empty" style="margin-top:80px">
-    <div class="ei"><img src="../src/assets/brand/DraconDex_WhiteOut.png" class="brand-img" alt="DraconDex" style="height:64px;width:64px;opacity:.35"></div>
-    <h3>${x(S.nexus.name)}</h3>
-    <p>${S.nexus.memo ? x(S.nexus.memo) : t('nexusWelcomeText')}</p>
-  </div>`;
+    : builderEmptyPaneHtml();
 }
 
 // Post-DOM hooks for the focused pane's page.

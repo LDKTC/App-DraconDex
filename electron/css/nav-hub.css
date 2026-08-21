@@ -175,9 +175,15 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
    square to a left-aligned icon+label row. .nav-logo-btn is a different
    class, so the logo itself is unaffected. */
 .nav-label{display:none}
+/* Process 6 part 1: padding used to be calc(var(--nav) * .07) 10px — the
+   first value (top/bottom, the Y axis) scaled with the dragged rail WIDTH,
+   so every button's height/margin ballooned as the user widened the rail
+   even though only X was being dragged. Vertical padding is fixed now;
+   only the button's own width (above, calc(100% - 12px)) still tracks
+   --nav, so widening only ever grows buttons on the X axis. */
 #nav-sidebar.nav-expanded .nav-btn{
 	width:calc(100% - 12px);aspect-ratio:auto;justify-content:flex-start;
-	gap:8px;padding:calc(var(--nav) * .07) 10px;
+	gap:8px;padding:6px 10px;
 }
 #nav-sidebar.nav-expanded .nav-label{
 	display:inline-block;flex:1;min-width:0;text-align:left;

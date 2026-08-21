@@ -2,15 +2,30 @@
 // the Kind Browser (modules grouped by kind) and the import-choice modal
 // that picks between 'import as nest' and 'import as DB'.
 // ═══ HUB PANEL — accordion shell (Phase 2) + Nexus nest tree (Phase 3) ═
+// Process 7 part 1: animates the open/close — see core/ui.js's
+// animateToggleOpen()/animateToggleCloseThenCommit() for why opening and
+// closing need different treatment under this app's full-rerender model.
 function toggleHubSection(name) {
-  S.hubOpen[name] = !S.hubOpen[name];
-  localStorage.setItem(HUB_OPEN_KEY, JSON.stringify(S.hubOpen));
-  renderNexusHome();
+  const opening = !S.hubOpen[name];
+  const commit = () => {
+    S.hubOpen[name] = opening;
+    localStorage.setItem(HUB_OPEN_KEY, JSON.stringify(S.hubOpen));
+    renderNexusHome();
+    if (opening) animateToggleOpen(q(`.acc-body[data-key="${name}"]`));
+  };
+  if (opening) { commit(); return; }
+  animateToggleCloseThenCommit(q(`.acc-body[data-key="${name}"]`), commit);
 }
 
 function toggleMajorExpand(id) {
-  if (S.moduleCollapsed.has(id)) S.moduleCollapsed.delete(id); else S.moduleCollapsed.add(id);
-  renderNexusHome();
+  const expanding = S.moduleCollapsed.has(id);
+  const commit = () => {
+    if (expanding) S.moduleCollapsed.delete(id); else S.moduleCollapsed.add(id);
+    renderNexusHome();
+    if (expanding) animateToggleOpen(q(`.nest-children[data-parent-id="${id}"]`));
+  };
+  if (expanding) { commit(); return; }
+  animateToggleCloseThenCommit(q(`.nest-children[data-parent-id="${id}"]`), commit);
 }
 
 // Nexus Nest display options (Plan part1 #2) — lightweight setters, deliberately
