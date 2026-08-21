@@ -31,6 +31,10 @@ function applyUiSettings(){
     else document.body.style.removeProperty(tok);
   }
   document.documentElement.style.setProperty('--fsc', String((S.settings.fontScale || 100) / 100));
+  // Process 7 part 1: speed preset for the toggle-animation keyframes below
+  // (nav-hub.css/inspector.css) — a single token so every consumer picks up
+  // a speed change live, same idiom as --fsc/--ui-scale.
+  document.documentElement.style.setProperty('--anim-dur', ANIM_SPEED_MS[S.settings.animationSpeed] ? `${ANIM_SPEED_MS[S.settings.animationSpeed]}ms` : '.15s');
   document.documentElement.lang = S.settings.language;
   const scale = S.settings.size / 100;
   document.documentElement.style.setProperty('--ui-scale', String(scale));

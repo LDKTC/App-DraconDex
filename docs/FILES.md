@@ -782,6 +782,47 @@ string key ต้องแปลงผ่าน `builderPageKey()` ก่อน�
 `builderCloseTab()` เองไม่แตะเลยตามที่ Plan.md ระบุชัดว่ากรณีปิด tab สุดท้ายจริงๆ
 ยังต้องปิด pane เหมือนเดิม — ยืนยันทั้งสองเคสแยกกันผ่าน driver แล้ว)
 
+Process 7 part 1 (animating): renderer ทั้งแอปไม่มี framework/vdom — ทุกหน้าคือ
+`.innerHTML =` string ทับใหม่ทั้งก้อน ทำให้ CSS `transition` ธรรมดาบน element
+ที่ toggle ไม่มีวันทำงาน (node "ก่อนหน้า" ถูกทำลายทิ้งไปแล้วก่อนที่ browser จะ
+ทัน interpolate อะไร) — เพิ่ม helper กลาง 2 ตัวใน `electron/src/renderer/core/ui.js`:
+`animateToggleOpen(el)` (เติม class `.anim-toggle-in` — ใช้ CSS `animation` ไม่ใช่
+`transition` เพราะ `animation` เล่นจาก keyframe `from` ได้เสมอไม่ว่า class จะถูกเติม
+ตอนไหน แม้ node เพิ่งถูกสร้างขึ้นมา tick เดียวกันนั้นเอง) และ
+`animateToggleCloseThenCommit(el, commit)` (เติม class `.anim-toggle-out` ให้
+node ที่ **ยังอยู่จริงในตอนนั้น** ก่อน แล้วรอ `animationend` (มี `setTimeout`
+safety-net กันเหตุการณ์ไม่ยิง) ค่อยเรียก `commit` — ตัวการ flip state จริง +
+`renderNexusHome()` ที่จะซ่อน/ลบ element นั้นไปทีหลัง — เพราะไม่มีทางอนิเมท node
+ที่ถูกลบไปแล้วได้เลย) ใช้ทั้งคู่ใน 3 จุดตาม Plan.md: `toggleHubSection()`/
+`toggleMajorExpand()` (`electron/src/renderer/hub/sections.js`, อนิเมท
+`.acc-body[data-key]`/`.nest-children[data-parent-id]`) และ
+`toggleModuleInspector()` (`electron/src/renderer/builder.js`, อนิเมท
+`.module-inspector`). `toggleMajorExpand`'s เป้าหมายต้องมี markup เพิ่ม —
+`buildNestRow()` (`electron/src/renderer/hub/tree.js`) เดิมปล่อย
+children/content-item ของโมดูลเป็น string sibling เปล่าๆไม่มี wrapper ครอบ
+(อนิเมทไม่ได้เลยเพราะไม่มี element ให้จับ) — ห่อด้วย
+`<div class="nest-children" data-parent-id="${m.id}">` เฉพาะตอนขยายอยู่ (ตอน
+collapsed ยังคง omit ทั้งก้อนเหมือนเดิมทุกจุด ไม่กระทบ logic เดิม) — CSS ใหม่:
+`.anim-toggle-in`/`.anim-toggle-out` + `@keyframes animToggleIn/animToggleOut`
+(fade+translateY เล็กน้อย ใช้ร่วมกันทั้ง 3 เป้าหมายเพราะเป็น element คนละ
+ระบบกันโดยสิ้นเชิง) ใน `electron/css/components.css`, token `--anim-dur`
+(default `.15s`) ใน `electron/css/tokens.css` เขียนทับสดจาก setting ใหม่โดย
+`applyUiSettings()` (`electron/src/renderer/core/settings.js`) — Setting ใหม่:
+`S.settings.animationsEnabled` (boolean, default true) และ
+`S.settings.animationSpeed` (`'fast'|'normal'|'slow'`, default `'normal'`,
+map เป็น ms จริงผ่าน `ANIM_SPEED_MS` constant ใหม่ใน `core/state.js`:
+`{fast:100,normal:150,slow:300}`) — UI ใหม่ `settingWorkspaceAnimationHtml()`
+(`electron/src/renderer/core/workspace-style.js`) ต่อจาก Layout section เดิม
+ในหน้า Workspace Style: togglerow on/off + (โชว์เฉพาะตอนเปิดอยู่ แพทเทิร์น
+"reveal เมื่อเกี่ยวข้อง" เดียวกับแถว display-mode ของ horizontal ด้านบน) ปุ่ม
+preset 3 ตัว (Fast/Normal/Slow) แบบเดียวกับ `.settings-options` ของ nav
+orientation/display — ยืนยันผ่าน driver จริงแล้วทั้ง 3 จุด: open animation
+เล่นแน่นอน (state flip ทันทีตอนเปิด), close animation หน่วง state flip จริง
+จนกว่า animation จะจบ (เช็คที่ +60ms state ยังไม่เปลี่ยน มี `.anim-toggle-out`
+ค้างอยู่, +400ms state เปลี่ยนแล้วและ element หายจริง), หน้า setting render
+ถูกต้อง (default on + ปุ่ม speed โชว์), ปิด toggle แล้วปุ่ม speed หายและทั้ง 3
+toggle กลายเป็น instant ไม่มี delay/animation class เลย
+
 ---
 
 ## electron/src/db/ — ชั้นฐานข้อมูล (รันใน main process)

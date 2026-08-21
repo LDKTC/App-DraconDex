@@ -49,12 +49,12 @@
 
 ### Process 7
 #### part 1 : animating
-- [ ] เพิ่มanimation ให้กับการtoggle ต่างๆทั้งหมดบนแอพ เช่น
-    - [ ] toggle section บน hub
-    - [ ] major module lists toggle
-    - [ ] module inspector
-- [ ] setting, workspace pages, เพิ่ม section ส่วนที่ถามเรื่องการแสดง animation ด้านล่างส่วนของ layout, default on
-    - [ ] เพิ่ม การcustom แบบadvance ให้ปรับความไวของ animate โดยถามเป็นเวลาให้เลือก
+- [x] เพิ่มanimation ให้กับการtoggle ต่างๆทั้งหมดบนแอพ เช่น
+    - [x] toggle section บน hub
+    - [x] major module lists toggle
+    - [x] module inspector
+- [x] setting, workspace pages, เพิ่ม section ส่วนที่ถามเรื่องการแสดง animation ด้านล่างส่วนของ layout, default on
+    - [x] เพิ่ม การcustom แบบadvance ให้ปรับความไวของ animate โดยถามเป็นเวลาให้เลือก
 #### part 2 : setting
 - [ ] เมื่อเกิดการเปลี่ยนเแปลงภายในแอพจาก setting, หน้าsettingจะถูกresetกลับไปด้านบนสุดเสมอ, ทำให้แม้จะresetก็จะแสดงในจุดเดิม
 - [ ] Text & sizing, 

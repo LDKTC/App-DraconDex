@@ -414,3 +414,40 @@ document.addEventListener('mouseup', () => {
   localStorage.setItem(HUB_SECTION_HEIGHTS_KEY, JSON.stringify(S.hubSectionHeights || {}));
 });
 
+// ═══ Toggle animations (Process 7 part 1) ═══════════════════════════════
+// Every screen here is a full innerHTML rebuild (no vdom diffing), so a
+// plain CSS `transition` on a toggled element never fires — the "before"
+// node is destroyed and a fresh one takes its place before the browser gets
+// a chance to interpolate anything. A CSS `animation` doesn't have that
+// problem for the OPENING half (it plays from its own `from` keyframe
+// regardless of when the class lands on the node, even a node created this
+// same tick) — but the CLOSING half still needs the outgoing node animated
+// BEFORE the state flip/re-render removes it, since there's nothing left to
+// animate once it's gone. Both helpers below are the shared choke point for
+// all 3 Plan.md targets (hub accordion, nest module-list expand/collapse,
+// module inspector) so the on/off + speed setting only has to be honored
+// once.
+function animToggleEnabled() { return S.settings.animationsEnabled !== false; }
+
+// Call right after a fresh render has created `el` in its "opened" state.
+function animateToggleOpen(el) {
+  if (!el || !animToggleEnabled()) return;
+  el.classList.add('anim-toggle-in');
+  el.addEventListener('animationend', () => el.classList.remove('anim-toggle-in'), { once: true });
+}
+
+// Call BEFORE flipping the state that will hide/remove `el` on re-render —
+// plays the exit animation on the still-live node, then runs `commit` (the
+// actual state flip + renderNexusHome()). Skips straight to commit() if
+// animations are off or the node isn't live (e.g. hidden by a collapsed
+// ancestor) — same escape hatch every caller needs regardless.
+function animateToggleCloseThenCommit(el, commit) {
+  if (!el || !animToggleEnabled()) { commit(); return; }
+  el.classList.add('anim-toggle-out');
+  let done = false;
+  const finish = () => { if (done) return; done = true; commit(); };
+  el.addEventListener('animationend', finish, { once: true });
+  const ms = ANIM_SPEED_MS[S.settings.animationSpeed] || ANIM_SPEED_MS.normal;
+  setTimeout(finish, ms + 60); // safety net if animationend never fires
+}
+

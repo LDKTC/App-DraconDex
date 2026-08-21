@@ -327,10 +327,18 @@ function builderTabMeta(key) {
 // core.js), just wired via inline onclick since this button lives inside
 // builderPaneHeadHtml's re-rendered template rather than a static
 // index.html element.
+// Process 7 part 1: animates the open/close, same shared helpers as the
+// Hub accordion/Nest tree toggles (core/ui.js).
 function toggleModuleInspector() {
-  S.inspectorCollapsed = !S.inspectorCollapsed;
-  localStorage.setItem(INSPECTOR_COLLAPSED_KEY, S.inspectorCollapsed ? '1' : '0');
-  renderNexusHome(); // pure re-render from current S — no data refetch
+  const opening = S.inspectorCollapsed;
+  const commit = () => {
+    S.inspectorCollapsed = !opening;
+    localStorage.setItem(INSPECTOR_COLLAPSED_KEY, S.inspectorCollapsed ? '1' : '0');
+    renderNexusHome(); // pure re-render from current S — no data refetch
+    if (opening) animateToggleOpen(q('.module-inspector'));
+  };
+  if (opening) { commit(); return; }
+  animateToggleCloseThenCommit(q('.module-inspector'), commit);
 }
 
 // ═══ Rendering — recursive layout tree (Plan part4 #2) ═════════════════

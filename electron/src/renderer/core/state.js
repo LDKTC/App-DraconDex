@@ -112,6 +112,10 @@ const WORKSPACE_STYLE_OPTIONS = ['drake', 'wyvern', 'dragon'];
 // wyvern.js) — user-overridable per style from Setting -> Workspace, see
 // applyNavOrientation() (core/boot.js).
 const NAV_ORIENTATION_DEFAULT = { drake: 'vertical', wyvern: 'horizontal', dragon: 'vertical' };
+// Process 7 part 1: the "advanced" animation-speed preset — a fixed set of
+// durations (not a free-form scrubber) matching the Workspace page's other
+// preset-button controls (nav orientation/display mode).
+const ANIM_SPEED_MS = { fast: 100, normal: 150, slow: 300 };
 const UI_SIZE_MIN = 50;
 const UI_SIZE_MAX = 200;
 const UI_SIZE_STEP = 5;
@@ -202,7 +206,12 @@ function loadUiSettings(){
   // — client-only, same tier as the other UI-chrome prefs above (see Plan
   // part2 #New Workspace's Dragon section for why this isn't DB-backed).
   const dragonLayout = saved.dragonLayout && typeof saved.dragonLayout === 'object' ? saved.dragonLayout : {};
-  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, hubQuickToggles, statusToggles, workspaceStyle, navOrientation, navHorizontalDisplay, navVerticalAlwaysLabel, dragonLayout };
+  // Process 7 part 1: toggle animations (hub accordion, nest module-list
+  // expand/collapse, module inspector) — default ON per Plan.md; the speed
+  // preset is the "advanced" sub-setting, only meaningful while enabled.
+  const animationsEnabled = saved.animationsEnabled !== false;
+  const animationSpeed = ['fast', 'normal', 'slow'].includes(saved.animationSpeed) ? saved.animationSpeed : 'normal';
+  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, hubQuickToggles, statusToggles, workspaceStyle, navOrientation, navHorizontalDisplay, navVerticalAlwaysLabel, dragonLayout, animationsEnabled, animationSpeed };
 }
 
 // Kind display names (Phase 22): the Unique set (KIND_LABEL, locale-

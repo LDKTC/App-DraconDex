@@ -19,6 +19,31 @@
 
 ---
 
+## 2026-08-21 — Toggle animations + Workspace animation setting (Process 7 part 1)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/src/renderer/core/ui.js`, `electron/src/renderer/core/state.js`,
+  `electron/src/renderer/core/settings.js`, `electron/src/renderer/core/workspace-style.js`,
+  `electron/src/renderer/hub/sections.js`, `electron/src/renderer/hub/tree.js`,
+  `electron/src/renderer/builder.js`, `electron/css/components.css`,
+  `electron/css/tokens.css`, `electron/src/renderer/i18n.js`
+- อะไรเปลี่ยน: เพิ่ม animation ให้ 3 จุด toggle (Hub accordion section,
+  Nest tree module-list expand/collapse, Module Inspector dock) ผ่าน helper
+  กลางใหม่ 2 ตัวใน `core/ui.js` — `animateToggleOpen()` (CSS `animation` บน
+  node ที่เพิ่ง render สด) กับ `animateToggleCloseThenCommit()` (เล่น exit
+  animation บน node ที่ยังอยู่จริงก่อน แล้วค่อย flip state จริง — จำเป็นเพราะ
+  renderer ทั้งแอปเป็น full-innerHTML-rebuild ไม่มี vdom, CSS `transition`
+  ธรรมดาใช้ไม่ได้เลย). `buildNestRow()` ต้องห่อ children/items ด้วย
+  `<div class="nest-children" data-parent-id>` ใหม่ (เฉพาะตอนขยาย) เพื่อให้มี
+  element ให้จับตอน close. เพิ่ม setting ใหม่ `S.settings.animationsEnabled`
+  (default true) และ `S.settings.animationSpeed` (fast/normal/slow) พร้อม UI
+  ใหม่ใน Setting → Workspace → Workspace Style ต่อจาก Layout section
+- ทำไม: Process 7 part 1 ใน Plan.md — ขอ animation ให้ toggle ต่างๆ
+  พร้อม setting เปิด/ปิดและปรับความเร็วได้
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` (nav rail v3 callout block),
+  `docs/FILES.md` หัวข้อ "Process 7 part 1"
+
+---
+
 ## 2026-08-21 — Restore Tags page + Builder tab-move backward-fill (Process 6 part 2)
 - commit: `uncommitted`
 - ไฟล์ที่แก้: `electron/src/renderer/core/views.js`, `electron/src/renderer/builder.js`

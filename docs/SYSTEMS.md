@@ -48,6 +48,15 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 > lists เดียว ไม่ toggle ปิด-เปิดแบบเดิม), แล้ว focus ไปที่ module นั้น — ถ้าไม่ใช่
 > kind `collector` (module-collection) จะเปิด builder ของ module นั้นต่อด้วย ดู
 > รายละเอียดไฟล์ที่ [FILES.md](FILES.md) หัวข้อ "Process 6 part 1"
+>
+> Process 7 part 1 เพิ่ม animation ให้ 3 จุดที่ toggle เปิด/ปิดบ่อยที่สุด — Hub
+> accordion section, Nest tree module-list expand/collapse, Module Inspector
+> dock — เปิด/ปิดพร้อม fade+เลื่อนขึ้นเล็กน้อย (`.anim-toggle-in`/`-out`,
+> `electron/css/components.css`) ควบคุมได้จาก Setting → Workspace → ส่วน
+> "แอนิเมชัน" ใต้ Layout (toggle on/off, default **เปิด**) พร้อมปุ่มปรับความเร็ว
+> Fast/Normal/Slow (โชว์เฉพาะตอนเปิดอยู่) — ปิด toggle แล้วทั้ง 3 จุดจะ instant
+> ทันที ไม่มี delay ดูรายละเอียดไฟล์ที่ [FILES.md](FILES.md) หัวข้อ
+> "Process 7 part 1"
 
 > หมายเหตุ: `flutter/` เป็น front-end อีกตัว (Flutter port) ที่ใช้ schema เดียวกัน
 > แต่แยกโค้ดกันโดยสิ้นเชิง — เอกสารนี้ครอบคลุมเฉพาะฝั่ง Electron

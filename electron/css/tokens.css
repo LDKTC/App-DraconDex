@@ -26,6 +26,11 @@ html{height:100%;overflow:hidden}
 	   with a transform on .ui-scale-wrap instead. Kept to document the contract. */
 	--ui-scale:1;
 	--ease:.15s ease;
+	/* Process 7 part 1 — toggle-animation duration, overwritten inline on
+	   documentElement by core/settings.js's applyUiSettings() from the
+	   Workspace "animation speed" setting; this default only matters before
+	   that first runs. */
+	--anim-dur:.15s;
 	/* Font-scale multiplier (80–130%), overwritten inline on documentElement by
 	   core.js. It was referenced 300+ times as var(--fsc,1) but never declared;
 	   the inline override still wins, so declaring it here changes nothing and

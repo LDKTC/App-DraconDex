@@ -243,6 +243,23 @@
 @keyframes busy-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.busy-spin{animation-duration:2.4s}}
 
+/* Process 7 part 1 — shared toggle-open/close animation, driven by
+   core/ui.js's animateToggleOpen()/animateToggleCloseThenCommit() on any
+   element a toggle shows/hides (Hub accordion .acc-body, Nest tree
+   .nest-children, Module Inspector .module-inspector). --anim-dur is
+   written once by applyUiSettings() from the Workspace "animation speed"
+   setting (core/settings.js), so every consumer here picks up a live
+   change without touching this file. A CSS `animation` (not `transition`)
+   is required specifically because every one of these elements is
+   destroyed and recreated by a full innerHTML re-render on each toggle —
+   there is no "before" state for a transition to interpolate from, but an
+   `animation` plays from its own `from` keyframe regardless of when the
+   class landed on the node. */
+.anim-toggle-in{animation:animToggleIn var(--anim-dur,.15s) ease}
+.anim-toggle-out{animation:animToggleOut var(--anim-dur,.15s) ease}
+@keyframes animToggleIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes animToggleOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-4px)}}
+
 /* Boot splash — the full-window loader shown from first paint until init()
    finishes (markup + controller live inline at the top of index.html so they
    exist before any app JS parses). z-index clears every dialog layer, the
