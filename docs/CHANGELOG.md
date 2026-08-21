@@ -19,6 +19,43 @@
 
 ---
 
+## 2026-08-21 — Nav rail pin/resize/horizontal-layout/pinned-click fixes + themed scrollbar (Process 6 part 1)
+- commit: `uncommitted`
+- ไฟล์ที่แก้: `electron/index.html`, `electron/css/{base,nav-hub,workspace}.css`,
+  `electron/src/renderer/i18n.js`,
+  `electron/src/renderer/hub/{kinds,menus,open}.js`,
+  `electron/src/renderer/core/{state,ui,boot,workspace-style}.js`
+- อะไรเปลี่ยน:
+  1. **pin feature** — `renderModuleRail()`/`buildNavPinListHtml()` เดิมอ่านแค่
+     `S.moduleTree` (root-level array) ตรงๆ ทำให้ module ที่ pin ไว้ลึกกว่า
+     top-level (pin ได้ทุก depth มาตั้งแต่ Process 3 part 2) ไม่ขึ้น btn บน rail
+     เลย — เปลี่ยนเป็น walk ทั้งต้นไม้ผ่าน `flattenModuleTree` (helper เดิม)
+  2. **navbar resize Y-axis** — `#nav-sidebar.nav-expanded .nav-btn` padding
+     แนวตั้งเดิมผูกกับ `calc(var(--nav)*.07)` (บั๊กจาก Process 4 part 2) ทำให้
+     ลาก resize rail กว้างขึ้นแล้วปุ่มบวมในแกน Y ทั้งที่ลากแค่แกน X — เปลี่ยนเป็น
+     ค่าคงที่ `6px`; เพิ่ม toggle "แสดงป้ายชื่อเสมอ" ใหม่ใน Setting → Workspace
+     (เฉพาะ orientation vertical) — `S.settings.navVerticalAlwaysLabel`
+  3. **horizontal navbar** — เดิม `width:auto` (แคบแค่พอรับปุ่ม ไม่ยืดเต็ม
+     window) เปลี่ยนเป็น `width:100%`; เพิ่ม resize handle ของตัวเอง
+     (`#nav-toolbar-h-resize` ลาก drag ปรับ `--navh`) เหมือน vertical rail มี;
+     `.rail-sep`/`.nav-btn.active::after` เพิ่ม override ให้เข้ากับ row layout
+     (เดิม `.rail-sep` กลายเป็นเส้น 0 ความสูงที่มองไม่เห็นในโหมดนี้)
+  4. **pinned rail button click** — เดิมใช้ `openModuleNode` ตรงๆ (สำหรับ
+     collector คือ toggle เฉยๆ, module ที่ซ้อนลึกเป็น no-op เพราะ
+     `if(m.parent_id==null)` gate) — เปลี่ยนเป็น `openPinnedRailModule` ใหม่:
+     เปิด Hub section "Nest" เสมอ, ยุบทุก root branch อื่นเหลือแค่ branch ของ
+     module ที่ pin (only-one-list-open), focus ไปที่ module นั้น แล้วเปิด
+     builder ต่อถ้าไม่ใช่ kind `collector`
+  5. **scrollbar** — เพิ่ม `*::-webkit-scrollbar` default ใน `base.css` (เดิมมี
+     rule เฉพาะจุดแค่ 2-3 ที่ ที่เหลือ fallback เป็น scrollbar ขาวของ Chromium
+     ทันทีที่ content ยาวเกิน viewport)
+- ทำไม: Process 6 part 1 ใน Plan.md — พฤติกรรมทั้ง 5 ข้อเป็นบั๊ก/ของขาดที่ผู้ใช้
+  รายงานจากการใช้งานจริงหลัง Process 4-5
+- Doc ที่อัปเดต: `docs/SYSTEMS.md` (nav rail note ใต้หัวเอกสาร), `docs/FILES.md`
+  หัวข้อ "Process 6 part 1" + แก้ตัวเลขบรรทัด `hub/`/`base.css`/`nav-hub.css`
+
+---
+
 ## 2026-08-21 — Workspace nav orientation + .mdx module export/import target choice (Process 5)
 - commit: `uncommitted`
 - ไฟล์ที่แก้: `electron/index.html`, `electron/main.js`, `electron/preload.js`,

@@ -73,6 +73,9 @@ const LEFT_PANEL_COLLAPSED_KEY = 'novel-manager-left-panel-collapsed';
 const INSPECTOR_COLLAPSED_KEY = 'novel-manager-inspector-collapsed';
 const LEFT_PANEL_WIDTH_KEY = 'novel-manager-left-panel-width';
 const NAV_RAIL_WIDTH_KEY = 'novel-manager-nav-rail-width';
+// Process 6 part 1: horizontal nav orientation's own resize lever (--navh),
+// same idiom as NAV_RAIL_WIDTH_KEY/--nav for vertical mode.
+const NAV_H_HEIGHT_KEY = 'novel-manager-nav-h-height';
 const INSPECTOR_WIDTH_KEY = 'novel-manager-inspector-width';
 const PAGE_VIEW_WIDTH_KEY = 'novel-manager-page-view-width';
 const NEXUS_ACTIVE_KEY = 'novel-manager-active-nexus';
@@ -190,11 +193,16 @@ function loadUiSettings(){
     navOrientation[st] = (v === 'horizontal' || v === 'vertical') ? v : NAV_ORIENTATION_DEFAULT[st];
   }
   const navHorizontalDisplay = ['icon', 'label', 'both'].includes(saved.navHorizontalDisplay) ? saved.navHorizontalDisplay : 'both';
+  // Process 6 part 1: vertical-only advanced customization — force the
+  // icon+label row (normally only turned on past NAV_LABEL_THRESHOLD while
+  // dragging, core/ui.js applyNavRailWidth) to stay on regardless of the
+  // dragged rail width, mirroring horizontal's own display-mode setting.
+  const navVerticalAlwaysLabel = saved.navVerticalAlwaysLabel === true;
   // Dragon's drag-to-arrange positions ({nexusId: {parentKey: {moduleId: {x,y}}}})
   // — client-only, same tier as the other UI-chrome prefs above (see Plan
   // part2 #New Workspace's Dragon section for why this isn't DB-backed).
   const dragonLayout = saved.dragonLayout && typeof saved.dragonLayout === 'object' ? saved.dragonLayout : {};
-  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, hubQuickToggles, statusToggles, workspaceStyle, navOrientation, navHorizontalDisplay, dragonLayout };
+  return { theme: theme2, language, size, nameMode, fontScale, customThemes, nestShowItems, nestShowMajorIcon, nestShowMinorIcon, nestSignatureMode, quickExtras, navToggles, hubQuickToggles, statusToggles, workspaceStyle, navOrientation, navHorizontalDisplay, navVerticalAlwaysLabel, dragonLayout };
 }
 
 // Kind display names (Phase 22): the Unique set (KIND_LABEL, locale-
@@ -233,6 +241,7 @@ const S = {
   inspectorCollapsed:localStorage.getItem(INSPECTOR_COLLAPSED_KEY) === '1',
   leftPanelWidth:Number(localStorage.getItem(LEFT_PANEL_WIDTH_KEY)) || 264,
   navRailWidth:Number(localStorage.getItem(NAV_RAIL_WIDTH_KEY)) || 42,
+  navHorizontalHeight:Number(localStorage.getItem(NAV_H_HEIGHT_KEY)) || 44,
   inspectorWidth:Number(localStorage.getItem(INSPECTOR_WIDTH_KEY)) || 290,
   pageViewWidth:Number(localStorage.getItem(PAGE_VIEW_WIDTH_KEY)) || null, // Plan part1 #2: null = fill pane (default)
   // Sage module state

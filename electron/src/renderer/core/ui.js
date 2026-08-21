@@ -295,7 +295,8 @@ document.addEventListener('mouseup', () => {
 const NAV_LABEL_THRESHOLD = 110;
 function applyNavRailWidth() {
   document.documentElement.style.setProperty('--nav', S.navRailWidth + 'px');
-  q('#nav-sidebar')?.classList.toggle('nav-expanded', S.navRailWidth >= NAV_LABEL_THRESHOLD);
+  const alwaysLabel = !!S.settings?.navVerticalAlwaysLabel;
+  q('#nav-sidebar')?.classList.toggle('nav-expanded', alwaysLabel || S.navRailWidth >= NAV_LABEL_THRESHOLD);
 }
 let navRailResizeState = null;
 function startNavRailResize(ev) {
@@ -314,6 +315,34 @@ document.addEventListener('mouseup', () => {
   navRailResizeState = null;
   q('#nav-sidebar-resize')?.classList.remove('is-resizing');
   localStorage.setItem(NAV_RAIL_WIDTH_KEY, String(S.navRailWidth));
+});
+
+// Process 6 part 1: horizontal nav orientation's own resize handle
+// (#nav-toolbar-h-resize) — same drag pattern as startNavRailResize above,
+// dragging height (--navh) instead of width since the bar is a row under
+// the title bar rather than a column down the side. Floor/ceiling keep the
+// 32px .nav-btn (workspace.css horizontal override) from clipping while
+// still leaving room to grow toward the vertical rail's own icon+label look.
+function applyNavHorizontalHeight() {
+  document.documentElement.style.setProperty('--navh', S.navHorizontalHeight + 'px');
+}
+let navHResizeState = null;
+function startNavHorizontalResize(ev) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  navHResizeState = { startY: ev.clientY, startHeight: q('#nav-toolbar-h').getBoundingClientRect().height };
+  q('#nav-toolbar-h-resize')?.classList.add('is-resizing');
+}
+document.addEventListener('mousemove', (ev) => {
+  if (!navHResizeState) return;
+  S.navHorizontalHeight = Math.max(36, Math.min(120, navHResizeState.startHeight + (ev.clientY - navHResizeState.startY)));
+  applyNavHorizontalHeight();
+});
+document.addEventListener('mouseup', () => {
+  if (!navHResizeState) return;
+  navHResizeState = null;
+  q('#nav-toolbar-h-resize')?.classList.remove('is-resizing');
+  localStorage.setItem(NAV_H_HEIGHT_KEY, String(S.navHorizontalHeight));
 });
 
 // Plan part1 #2: resizable page view for Hub pages that have no other

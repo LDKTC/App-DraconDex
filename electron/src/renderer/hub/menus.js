@@ -177,8 +177,11 @@ function openNavSidebarContextMenu(ev) {
 }
 function buildNavPinListHtml() {
   if (!S.moduleTree.length) return `<div class="kind-list-item" style="opacity:.6;pointer-events:none"><span class="kli-name">${x(t('nestEmpty'))}</span></div>`;
-  return S.moduleTree.map(m => `
-    <div class="kind-list-item" onclick="toggleNavPinAndRefresh(${m.id})">
+  // Process 6 part 1: every module can be pinned at any depth (see
+  // buildModuleContextMenuHtml) — flatten the tree so this picker can list
+  // and toggle nested modules too, not just root-level ones.
+  return flattenModuleTree(S.moduleTree, 0).map(({ m, depth }) => `
+    <div class="kind-list-item" style="padding-left:${10 + depth * 14}px" onclick="toggleNavPinAndRefresh(${m.id})">
       <span class="kicon" style="color:${x(m.icon_color_code || m.color_code || '#6366f1')}">${moduleIconHtml(m)}</span>
       <span class="kli-name">${x(m.name)}</span>
       <span class="ctx-check">${m.pinned ? '✓' : ''}</span>

@@ -207,9 +207,9 @@ App-DraconDex/
 |---|---|---|
 | `tokens.css` | 78 | `html`, `:root` custom properties ทั้งหมด |
 | `themes.css` | 569 | 32 ธีม (`body[data-theme=…]`) + สลับโลโก้ต่อธีม (**data file**) |
-| `base.css` | 39 | typography, การตัดบรรทัดภาษาไทย, `select`, ตัวคูณ UI scale |
+| `base.css` | 55 | typography, การตัดบรรทัดภาษาไทย, `select`, ตัวคูณ UI scale, scrollbar ธีมทั้งแอป (Process 6 part 1) |
 | `titlebar.css` | 148 | `#window-frame`, title/tab bar, เมนูตั้งค่า, ปุ่มหน้าต่าง |
-| `nav-hub.css` | 195 | nav rail, module rail, vault picker, Hub accordion, Nest tree |
+| `nav-hub.css` | 277 | nav rail, module rail, vault picker, Hub accordion, Nest tree |
 | `inspector.css` | 225 | Module Inspector + icon/kind picker + Classifier/Manager/Locator |
 | `editor.css` | 119 | mdeditor, markdown preview, quick switcher, status bar, Scribe graph |
 | `layout.css` | 224 | `#left-panel`, `#main-area`, `.ph`, `.li`, folder, project sidebar |
@@ -249,7 +249,7 @@ top-level `const` ข้ามสคริปต์อยู่ใน TDZ จน
 
 | โฟลเดอร์ | เดิม | ไฟล์ใหม่ | โหลดแบบ |
 |---|---|---|---|
-| `hub/` | 1301 | `kinds.js` 192 · `sections.js` 220 · `tree.js` 277 · `popups.js` 112 · `menus.js` 350 · `edit.js` 159 · `open.js` 93 | eager (`<script>` 7 ตัว, `kinds.js` ก่อน) |
+| `hub/` | 1370 | `kinds.js` 197 · `sections.js` 218 · `tree.js` 277 · `popups.js` 144 · `menus.js` 353 · `edit.js` 161 · `open.js` 143 | eager (`<script>` 7 ตัว, `kinds.js` ก่อน) |
 | `navigator/` | 1807 | `shell.js` 78 · `sidebar.js` 138 · `electron/main.js` 144 · `world.js` 80 · `origcat.js` 358 · `chars.js` 253 · `cats.js` 97 · `maps.js` 293 · `board.js` 367 | lazy ผ่าน `loadGroup('navigator')` |
 | `hero/` | 1088 | `shell.js` 61 · `project.js` 255 · `novel.js` 76 · `story.js` 311 · `tags.js` 63 · `modals.js` 323 | lazy ผ่าน `loadGroup('hero')` |
 
@@ -681,6 +681,73 @@ merge ตรงๆ เปลี่ยนเป็น pick→**เลือกเ
 mechanism รองรับอยู่แล้ว), `finishVaultMergeImport()` (logic เดิมของ
 `importDatabaseFile()` ก่อนแยก แค่รับ `targetNexusId` เพิ่ม), `toastImportError()`
 (shared helper กัน hardcoded-Thai literal ซ้ำ 3 จุด))
+
+Process 6 part 1 (feature & fixing — navbar): `electron/src/renderer/hub/kinds.js`
+(`renderModuleRail()` เดิม `S.moduleTree.filter(m=>m.pinned)` อ่านแค่ root-level
+array ทำให้โมดูลที่ pin ไว้ลึกกว่า top-level (pin ได้จริงตั้งแต่ Process 3 part 2
+ที่เอา depth gate ออกจาก context menu แล้ว) ไม่ขึ้น btn บน rail เลย — เปลี่ยนเป็น
+`flattenModuleTree(S.moduleTree,0)` (helper เดิมใน hub/menus.js) แล้ว filter
+`.pinned` จาก list ที่ walk ทั้งต้นไม้แทน; rail button ของ pinned module เปลี่ยน
+`onclick` จาก `openModuleNode` ตรงๆ เป็น `openPinnedRailModule` ใหม่),
+`electron/src/renderer/hub/menus.js` (`buildNavPinListHtml()` — เมนู pin-list
+ของตัว rail เอง (right-click บน `#nav-sidebar`) เดิมก็ `.map` บน `S.moduleTree`
+ตรงๆ เหมือนกัน แก้เป็น `flattenModuleTree` ด้วย พร้อม indent ตาม depth แบบ
+เดียวกับ `buildMoveToListHtml`), `electron/src/renderer/hub/open.js`
+(`openModuleNode()` เดิม `if (m.kind==='collector'){if(m.parent_id==null)
+toggleMajorExpand(id);return}` — โมดูล collector ที่ซ้อนลึก (`parent_id!=null`)
+คลิกที่ตัวแถวเองไม่ทำอะไรเลย (chevron ข้างๆ ยัง toggle ได้ปกติ) เอา
+`if(m.parent_id==null)` gate ออก ให้ toggle ได้ทุก depth; ใหม่ —
+`focusModuleInNest(id)`/`openPinnedRailModule(id)`: การกดปุ่ม pinned บน rail
+ไม่ใช่แค่เรียก `openModuleNode` เฉยๆ อีกต่อไป — เปิด accordion section "Nest"
+เสมอ (`S.hubOpen.nest=true`), ยุบทุก root branch ใน `S.moduleTree` ยกเว้น
+branch ที่มี module เป้าหมายอยู่ (ผ่าน `moduleRootAncestor`, เดิมมีอยู่แล้วใน
+kinds.js), ไล่ขยาย ancestor chain ของ module เป้าหมายเอง แล้วค่อย fallthrough
+ไปเปิด builder ตามปกติ (ยกเว้น kind `collector` ที่ไม่มี builder — แค่
+focus/expand แล้ว render ใหม่ ไม่เรียก `openModuleNode` ซึ่งจะ toggle ปิดกลับ
+เพราะ branch เพิ่งถูกเปิดไป), `electron/css/nav-hub.css`
+(`#nav-sidebar.nav-expanded .nav-btn` — Process 4 part 2 เคยแก้ padding
+แนวตั้งจาก `0` เป็น `calc(var(--nav) * .07) 10px` ซึ่งกลายเป็นบั๊กตัวใหม่: ยิ่ง
+ลาก resize navbar กว้างขึ้น (`--nav` โต) padding แนวตั้งก็โตตามจนปุ่มบวมทั้ง
+แกน Y ทั้งที่ลากแค่แกน X — เปลี่ยนกลับเป็นค่าคงที่ `6px 10px` ไม่ผูกกับ `--nav`
+อีก), `electron/src/renderer/core/state.js` (`loadUiSettings()` เพิ่ม
+`navVerticalAlwaysLabel` boolean, sanitize `saved.navVerticalAlwaysLabel===true`),
+`electron/src/renderer/core/ui.js` (`applyNavRailWidth()` เพิ่มเงื่อนไข
+`S.settings.navVerticalAlwaysLabel` เข้าไปคู่กับ threshold เดิม — บังคับ
+`.nav-expanded` ค้างได้โดยไม่ต้องลาก rail ให้กว้างถึง `NAV_LABEL_THRESHOLD`;
+ใหม่ — `applyNavHorizontalHeight()`/`startNavHorizontalResize()`: resize
+handle ของ horizontal navbar เอง ลาก drag แนวตั้งเปลี่ยน `--navh` เหมือนที่
+`startNavRailResize` เปลี่ยน `--nav` ของ vertical, clamp 36–120px),
+`electron/src/renderer/core/workspace-style.js`
+(`settingWorkspaceLayoutHtml()` เดิมมีแค่ block `orient==='horizontal'`
+(display icon/label/both) ต่อท้าย orientation picker — เพิ่ม block คู่กัน
+`else` สำหรับ `orient==='vertical'`: togglerow "แสดงป้ายชื่อเสมอ" ผูก
+`toggleNavVerticalAlwaysLabel()` ใหม่ (ตั้งค่า + `saveUiSettings()` +
+`applyNavRailWidth()` + re-render)), `electron/src/renderer/core/boot.js`
+(`applyNavOrientation()` — reparent element เข้า `#nav-toolbar-h` เปลี่ยนจาก
+`appendChild` เป็น `insertBefore(navEl, mount.firstChild)` เพื่อให้
+`#nav-toolbar-h-resize` (child ใหม่ที่ index.html ใส่ไว้ล่วงหน้าใน mount)
+ค้างเป็น child สุดท้ายเสมอ ไม่ถูกแซงขึ้นไปอยู่บนแท่ง nav; boot เรียก
+`applyNavHorizontalHeight()` เพิ่มคู่กับ `applyNavRailWidth()` เดิม),
+`electron/index.html` (`#nav-toolbar-h` ใส่ `#nav-toolbar-h-resize` เป็น
+static child ตั้งแต่แรก — `.panel-resize-handle.panel-resize-handle-v` เดิม
+(ใช้ซ้ำจาก Hub section resize) ผูก `onmousedown="startNavHorizontalResize(event)"`),
+`electron/css/workspace.css` (`#nav-toolbar-h` เปลี่ยนเป็น
+`flex-direction:column` เฉพาะ `data-nav-orientation="horizontal"` ให้แท่ง
+navbar วางซ้อนบน resize handle แทนที่จะเป็น row เฉยๆ ที่ไม่มีที่ให้ handle;
+`#nav-sidebar`/`#workspace-toolbar` horizontal-mode เปลี่ยน `width:auto` เป็น
+`width:100%` (เดิมกว้างแค่พอรับปุ่ม ไม่ยืดเต็ม window) และ `height:44px` ตายตัว
+เปลี่ยนเป็น `height:var(--navh,44px)`; ใหม่ — `.rail-sep` override สำหรับ
+horizontal (เดิมเป็นเส้นแบ่งแนวนอนสำหรับ column ของปุ่มที่ซ้อนกัน พอมาอยู่ใน row
+กลับไม่มี override เลย กลายเป็นเส้น 0 ความสูงที่มองไม่เห็น — เปลี่ยนเป็นเส้นแบ่ง
+แนวตั้งแทน) และ `.nav-btn.active::after` override (แถบ indicator เดิมอยู่ขอบซ้าย
+เหมาะกับ column, ย้ายไปขอบล่างสำหรับ row)), `electron/css/base.css` (ใหม่ —
+`*::-webkit-scrollbar`/`-track`/`-thumb`/`-thumb:hover`/`-corner` ธีมทุก
+scrollbar ในแอปที่ไม่มี rule เฉพาะของตัวเองเป็น default (เดิมมีแค่ 2-3 จุดที่ตั้ง
+scrollbar เอง เช่น `.relation-main`/`.tag-suggestions` ที่เหลือ fallback เป็น
+scrollbar ขาวของ Chromium ทันทีที่ content ยาวเกิน viewport — ใช้แพทเทิร์น
+เดียวกับ `select` ด้านบนในไฟล์นี้ที่ theme element เปล่าเป็น default แทนการ
+ไล่ตั้ง class ทีละจุด), `electron/src/renderer/i18n.js` (คีย์ใหม่
+`settingNavVerticalAlwaysLabel` ครบ 18 locale ต่อจาก `navDisplayBoth` เดิม)
 
 ---
 

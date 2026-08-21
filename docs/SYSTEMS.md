@@ -33,6 +33,21 @@ Artisan หรือระบบ migrate เข้า v3 (ดู Architec.md §2
 > Drake=vertical, Wyvern=horizontal, Dragon=vertical แต่ผู้ใช้เปลี่ยนได้แบบ live
 > ไม่ต้อง restart; horizontal mode เลือกได้เพิ่มว่าจะโชว์ icon/label/ทั้งคู่ ดู
 > รายละเอียดไฟล์ที่ [FILES.md](FILES.md) หัวข้อ "Process 5 part 1"
+>
+> Process 6 part 1 แก้ 4 จุดของ nav rail: (1) module ที่ pin ไว้ตอนนี้ขึ้น btn
+> บน rail ได้ทุก depth ไม่ใช่แค่ top-level (pin เองก็ทำได้ทุก depth มาตั้งแต่
+> Process 3 part 2 แล้ว แต่ rail เพิ่งตามทัน); (2) ลาก resize vertical rail ให้
+> กว้างขึ้นไม่ทำให้ปุ่มบวมในแกน Y อีก (เดิมเป็นบั๊กจาก Process 4 part 2), เพิ่ม
+> toggle "แสดงป้ายชื่อเสมอ" ใน Setting → Workspace (เฉพาะตอน orientation เป็น
+> vertical) บังคับโหมด icon+label ได้โดยไม่ต้องลากกว้างถึง threshold; (3)
+> horizontal navbar ยืดเต็มความกว้าง window แล้ว มี resize handle ของตัวเอง
+> (`#nav-toolbar-h-resize`, ลากปรับความสูง) เหมือน vertical rail มี, เส้นแบ่ง
+> section (Hub tools/pinned modules) และแถบ active indicator ปรับแนวให้เข้ากับ
+> row layout; (4) คลิกปุ่ม pinned บน rail ตอนนี้เปิด Hub section "Nest" เสมอ,
+> ยุบทุก root branch อื่นใน Nest tree ยกเว้น branch ของ module ที่ pin (แสดงแค่
+> lists เดียว ไม่ toggle ปิด-เปิดแบบเดิม), แล้ว focus ไปที่ module นั้น — ถ้าไม่ใช่
+> kind `collector` (module-collection) จะเปิด builder ของ module นั้นต่อด้วย ดู
+> รายละเอียดไฟล์ที่ [FILES.md](FILES.md) หัวข้อ "Process 6 part 1"
 
 > หมายเหตุ: `flutter/` เป็น front-end อีกตัว (Flutter port) ที่ใช้ schema เดียวกัน
 > แต่แยกโค้ดกันโดยสิ้นเชิง — เอกสารนี้ครอบคลุมเฉพาะฝั่ง Electron

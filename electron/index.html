@@ -180,7 +180,9 @@
      reparents #nav-sidebar (Drake/Dragon) or #workspace-toolbar (Wyvern) in
      here when that style's orientation setting is 'horizontal'. Empty and
      height:0 (workspace.css) the rest of the time. -->
-<div id="nav-toolbar-h"></div>
+<div id="nav-toolbar-h">
+  <div id="nav-toolbar-h-resize" class="panel-resize-handle panel-resize-handle-v" onmousedown="startNavHorizontalResize(event)" title="Resize navbar"></div>
+</div>
 <div id="app">
   <nav id="nav-sidebar">
     <button class="nav-logo-btn" id="nav-logo-btn" title="DraconDex">

@@ -29,17 +29,17 @@
 
 ### Process 6
 #### part 1 : feature & fixing
-- [ ] navbar pin feature, ควรจะ pinned major module ได้ด้วย, แต่ตอนนี้เมื่อกดpin ในcontext menu กลับไม่ขึ้น btn บน navbar
-- [ ] feature navbar resizing, btn magin/size ระหว่างแต่ละปุ่มที่ขยายขึ้นเมื่อresizing navbar, ปรับให้ไม่ขยายในแกนy สามารถขยายได้แค่ในแกน x เท่านั้น
-    - [ ] โดยการขยายในแกน x เท่านั้น, จะไม่ทำให้icon ของ btn เกิดการยืดใด
-    - [ ] เพิ่มใน setting pages "workspace", เป็น custom เพิ่มเติมของ vertical navbar เท่านั้น
-- [ ] horizontal navbar, ควรจะยืด จนสุดของขอบwindow ของapp ไม่ควรจะมีขนาดแค่ เท่ากับจำนวนรายชื่อของbtn บน bar
-    - [ ] ปรับให้ layout ของปุ่มบน navbar ใช้แบบเดียว และแบ่งsection แบบเดียวกับ vertical
-    - [ ] เพิ่มfeature resizingของ horizontal navbar โดยอ้างอิงจาก vertical navbar
-- [ ] pinned btn บน navbar, เมื่อกดควรจะ only one toggle open dropdown lists at the time หรือก็คือ lists module อื่นในhubถูกปิด จะเปิด focusหาlocate ที่moduleนั้นอยู่ และlists child ของmoduleนั้นเพียงเท่านั้น
-    - [ ] pinned module btn บน navbar, ไม่ควรในเพื่อ toggle on/off บนhub 
-    - [ ] ถ้า pinned module นั้นไม่ใช้module collection, จะทำการเปิด moduleนั้น builder ด้วยเช่นกัน
-- [ ] sliderของ app เมื่อมีcontentยาวกว่าขนาดจอ เป็นสีขาว, ช่วยปรับสีให้เข้า theme app    
+- [x] navbar pin feature, ควรจะ pinned major module ได้ด้วย, แต่ตอนนี้เมื่อกดpin ในcontext menu กลับไม่ขึ้น btn บน navbar
+- [x] feature navbar resizing, btn magin/size ระหว่างแต่ละปุ่มที่ขยายขึ้นเมื่อresizing navbar, ปรับให้ไม่ขยายในแกนy สามารถขยายได้แค่ในแกน x เท่านั้น
+    - [x] โดยการขยายในแกน x เท่านั้น, จะไม่ทำให้icon ของ btn เกิดการยืดใด
+    - [x] เพิ่มใน setting pages "workspace", เป็น custom เพิ่มเติมของ vertical navbar เท่านั้น
+- [x] horizontal navbar, ควรจะยืด จนสุดของขอบwindow ของapp ไม่ควรจะมีขนาดแค่ เท่ากับจำนวนรายชื่อของbtn บน bar
+    - [x] ปรับให้ layout ของปุ่มบน navbar ใช้แบบเดียว และแบ่งsection แบบเดียวกับ vertical
+    - [x] เพิ่มfeature resizingของ horizontal navbar โดยอ้างอิงจาก vertical navbar
+- [x] pinned btn บน navbar, เมื่อกดควรจะ only one toggle open dropdown lists at the time หรือก็คือ lists module อื่นในhubถูกปิด จะเปิด focusหาlocate ที่moduleนั้นอยู่ และlists child ของmoduleนั้นเพียงเท่านั้น
+    - [x] pinned module btn บน navbar, ไม่ควรในเพื่อ toggle on/off บนhub 
+    - [x] ถ้า pinned module นั้นไม่ใช้module collection, จะทำการเปิด moduleนั้น builder ด้วยเช่นกัน
+- [x] sliderของ app เมื่อมีcontentยาวกว่าขนาดจอ เป็นสีขาว, ช่วยปรับสีให้เข้า theme app    
 #### part 2 : module
 - [ ] เพิ่มหน้าtags ที่หายไปจากการลบ legacy, โดยปุ่มจะอยู่บน navbar เหมือนเดิม
     - [ ] tags pages จะแสดงบนหน้าmain area แบบเดียวกับ color โดยจะไม่มีtabbar ด้านบน

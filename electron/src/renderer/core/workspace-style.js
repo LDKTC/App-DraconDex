@@ -79,8 +79,19 @@ function settingWorkspaceLayoutHtml() {
         <button class="settings-option${display === 'icon' ? ' active' : ''}" onclick="setNavHorizontalDisplay('icon')">${t('navDisplayIcon')}</button>
         <button class="settings-option${display === 'label' ? ' active' : ''}" onclick="setNavHorizontalDisplay('label')">${t('navDisplayLabel')}</button>
         <button class="settings-option${display === 'both' ? ' active' : ''}" onclick="setNavHorizontalDisplay('both')">${t('navDisplayBoth')}</button>
-      </div>` : ''}
+      </div>` : `
+      <div class="togglerow" style="margin-top:10px" onclick="toggleNavVerticalAlwaysLabel()"><span class="tg${S.settings.navVerticalAlwaysLabel ? ' on' : ''}"></span>${t('settingNavVerticalAlwaysLabel')}</div>`}
     </div>`;
+}
+// Process 6 part 1: vertical-only advanced customization — normally the
+// icon+label row only turns on once the user drags the rail past
+// NAV_LABEL_THRESHOLD (core/ui.js); this pins it on regardless of the
+// dragged width, without affecting horizontal mode's own display setting.
+function toggleNavVerticalAlwaysLabel() {
+  S.settings.navVerticalAlwaysLabel = !S.settings.navVerticalAlwaysLabel;
+  saveUiSettings();
+  applyNavRailWidth();
+  renderSettingWindow();
 }
 function setNavOrientation(orient) {
   if (orient !== 'vertical' && orient !== 'horizontal') return;

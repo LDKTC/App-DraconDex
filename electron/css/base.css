@@ -32,6 +32,20 @@ select:focus{border-color:var(--accent)}
 select:disabled{opacity:.5;cursor:not-allowed}
 select option{background:var(--surface);color:var(--t1)}
 
+/* Process 6 part 1: same "no ad-hoc class needed" reasoning as <select>
+   above — only a handful of scroll surfaces (the relation-graph underboard,
+   the tag-suggestions dropdown) had their own ::-webkit-scrollbar rule;
+   every other scrollable region (left panel, Hub accordion bodies, modals,
+   the Setting window, ...) fell through to Chromium's default, unstyled
+   (white) scrollbar the moment its content overflowed. Themed once here so
+   it's covered app-wide by default; a component with its own more specific
+   rule (like the relation-graph one) still wins as before. */
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:var(--t3)}
+*::-webkit-scrollbar-corner{background:transparent}
+
 /* UI scale via transform instead of non-standard zoom */
 .ui-scale-wrap {
 	transform-origin: top left;
