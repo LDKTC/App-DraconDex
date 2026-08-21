@@ -10,9 +10,9 @@
     - [x] bug icon sizeที่มีขนาดใหญ่เกินทำ layout ในส่วนอื่นเละ และจัดแสดงไม่เหมือนเดิม
 - [x] UI style, search box บน left panel, แสดงstyle ดังเดิมที่ไม่มีstyle เป็นinput box สีขาว, ตรวจสอบและแก้ให้กลับเป็นดังเดิม
 #### part 2 : add and fix
-- [ ] navbar, เพิ่ม context menu feature สำหรับการtoggle btn quick menu ของhub, โดยมี lists module, sage, import dock โดย nexus nest เป็นhomeไม่สามารถ toggle offได้จึงไม่ต้องมี
-- [ ] navbar, เมื่อresizing navbar magin/padding ของปุ่มจะไม่ขยายในแกน y 
-- [ ] left panel, เมื่อresizing ยังคงกระตุกอยู่ ช่วยทำให้สามารถresizing ได้เลื่อนมากขึ้นที
+- [x] navbar, เพิ่ม context menu feature สำหรับการtoggle btn quick menu ของhub, โดยมี lists module, sage, import dock โดย nexus nest เป็นhomeไม่สามารถ toggle offได้จึงไม่ต้องมี
+- [x] navbar, เมื่อresizing navbar magin/padding ของปุ่มจะไม่ขยายในแกน y 
+- [x] left panel, เมื่อresizing ยังคงกระตุกอยู่ ช่วยทำให้สามารถresizing ได้เลื่อนมากขึ้นที
 
 ### Procress 5
 #### part 1 : setting

@@ -177,7 +177,7 @@ body[data-theme="clearMeteor"] .brand-img{content:url('../../src/assets/brand/Dr
 .nav-label{display:none}
 #nav-sidebar.nav-expanded .nav-btn{
 	width:calc(100% - 12px);aspect-ratio:auto;justify-content:flex-start;
-	gap:8px;padding:0 10px;
+	gap:8px;padding:calc(var(--nav) * .07) 10px;
 }
 #nav-sidebar.nav-expanded .nav-label{
 	display:inline-block;flex:1;min-width:0;text-align:left;
