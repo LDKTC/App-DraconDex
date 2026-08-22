@@ -3,18 +3,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../data/models/module_model.dart';
 import '../../providers/module_provider.dart';
+import '../../providers/update_provider.dart';
 import '../../widgets/color_dot.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../providers/db_providers.dart';
+import '../update/update_dialog.dart';
 import 'dialogs/nexus_dialog.dart';
 
 /// The app's home screen: a drill-down explorer, like a phone's file-manager
 /// app. Each Nexus is a top-level "drive"; tapping one opens its module tree.
-class NexusListScreen extends ConsumerWidget {
+class NexusListScreen extends ConsumerStatefulWidget {
   const NexusListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NexusListScreen> createState() => _NexusListScreenState();
+}
+
+class _NexusListScreenState extends ConsumerState<NexusListScreen> {
+  bool _checkedForUpdate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fire-and-forget, once per app open — never throws, so a failed or
+    // offline check is silently a no-op (see UpdateService.checkForUpdate).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowUpdate());
+  }
+
+  Future<void> _maybeShowUpdate() async {
+    if (_checkedForUpdate) return;
+    _checkedForUpdate = true;
+    final result = await ref.read(updateCheckProvider.future);
+    if (!mounted || !result.available || result.dismissed || result.update == null) return;
+    await showDialog(context: context, builder: (_) => UpdateDialog(update: result.update!));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final nexusesAsync = ref.watch(nexusesProvider);
     final theme = Theme.of(context);
 
