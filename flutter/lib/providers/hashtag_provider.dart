@@ -10,12 +10,3 @@ final hashtagsProvider = FutureProvider<List<HashtagModel>>((ref) async {
     error: (e, s) => Future.value([]),
   );
 });
-
-final projectTagsProvider = FutureProvider.family<List<HashtagModel>, int>((ref, projectId) async {
-  final dao = ref.watch(hashtagDaoProvider);
-  return dao.when(
-    data: (d) => d.getProjectTags(projectId),
-    loading: () => Future.value([]),
-    error: (e, s) => Future.value([]),
-  );
-});
