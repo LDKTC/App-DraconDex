@@ -34,8 +34,11 @@ class ColorDao {
         UNION ALL SELECT color FROM timeline_event WHERE color=?
         UNION ALL SELECT color FROM relation WHERE color=?
         UNION ALL SELECT tag_color FROM hashtag WHERE tag_color=?
+        UNION ALL SELECT color FROM nexus WHERE color=?
+        UNION ALL SELECT color FROM module WHERE color=?
+        UNION ALL SELECT icon_color FROM module WHERE icon_color=?
       ) LIMIT 1
-    ''', [id, id, id, id, id, id, id, id]);
+    ''', [id, id, id, id, id, id, id, id, id, id, id]);
     if (rows.isNotEmpty) return false;
     await db.delete('use_color', where: 'id=?', whereArgs: [id]);
     return true;

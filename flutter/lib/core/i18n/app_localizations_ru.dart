@@ -18,24 +18,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get nexusSubtitle => 'Управление Данными Романов';
 
   @override
-  String get moduleDirector => 'Директор';
-
-  @override
-  String get moduleProjects => 'Проекты';
-
-  @override
-  String get moduleTimeline => 'Хронология';
-
-  @override
-  String get moduleRelations => 'Отношения';
-
-  @override
-  String get moduleMap => 'Карта';
-
-  @override
-  String get moduleTags => 'Теги Проекта';
-
-  @override
   String get moduleGlobalTags => 'Теги';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get labelName => 'Имя';
 
   @override
-  String get labelCodename => 'Кодовое Имя';
-
-  @override
   String get labelMemo => 'Заметка';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get labelNote => 'Примечание';
 
   @override
-  String get labelFolder => 'Папка';
-
-  @override
-  String get labelCategory => 'Категория';
-
-  @override
-  String get labelType => 'Тип';
-
-  @override
-  String get labelField => 'Поле';
-
-  @override
-  String get labelStory => 'История';
-
-  @override
   String get labelTags => 'Теги';
 
   @override
   String get labelSearch => 'Поиск...';
 
   @override
-  String get newFolder => 'Новая Папка';
-
-  @override
-  String get newProject => 'Новый Проект';
-
-  @override
-  String get newCategory => 'Новая Категория';
-
-  @override
-  String get newObject => 'Новый Объект';
-
-  @override
-  String get newTimeline => 'Новая Хронология';
-
-  @override
-  String get newEvent => 'Новое Событие';
-
-  @override
-  String get newMap => 'Новая Карта';
-
-  @override
-  String get newArea => 'Новая Область';
-
-  @override
-  String get newRelation => 'Новое Отношение';
-
-  @override
-  String get newRelationType => 'Новый Тип Отношения';
-
-  @override
   String get newHashtag => 'Новый Тег';
-
-  @override
-  String get noProjects => 'Пока нет проектов. Создайте один, чтобы начать.';
-
-  @override
-  String get noObjects => 'Нет объектов в этой категории.';
-
-  @override
-  String get noTimelines => 'Пока нет хронологий.';
-
-  @override
-  String get noEvents => 'Нет событий на этой хронологии.';
-
-  @override
-  String get noMaps => 'Пока нет карт.';
-
-  @override
-  String get noAreas => 'Нет областей на этой карте.';
-
-  @override
-  String get noRelations => 'Пока нет отношений.';
 
   @override
   String get noTags => 'Пока нет тегов.';
@@ -178,18 +91,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get colorInUse => 'Цвет используется и не может быть удалён.';
-
-  @override
-  String get searchHint => 'Поиск проектов, объектов, тегов...';
-
-  @override
-  String get searchProjects => 'Проекты';
-
-  @override
-  String get searchObjects => 'Объекты';
-
-  @override
-  String get searchTags => 'Теги';
 
   @override
   String get themeLabel => 'Тема';
@@ -219,83 +120,122 @@ class AppLocalizationsRu extends AppLocalizations {
   String get exportSuccess => 'База данных экспортирована.';
 
   @override
-  String get relOBOB => 'Объект ↔ Объект';
-
-  @override
-  String get relOBTL => 'Объект ↔ Событие';
-
-  @override
-  String get relTLTL => 'Событие ↔ Событие';
-
-  @override
-  String get startDate => 'Дата Начала';
-
-  @override
-  String get endDate => 'Дата Окончания';
-
-  @override
-  String get year => 'Год';
-
-  @override
-  String get month => 'Месяц';
-
-  @override
-  String get day => 'День';
-
-  @override
-  String get hour => 'Час';
-
-  @override
-  String get minute => 'Минута';
-
-  @override
-  String get unfiledProjects => 'Без Категории';
-
-  @override
   String get selectColor => 'Выбрать Цвет';
 
   @override
   String get recentColors => 'Недавние';
 
   @override
-  String get listView => 'Список';
-
-  @override
-  String get tableView => 'Таблица';
-
-  @override
-  String get fields => 'Поля';
-
-  @override
-  String get fromObj => 'Из';
-
-  @override
-  String get toObj => 'В';
-
-  @override
-  String get relationTypeName => 'Тип Отношения';
-
-  @override
-  String get addField => 'Добавить Поле';
-
-  @override
-  String get objectNote => 'Заметки';
-
-  @override
-  String get eventStory => 'История';
-
-  @override
-  String get mapTool => 'Инструмент';
-
-  @override
-  String get mapToolMove => 'Переместить';
-
-  @override
-  String get mapToolCreate => 'Добавить Точку';
-
-  @override
-  String get mapToolDelete => 'Удалить Точку';
-
-  @override
   String get version => 'Версия 2.1.0';
+
+  @override
+  String get btnRename => 'Переименовать';
+
+  @override
+  String get btnPin => 'Закрепить';
+
+  @override
+  String get btnUnpin => 'Открепить';
+
+  @override
+  String get newNexusTitle => 'Новый Nexus';
+
+  @override
+  String get renameNexusTitle => 'Переименовать Nexus';
+
+  @override
+  String get newModuleTitle => 'Новый модуль';
+
+  @override
+  String get renameModuleTitle => 'Переименовать модуль';
+
+  @override
+  String get newModuleTooltip => 'Новый модуль';
+
+  @override
+  String get newNexusTooltip => 'Новый Nexus';
+
+  @override
+  String get emptyNexusMessage => 'Пока нет ни одного Nexus. Нажмите +, чтобы создать.';
+
+  @override
+  String get emptyModuleMessage => 'Пусто. Нажмите +, чтобы добавить модуль.';
+
+  @override
+  String get deleteNexusMessage => 'Это удалит все модули внутри него. Это действие нельзя отменить.';
+
+  @override
+  String get deleteModuleMessage => 'Это также удалит все вложенные модули внутри. Это действие нельзя отменить.';
+
+  @override
+  String get labelKind => 'Тип';
+
+  @override
+  String get kindContentUnavailable => 'Этот тип модуля пока не полностью поддерживается на мобильных устройствах — используется общее поле заметок ниже.';
+
+  @override
+  String get notesHint => 'Заметки для этого модуля…';
+
+  @override
+  String get settingsAppearance => 'Внешний вид';
+
+  @override
+  String get settingsData => 'Данные';
+
+  @override
+  String get settingsAbout => 'О программе';
+
+  @override
+  String get exportDbTitle => 'Экспорт базы данных';
+
+  @override
+  String get exportDbSubtitle => 'Поделитесь файлом .db, чтобы перенести данные на ПК или другое устройство';
+
+  @override
+  String get importDbTitle => 'Импорт базы данных';
+
+  @override
+  String get importDbSubtitle => 'Объединить данные из файла .db DraconDex';
+
+  @override
+  String get checkUpdatesTitle => 'Проверить обновления';
+
+  @override
+  String get checkUpdatesSubtitle => 'Проверяет GitHub Releases этого проекта — никогда не устанавливает автоматически';
+
+  @override
+  String get upToDateMessage => 'У вас установлена последняя версия.';
+
+  @override
+  String get importingMessage => 'Импорт…';
+
+  @override
+  String get importCompleteMessage => 'Импорт завершён.';
+
+  @override
+  String get importFailedMessage => 'Ошибка импорта.';
+
+  @override
+  String get exportFailedMessage => 'Ошибка экспорта.';
+
+  @override
+  String get addColorTitle => 'Добавить цвет';
+
+  @override
+  String get colorPaletteTitle => 'Палитра цветов';
+
+  @override
+  String get hashtagsTitle => 'Теги';
+
+  @override
+  String get editHashtagTitle => 'Изменить тег';
+
+  @override
+  String get tagNameLabel => 'Название тега';
+
+  @override
+  String get removeColorConfirmTitle => 'Удалить цвет?';
+
+  @override
+  String get deleteHashtagConfirmTitle => 'Удалить тег?';
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/i18n/app_localizations.dart';
 import '../../../data/models/module_model.dart';
 import '../../../providers/db_providers.dart';
 
@@ -35,19 +36,20 @@ class _ModuleDialogState extends ConsumerState<ModuleDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isNew = widget.existing == null;
     final theme = Theme.of(context);
     return AlertDialog(
-      title: Text(isNew ? 'New Module' : 'Rename Module'),
+      title: Text(isNew ? l10n.newModuleTitle : l10n.renameModuleTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(controller: _name, autofocus: true, decoration: const InputDecoration(labelText: 'Name *')),
+            TextField(controller: _name, autofocus: true, decoration: InputDecoration(labelText: '${l10n.labelName} *')),
             if (isNew) ...[
               const SizedBox(height: 16),
-              Text('Kind', style: theme.textTheme.labelLarge),
+              Text(l10n.labelKind, style: theme.textTheme.labelLarge),
               const SizedBox(height: 8),
               SizedBox(
                 width: double.maxFinite,
@@ -97,7 +99,7 @@ class _ModuleDialogState extends ConsumerState<ModuleDialog> {
               if (!moduleKindInfo[_kind]!.contentImplemented) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Not yet available on mobile — the tree node is created, showing a shared notes field for now.',
+                  l10n.kindContentUnavailable,
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                 ),
               ],
@@ -106,8 +108,8 @@ class _ModuleDialogState extends ConsumerState<ModuleDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: _save, child: const Text('Save')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.btnCancel)),
+        FilledButton(onPressed: _save, child: Text(l10n.btnSave)),
       ],
     );
   }

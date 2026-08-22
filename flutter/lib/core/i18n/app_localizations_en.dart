@@ -18,24 +18,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nexusSubtitle => 'Novel Data Management';
 
   @override
-  String get moduleDirector => 'Director';
-
-  @override
-  String get moduleProjects => 'Projects';
-
-  @override
-  String get moduleTimeline => 'Timeline';
-
-  @override
-  String get moduleRelations => 'Relations';
-
-  @override
-  String get moduleMap => 'Map';
-
-  @override
-  String get moduleTags => 'Project Tags';
-
-  @override
   String get moduleGlobalTags => 'Tags';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelName => 'Name';
 
   @override
-  String get labelCodename => 'Codename';
-
-  @override
   String get labelMemo => 'Memo';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelNote => 'Note';
 
   @override
-  String get labelFolder => 'Folder';
-
-  @override
-  String get labelCategory => 'Category';
-
-  @override
-  String get labelType => 'Type';
-
-  @override
-  String get labelField => 'Field';
-
-  @override
-  String get labelStory => 'Story';
-
-  @override
   String get labelTags => 'Tags';
 
   @override
   String get labelSearch => 'Search...';
 
   @override
-  String get newFolder => 'New Folder';
-
-  @override
-  String get newProject => 'New Project';
-
-  @override
-  String get newCategory => 'New Category';
-
-  @override
-  String get newObject => 'New Object';
-
-  @override
-  String get newTimeline => 'New Timeline';
-
-  @override
-  String get newEvent => 'New Event';
-
-  @override
-  String get newMap => 'New Map';
-
-  @override
-  String get newArea => 'New Area';
-
-  @override
-  String get newRelation => 'New Relation';
-
-  @override
-  String get newRelationType => 'New Relation Type';
-
-  @override
   String get newHashtag => 'New Tag';
-
-  @override
-  String get noProjects => 'No projects yet. Create one to get started.';
-
-  @override
-  String get noObjects => 'No objects in this category.';
-
-  @override
-  String get noTimelines => 'No timelines yet.';
-
-  @override
-  String get noEvents => 'No events on this timeline.';
-
-  @override
-  String get noMaps => 'No maps yet.';
-
-  @override
-  String get noAreas => 'No areas on this map.';
-
-  @override
-  String get noRelations => 'No relations yet.';
 
   @override
   String get noTags => 'No tags yet.';
@@ -178,18 +91,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get colorInUse => 'Color is in use and cannot be deleted.';
-
-  @override
-  String get searchHint => 'Search projects, objects, tags...';
-
-  @override
-  String get searchProjects => 'Projects';
-
-  @override
-  String get searchObjects => 'Objects';
-
-  @override
-  String get searchTags => 'Tags';
 
   @override
   String get themeLabel => 'Theme';
@@ -219,83 +120,122 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportSuccess => 'Database exported.';
 
   @override
-  String get relOBOB => 'Object ↔ Object';
-
-  @override
-  String get relOBTL => 'Object ↔ Event';
-
-  @override
-  String get relTLTL => 'Event ↔ Event';
-
-  @override
-  String get startDate => 'Start Date';
-
-  @override
-  String get endDate => 'End Date';
-
-  @override
-  String get year => 'Year';
-
-  @override
-  String get month => 'Month';
-
-  @override
-  String get day => 'Day';
-
-  @override
-  String get hour => 'Hour';
-
-  @override
-  String get minute => 'Minute';
-
-  @override
-  String get unfiledProjects => 'Unfiled';
-
-  @override
   String get selectColor => 'Select Color';
 
   @override
   String get recentColors => 'Recent';
 
   @override
-  String get listView => 'List View';
-
-  @override
-  String get tableView => 'Table View';
-
-  @override
-  String get fields => 'Fields';
-
-  @override
-  String get fromObj => 'From';
-
-  @override
-  String get toObj => 'To';
-
-  @override
-  String get relationTypeName => 'Relation Type';
-
-  @override
-  String get addField => 'Add Field';
-
-  @override
-  String get objectNote => 'Notes';
-
-  @override
-  String get eventStory => 'Story';
-
-  @override
-  String get mapTool => 'Tool';
-
-  @override
-  String get mapToolMove => 'Move';
-
-  @override
-  String get mapToolCreate => 'Add Point';
-
-  @override
-  String get mapToolDelete => 'Delete Point';
-
-  @override
   String get version => 'Version 2.1.0';
+
+  @override
+  String get btnRename => 'Rename';
+
+  @override
+  String get btnPin => 'Pin';
+
+  @override
+  String get btnUnpin => 'Unpin';
+
+  @override
+  String get newNexusTitle => 'New Nexus';
+
+  @override
+  String get renameNexusTitle => 'Rename Nexus';
+
+  @override
+  String get newModuleTitle => 'New Module';
+
+  @override
+  String get renameModuleTitle => 'Rename Module';
+
+  @override
+  String get newModuleTooltip => 'New Module';
+
+  @override
+  String get newNexusTooltip => 'New Nexus';
+
+  @override
+  String get emptyNexusMessage => 'No Nexus yet. Tap + to create one.';
+
+  @override
+  String get emptyModuleMessage => 'Empty. Tap + to add a module.';
+
+  @override
+  String get deleteNexusMessage => 'This deletes every module inside it. This action cannot be undone.';
+
+  @override
+  String get deleteModuleMessage => 'This deletes every module nested inside it too. This action cannot be undone.';
+
+  @override
+  String get labelKind => 'Kind';
+
+  @override
+  String get kindContentUnavailable => 'This module kind isn\'t fully supported on mobile yet — using the shared notes field below.';
+
+  @override
+  String get notesHint => 'Notes for this module…';
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsData => 'Data';
+
+  @override
+  String get settingsAbout => 'About';
+
+  @override
+  String get exportDbTitle => 'Export Database';
+
+  @override
+  String get exportDbSubtitle => 'Share the .db file to transfer data to PC or another device';
+
+  @override
+  String get importDbTitle => 'Import Database';
+
+  @override
+  String get importDbSubtitle => 'Merge data from a DraconDex .db file';
+
+  @override
+  String get checkUpdatesTitle => 'Check for Updates';
+
+  @override
+  String get checkUpdatesSubtitle => 'Looks at this project\'s GitHub Releases — never installs automatically';
+
+  @override
+  String get upToDateMessage => 'You\'re on the latest version.';
+
+  @override
+  String get importingMessage => 'Importing…';
+
+  @override
+  String get importCompleteMessage => 'Import complete.';
+
+  @override
+  String get importFailedMessage => 'Import failed.';
+
+  @override
+  String get exportFailedMessage => 'Export failed.';
+
+  @override
+  String get addColorTitle => 'Add Color';
+
+  @override
+  String get colorPaletteTitle => 'Color Palette';
+
+  @override
+  String get hashtagsTitle => 'Hashtags';
+
+  @override
+  String get editHashtagTitle => 'Edit Hashtag';
+
+  @override
+  String get tagNameLabel => 'Tag Name';
+
+  @override
+  String get removeColorConfirmTitle => 'Remove color?';
+
+  @override
+  String get deleteHashtagConfirmTitle => 'Delete hashtag?';
 }

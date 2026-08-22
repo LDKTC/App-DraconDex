@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'core/i18n/app_localizations.dart';
 import 'core/providers/settings_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -27,26 +27,8 @@ class DraconDexApp extends ConsumerWidget {
         theme: themeData,
         routerConfig: appRouter,
         locale: settings.locale,
-        supportedLocales: const [
-          Locale('en'),
-          Locale('th'),
-          Locale('ja'),
-          Locale('ko'),
-          Locale('zh'),
-          Locale('vi'),
-          Locale('id'),
-          Locale('es'),
-          Locale('pt'),
-          Locale('fr'),
-          Locale('de'),
-          Locale('ru'),
-          Locale('qd'),
-        ],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
       ),
     );
   }

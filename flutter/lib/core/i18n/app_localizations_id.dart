@@ -18,24 +18,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get nexusSubtitle => 'Manajemen Data Novel';
 
   @override
-  String get moduleDirector => 'Direktur';
-
-  @override
-  String get moduleProjects => 'Proyek';
-
-  @override
-  String get moduleTimeline => 'Linimasa';
-
-  @override
-  String get moduleRelations => 'Relasi';
-
-  @override
-  String get moduleMap => 'Peta';
-
-  @override
-  String get moduleTags => 'Tag Proyek';
-
-  @override
   String get moduleGlobalTags => 'Tag';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get labelName => 'Nama';
 
   @override
-  String get labelCodename => 'Nama Kode';
-
-  @override
   String get labelMemo => 'Memo';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get labelNote => 'Catatan';
 
   @override
-  String get labelFolder => 'Folder';
-
-  @override
-  String get labelCategory => 'Kategori';
-
-  @override
-  String get labelType => 'Jenis';
-
-  @override
-  String get labelField => 'Kolom';
-
-  @override
-  String get labelStory => 'Cerita';
-
-  @override
   String get labelTags => 'Tag';
 
   @override
   String get labelSearch => 'Cari...';
 
   @override
-  String get newFolder => 'Folder Baru';
-
-  @override
-  String get newProject => 'Proyek Baru';
-
-  @override
-  String get newCategory => 'Kategori Baru';
-
-  @override
-  String get newObject => 'Objek Baru';
-
-  @override
-  String get newTimeline => 'Linimasa Baru';
-
-  @override
-  String get newEvent => 'Peristiwa Baru';
-
-  @override
-  String get newMap => 'Peta Baru';
-
-  @override
-  String get newArea => 'Area Baru';
-
-  @override
-  String get newRelation => 'Relasi Baru';
-
-  @override
-  String get newRelationType => 'Jenis Relasi Baru';
-
-  @override
   String get newHashtag => 'Tag Baru';
-
-  @override
-  String get noProjects => 'Belum ada proyek. Buat satu untuk memulai.';
-
-  @override
-  String get noObjects => 'Tidak ada objek dalam kategori ini.';
-
-  @override
-  String get noTimelines => 'Belum ada linimasa.';
-
-  @override
-  String get noEvents => 'Tidak ada peristiwa pada linimasa ini.';
-
-  @override
-  String get noMaps => 'Belum ada peta.';
-
-  @override
-  String get noAreas => 'Tidak ada area pada peta ini.';
-
-  @override
-  String get noRelations => 'Belum ada relasi.';
 
   @override
   String get noTags => 'Belum ada tag.';
@@ -178,18 +91,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get colorInUse => 'Warna sedang digunakan dan tidak dapat dihapus.';
-
-  @override
-  String get searchHint => 'Cari proyek, objek, tag...';
-
-  @override
-  String get searchProjects => 'Proyek';
-
-  @override
-  String get searchObjects => 'Objek';
-
-  @override
-  String get searchTags => 'Tag';
 
   @override
   String get themeLabel => 'Tema';
@@ -219,83 +120,122 @@ class AppLocalizationsId extends AppLocalizations {
   String get exportSuccess => 'Basis data berhasil diekspor.';
 
   @override
-  String get relOBOB => 'Objek ↔ Objek';
-
-  @override
-  String get relOBTL => 'Objek ↔ Peristiwa';
-
-  @override
-  String get relTLTL => 'Peristiwa ↔ Peristiwa';
-
-  @override
-  String get startDate => 'Tanggal Mulai';
-
-  @override
-  String get endDate => 'Tanggal Selesai';
-
-  @override
-  String get year => 'Tahun';
-
-  @override
-  String get month => 'Bulan';
-
-  @override
-  String get day => 'Hari';
-
-  @override
-  String get hour => 'Jam';
-
-  @override
-  String get minute => 'Menit';
-
-  @override
-  String get unfiledProjects => 'Belum Dikategorikan';
-
-  @override
   String get selectColor => 'Pilih Warna';
 
   @override
   String get recentColors => 'Terbaru';
 
   @override
-  String get listView => 'Tampilan Daftar';
-
-  @override
-  String get tableView => 'Tampilan Tabel';
-
-  @override
-  String get fields => 'Kolom';
-
-  @override
-  String get fromObj => 'Dari';
-
-  @override
-  String get toObj => 'Ke';
-
-  @override
-  String get relationTypeName => 'Jenis Relasi';
-
-  @override
-  String get addField => 'Tambah Kolom';
-
-  @override
-  String get objectNote => 'Catatan';
-
-  @override
-  String get eventStory => 'Cerita';
-
-  @override
-  String get mapTool => 'Alat';
-
-  @override
-  String get mapToolMove => 'Pindah';
-
-  @override
-  String get mapToolCreate => 'Tambah Titik';
-
-  @override
-  String get mapToolDelete => 'Hapus Titik';
-
-  @override
   String get version => 'Versi 2.1.0';
+
+  @override
+  String get btnRename => 'Ganti Nama';
+
+  @override
+  String get btnPin => 'Sematkan';
+
+  @override
+  String get btnUnpin => 'Lepas Sematan';
+
+  @override
+  String get newNexusTitle => 'Nexus Baru';
+
+  @override
+  String get renameNexusTitle => 'Ganti Nama Nexus';
+
+  @override
+  String get newModuleTitle => 'Modul Baru';
+
+  @override
+  String get renameModuleTitle => 'Ganti Nama Modul';
+
+  @override
+  String get newModuleTooltip => 'Modul Baru';
+
+  @override
+  String get newNexusTooltip => 'Nexus Baru';
+
+  @override
+  String get emptyNexusMessage => 'Belum ada Nexus. Ketuk + untuk membuatnya.';
+
+  @override
+  String get emptyModuleMessage => 'Kosong. Ketuk + untuk menambahkan modul.';
+
+  @override
+  String get deleteNexusMessage => 'Ini akan menghapus semua modul di dalamnya. Tindakan ini tidak dapat dibatalkan.';
+
+  @override
+  String get deleteModuleMessage => 'Ini juga akan menghapus semua modul bersarang di dalamnya. Tindakan ini tidak dapat dibatalkan.';
+
+  @override
+  String get labelKind => 'Jenis';
+
+  @override
+  String get kindContentUnavailable => 'Jenis modul ini belum sepenuhnya didukung di perangkat seluler — menggunakan kolom catatan bersama di bawah.';
+
+  @override
+  String get notesHint => 'Catatan untuk modul ini…';
+
+  @override
+  String get settingsAppearance => 'Tampilan';
+
+  @override
+  String get settingsData => 'Data';
+
+  @override
+  String get settingsAbout => 'Tentang';
+
+  @override
+  String get exportDbTitle => 'Ekspor Basis Data';
+
+  @override
+  String get exportDbSubtitle => 'Bagikan berkas .db untuk memindahkan data ke PC atau perangkat lain';
+
+  @override
+  String get importDbTitle => 'Impor Basis Data';
+
+  @override
+  String get importDbSubtitle => 'Gabungkan data dari berkas .db DraconDex';
+
+  @override
+  String get checkUpdatesTitle => 'Periksa Pembaruan';
+
+  @override
+  String get checkUpdatesSubtitle => 'Memeriksa GitHub Releases proyek ini — tidak pernah menginstal secara otomatis';
+
+  @override
+  String get upToDateMessage => 'Kamu sudah menggunakan versi terbaru.';
+
+  @override
+  String get importingMessage => 'Mengimpor…';
+
+  @override
+  String get importCompleteMessage => 'Impor selesai.';
+
+  @override
+  String get importFailedMessage => 'Impor gagal.';
+
+  @override
+  String get exportFailedMessage => 'Ekspor gagal.';
+
+  @override
+  String get addColorTitle => 'Tambah Warna';
+
+  @override
+  String get colorPaletteTitle => 'Palet Warna';
+
+  @override
+  String get hashtagsTitle => 'Tag';
+
+  @override
+  String get editHashtagTitle => 'Edit Tag';
+
+  @override
+  String get tagNameLabel => 'Nama Tag';
+
+  @override
+  String get removeColorConfirmTitle => 'Hapus warna?';
+
+  @override
+  String get deleteHashtagConfirmTitle => 'Hapus tag?';
 }

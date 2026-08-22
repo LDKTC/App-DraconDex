@@ -18,24 +18,6 @@ class AppLocalizationsQd extends AppLocalizations {
   String get nexusSubtitle => 'Vorquenn Skrivath Hoardmastrii';
 
   @override
-  String get moduleDirector => 'Ovirwyrm';
-
-  @override
-  String get moduleProjects => 'Vorquenn';
-
-  @override
-  String get moduleTimeline => 'Khronofang';
-
-  @override
-  String get moduleRelations => 'Kynshall';
-
-  @override
-  String get moduleMap => 'Territhra';
-
-  @override
-  String get moduleTags => 'Markiss Vorquenn';
-
-  @override
   String get moduleGlobalTags => 'Markiss';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsQd extends AppLocalizations {
   String get labelName => 'Yssira';
 
   @override
-  String get labelCodename => 'Yssira Khuun';
-
-  @override
   String get labelMemo => 'Skrivath';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsQd extends AppLocalizations {
   String get labelNote => 'Notheth';
 
   @override
-  String get labelFolder => 'Nestrum';
-
-  @override
-  String get labelCategory => 'Klavoss';
-
-  @override
-  String get labelType => 'Formyx';
-
-  @override
-  String get labelField => 'Feldruun';
-
-  @override
-  String get labelStory => 'Sagaal';
-
-  @override
   String get labelTags => 'Markiss';
 
   @override
   String get labelSearch => 'Zharra...';
 
   @override
-  String get newFolder => 'Esshka Nestrum';
-
-  @override
-  String get newProject => 'Esshka Vorqu';
-
-  @override
-  String get newCategory => 'Esshka Klavoss';
-
-  @override
-  String get newObject => 'Esshka Artifyx';
-
-  @override
-  String get newTimeline => 'Esshka Khronofang';
-
-  @override
-  String get newEvent => 'Esshka Chronoshard';
-
-  @override
-  String get newMap => 'Esshka Territhra';
-
-  @override
-  String get newArea => 'Esshka Zonyx';
-
-  @override
-  String get newRelation => 'Esshka Kynshal';
-
-  @override
-  String get newRelationType => 'Esshka Kynshal Formyx';
-
-  @override
   String get newHashtag => 'Esshka Markiss';
-
-  @override
-  String get noProjects => 'Grynn... no vorqu yet-thra. Forge-thee onya to begynn!';
-
-  @override
-  String get noObjects => 'Nao artifyx in thys klavoss-hoard.';
-
-  @override
-  String get noTimelines => 'Grynn... no khronofang yet-thra.';
-
-  @override
-  String get noEvents => 'Nao chronoshard upon thys khronofang.';
-
-  @override
-  String get noMaps => 'Grynn... no territhra yet-thra.';
-
-  @override
-  String get noAreas => 'Nao zonyx upon thys territhra.';
-
-  @override
-  String get noRelations => 'Grynn... no kynshal yet-thra.';
 
   @override
   String get noTags => 'Grynn... no markiss yet-thra.';
@@ -178,18 +91,6 @@ class AppLocalizationsQd extends AppLocalizations {
 
   @override
   String get colorInUse => 'Thys chroniss be claimd — vhoreth denyd.';
-
-  @override
-  String get searchHint => 'Zharra thy vorqu, artifyx, markiss...';
-
-  @override
-  String get searchProjects => 'Vorquenn';
-
-  @override
-  String get searchObjects => 'Artifyx';
-
-  @override
-  String get searchTags => 'Markiss';
 
   @override
   String get themeLabel => 'Skalith';
@@ -219,83 +120,122 @@ class AppLocalizationsQd extends AppLocalizations {
   String get exportSuccess => 'Hoard-data outhgurath\'d.';
 
   @override
-  String get relOBOB => 'Artifyx ↔ Artifyx';
-
-  @override
-  String get relOBTL => 'Artifyx ↔ Chronoshard';
-
-  @override
-  String get relTLTL => 'Chronoshard ↔ Chronoshard';
-
-  @override
-  String get startDate => 'Onset Sunn';
-
-  @override
-  String get endDate => 'Endyng Sunn';
-
-  @override
-  String get year => 'Cyklyr';
-
-  @override
-  String get month => 'Moonspan';
-
-  @override
-  String get day => 'Sunnturn';
-
-  @override
-  String get hour => 'Flamespan';
-
-  @override
-  String get minute => 'Emberspan';
-
-  @override
-  String get unfiledProjects => 'Unklaimd';
-
-  @override
   String get selectColor => 'Choozz Chroniss';
 
   @override
   String get recentColors => 'Freshly-Claimd';
 
   @override
-  String get listView => 'Skryxt View';
-
-  @override
-  String get tableView => 'Grydyx View';
-
-  @override
-  String get fields => 'Feldruunae';
-
-  @override
-  String get fromObj => 'Fravorn';
-
-  @override
-  String get toObj => 'Tovorn';
-
-  @override
-  String get relationTypeName => 'Kynshal Formyx';
-
-  @override
-  String get addField => 'Grothul Feldruun';
-
-  @override
-  String get objectNote => 'Notheth';
-
-  @override
-  String get eventStory => 'Sagaal';
-
-  @override
-  String get mapTool => 'Klawtool';
-
-  @override
-  String get mapToolMove => 'Sklyther';
-
-  @override
-  String get mapToolCreate => 'Grothul Poyntyx';
-
-  @override
-  String get mapToolDelete => 'Vhoreth Poyntyx';
-
-  @override
   String get version => 'Cyklyr 2.1.0';
+
+  @override
+  String get btnRename => 'Reyssira';
+
+  @override
+  String get btnPin => 'Fyxx';
+
+  @override
+  String get btnUnpin => 'Unfyxx';
+
+  @override
+  String get newNexusTitle => 'Esshka Nexus';
+
+  @override
+  String get renameNexusTitle => 'Reyssira Nexus';
+
+  @override
+  String get newModuleTitle => 'Esshka Modyxx';
+
+  @override
+  String get renameModuleTitle => 'Reyssira Modyxx';
+
+  @override
+  String get newModuleTooltip => 'Esshka Modyxx';
+
+  @override
+  String get newNexusTooltip => 'Esshka Nexus';
+
+  @override
+  String get emptyNexusMessage => 'Grynn... no nexus yet-thra. Tap the + to forge onya.';
+
+  @override
+  String get emptyModuleMessage => 'Emptae. Tap the + to grothul a modyxx.';
+
+  @override
+  String get deleteNexusMessage => 'Thys vhoreth all modyxx within. Onaith undonn thys deedra be.';
+
+  @override
+  String get deleteModuleMessage => 'Thys vhoreth all modyxx nestyd within too. Onaith undonn thys deedra be.';
+
+  @override
+  String get labelKind => 'Kyndrath';
+
+  @override
+  String get kindContentUnavailable => 'Thys modyxx-kyndrath be nao fully wroughted for hoardstone yet-thra — the shared notheth-feld below be usyd instead.';
+
+  @override
+  String get notesHint => 'Notheth for thys modyxx…';
+
+  @override
+  String get settingsAppearance => 'Vysazh';
+
+  @override
+  String get settingsData => 'Hoard-Datha';
+
+  @override
+  String get settingsAbout => 'Concernyng';
+
+  @override
+  String get exportDbTitle => 'Outhgurath the Hoard-Datha';
+
+  @override
+  String get exportDbSubtitle => 'Sharr the .db scrollfyle to carry datha to a PC or other devycce';
+
+  @override
+  String get importDbTitle => 'Ingurath the Hoard-Datha';
+
+  @override
+  String get importDbSubtitle => 'Merge datha from a DraconDex .db scrollfyle';
+
+  @override
+  String get checkUpdatesTitle => 'Zharra for Renewals';
+
+  @override
+  String get checkUpdatesSubtitle => 'Peers at thys vorqu\'s GitHub Releases — nevyr installyth automatik\'ly';
+
+  @override
+  String get upToDateMessage => 'Thou beryest the freshest verzhyn.';
+
+  @override
+  String get importingMessage => 'Ingurathyng…';
+
+  @override
+  String get importCompleteMessage => 'Ingurath complet\'d.';
+
+  @override
+  String get importFailedMessage => 'Ingurath failyr\'d.';
+
+  @override
+  String get exportFailedMessage => 'Outhgurath failyr\'d.';
+
+  @override
+  String get addColorTitle => 'Grothul Chroniss';
+
+  @override
+  String get colorPaletteTitle => 'Chroniss Palettyx';
+
+  @override
+  String get hashtagsTitle => 'Markiss';
+
+  @override
+  String get editHashtagTitle => 'Zhakrii Markiss';
+
+  @override
+  String get tagNameLabel => 'Yssira Markiss';
+
+  @override
+  String get removeColorConfirmTitle => 'Vhoreth thys chroniss?';
+
+  @override
+  String get deleteHashtagConfirmTitle => 'Vhoreth thys markiss?';
 }

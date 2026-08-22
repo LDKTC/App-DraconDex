@@ -18,24 +18,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nexusSubtitle => '소설 데이터 관리';
 
   @override
-  String get moduleDirector => 'Director';
-
-  @override
-  String get moduleProjects => '프로젝트';
-
-  @override
-  String get moduleTimeline => '타임라인';
-
-  @override
-  String get moduleRelations => '관계';
-
-  @override
-  String get moduleMap => '맵';
-
-  @override
-  String get moduleTags => '프로젝트 태그';
-
-  @override
   String get moduleGlobalTags => '태그';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get labelName => '이름';
 
   @override
-  String get labelCodename => '코드명';
-
-  @override
   String get labelMemo => '메모';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get labelNote => '노트';
 
   @override
-  String get labelFolder => '폴더';
-
-  @override
-  String get labelCategory => '카테고리';
-
-  @override
-  String get labelType => '유형';
-
-  @override
-  String get labelField => '필드';
-
-  @override
-  String get labelStory => '스토리';
-
-  @override
   String get labelTags => '태그';
 
   @override
   String get labelSearch => '검색...';
 
   @override
-  String get newFolder => '새 폴더';
-
-  @override
-  String get newProject => '새 프로젝트';
-
-  @override
-  String get newCategory => '새 카테고리';
-
-  @override
-  String get newObject => '새 캐릭터';
-
-  @override
-  String get newTimeline => '새 타임라인';
-
-  @override
-  String get newEvent => '새 이벤트';
-
-  @override
-  String get newMap => '새 맵';
-
-  @override
-  String get newArea => '새 구역';
-
-  @override
-  String get newRelation => '새 관계';
-
-  @override
-  String get newRelationType => '새 관계 유형';
-
-  @override
   String get newHashtag => '새 태그';
-
-  @override
-  String get noProjects => '프로젝트가 없습니다. 만들어 보세요!';
-
-  @override
-  String get noObjects => '이 카테고리에 캐릭터가 없습니다.';
-
-  @override
-  String get noTimelines => '타임라인이 없습니다.';
-
-  @override
-  String get noEvents => '이 타임라인에 이벤트가 없습니다.';
-
-  @override
-  String get noMaps => '맵이 없습니다.';
-
-  @override
-  String get noAreas => '이 맵에 구역이 없습니다.';
-
-  @override
-  String get noRelations => '관계가 없습니다.';
 
   @override
   String get noTags => '태그가 없습니다.';
@@ -178,18 +91,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get colorInUse => '이 색상은 사용 중이므로 삭제할 수 없습니다.';
-
-  @override
-  String get searchHint => '프로젝트, 캐릭터, 태그 검색...';
-
-  @override
-  String get searchProjects => '프로젝트';
-
-  @override
-  String get searchObjects => '캐릭터';
-
-  @override
-  String get searchTags => '태그';
 
   @override
   String get themeLabel => '테마';
@@ -219,83 +120,122 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exportSuccess => '데이터베이스를 내보냈습니다.';
 
   @override
-  String get relOBOB => '캐릭터 ↔ 캐릭터';
-
-  @override
-  String get relOBTL => '캐릭터 ↔ 이벤트';
-
-  @override
-  String get relTLTL => '이벤트 ↔ 이벤트';
-
-  @override
-  String get startDate => '시작일';
-
-  @override
-  String get endDate => '종료일';
-
-  @override
-  String get year => '년';
-
-  @override
-  String get month => '월';
-
-  @override
-  String get day => '일';
-
-  @override
-  String get hour => '시';
-
-  @override
-  String get minute => '분';
-
-  @override
-  String get unfiledProjects => '미분류';
-
-  @override
   String get selectColor => '색상 선택';
 
   @override
   String get recentColors => '최근 사용';
 
   @override
-  String get listView => '목록 보기';
-
-  @override
-  String get tableView => '테이블 보기';
-
-  @override
-  String get fields => '필드';
-
-  @override
-  String get fromObj => '에서';
-
-  @override
-  String get toObj => '으로';
-
-  @override
-  String get relationTypeName => '관계 유형';
-
-  @override
-  String get addField => '필드 추가';
-
-  @override
-  String get objectNote => '노트';
-
-  @override
-  String get eventStory => '스토리';
-
-  @override
-  String get mapTool => '도구';
-
-  @override
-  String get mapToolMove => '이동';
-
-  @override
-  String get mapToolCreate => '포인트 추가';
-
-  @override
-  String get mapToolDelete => '포인트 삭제';
-
-  @override
   String get version => '버전 2.1.0';
+
+  @override
+  String get btnRename => '이름 바꾸기';
+
+  @override
+  String get btnPin => '고정';
+
+  @override
+  String get btnUnpin => '고정 해제';
+
+  @override
+  String get newNexusTitle => '새 Nexus';
+
+  @override
+  String get renameNexusTitle => 'Nexus 이름 바꾸기';
+
+  @override
+  String get newModuleTitle => '새 모듈';
+
+  @override
+  String get renameModuleTitle => '모듈 이름 바꾸기';
+
+  @override
+  String get newModuleTooltip => '새 모듈';
+
+  @override
+  String get newNexusTooltip => '새 Nexus';
+
+  @override
+  String get emptyNexusMessage => '아직 Nexus가 없습니다. +를 눌러 만들어보세요.';
+
+  @override
+  String get emptyModuleMessage => '비어 있습니다. +를 눌러 모듈을 추가하세요.';
+
+  @override
+  String get deleteNexusMessage => '내부의 모든 모듈이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.';
+
+  @override
+  String get deleteModuleMessage => '내부에 중첩된 모든 모듈도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.';
+
+  @override
+  String get labelKind => '종류';
+
+  @override
+  String get kindContentUnavailable => '이 모듈 종류는 모바일에서 아직 완전히 지원되지 않습니다 — 아래 공용 메모 필드를 대신 사용합니다.';
+
+  @override
+  String get notesHint => '이 모듈에 대한 메모…';
+
+  @override
+  String get settingsAppearance => '화면';
+
+  @override
+  String get settingsData => '데이터';
+
+  @override
+  String get settingsAbout => '정보';
+
+  @override
+  String get exportDbTitle => '데이터베이스 내보내기';
+
+  @override
+  String get exportDbSubtitle => '.db 파일을 공유하여 PC나 다른 기기로 데이터를 옮기세요';
+
+  @override
+  String get importDbTitle => '데이터베이스 가져오기';
+
+  @override
+  String get importDbSubtitle => 'DraconDex .db 파일에서 데이터를 병합합니다';
+
+  @override
+  String get checkUpdatesTitle => '업데이트 확인';
+
+  @override
+  String get checkUpdatesSubtitle => '이 프로젝트의 GitHub Releases를 확인합니다 — 자동으로 설치되지 않습니다';
+
+  @override
+  String get upToDateMessage => '최신 버전을 사용 중입니다.';
+
+  @override
+  String get importingMessage => '가져오는 중…';
+
+  @override
+  String get importCompleteMessage => '가져오기 완료.';
+
+  @override
+  String get importFailedMessage => '가져오기 실패.';
+
+  @override
+  String get exportFailedMessage => '내보내기 실패.';
+
+  @override
+  String get addColorTitle => '색상 추가';
+
+  @override
+  String get colorPaletteTitle => '색상 팔레트';
+
+  @override
+  String get hashtagsTitle => '태그';
+
+  @override
+  String get editHashtagTitle => '태그 편집';
+
+  @override
+  String get tagNameLabel => '태그 이름';
+
+  @override
+  String get removeColorConfirmTitle => '색상을 삭제할까요?';
+
+  @override
+  String get deleteHashtagConfirmTitle => '태그를 삭제할까요?';
 }

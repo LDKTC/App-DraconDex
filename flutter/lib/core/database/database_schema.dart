@@ -427,9 +427,43 @@ CREATE TABLE IF NOT EXISTS module (
   update_at TEXT NOT NULL DEFAULT (datetime('now'))
 )''';
 
+// Companion tables to `module`, matching Electron's ddl.js — per-module
+// free-form attributes, per-module UI state, and the module↔hashtag join.
+// Nothing in the Flutter UI reads/writes these yet, but they keep the
+// schema shape identical so a DB round-trips through either side intact.
+const String createModuleAttribute = '''
+CREATE TABLE IF NOT EXISTS module_attribute (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+  attr_name TEXT NOT NULL,
+  attr_value TEXT,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  update_at TEXT NOT NULL DEFAULT (datetime('now'))
+)''';
+
+const String createModuleUi = '''
+CREATE TABLE IF NOT EXISTS module_ui (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+  ui_key TEXT NOT NULL,
+  ui_value TEXT,
+  update_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(module_ref, ui_key)
+)''';
+
+const String createModuleHashtag = '''
+CREATE TABLE IF NOT EXISTS module_hashtag (
+  module_ref INTEGER NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+  hashtag_id INTEGER NOT NULL REFERENCES hashtag(id) ON DELETE CASCADE,
+  UNIQUE(module_ref, hashtag_id)
+)''';
+
 const List<String> moduleCreateStatements = [
   createNexus,
   createModule,
+  createModuleAttribute,
+  createModuleUi,
+  createModuleHashtag,
 ];
 
 const List<String> defaultColors = [

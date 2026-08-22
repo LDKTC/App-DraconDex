@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/i18n/app_localizations.dart';
 import '../../data/models/module_model.dart';
 import '../../providers/module_provider.dart';
 import '../../providers/update_provider.dart';
@@ -42,19 +43,25 @@ class _NexusListScreenState extends ConsumerState<NexusListScreen> {
   Widget build(BuildContext context) {
     final nexusesAsync = ref.watch(nexusesProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DraconDex'),
+        title: Text(l10n.appName),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'Legacy modules (Projects / Worlds)',
-            onPressed: () => context.push('/legacy'),
+            icon: const Icon(Icons.palette),
+            tooltip: l10n.moduleColors,
+            onPressed: () => context.push('/colors'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.sell),
+            tooltip: l10n.moduleGlobalTags,
+            onPressed: () => context.push('/tags'),
           ),
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
+            tooltip: l10n.moduleSettings,
             onPressed: () => context.push('/settings'),
           ),
         ],
@@ -70,7 +77,7 @@ class _NexusListScreenState extends ConsumerState<NexusListScreen> {
                 children: [
                   Icon(Icons.workspaces_outlined, size: 64, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
                   const SizedBox(height: 16),
-                  Text('No Nexus yet. Tap + to create one.', style: theme.textTheme.bodyMedium),
+                  Text(l10n.emptyNexusMessage, style: theme.textTheme.bodyMedium),
                 ],
               ),
             );
@@ -83,7 +90,7 @@ class _NexusListScreenState extends ConsumerState<NexusListScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'New Nexus',
+        tooltip: l10n.newNexusTooltip,
         onPressed: () async {
           await showDialog(context: context, builder: (_) => const NexusDialog());
           ref.invalidate(nexusesProvider);
@@ -100,6 +107,7 @@ class _NexusTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return ListTile(
       leading: nexus.colorCode != null
           ? ColorDot(colorCode: nexus.colorCode, size: 20)
@@ -113,8 +121,8 @@ class _NexusTile extends ConsumerWidget {
             ref.invalidate(nexusesProvider);
           } else if (v == 'delete') {
             final ok = await showConfirmDialog(context,
-                title: 'Delete "${nexus.name}"?',
-                message: 'This deletes every module inside it. This action cannot be undone.');
+                title: '${l10n.confirmDeleteTitle}: "${nexus.name}"',
+                message: l10n.deleteNexusMessage);
             if (ok) {
               await ref.read(moduleDaoProvider).when(
                 data: (d) => d.deleteNexus(nexus.id),
@@ -125,9 +133,9 @@ class _NexusTile extends ConsumerWidget {
             }
           }
         },
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'rename', child: Text('Rename')),
-          PopupMenuItem(value: 'delete', child: Text('Delete')),
+        itemBuilder: (_) => [
+          PopupMenuItem(value: 'rename', child: Text(l10n.btnRename)),
+          PopupMenuItem(value: 'delete', child: Text(l10n.btnDelete)),
         ],
       ),
       onTap: () => context.push('/hub/${nexus.id}'),
