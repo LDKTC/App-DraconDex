@@ -33,10 +33,27 @@ class DatabaseHelper {
 
   // Runs on every open (fresh or existing). Idempotent ensure-step for tables
   // added after the initial schema — notably the Navigator (v2.5.2 "World")
-  // module — since the DB version is pinned at 1 and onCreate won't re-run.
+  // module and the v3 module tree (Hub/Nexus nest) — since the DB version is
+  // pinned at 1 and onCreate won't re-run.
   Future<void> _onOpen(Database db) async {
     for (final sql in worldCreateStatements) {
       await db.execute(sql);
+    }
+    for (final sql in moduleCreateStatements) {
+      await db.execute(sql);
+    }
+    await _ensureDefaultNexus(db);
+  }
+
+  // The Hub needs at least one Nexus to open into. Rather than forcing a
+  // "create your first vault" step on mobile, seed one default Nexus the
+  // first time this device has none (fresh install, or upgrading from a
+  // pre-module-tree version).
+  Future<void> _ensureDefaultNexus(Database db) async {
+    final rows = await db.rawQuery('SELECT COUNT(*) AS c FROM nexus');
+    final count = Sqflite.firstIntValue(rows) ?? 0;
+    if (count == 0) {
+      await db.insert('nexus', {'name': 'My Nexus'});
     }
   }
 

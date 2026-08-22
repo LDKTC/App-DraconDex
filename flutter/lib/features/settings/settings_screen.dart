@@ -5,6 +5,8 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/import_export_service.dart';
+import '../../providers/update_provider.dart';
+import '../update/update_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -68,13 +70,32 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           _SectionHeader('About'),
-          const ListTile(
-            title: Text('DraconDex'),
-            subtitle: Text('Novel Manager — Flutter Edition'),
+          ListTile(
+            title: const Text('DraconDex'),
+            subtitle: Text('Novel Manager — Flutter Edition · v${ref.watch(appVersionProvider).valueOrNull ?? '…'}'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.system_update_alt),
+            title: const Text('Check for Updates'),
+            subtitle: const Text('Looks at this project\'s GitHub Releases — never installs automatically'),
+            onTap: () => _checkForUpdates(context, ref),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _checkForUpdates(BuildContext context, WidgetRef ref) async {
+    ref.invalidate(updateCheckProvider);
+    final result = await ref.read(updateCheckProvider.future);
+    if (!context.mounted) return;
+    if (result.available && result.update != null) {
+      await showDialog(context: context, builder: (_) => UpdateDialog(update: result.update!));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You\'re on the latest version (v${result.current}).')),
+      );
+    }
   }
 
   String _themeName(AppThemeMode t) => switch (t) {

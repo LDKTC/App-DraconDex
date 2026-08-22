@@ -1,7 +1,7 @@
 name: dracondex
 description: "DraconDex - Novel data management app"
 publish_to: 'none'
-version: 2.1.0+1
+version: 2.3.0+3
 
 environment:
   sdk: ^3.12.2
@@ -40,6 +40,11 @@ dependencies:
   intl: ^0.20.2
 
   cupertino_icons: ^1.0.8
+
+  # Update-check notice (GitHub Releases) — see docs/UPDATE.md
+  http: ^1.2.2
+  package_info_plus: ^8.1.2
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
