@@ -18,24 +18,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get nexusSubtitle => 'จัดการข้อมูลนิยาย';
 
   @override
-  String get moduleDirector => 'Director';
-
-  @override
-  String get moduleProjects => 'โปรเจกต์';
-
-  @override
-  String get moduleTimeline => 'ไทม์ไลน์';
-
-  @override
-  String get moduleRelations => 'ความสัมพันธ์';
-
-  @override
-  String get moduleMap => 'แผนที่';
-
-  @override
-  String get moduleTags => 'แท็กโปรเจกต์';
-
-  @override
   String get moduleGlobalTags => 'แท็ก';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get labelName => 'ชื่อ';
 
   @override
-  String get labelCodename => 'ชื่อรหัส';
-
-  @override
   String get labelMemo => 'บันทึก';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsTh extends AppLocalizations {
   String get labelNote => 'โน้ต';
 
   @override
-  String get labelFolder => 'โฟลเดอร์';
-
-  @override
-  String get labelCategory => 'หมวดหมู่';
-
-  @override
-  String get labelType => 'ประเภท';
-
-  @override
-  String get labelField => 'ฟิลด์';
-
-  @override
-  String get labelStory => 'เรื่องราว';
-
-  @override
   String get labelTags => 'แท็ก';
 
   @override
   String get labelSearch => 'ค้นหา...';
 
   @override
-  String get newFolder => 'โฟลเดอร์ใหม่';
-
-  @override
-  String get newProject => 'โปรเจกต์ใหม่';
-
-  @override
-  String get newCategory => 'หมวดหมู่ใหม่';
-
-  @override
-  String get newObject => 'ตัวละครใหม่';
-
-  @override
-  String get newTimeline => 'ไทม์ไลน์ใหม่';
-
-  @override
-  String get newEvent => 'เหตุการณ์ใหม่';
-
-  @override
-  String get newMap => 'แผนที่ใหม่';
-
-  @override
-  String get newArea => 'พื้นที่ใหม่';
-
-  @override
-  String get newRelation => 'ความสัมพันธ์ใหม่';
-
-  @override
-  String get newRelationType => 'ประเภทความสัมพันธ์ใหม่';
-
-  @override
   String get newHashtag => 'แท็กใหม่';
-
-  @override
-  String get noProjects => 'ยังไม่มีโปรเจกต์ สร้างเลย!';
-
-  @override
-  String get noObjects => 'ไม่มีตัวละครในหมวดนี้';
-
-  @override
-  String get noTimelines => 'ยังไม่มีไทม์ไลน์';
-
-  @override
-  String get noEvents => 'ไม่มีเหตุการณ์ในไทม์ไลน์นี้';
-
-  @override
-  String get noMaps => 'ยังไม่มีแผนที่';
-
-  @override
-  String get noAreas => 'ไม่มีพื้นที่ในแผนที่นี้';
-
-  @override
-  String get noRelations => 'ยังไม่มีความสัมพันธ์';
 
   @override
   String get noTags => 'ยังไม่มีแท็ก';
@@ -178,18 +91,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get colorInUse => 'สีนี้กำลังถูกใช้งานอยู่ ไม่สามารถลบได้';
-
-  @override
-  String get searchHint => 'ค้นหาโปรเจกต์ ตัวละคร แท็ก...';
-
-  @override
-  String get searchProjects => 'โปรเจกต์';
-
-  @override
-  String get searchObjects => 'ตัวละคร';
-
-  @override
-  String get searchTags => 'แท็ก';
 
   @override
   String get themeLabel => 'ธีม';
@@ -219,83 +120,122 @@ class AppLocalizationsTh extends AppLocalizations {
   String get exportSuccess => 'ส่งออกฐานข้อมูลแล้ว';
 
   @override
-  String get relOBOB => 'ตัวละคร ↔ ตัวละคร';
-
-  @override
-  String get relOBTL => 'ตัวละคร ↔ เหตุการณ์';
-
-  @override
-  String get relTLTL => 'เหตุการณ์ ↔ เหตุการณ์';
-
-  @override
-  String get startDate => 'วันเริ่มต้น';
-
-  @override
-  String get endDate => 'วันสิ้นสุด';
-
-  @override
-  String get year => 'ปี';
-
-  @override
-  String get month => 'เดือน';
-
-  @override
-  String get day => 'วัน';
-
-  @override
-  String get hour => 'ชั่วโมง';
-
-  @override
-  String get minute => 'นาที';
-
-  @override
-  String get unfiledProjects => 'ไม่มีโฟลเดอร์';
-
-  @override
   String get selectColor => 'เลือกสี';
 
   @override
   String get recentColors => 'ล่าสุด';
 
   @override
-  String get listView => 'มุมมองรายการ';
-
-  @override
-  String get tableView => 'มุมมองตาราง';
-
-  @override
-  String get fields => 'ฟิลด์';
-
-  @override
-  String get fromObj => 'จาก';
-
-  @override
-  String get toObj => 'ถึง';
-
-  @override
-  String get relationTypeName => 'ประเภทความสัมพันธ์';
-
-  @override
-  String get addField => 'เพิ่มฟิลด์';
-
-  @override
-  String get objectNote => 'โน้ต';
-
-  @override
-  String get eventStory => 'เรื่องราว';
-
-  @override
-  String get mapTool => 'เครื่องมือ';
-
-  @override
-  String get mapToolMove => 'เลื่อน';
-
-  @override
-  String get mapToolCreate => 'เพิ่มจุด';
-
-  @override
-  String get mapToolDelete => 'ลบจุด';
-
-  @override
   String get version => 'เวอร์ชัน 2.1.0';
+
+  @override
+  String get btnRename => 'เปลี่ยนชื่อ';
+
+  @override
+  String get btnPin => 'ปักหมุด';
+
+  @override
+  String get btnUnpin => 'เลิกปักหมุด';
+
+  @override
+  String get newNexusTitle => 'Nexus ใหม่';
+
+  @override
+  String get renameNexusTitle => 'เปลี่ยนชื่อ Nexus';
+
+  @override
+  String get newModuleTitle => 'โมดูลใหม่';
+
+  @override
+  String get renameModuleTitle => 'เปลี่ยนชื่อโมดูล';
+
+  @override
+  String get newModuleTooltip => 'โมดูลใหม่';
+
+  @override
+  String get newNexusTooltip => 'Nexus ใหม่';
+
+  @override
+  String get emptyNexusMessage => 'ยังไม่มี Nexus แตะ + เพื่อสร้าง';
+
+  @override
+  String get emptyModuleMessage => 'ว่างเปล่า แตะ + เพื่อเพิ่มโมดูล';
+
+  @override
+  String get deleteNexusMessage => 'การลบนี้จะลบโมดูลทั้งหมดที่อยู่ข้างในด้วย ไม่สามารถย้อนกลับได้';
+
+  @override
+  String get deleteModuleMessage => 'การลบนี้จะลบโมดูลที่ซ้อนอยู่ข้างในทั้งหมดด้วย ไม่สามารถย้อนกลับได้';
+
+  @override
+  String get labelKind => 'ประเภท';
+
+  @override
+  String get kindContentUnavailable => 'โมดูลประเภทนี้ยังรองรับไม่เต็มรูปแบบบนมือถือ — ใช้ช่องโน้ตร่วมด้านล่างแทน';
+
+  @override
+  String get notesHint => 'โน้ตสำหรับโมดูลนี้…';
+
+  @override
+  String get settingsAppearance => 'รูปลักษณ์';
+
+  @override
+  String get settingsData => 'ข้อมูล';
+
+  @override
+  String get settingsAbout => 'เกี่ยวกับ';
+
+  @override
+  String get exportDbTitle => 'ส่งออกฐานข้อมูล';
+
+  @override
+  String get exportDbSubtitle => 'แชร์ไฟล์ .db เพื่อย้ายข้อมูลไปยัง PC หรืออุปกรณ์อื่น';
+
+  @override
+  String get importDbTitle => 'นำเข้าฐานข้อมูล';
+
+  @override
+  String get importDbSubtitle => 'ผสานข้อมูลจากไฟล์ .db ของ DraconDex';
+
+  @override
+  String get checkUpdatesTitle => 'ตรวจสอบอัปเดต';
+
+  @override
+  String get checkUpdatesSubtitle => 'ตรวจสอบ GitHub Releases ของโปรเจกต์นี้ — ไม่ติดตั้งอัตโนมัติ';
+
+  @override
+  String get upToDateMessage => 'คุณใช้เวอร์ชันล่าสุดอยู่แล้ว';
+
+  @override
+  String get importingMessage => 'กำลังนำเข้า…';
+
+  @override
+  String get importCompleteMessage => 'นำเข้าเสร็จสมบูรณ์';
+
+  @override
+  String get importFailedMessage => 'นำเข้าล้มเหลว';
+
+  @override
+  String get exportFailedMessage => 'ส่งออกล้มเหลว';
+
+  @override
+  String get addColorTitle => 'เพิ่มสี';
+
+  @override
+  String get colorPaletteTitle => 'พาเลทสี';
+
+  @override
+  String get hashtagsTitle => 'แท็ก';
+
+  @override
+  String get editHashtagTitle => 'แก้ไขแท็ก';
+
+  @override
+  String get tagNameLabel => 'ชื่อแท็ก';
+
+  @override
+  String get removeColorConfirmTitle => 'ลบสีนี้หรือไม่?';
+
+  @override
+  String get deleteHashtagConfirmTitle => 'ลบแท็กนี้หรือไม่?';
 }

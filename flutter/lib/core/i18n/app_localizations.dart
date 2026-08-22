@@ -138,42 +138,6 @@ abstract class AppLocalizations {
   /// **'Novel Data Management'**
   String get nexusSubtitle;
 
-  /// No description provided for @moduleDirector.
-  ///
-  /// In en, this message translates to:
-  /// **'Director'**
-  String get moduleDirector;
-
-  /// No description provided for @moduleProjects.
-  ///
-  /// In en, this message translates to:
-  /// **'Projects'**
-  String get moduleProjects;
-
-  /// No description provided for @moduleTimeline.
-  ///
-  /// In en, this message translates to:
-  /// **'Timeline'**
-  String get moduleTimeline;
-
-  /// No description provided for @moduleRelations.
-  ///
-  /// In en, this message translates to:
-  /// **'Relations'**
-  String get moduleRelations;
-
-  /// No description provided for @moduleMap.
-  ///
-  /// In en, this message translates to:
-  /// **'Map'**
-  String get moduleMap;
-
-  /// No description provided for @moduleTags.
-  ///
-  /// In en, this message translates to:
-  /// **'Project Tags'**
-  String get moduleTags;
-
   /// No description provided for @moduleGlobalTags.
   ///
   /// In en, this message translates to:
@@ -252,12 +216,6 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get labelName;
 
-  /// No description provided for @labelCodename.
-  ///
-  /// In en, this message translates to:
-  /// **'Codename'**
-  String get labelCodename;
-
   /// No description provided for @labelMemo.
   ///
   /// In en, this message translates to:
@@ -276,36 +234,6 @@ abstract class AppLocalizations {
   /// **'Note'**
   String get labelNote;
 
-  /// No description provided for @labelFolder.
-  ///
-  /// In en, this message translates to:
-  /// **'Folder'**
-  String get labelFolder;
-
-  /// No description provided for @labelCategory.
-  ///
-  /// In en, this message translates to:
-  /// **'Category'**
-  String get labelCategory;
-
-  /// No description provided for @labelType.
-  ///
-  /// In en, this message translates to:
-  /// **'Type'**
-  String get labelType;
-
-  /// No description provided for @labelField.
-  ///
-  /// In en, this message translates to:
-  /// **'Field'**
-  String get labelField;
-
-  /// No description provided for @labelStory.
-  ///
-  /// In en, this message translates to:
-  /// **'Story'**
-  String get labelStory;
-
   /// No description provided for @labelTags.
   ///
   /// In en, this message translates to:
@@ -318,113 +246,11 @@ abstract class AppLocalizations {
   /// **'Search...'**
   String get labelSearch;
 
-  /// No description provided for @newFolder.
-  ///
-  /// In en, this message translates to:
-  /// **'New Folder'**
-  String get newFolder;
-
-  /// No description provided for @newProject.
-  ///
-  /// In en, this message translates to:
-  /// **'New Project'**
-  String get newProject;
-
-  /// No description provided for @newCategory.
-  ///
-  /// In en, this message translates to:
-  /// **'New Category'**
-  String get newCategory;
-
-  /// No description provided for @newObject.
-  ///
-  /// In en, this message translates to:
-  /// **'New Object'**
-  String get newObject;
-
-  /// No description provided for @newTimeline.
-  ///
-  /// In en, this message translates to:
-  /// **'New Timeline'**
-  String get newTimeline;
-
-  /// No description provided for @newEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'New Event'**
-  String get newEvent;
-
-  /// No description provided for @newMap.
-  ///
-  /// In en, this message translates to:
-  /// **'New Map'**
-  String get newMap;
-
-  /// No description provided for @newArea.
-  ///
-  /// In en, this message translates to:
-  /// **'New Area'**
-  String get newArea;
-
-  /// No description provided for @newRelation.
-  ///
-  /// In en, this message translates to:
-  /// **'New Relation'**
-  String get newRelation;
-
-  /// No description provided for @newRelationType.
-  ///
-  /// In en, this message translates to:
-  /// **'New Relation Type'**
-  String get newRelationType;
-
   /// No description provided for @newHashtag.
   ///
   /// In en, this message translates to:
   /// **'New Tag'**
   String get newHashtag;
-
-  /// No description provided for @noProjects.
-  ///
-  /// In en, this message translates to:
-  /// **'No projects yet. Create one to get started.'**
-  String get noProjects;
-
-  /// No description provided for @noObjects.
-  ///
-  /// In en, this message translates to:
-  /// **'No objects in this category.'**
-  String get noObjects;
-
-  /// No description provided for @noTimelines.
-  ///
-  /// In en, this message translates to:
-  /// **'No timelines yet.'**
-  String get noTimelines;
-
-  /// No description provided for @noEvents.
-  ///
-  /// In en, this message translates to:
-  /// **'No events on this timeline.'**
-  String get noEvents;
-
-  /// No description provided for @noMaps.
-  ///
-  /// In en, this message translates to:
-  /// **'No maps yet.'**
-  String get noMaps;
-
-  /// No description provided for @noAreas.
-  ///
-  /// In en, this message translates to:
-  /// **'No areas on this map.'**
-  String get noAreas;
-
-  /// No description provided for @noRelations.
-  ///
-  /// In en, this message translates to:
-  /// **'No relations yet.'**
-  String get noRelations;
 
   /// No description provided for @noTags.
   ///
@@ -461,30 +287,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Color is in use and cannot be deleted.'**
   String get colorInUse;
-
-  /// No description provided for @searchHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Search projects, objects, tags...'**
-  String get searchHint;
-
-  /// No description provided for @searchProjects.
-  ///
-  /// In en, this message translates to:
-  /// **'Projects'**
-  String get searchProjects;
-
-  /// No description provided for @searchObjects.
-  ///
-  /// In en, this message translates to:
-  /// **'Objects'**
-  String get searchObjects;
-
-  /// No description provided for @searchTags.
-  ///
-  /// In en, this message translates to:
-  /// **'Tags'**
-  String get searchTags;
 
   /// No description provided for @themeLabel.
   ///
@@ -540,72 +342,6 @@ abstract class AppLocalizations {
   /// **'Database exported.'**
   String get exportSuccess;
 
-  /// No description provided for @relOBOB.
-  ///
-  /// In en, this message translates to:
-  /// **'Object ↔ Object'**
-  String get relOBOB;
-
-  /// No description provided for @relOBTL.
-  ///
-  /// In en, this message translates to:
-  /// **'Object ↔ Event'**
-  String get relOBTL;
-
-  /// No description provided for @relTLTL.
-  ///
-  /// In en, this message translates to:
-  /// **'Event ↔ Event'**
-  String get relTLTL;
-
-  /// No description provided for @startDate.
-  ///
-  /// In en, this message translates to:
-  /// **'Start Date'**
-  String get startDate;
-
-  /// No description provided for @endDate.
-  ///
-  /// In en, this message translates to:
-  /// **'End Date'**
-  String get endDate;
-
-  /// No description provided for @year.
-  ///
-  /// In en, this message translates to:
-  /// **'Year'**
-  String get year;
-
-  /// No description provided for @month.
-  ///
-  /// In en, this message translates to:
-  /// **'Month'**
-  String get month;
-
-  /// No description provided for @day.
-  ///
-  /// In en, this message translates to:
-  /// **'Day'**
-  String get day;
-
-  /// No description provided for @hour.
-  ///
-  /// In en, this message translates to:
-  /// **'Hour'**
-  String get hour;
-
-  /// No description provided for @minute.
-  ///
-  /// In en, this message translates to:
-  /// **'Minute'**
-  String get minute;
-
-  /// No description provided for @unfiledProjects.
-  ///
-  /// In en, this message translates to:
-  /// **'Unfiled'**
-  String get unfiledProjects;
-
   /// No description provided for @selectColor.
   ///
   /// In en, this message translates to:
@@ -618,89 +354,233 @@ abstract class AppLocalizations {
   /// **'Recent'**
   String get recentColors;
 
-  /// No description provided for @listView.
-  ///
-  /// In en, this message translates to:
-  /// **'List View'**
-  String get listView;
-
-  /// No description provided for @tableView.
-  ///
-  /// In en, this message translates to:
-  /// **'Table View'**
-  String get tableView;
-
-  /// No description provided for @fields.
-  ///
-  /// In en, this message translates to:
-  /// **'Fields'**
-  String get fields;
-
-  /// No description provided for @fromObj.
-  ///
-  /// In en, this message translates to:
-  /// **'From'**
-  String get fromObj;
-
-  /// No description provided for @toObj.
-  ///
-  /// In en, this message translates to:
-  /// **'To'**
-  String get toObj;
-
-  /// No description provided for @relationTypeName.
-  ///
-  /// In en, this message translates to:
-  /// **'Relation Type'**
-  String get relationTypeName;
-
-  /// No description provided for @addField.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Field'**
-  String get addField;
-
-  /// No description provided for @objectNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Notes'**
-  String get objectNote;
-
-  /// No description provided for @eventStory.
-  ///
-  /// In en, this message translates to:
-  /// **'Story'**
-  String get eventStory;
-
-  /// No description provided for @mapTool.
-  ///
-  /// In en, this message translates to:
-  /// **'Tool'**
-  String get mapTool;
-
-  /// No description provided for @mapToolMove.
-  ///
-  /// In en, this message translates to:
-  /// **'Move'**
-  String get mapToolMove;
-
-  /// No description provided for @mapToolCreate.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Point'**
-  String get mapToolCreate;
-
-  /// No description provided for @mapToolDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Point'**
-  String get mapToolDelete;
-
   /// No description provided for @version.
   ///
   /// In en, this message translates to:
   /// **'Version 2.1.0'**
   String get version;
+
+  /// No description provided for @btnRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get btnRename;
+
+  /// No description provided for @btnPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get btnPin;
+
+  /// No description provided for @btnUnpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get btnUnpin;
+
+  /// No description provided for @newNexusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Nexus'**
+  String get newNexusTitle;
+
+  /// No description provided for @renameNexusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Nexus'**
+  String get renameNexusTitle;
+
+  /// No description provided for @newModuleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Module'**
+  String get newModuleTitle;
+
+  /// No description provided for @renameModuleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Module'**
+  String get renameModuleTitle;
+
+  /// No description provided for @newModuleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'New Module'**
+  String get newModuleTooltip;
+
+  /// No description provided for @newNexusTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'New Nexus'**
+  String get newNexusTooltip;
+
+  /// No description provided for @emptyNexusMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No Nexus yet. Tap + to create one.'**
+  String get emptyNexusMessage;
+
+  /// No description provided for @emptyModuleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty. Tap + to add a module.'**
+  String get emptyModuleMessage;
+
+  /// No description provided for @deleteNexusMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes every module inside it. This action cannot be undone.'**
+  String get deleteNexusMessage;
+
+  /// No description provided for @deleteModuleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes every module nested inside it too. This action cannot be undone.'**
+  String get deleteModuleMessage;
+
+  /// No description provided for @labelKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get labelKind;
+
+  /// No description provided for @kindContentUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This module kind isn't fully supported on mobile yet — using the shared notes field below.'**
+  String get kindContentUnavailable;
+
+  /// No description provided for @notesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes for this module…'**
+  String get notesHint;
+
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// No description provided for @settingsData.
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get settingsData;
+
+  /// No description provided for @settingsAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsAbout;
+
+  /// No description provided for @exportDbTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Database'**
+  String get exportDbTitle;
+
+  /// No description provided for @exportDbSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the .db file to transfer data to PC or another device'**
+  String get exportDbSubtitle;
+
+  /// No description provided for @importDbTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Database'**
+  String get importDbTitle;
+
+  /// No description provided for @importDbSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge data from a DraconDex .db file'**
+  String get importDbSubtitle;
+
+  /// No description provided for @checkUpdatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for Updates'**
+  String get checkUpdatesTitle;
+
+  /// No description provided for @checkUpdatesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks at this project's GitHub Releases — never installs automatically'**
+  String get checkUpdatesSubtitle;
+
+  /// No description provided for @upToDateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You're on the latest version.'**
+  String get upToDateMessage;
+
+  /// No description provided for @importingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing…'**
+  String get importingMessage;
+
+  /// No description provided for @importCompleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Import complete.'**
+  String get importCompleteMessage;
+
+  /// No description provided for @importFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed.'**
+  String get importFailedMessage;
+
+  /// No description provided for @exportFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed.'**
+  String get exportFailedMessage;
+
+  /// No description provided for @addColorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Color'**
+  String get addColorTitle;
+
+  /// No description provided for @colorPaletteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Color Palette'**
+  String get colorPaletteTitle;
+
+  /// No description provided for @hashtagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hashtags'**
+  String get hashtagsTitle;
+
+  /// No description provided for @editHashtagTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Hashtag'**
+  String get editHashtagTitle;
+
+  /// No description provided for @tagNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag Name'**
+  String get tagNameLabel;
+
+  /// No description provided for @removeColorConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove color?'**
+  String get removeColorConfirmTitle;
+
+  /// No description provided for @deleteHashtagConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete hashtag?'**
+  String get deleteHashtagConfirmTitle;
 }
 
 class _AppLocalizationsDelegate

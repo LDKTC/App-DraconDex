@@ -18,24 +18,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get nexusSubtitle => 'Quản Lý Dữ Liệu Tiểu Thuyết';
 
   @override
-  String get moduleDirector => 'Đạo Diễn';
-
-  @override
-  String get moduleProjects => 'Dự Án';
-
-  @override
-  String get moduleTimeline => 'Dòng Thời Gian';
-
-  @override
-  String get moduleRelations => 'Quan Hệ';
-
-  @override
-  String get moduleMap => 'Bản Đồ';
-
-  @override
-  String get moduleTags => 'Thẻ Dự Án';
-
-  @override
   String get moduleGlobalTags => 'Thẻ';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get labelName => 'Tên';
 
   @override
-  String get labelCodename => 'Tên Mã';
-
-  @override
   String get labelMemo => 'Ghi Chú';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get labelNote => 'Ghi Chú';
 
   @override
-  String get labelFolder => 'Thư Mục';
-
-  @override
-  String get labelCategory => 'Danh Mục';
-
-  @override
-  String get labelType => 'Loại';
-
-  @override
-  String get labelField => 'Trường';
-
-  @override
-  String get labelStory => 'Câu Chuyện';
-
-  @override
   String get labelTags => 'Thẻ';
 
   @override
   String get labelSearch => 'Tìm kiếm...';
 
   @override
-  String get newFolder => 'Thư Mục Mới';
-
-  @override
-  String get newProject => 'Dự Án Mới';
-
-  @override
-  String get newCategory => 'Danh Mục Mới';
-
-  @override
-  String get newObject => 'Đối Tượng Mới';
-
-  @override
-  String get newTimeline => 'Dòng Thời Gian Mới';
-
-  @override
-  String get newEvent => 'Sự Kiện Mới';
-
-  @override
-  String get newMap => 'Bản Đồ Mới';
-
-  @override
-  String get newArea => 'Khu Vực Mới';
-
-  @override
-  String get newRelation => 'Quan Hệ Mới';
-
-  @override
-  String get newRelationType => 'Loại Quan Hệ Mới';
-
-  @override
   String get newHashtag => 'Thẻ Mới';
-
-  @override
-  String get noProjects => 'Chưa có dự án nào. Tạo một dự án để bắt đầu.';
-
-  @override
-  String get noObjects => 'Không có đối tượng nào trong danh mục này.';
-
-  @override
-  String get noTimelines => 'Chưa có dòng thời gian nào.';
-
-  @override
-  String get noEvents => 'Không có sự kiện nào trên dòng thời gian này.';
-
-  @override
-  String get noMaps => 'Chưa có bản đồ nào.';
-
-  @override
-  String get noAreas => 'Không có khu vực nào trên bản đồ này.';
-
-  @override
-  String get noRelations => 'Chưa có quan hệ nào.';
 
   @override
   String get noTags => 'Chưa có thẻ nào.';
@@ -178,18 +91,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get colorInUse => 'Màu đang được sử dụng và không thể xóa.';
-
-  @override
-  String get searchHint => 'Tìm kiếm dự án, đối tượng, thẻ...';
-
-  @override
-  String get searchProjects => 'Dự Án';
-
-  @override
-  String get searchObjects => 'Đối Tượng';
-
-  @override
-  String get searchTags => 'Thẻ';
 
   @override
   String get themeLabel => 'Giao Diện';
@@ -219,83 +120,122 @@ class AppLocalizationsVi extends AppLocalizations {
   String get exportSuccess => 'Đã xuất cơ sở dữ liệu.';
 
   @override
-  String get relOBOB => 'Đối Tượng ↔ Đối Tượng';
-
-  @override
-  String get relOBTL => 'Đối Tượng ↔ Sự Kiện';
-
-  @override
-  String get relTLTL => 'Sự Kiện ↔ Sự Kiện';
-
-  @override
-  String get startDate => 'Ngày Bắt Đầu';
-
-  @override
-  String get endDate => 'Ngày Kết Thúc';
-
-  @override
-  String get year => 'Năm';
-
-  @override
-  String get month => 'Tháng';
-
-  @override
-  String get day => 'Ngày';
-
-  @override
-  String get hour => 'Giờ';
-
-  @override
-  String get minute => 'Phút';
-
-  @override
-  String get unfiledProjects => 'Chưa Phân Loại';
-
-  @override
   String get selectColor => 'Chọn Màu';
 
   @override
   String get recentColors => 'Gần Đây';
 
   @override
-  String get listView => 'Xem Dạng Danh Sách';
-
-  @override
-  String get tableView => 'Xem Dạng Bảng';
-
-  @override
-  String get fields => 'Trường';
-
-  @override
-  String get fromObj => 'Từ';
-
-  @override
-  String get toObj => 'Đến';
-
-  @override
-  String get relationTypeName => 'Loại Quan Hệ';
-
-  @override
-  String get addField => 'Thêm Trường';
-
-  @override
-  String get objectNote => 'Ghi Chú';
-
-  @override
-  String get eventStory => 'Câu Chuyện';
-
-  @override
-  String get mapTool => 'Công Cụ';
-
-  @override
-  String get mapToolMove => 'Di Chuyển';
-
-  @override
-  String get mapToolCreate => 'Thêm Điểm';
-
-  @override
-  String get mapToolDelete => 'Xóa Điểm';
-
-  @override
   String get version => 'Phiên bản 2.1.0';
+
+  @override
+  String get btnRename => 'Đổi tên';
+
+  @override
+  String get btnPin => 'Ghim';
+
+  @override
+  String get btnUnpin => 'Bỏ ghim';
+
+  @override
+  String get newNexusTitle => 'Nexus mới';
+
+  @override
+  String get renameNexusTitle => 'Đổi tên Nexus';
+
+  @override
+  String get newModuleTitle => 'Mô-đun mới';
+
+  @override
+  String get renameModuleTitle => 'Đổi tên Mô-đun';
+
+  @override
+  String get newModuleTooltip => 'Mô-đun mới';
+
+  @override
+  String get newNexusTooltip => 'Nexus mới';
+
+  @override
+  String get emptyNexusMessage => 'Chưa có Nexus nào. Nhấn + để tạo.';
+
+  @override
+  String get emptyModuleMessage => 'Trống. Nhấn + để thêm mô-đun.';
+
+  @override
+  String get deleteNexusMessage => 'Thao tác này sẽ xóa mọi mô-đun bên trong. Không thể hoàn tác.';
+
+  @override
+  String get deleteModuleMessage => 'Thao tác này cũng sẽ xóa mọi mô-đun lồng bên trong. Không thể hoàn tác.';
+
+  @override
+  String get labelKind => 'Loại';
+
+  @override
+  String get kindContentUnavailable => 'Loại mô-đun này chưa được hỗ trợ đầy đủ trên di động — dùng ô ghi chú chung bên dưới.';
+
+  @override
+  String get notesHint => 'Ghi chú cho mô-đun này…';
+
+  @override
+  String get settingsAppearance => 'Giao diện';
+
+  @override
+  String get settingsData => 'Dữ liệu';
+
+  @override
+  String get settingsAbout => 'Giới thiệu';
+
+  @override
+  String get exportDbTitle => 'Xuất Cơ sở Dữ liệu';
+
+  @override
+  String get exportDbSubtitle => 'Chia sẻ tệp .db để chuyển dữ liệu sang PC hoặc thiết bị khác';
+
+  @override
+  String get importDbTitle => 'Nhập Cơ sở Dữ liệu';
+
+  @override
+  String get importDbSubtitle => 'Hợp nhất dữ liệu từ tệp .db của DraconDex';
+
+  @override
+  String get checkUpdatesTitle => 'Kiểm tra Cập nhật';
+
+  @override
+  String get checkUpdatesSubtitle => 'Kiểm tra GitHub Releases của dự án này — không bao giờ tự động cài đặt';
+
+  @override
+  String get upToDateMessage => 'Bạn đang dùng phiên bản mới nhất.';
+
+  @override
+  String get importingMessage => 'Đang nhập…';
+
+  @override
+  String get importCompleteMessage => 'Nhập hoàn tất.';
+
+  @override
+  String get importFailedMessage => 'Nhập thất bại.';
+
+  @override
+  String get exportFailedMessage => 'Xuất thất bại.';
+
+  @override
+  String get addColorTitle => 'Thêm màu';
+
+  @override
+  String get colorPaletteTitle => 'Bảng màu';
+
+  @override
+  String get hashtagsTitle => 'Thẻ';
+
+  @override
+  String get editHashtagTitle => 'Sửa Thẻ';
+
+  @override
+  String get tagNameLabel => 'Tên thẻ';
+
+  @override
+  String get removeColorConfirmTitle => 'Xóa màu này?';
+
+  @override
+  String get deleteHashtagConfirmTitle => 'Xóa thẻ này?';
 }

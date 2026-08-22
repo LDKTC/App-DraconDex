@@ -18,24 +18,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get nexusSubtitle => '小説データ管理';
 
   @override
-  String get moduleDirector => 'Director';
-
-  @override
-  String get moduleProjects => 'プロジェクト';
-
-  @override
-  String get moduleTimeline => 'タイムライン';
-
-  @override
-  String get moduleRelations => '関係';
-
-  @override
-  String get moduleMap => 'マップ';
-
-  @override
-  String get moduleTags => 'プロジェクトタグ';
-
-  @override
   String get moduleGlobalTags => 'タグ';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get labelName => '名前';
 
   @override
-  String get labelCodename => 'コードネーム';
-
-  @override
   String get labelMemo => 'メモ';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get labelNote => 'ノート';
 
   @override
-  String get labelFolder => 'フォルダー';
-
-  @override
-  String get labelCategory => 'カテゴリ';
-
-  @override
-  String get labelType => 'タイプ';
-
-  @override
-  String get labelField => 'フィールド';
-
-  @override
-  String get labelStory => 'ストーリー';
-
-  @override
   String get labelTags => 'タグ';
 
   @override
   String get labelSearch => '検索...';
 
   @override
-  String get newFolder => '新しいフォルダー';
-
-  @override
-  String get newProject => '新しいプロジェクト';
-
-  @override
-  String get newCategory => '新しいカテゴリ';
-
-  @override
-  String get newObject => '新しいキャラクター';
-
-  @override
-  String get newTimeline => '新しいタイムライン';
-
-  @override
-  String get newEvent => '新しいイベント';
-
-  @override
-  String get newMap => '新しいマップ';
-
-  @override
-  String get newArea => '新しいエリア';
-
-  @override
-  String get newRelation => '新しい関係';
-
-  @override
-  String get newRelationType => '新しい関係タイプ';
-
-  @override
   String get newHashtag => '新しいタグ';
-
-  @override
-  String get noProjects => 'プロジェクトがありません。作成してください。';
-
-  @override
-  String get noObjects => 'このカテゴリにキャラクターがいません。';
-
-  @override
-  String get noTimelines => 'タイムラインがありません。';
-
-  @override
-  String get noEvents => 'このタイムラインにイベントがありません。';
-
-  @override
-  String get noMaps => 'マップがありません。';
-
-  @override
-  String get noAreas => 'このマップにエリアがありません。';
-
-  @override
-  String get noRelations => '関係がありません。';
 
   @override
   String get noTags => 'タグがありません。';
@@ -178,18 +91,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get colorInUse => 'このカラーは使用中のため削除できません。';
-
-  @override
-  String get searchHint => 'プロジェクト、キャラクター、タグを検索...';
-
-  @override
-  String get searchProjects => 'プロジェクト';
-
-  @override
-  String get searchObjects => 'キャラクター';
-
-  @override
-  String get searchTags => 'タグ';
 
   @override
   String get themeLabel => 'テーマ';
@@ -219,83 +120,122 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exportSuccess => 'データベースをエクスポートしました。';
 
   @override
-  String get relOBOB => 'キャラクター ↔ キャラクター';
-
-  @override
-  String get relOBTL => 'キャラクター ↔ イベント';
-
-  @override
-  String get relTLTL => 'イベント ↔ イベント';
-
-  @override
-  String get startDate => '開始日';
-
-  @override
-  String get endDate => '終了日';
-
-  @override
-  String get year => '年';
-
-  @override
-  String get month => '月';
-
-  @override
-  String get day => '日';
-
-  @override
-  String get hour => '時間';
-
-  @override
-  String get minute => '分';
-
-  @override
-  String get unfiledProjects => '未分類';
-
-  @override
   String get selectColor => 'カラーを選択';
 
   @override
   String get recentColors => '最近使用';
 
   @override
-  String get listView => 'リスト表示';
-
-  @override
-  String get tableView => 'テーブル表示';
-
-  @override
-  String get fields => 'フィールド';
-
-  @override
-  String get fromObj => 'から';
-
-  @override
-  String get toObj => 'へ';
-
-  @override
-  String get relationTypeName => '関係タイプ';
-
-  @override
-  String get addField => 'フィールドを追加';
-
-  @override
-  String get objectNote => 'ノート';
-
-  @override
-  String get eventStory => 'ストーリー';
-
-  @override
-  String get mapTool => 'ツール';
-
-  @override
-  String get mapToolMove => '移動';
-
-  @override
-  String get mapToolCreate => 'ポイント追加';
-
-  @override
-  String get mapToolDelete => 'ポイント削除';
-
-  @override
   String get version => 'バージョン 2.1.0';
+
+  @override
+  String get btnRename => '名前を変更';
+
+  @override
+  String get btnPin => 'ピン留め';
+
+  @override
+  String get btnUnpin => 'ピン留め解除';
+
+  @override
+  String get newNexusTitle => '新しいNexus';
+
+  @override
+  String get renameNexusTitle => 'Nexus名を変更';
+
+  @override
+  String get newModuleTitle => '新しいモジュール';
+
+  @override
+  String get renameModuleTitle => 'モジュール名を変更';
+
+  @override
+  String get newModuleTooltip => '新しいモジュール';
+
+  @override
+  String get newNexusTooltip => '新しいNexus';
+
+  @override
+  String get emptyNexusMessage => 'まだNexusがありません。+をタップして作成しましょう。';
+
+  @override
+  String get emptyModuleMessage => '空です。+をタップしてモジュールを追加してください。';
+
+  @override
+  String get deleteNexusMessage => '内部のすべてのモジュールも削除されます。この操作は取り消せません。';
+
+  @override
+  String get deleteModuleMessage => 'その中に入れ子になっているモジュールもすべて削除されます。この操作は取り消せません。';
+
+  @override
+  String get labelKind => '種類';
+
+  @override
+  String get kindContentUnavailable => 'このモジュール種類はモバイルではまだ完全に対応していません — 下の共有メモ欄を使用します。';
+
+  @override
+  String get notesHint => 'このモジュールのメモ…';
+
+  @override
+  String get settingsAppearance => '外観';
+
+  @override
+  String get settingsData => 'データ';
+
+  @override
+  String get settingsAbout => '情報';
+
+  @override
+  String get exportDbTitle => 'データベースをエクスポート';
+
+  @override
+  String get exportDbSubtitle => '.dbファイルを共有してPCや他の端末にデータを移動します';
+
+  @override
+  String get importDbTitle => 'データベースをインポート';
+
+  @override
+  String get importDbSubtitle => 'DraconDexの.dbファイルからデータを統合します';
+
+  @override
+  String get checkUpdatesTitle => 'アップデートを確認';
+
+  @override
+  String get checkUpdatesSubtitle => 'このプロジェクトのGitHub Releasesを確認します — 自動的にインストールされることはありません';
+
+  @override
+  String get upToDateMessage => '最新バージョンです。';
+
+  @override
+  String get importingMessage => 'インポート中…';
+
+  @override
+  String get importCompleteMessage => 'インポートが完了しました。';
+
+  @override
+  String get importFailedMessage => 'インポートに失敗しました。';
+
+  @override
+  String get exportFailedMessage => 'エクスポートに失敗しました。';
+
+  @override
+  String get addColorTitle => '色を追加';
+
+  @override
+  String get colorPaletteTitle => 'カラーパレット';
+
+  @override
+  String get hashtagsTitle => 'タグ';
+
+  @override
+  String get editHashtagTitle => 'タグを編集';
+
+  @override
+  String get tagNameLabel => 'タグ名';
+
+  @override
+  String get removeColorConfirmTitle => 'この色を削除しますか?';
+
+  @override
+  String get deleteHashtagConfirmTitle => 'このタグを削除しますか?';
 }

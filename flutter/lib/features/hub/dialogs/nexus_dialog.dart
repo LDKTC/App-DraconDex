@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/i18n/app_localizations.dart';
 import '../../../data/models/module_model.dart';
 import '../../../providers/db_providers.dart';
 
@@ -31,20 +32,21 @@ class _NexusDialogState extends ConsumerState<NexusDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(widget.existing == null ? 'New Nexus' : 'Rename Nexus'),
+      title: Text(widget.existing == null ? l10n.newNexusTitle : l10n.renameNexusTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(controller: _name, autofocus: true, decoration: const InputDecoration(labelText: 'Name *')),
+          TextField(controller: _name, autofocus: true, decoration: InputDecoration(labelText: '${l10n.labelName} *')),
           const SizedBox(height: 12),
-          TextField(controller: _memo, decoration: const InputDecoration(labelText: 'Memo'), maxLines: 2),
+          TextField(controller: _memo, decoration: InputDecoration(labelText: l10n.labelMemo), maxLines: 2),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: _save, child: const Text('Save')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.btnCancel)),
+        FilledButton(onPressed: _save, child: Text(l10n.btnSave)),
       ],
     );
   }

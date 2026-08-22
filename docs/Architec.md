@@ -285,23 +285,34 @@ progress ต่างกัน) โครงสร้างตาม `lib/featur
 lib/
 ├─ core/           — database, i18n, providers (Riverpod), router, theme
 ├─ data/           — dao, models, services (data layer กลาง)
-├─ providers/       — color/hashtag/project/world providers
+├─ providers/       — color/hashtag/module providers
 ├─ widgets/         — คอมโพเนนต์ใช้ร่วม (color picker, hashtag chip, confirm dialog)
 └─ features/
-   ├─ nexus/        — vault picker/home (เทียบเท่า Nexus ฝั่ง Electron)
-   ├─ director/      — โมดูล Director
-   ├─ navigator/     — โมดูล Navigator (World)
+   ├─ hub/          — Nexus list (home) + Module Explorer (drill-down, เทียบเท่า
+   │                  Hub/nest tree ฝั่ง Electron)
    ├─ colors/        — จัดการสี
    ├─ tags/          — จัดการแท็ก
-   ├─ search/        — ค้นหา global
-   └─ settings/      — ตั้งค่า (ธีม/ภาษา)
+   ├─ settings/      — ตั้งค่า (ธีม/ภาษา)
+   └─ update/        — เช็คอัปเดตจาก GitHub Releases
 ```
 
-โมดูล Hero, Writer, Scribe, Sage, Artisan, Wikilink/Backlinks, IDE shell —
-**ยังไม่มีในฝั่ง Flutter** และ **v3 module system (Nest/Hub/Builder/kind
-ทั้ง 15) ก็ยังไม่มีในฝั่ง Flutter เช่นกัน** ณ วันที่เขียนเอกสารนี้ — ฝั่ง
-Flutter ไม่มีตาราง `module` เลย (`procress.md` บันทึกไว้ว่าเป็นช่องว่างเดิม
-ที่ยังไม่ต้องแก้)
+Flutter **มีระบบ v3 Hub/Nexus-nest tree แล้ว** (ตาราง `nexus`/`module` ใน
+`core/database/database_schema.dart` ตรงกับ Electron's ddl.js คอลัมน์ต่อคอลัมน์
+รวมทั้ง `module_attribute`/`module_ui`/`module_hashtag`) — ต่างจาก Electron
+ตรงที่ยังเป็น DB ไฟล์เดียว เก็บ Nexus แต่ละอันเป็นแถวเดียวในตารางเดียวกัน
+(ไม่ได้แยกเป็น `.ddx` ต่อ Nexus แบบ vault split ของ Electron ดู `docs/VAULTS.md`)
+หน้า `ModuleExplorerScreen` เป็น drill-down แบบ phone file-manager รองรับ
+kind แล้ว 4 จาก 15 (collector/manager/inspector/drafter) — kind ที่เหลือ
+ตกไปใช้ช่อง notes กลางแทน (ดู `contentImplemented` ใน
+`data/models/module_model.dart`)
+
+โมดูลเดิม Director/Navigator/World (legacy project-management screens) —
+**ถูกถอดออกจาก UI ของ Flutter หมดแล้ว** ตาราง SQL ของมัน (`project`,
+`object`, `timeline`, `map_area`, `relation`, `world`, ฯลฯ) ยังอยู่ใน schema
+เพื่อไม่ให้ข้อมูลเก่า/การ import DB จาก Flutter build เก่ากว่าเสียหาย
+แต่ไม่มีส่วนไหนของแอปอ่านหรือเขียนตารางเหล่านี้อีกแล้ว โมดูล Hero, Writer,
+Scribe, Sage, Artisan, Wikilink/Backlinks, IDE shell — ยังไม่มีในฝั่ง Flutter
+เช่นเดิม
 
 ---
 

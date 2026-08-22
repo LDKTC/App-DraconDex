@@ -18,24 +18,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get nexusSubtitle => 'Gestión de Datos de Novelas';
 
   @override
-  String get moduleDirector => 'Director';
-
-  @override
-  String get moduleProjects => 'Proyectos';
-
-  @override
-  String get moduleTimeline => 'Cronología';
-
-  @override
-  String get moduleRelations => 'Relaciones';
-
-  @override
-  String get moduleMap => 'Mapa';
-
-  @override
-  String get moduleTags => 'Etiquetas del Proyecto';
-
-  @override
   String get moduleGlobalTags => 'Etiquetas';
 
   @override
@@ -75,9 +57,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get labelName => 'Nombre';
 
   @override
-  String get labelCodename => 'Nombre en Clave';
-
-  @override
   String get labelMemo => 'Nota';
 
   @override
@@ -87,79 +66,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get labelNote => 'Nota';
 
   @override
-  String get labelFolder => 'Carpeta';
-
-  @override
-  String get labelCategory => 'Categoría';
-
-  @override
-  String get labelType => 'Tipo';
-
-  @override
-  String get labelField => 'Campo';
-
-  @override
-  String get labelStory => 'Historia';
-
-  @override
   String get labelTags => 'Etiquetas';
 
   @override
   String get labelSearch => 'Buscar...';
 
   @override
-  String get newFolder => 'Nueva Carpeta';
-
-  @override
-  String get newProject => 'Nuevo Proyecto';
-
-  @override
-  String get newCategory => 'Nueva Categoría';
-
-  @override
-  String get newObject => 'Nuevo Objeto';
-
-  @override
-  String get newTimeline => 'Nueva Cronología';
-
-  @override
-  String get newEvent => 'Nuevo Evento';
-
-  @override
-  String get newMap => 'Nuevo Mapa';
-
-  @override
-  String get newArea => 'Nueva Área';
-
-  @override
-  String get newRelation => 'Nueva Relación';
-
-  @override
-  String get newRelationType => 'Nuevo Tipo de Relación';
-
-  @override
   String get newHashtag => 'Nueva Etiqueta';
-
-  @override
-  String get noProjects => 'Aún no hay proyectos. Crea uno para empezar.';
-
-  @override
-  String get noObjects => 'No hay objetos en esta categoría.';
-
-  @override
-  String get noTimelines => 'Aún no hay cronologías.';
-
-  @override
-  String get noEvents => 'No hay eventos en esta cronología.';
-
-  @override
-  String get noMaps => 'Aún no hay mapas.';
-
-  @override
-  String get noAreas => 'No hay áreas en este mapa.';
-
-  @override
-  String get noRelations => 'Aún no hay relaciones.';
 
   @override
   String get noTags => 'Aún no hay etiquetas.';
@@ -178,18 +91,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get colorInUse => 'El color está en uso y no se puede eliminar.';
-
-  @override
-  String get searchHint => 'Buscar proyectos, objetos, etiquetas...';
-
-  @override
-  String get searchProjects => 'Proyectos';
-
-  @override
-  String get searchObjects => 'Objetos';
-
-  @override
-  String get searchTags => 'Etiquetas';
 
   @override
   String get themeLabel => 'Tema';
@@ -219,83 +120,122 @@ class AppLocalizationsEs extends AppLocalizations {
   String get exportSuccess => 'Base de datos exportada.';
 
   @override
-  String get relOBOB => 'Objeto ↔ Objeto';
-
-  @override
-  String get relOBTL => 'Objeto ↔ Evento';
-
-  @override
-  String get relTLTL => 'Evento ↔ Evento';
-
-  @override
-  String get startDate => 'Fecha de Inicio';
-
-  @override
-  String get endDate => 'Fecha de Fin';
-
-  @override
-  String get year => 'Año';
-
-  @override
-  String get month => 'Mes';
-
-  @override
-  String get day => 'Día';
-
-  @override
-  String get hour => 'Hora';
-
-  @override
-  String get minute => 'Minuto';
-
-  @override
-  String get unfiledProjects => 'Sin Clasificar';
-
-  @override
   String get selectColor => 'Seleccionar Color';
 
   @override
   String get recentColors => 'Recientes';
 
   @override
-  String get listView => 'Vista de Lista';
-
-  @override
-  String get tableView => 'Vista de Tabla';
-
-  @override
-  String get fields => 'Campos';
-
-  @override
-  String get fromObj => 'Desde';
-
-  @override
-  String get toObj => 'Hasta';
-
-  @override
-  String get relationTypeName => 'Tipo de Relación';
-
-  @override
-  String get addField => 'Añadir Campo';
-
-  @override
-  String get objectNote => 'Notas';
-
-  @override
-  String get eventStory => 'Historia';
-
-  @override
-  String get mapTool => 'Herramienta';
-
-  @override
-  String get mapToolMove => 'Mover';
-
-  @override
-  String get mapToolCreate => 'Añadir Punto';
-
-  @override
-  String get mapToolDelete => 'Eliminar Punto';
-
-  @override
   String get version => 'Versión 2.1.0';
+
+  @override
+  String get btnRename => 'Renombrar';
+
+  @override
+  String get btnPin => 'Fijar';
+
+  @override
+  String get btnUnpin => 'Desfijar';
+
+  @override
+  String get newNexusTitle => 'Nuevo Nexus';
+
+  @override
+  String get renameNexusTitle => 'Renombrar Nexus';
+
+  @override
+  String get newModuleTitle => 'Nuevo Módulo';
+
+  @override
+  String get renameModuleTitle => 'Renombrar Módulo';
+
+  @override
+  String get newModuleTooltip => 'Nuevo Módulo';
+
+  @override
+  String get newNexusTooltip => 'Nuevo Nexus';
+
+  @override
+  String get emptyNexusMessage => 'Todavía no hay ningún Nexus. Toca + para crear uno.';
+
+  @override
+  String get emptyModuleMessage => 'Vacío. Toca + para añadir un módulo.';
+
+  @override
+  String get deleteNexusMessage => 'Esto elimina todos los módulos que contiene. Esta acción no se puede deshacer.';
+
+  @override
+  String get deleteModuleMessage => 'Esto también elimina todos los módulos anidados dentro. Esta acción no se puede deshacer.';
+
+  @override
+  String get labelKind => 'Tipo';
+
+  @override
+  String get kindContentUnavailable => 'Este tipo de módulo aún no es totalmente compatible en móvil — se usa el campo de notas compartido de abajo.';
+
+  @override
+  String get notesHint => 'Notas para este módulo…';
+
+  @override
+  String get settingsAppearance => 'Apariencia';
+
+  @override
+  String get settingsData => 'Datos';
+
+  @override
+  String get settingsAbout => 'Acerca de';
+
+  @override
+  String get exportDbTitle => 'Exportar base de datos';
+
+  @override
+  String get exportDbSubtitle => 'Comparte el archivo .db para transferir datos a un PC u otro dispositivo';
+
+  @override
+  String get importDbTitle => 'Importar base de datos';
+
+  @override
+  String get importDbSubtitle => 'Combina datos desde un archivo .db de DraconDex';
+
+  @override
+  String get checkUpdatesTitle => 'Buscar actualizaciones';
+
+  @override
+  String get checkUpdatesSubtitle => 'Consulta los GitHub Releases de este proyecto — nunca instala automáticamente';
+
+  @override
+  String get upToDateMessage => 'Ya tienes la última versión.';
+
+  @override
+  String get importingMessage => 'Importando…';
+
+  @override
+  String get importCompleteMessage => 'Importación completa.';
+
+  @override
+  String get importFailedMessage => 'Error al importar.';
+
+  @override
+  String get exportFailedMessage => 'Error al exportar.';
+
+  @override
+  String get addColorTitle => 'Añadir color';
+
+  @override
+  String get colorPaletteTitle => 'Paleta de colores';
+
+  @override
+  String get hashtagsTitle => 'Etiquetas';
+
+  @override
+  String get editHashtagTitle => 'Editar Etiqueta';
+
+  @override
+  String get tagNameLabel => 'Nombre de la Etiqueta';
+
+  @override
+  String get removeColorConfirmTitle => '¿Eliminar color?';
+
+  @override
+  String get deleteHashtagConfirmTitle => '¿Eliminar etiqueta?';
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/i18n/app_localizations.dart';
 import '../../data/models/hashtag_model.dart';
 import '../../data/models/color_model.dart';
 import '../../providers/db_providers.dart';
@@ -14,8 +15,9 @@ class TagsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tagsAsync = ref.watch(hashtagsProvider);
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Hashtags')),
+      appBar: AppBar(title: Text(l10n.hashtagsTitle)),
       floatingActionButton: FloatingActionButton(
         onPressed: () => showDialog(context: context, builder: (_) => const _TagFormDialog())
             .then((_) => ref.invalidate(hashtagsProvider)),
@@ -25,7 +27,7 @@ class TagsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (tags) {
-          if (tags.isEmpty) return const Center(child: Text('No hashtags yet.'));
+          if (tags.isEmpty) return Center(child: Text(l10n.noTags));
           return ListView.builder(
             itemCount: tags.length,
             itemBuilder: (ctx, i) {
@@ -43,7 +45,7 @@ class TagsScreen extends ConsumerWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete),
-                      onPressed: () => showConfirmDialog(ctx, title: 'Delete hashtag?').then((ok) {
+                      onPressed: () => showConfirmDialog(ctx, title: l10n.deleteHashtagConfirmTitle).then((ok) {
                         if (ok) {
                           ref.read(hashtagDaoProvider).whenData((d) async {
                             await d.deleteHashtag(t.id);
@@ -89,18 +91,19 @@ class _TagFormDialogState extends ConsumerState<_TagFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(widget.existing == null ? 'New Hashtag' : 'Edit Hashtag'),
+      title: Text(widget.existing == null ? l10n.newHashtag : l10n.editHashtagTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _name,
-            decoration: const InputDecoration(labelText: 'Tag Name', prefixText: '#'),
+            decoration: InputDecoration(labelText: l10n.tagNameLabel, prefixText: '#'),
           ),
           const SizedBox(height: 12),
           Row(children: [
-            const Text('Color: '),
+            Text('${l10n.labelColor}: '),
             const SizedBox(width: 8),
             GestureDetector(
               onTap: () => showColorPicker(context, ref,
@@ -112,8 +115,8 @@ class _TagFormDialogState extends ConsumerState<_TagFormDialog> {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: _save, child: const Text('Save')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l10n.btnCancel)),
+        FilledButton(onPressed: _save, child: Text(l10n.btnSave)),
       ],
     );
   }

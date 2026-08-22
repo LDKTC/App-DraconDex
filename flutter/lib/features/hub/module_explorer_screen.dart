@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/i18n/app_localizations.dart';
 import '../../data/models/module_model.dart';
 import '../../providers/db_providers.dart';
 import '../../providers/module_provider.dart';
@@ -22,6 +23,7 @@ class ModuleExplorerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final nexusAsync = ref.watch(nexusProvider(nexusId));
     final moduleAsync = moduleId == null ? null : ref.watch(moduleProvider(moduleId!));
     final breadcrumbAsync = moduleId == null ? null : ref.watch(moduleBreadcrumbProvider(moduleId!));
@@ -37,7 +39,7 @@ class ModuleExplorerScreen extends ConsumerWidget {
           if (module != null) ...[
             IconButton(
               icon: Icon(module.pinned ? Icons.push_pin : Icons.push_pin_outlined),
-              tooltip: module.pinned ? 'Unpin' : 'Pin',
+              tooltip: module.pinned ? l10n.btnUnpin : l10n.btnPin,
               onPressed: () async {
                 await ref.read(moduleDaoProvider).when(
                   data: (d) => d.setPinned(module.id, !module.pinned),
@@ -49,9 +51,9 @@ class ModuleExplorerScreen extends ConsumerWidget {
             ),
             PopupMenuButton<String>(
               onSelected: (v) => _onModuleAction(context, ref, module, v),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'rename', child: Text('Rename')),
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'rename', child: Text(l10n.btnRename)),
+                PopupMenuItem(value: 'delete', child: Text(l10n.btnDelete)),
               ],
             ),
           ],
@@ -78,7 +80,7 @@ class ModuleExplorerScreen extends ConsumerWidget {
                 if (children.isEmpty) {
                   return Center(
                     child: Text(
-                      'Empty. Tap + to add a module.',
+                      l10n.emptyModuleMessage,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
@@ -96,7 +98,7 @@ class ModuleExplorerScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'New Module',
+        tooltip: l10n.newModuleTooltip,
         onPressed: () async {
           await showDialog(
             context: context,
@@ -110,6 +112,7 @@ class ModuleExplorerScreen extends ConsumerWidget {
   }
 
   Future<void> _onModuleAction(BuildContext context, WidgetRef ref, ModuleModel module, String action) async {
+    final l10n = AppLocalizations.of(context)!;
     if (action == 'rename') {
       await showDialog(context: context, builder: (_) => ModuleDialog(nexusId: nexusId, existing: module));
       ref.invalidate(moduleProvider(module.id));
@@ -117,8 +120,8 @@ class ModuleExplorerScreen extends ConsumerWidget {
     } else if (action == 'delete') {
       final ok = await showConfirmDialog(
         context,
-        title: 'Delete "${module.name}"?',
-        message: 'This deletes every module nested inside it too. This action cannot be undone.',
+        title: '${l10n.confirmDeleteTitle}: "${module.name}"',
+        message: l10n.deleteModuleMessage,
       );
       if (!ok) return;
       final parentId = module.parentId;
@@ -200,6 +203,7 @@ class _ModuleContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final info = module.kindInfo;
     final isFolder = module.kind == ModuleKind.collector || module.kind == ModuleKind.manager;
     if (isFolder) return const SizedBox.shrink();
@@ -212,7 +216,7 @@ class _ModuleContent extends StatelessWidget {
             color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.4),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              '${info.label} content isn\'t built for mobile yet — using the shared notes field below.',
+              l10n.kindContentUnavailable,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -271,9 +275,9 @@ class _DescriptionEditorState extends ConsumerState<_DescriptionEditor> {
         focusNode: _focusNode,
         minLines: 3,
         maxLines: 8,
-        decoration: const InputDecoration(
-          hintText: 'Notes for this module…',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          hintText: AppLocalizations.of(context)!.notesHint,
+          border: const OutlineInputBorder(),
         ),
         onChanged: (_) => _dirty = true,
       ),
