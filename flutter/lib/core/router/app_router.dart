@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/nexus/nexus_screen.dart';
+import '../../features/hub/nexus_list_screen.dart';
+import '../../features/hub/module_explorer_screen.dart';
 import '../../features/director/director_shell.dart';
 import '../../features/director/projects/project_list_screen.dart';
 import '../../features/director/projects/project_detail_screen.dart';
@@ -32,7 +34,24 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/',
+      builder: (ctx, state) => const NexusListScreen(),
+    ),
+    GoRoute(
+      path: '/legacy',
       builder: (ctx, state) => const NexusScreen(),
+    ),
+    GoRoute(
+      path: '/hub/:nexusId',
+      builder: (ctx, state) => ModuleExplorerScreen(
+        nexusId: int.parse(state.pathParameters['nexusId']!),
+      ),
+    ),
+    GoRoute(
+      path: '/hub/:nexusId/module/:moduleId',
+      builder: (ctx, state) => ModuleExplorerScreen(
+        nexusId: int.parse(state.pathParameters['nexusId']!),
+        moduleId: int.parse(state.pathParameters['moduleId']!),
+      ),
     ),
     ShellRoute(
       navigatorKey: _shellKey,

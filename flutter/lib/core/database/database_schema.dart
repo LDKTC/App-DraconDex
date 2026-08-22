@@ -391,6 +391,47 @@ const List<String> worldCreateStatements = [
   createWorldCharactorTag,
 ];
 
+// v3 module system (Hub/Nexus nest, mirroring electron's `nexus`/`module`
+// tables — see docs/Architec.md §1 on the Electron side). Unlike Electron's
+// one-.ddx-per-Nexus split, this single-file mobile DB keeps every Nexus as
+// a row here rather than a separate database file.
+const String createNexus = '''
+CREATE TABLE IF NOT EXISTS nexus (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  memo TEXT,
+  color INTEGER REFERENCES use_color(id),
+  update_at TEXT NOT NULL DEFAULT (datetime('now'))
+)''';
+
+// parent_id NULL = top-level module under its nexus; set = nested under
+// another module, unlimited depth. `kind` picks which content area (if any)
+// the module screen shows; every kind can still have children, so the tree
+// doubles as a folder/file explorer regardless of kind.
+const String createModule = '''
+CREATE TABLE IF NOT EXISTS module (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nexus_ref INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+  parent_id INTEGER REFERENCES module(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK(kind IN ('collector','manager','inspector','classifier',
+    'locator','chronicler','wanderer','narrator','author','scribe','drafter',
+    'viewer','connector','sketcher','designer')),
+  icon TEXT,
+  icon_color INTEGER REFERENCES use_color(id),
+  color INTEGER REFERENCES use_color(id),
+  description TEXT,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  pinned INTEGER NOT NULL DEFAULT 0,
+  create_at TEXT NOT NULL DEFAULT (datetime('now')),
+  update_at TEXT NOT NULL DEFAULT (datetime('now'))
+)''';
+
+const List<String> moduleCreateStatements = [
+  createNexus,
+  createModule,
+];
+
 const List<String> defaultColors = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
   '#f97316', '#eab308', '#22c55e', '#06b6d4',
@@ -423,4 +464,5 @@ const List<String> allCreateStatements = [
   createObjectHashtag,
   createEventHashtag,
   ...worldCreateStatements,
+  ...moduleCreateStatements,
 ];
